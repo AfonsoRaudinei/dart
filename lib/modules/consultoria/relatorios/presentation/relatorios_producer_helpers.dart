@@ -1,6 +1,6 @@
 part of 'relatorios_page.dart';
 
-/// Chips de produtor — obrigatório quando há mais de um clientId.
+/// Dropdown de produtor — obrigatório quando há mais de um clientId.
 class _RelatoriosProducerSelector extends ConsumerWidget {
   final List<String> producerIds;
   final Map<String, int> itemCounts;
@@ -25,59 +25,70 @@ class _RelatoriosProducerSelector extends ConsumerWidget {
         padding: EdgeInsets.symmetric(vertical: 8),
         child: LinearProgressIndicator(minHeight: 2),
       ),
-      error: (_, __) => Wrap(
-        spacing: 8,
-        runSpacing: 6,
-        children: producerIds
-            .map((id) => _producerChip(context, id, id, itemCounts[id] ?? 0))
-            .toList(),
+      error: (_, __) => _producerDropdown(
+        context,
+        {for (final id in producerIds) id: id},
       ),
-      data: (labels) => Wrap(
-        spacing: 8,
-        runSpacing: 6,
-        children: producerIds
-            .map(
-              (id) => _producerChip(
-                context,
-                id,
-                labels[id] ?? id,
-                itemCounts[id] ?? 0,
-              ),
-            )
-            .toList(),
-      ),
+      data: (labels) => _producerDropdown(context, labels),
     );
   }
 
-  Widget _producerChip(
+  Widget _producerDropdown(
     BuildContext context,
-    String clientId,
-    String label,
-    int count,
+    Map<String, String> labels,
   ) {
-    final isSelected = selectedClientId == clientId;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => onSelected(clientId),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 140),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected ? PremiumTokens.brandGreen : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? PremiumTokens.brandGreen
-                : const Color(0xFFD1D1D6),
+    final effectiveValue =
+        selectedClientId != null && producerIds.contains(selectedClientId)
+        ? selectedClientId
+        : null;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(PremiumTokens.borderRadiusSm),
+        border: Border.all(color: const Color(0xFFD1D1D6)),
+        boxShadow: PremiumTokens.premiumShadow,
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          isExpanded: true,
+          value: effectiveValue,
+          hint: Text(
+            'Selecione um produtor',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: context.premiumTextSecondary,
+            ),
           ),
-        ),
-        child: Text(
-          '$label · $count',
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: context.premiumTextSecondary,
+          ),
+          borderRadius: BorderRadius.circular(PremiumTokens.borderRadiusSm),
+          dropdownColor: context.premiumSurface,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: isSelected ? Colors.white : context.premiumTextPrimary,
+            color: context.premiumTextPrimary,
           ),
+          items: producerIds
+              .map((id) {
+                final label = labels[id] ?? id;
+                final count = itemCounts[id] ?? 0;
+                return DropdownMenuItem<String>(
+                  value: id,
+                  child: Text(
+                    '$label · $count',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              })
+              .toList(),
+          onChanged: (id) {
+            if (id != null) onSelected(id);
+          },
         ),
       ),
     );
