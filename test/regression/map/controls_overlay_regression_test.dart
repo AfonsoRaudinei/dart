@@ -367,11 +367,7 @@ void main() {
       expect(location.contains('_MapRoundToggleButton('), isTrue);
       expect(location.contains('BorderRadius.circular(12)'), isFalse);
 
-      final pinsStart = overlay.indexOf('class _MapPinsToggle');
-      final pinsEnd = overlay.indexOf('class _MapStatusIndicator', pinsStart);
-      final pinsSource = overlay.substring(pinsStart, pinsEnd);
-      expect(pinsSource.contains('RoundedRectangleBorder'), isFalse);
-      expect(pinsSource.contains('_MapRoundToggleButton'), isTrue);
+      expect(overlay.contains('class _MapPinsToggle'), isFalse);
 
       final actionStart = overlay.indexOf('class _MapActionButton ');
       final actionEnd = overlay.indexOf('class _MapToolsFab', actionStart);
@@ -384,23 +380,23 @@ void main() {
       expect(toolsSource.contains('BorderRadius.circular(12)'), isTrue);
     });
 
-    testWidgets('map_status_indicator e map_control_pins existem e são círculos 48dp', (
+    testWidgets('map_status_indicator existe e é círculo 48dp', (
       tester,
     ) async {
       await _pumpMapControlsOverlay(tester);
 
       expect(find.byKey(const Key('map_status_indicator')), findsOneWidget);
-      expect(find.byKey(const Key('map_control_pins')), findsOneWidget);
+      expect(find.byKey(const Key('map_control_pins')), findsNothing);
 
-      for (final keyName in ['map_status_indicator', 'map_control_pins']) {
-        final container = tester.widget<Container>(find.byKey(Key(keyName)));
-        final decoration = container.decoration! as BoxDecoration;
-        expect(decoration.shape, BoxShape.circle);
-        expect(
-          tester.getSize(find.byKey(Key(keyName))),
-          const Size(kMapActionColumnButtonSize, kMapActionColumnButtonSize),
-        );
-      }
+      final container = tester.widget<Container>(
+        find.byKey(const Key('map_status_indicator')),
+      );
+      final decoration = container.decoration! as BoxDecoration;
+      expect(decoration.shape, BoxShape.circle);
+      expect(
+        tester.getSize(find.byKey(const Key('map_status_indicator'))),
+        const Size(kMapActionColumnButtonSize, kMapActionColumnButtonSize),
+      );
     });
 
     testWidgets('radar off + online: slash presente no indicador de chuva', (
