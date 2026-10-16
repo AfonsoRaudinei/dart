@@ -88,6 +88,8 @@ void main() {
       );
       await tester.pump();
 
+      expect(find.text('Pinos no mapa'), findsOneWidget);
+      expect(find.byKey(const Key('map_settings_show_pins')), findsOneWidget);
       expect(find.text('WMS Externa'), findsOneWidget);
       expect(find.textContaining('servidor WMS'), findsOneWidget);
       expect(find.text('Raster Custom (XYZ/GeoTIFF)'), findsOneWidget);
@@ -101,6 +103,39 @@ void main() {
         tester.element(find.byType(LayersSheet)),
       );
       expect(container.read(showMarkersProvider), isTrue);
+    });
+
+    testWidgets('alterna pinos em Configurações do mapa', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final preferencesService = PreferencesService(
+        await SharedPreferences.getInstance(),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            preferencesServiceProvider.overrideWithValue(preferencesService),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MapLayerPreferencesSection(),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(MapLayerPreferencesSection)),
+      );
+      expect(container.read(showMarkersProvider), isTrue);
+
+      await tester.tap(find.byKey(const Key('map_settings_show_pins')));
+      await tester.pump();
+
+      expect(container.read(showMarkersProvider), isFalse);
     });
 
     testWidgets('alterna camada ao tocar na miniatura, não só no rótulo', (
