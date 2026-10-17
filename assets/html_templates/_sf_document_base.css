@@ -413,6 +413,45 @@ body {
   margin-top: var(--sf-space-1);
 }
 
+.sf-thumb-zoom {
+  display: block;
+  flex-shrink: 0;
+  cursor: zoom-in;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ═══ Números-resumo ═══ */
+.sf-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: var(--sf-space-4) var(--sf-space-3);
+}
+
+.sf-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sf-stat-value {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--sf-text);
+}
+
+.sf-stat-label {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--sf-text-secondary);
+}
+
+.sf-stats + .sf-group-label,
+.sf-stats + .sf-sheet { margin-top: var(--sf-space-5); }
+
 /* ═══ Assinatura ═══ */
 .sf-signature {
   margin: var(--sf-space-6) 0 var(--sf-space-4);
@@ -512,7 +551,10 @@ body {
 
   .sf-section-title { page-break-after: avoid; break-after: avoid; }
 
-  .sf-figure > label { cursor: default; }
+  .sf-stats { page-break-inside: avoid; break-inside: avoid; }
+
+  .sf-figure > label,
+  .sf-thumb-zoom { cursor: default; }
   .sf-lb-toggle:checked + label {
     position: static;
     background: none;
