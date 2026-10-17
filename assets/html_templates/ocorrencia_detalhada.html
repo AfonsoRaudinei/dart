@@ -13,23 +13,17 @@
 
   <header class="sf-letterhead">
     <div class="sf-letterhead-row">
-      <div class="sf-logo-area">
-        {{report_header_signature}}
-      </div>
       <span class="sf-doc-type">Relatório de ocorrência</span>
     </div>
     <h1 class="sf-title">{{categoria_label}}</h1>
     <!-- {{#if contexto_linha}} -->
     <p class="sf-subtitle">{{contexto_linha}}</p>
     <!-- {{/if}} -->
+    <!-- {{#if type}} -->
     <div class="sf-status-line">
-      <!-- {{#if type}} -->
       <span class="sf-status"><span class="sf-dot {{urgencia_class}}"></span>{{urgencia_label}}</span>
-      <!-- {{/if}} -->
-      <!-- {{#if status}} -->
-      <span class="sf-status"><span class="sf-dot {{status_dot}}"></span>{{status_label}}</span>
-      <!-- {{/if}} -->
     </div>
+    <!-- {{/if}} -->
   </header>
 
   <main>
@@ -47,9 +41,6 @@
         <div class="sf-row"><span class="sf-row-label">Talhão</span><span class="sf-row-value">{{talhao_nome}}</span></div>
         <!-- {{/if}} -->
         <div class="sf-row"><span class="sf-row-label">Categoria</span><span class="sf-row-value">{{categoria_label}}</span></div>
-        <!-- {{#if type}} -->
-        <div class="sf-row"><span class="sf-row-label">Urgência</span><span class="sf-row-value"><span class="sf-status"><span class="sf-dot {{urgencia_class}}"></span>{{urgencia_valor}}</span></span></div>
-        <!-- {{/if}} -->
         <!-- {{#if cultivar}} -->
         <div class="sf-row"><span class="sf-row-label">Cultivar</span><span class="sf-row-value">{{cultivar}}</span></div>
         <!-- {{/if}} -->
@@ -61,9 +52,6 @@
         <!-- {{/if}} -->
         <!-- {{#if amostra_solo}} -->
         <div class="sf-row"><span class="sf-row-label">Amostra de solo</span><span class="sf-row-value">Coletada</span></div>
-        <!-- {{/if}} -->
-        <!-- {{#if status}} -->
-        <div class="sf-row"><span class="sf-row-label">Situação</span><span class="sf-row-value">{{status_label}}</span></div>
         <!-- {{/if}} -->
         <!-- {{#if lat && long}} -->
         <div class="sf-row localizacao-inline"><span class="sf-row-label">Localização</span><span class="sf-row-value">Ponto registrado no mapa</span></div>
@@ -85,7 +73,7 @@
       <figure class="sf-figure sf-figure-hero">
         <input type="checkbox" id="sf-foto-hero" class="sf-lb-toggle" hidden>
         <label for="sf-foto-hero" class="photo-hero">
-          <img src="{{photo_base64}}" alt="Foto principal da ocorrência" loading="lazy">
+          <img data-sf-photo src="{{photo_base64}}" alt="{{foto_hero_legenda}}" loading="lazy">
         </label>
         <figcaption>{{foto_hero_legenda}}</figcaption>
       </figure>
