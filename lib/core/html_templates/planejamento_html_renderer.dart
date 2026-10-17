@@ -34,10 +34,7 @@ class PlanejamentoHtmlRenderer {
         '${periodoFmt.format(weekStart)} – ${periodoYearFmt.format(weekEnd)}';
     final consultant = consultantName?.trim() ?? '';
     final role = consultantRole?.trim() ?? '';
-    final contextoLinha = [
-      if (consultant.isNotEmpty) RelatorioHtmlRenderer.escapeHtml(consultant),
-      _plural(totalEventos, 'evento', 'eventos'),
-    ].join(' · ');
+    final contextoLinha = _plural(totalEventos, 'evento', 'eventos');
 
     tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
       ...branding,
@@ -76,7 +73,7 @@ class PlanejamentoHtmlRenderer {
       html: _renderDays(days),
     );
 
-    return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
+    return RelatorioHtmlRenderer.finalizeDocument(tpl);
   }
 
   static String _renderDays(List<Map<String, dynamic>> days) {
