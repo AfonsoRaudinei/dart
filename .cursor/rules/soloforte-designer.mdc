@@ -23,14 +23,26 @@ alwaysApply: false
 - `--sf-gray: #F5F5F7`
 - `--sf-text: #1D1D1F`
 
-Header: gradiente `linear-gradient(135deg, var(--sf-samsung) 0%, var(--sf-navy) 100%)`.
+Header: cabeçalho branco timbrado — logo oficial SoloForte + tipo do documento + título; filete de marca 2px (samsung→navy) no topo. Proibido header em bloco degradê com brilhos radiais.
 
 ## Header — OBRIGATÓRIO
 
 - **SEMPRE** logo oficial SoloForte (`assets/images/soloforte_logo.png`) via `{{report_header_signature}}`
 - Logo = imagem real (base64/data-URI), **nunca** emoji 🌱 / folha / ícone genérico no lugar da marca
-- Título do relatório + data/contexto ao lado/abaixo do logo
+- Logo em cores originais sobre fundo branco — sem `filter: invert`
+- Tipo do documento em texto secundário pequeno (não pill); título + linha de contexto (`Cliente · Fazenda · Talhão · data`) abaixo do logo
 - `brandingPlaceholders()` **deve** preencher `report_header_signature` com o logo SoloForte
+
+## Linguagem visual (documento editorial iOS)
+
+- Base CSS única: `assets/html_templates/_sf_document_base.css`, injetada via `{{sf_base_css}}` em `RelatorioHtmlRenderer.loadTemplate`
+- Seções numeradas em sentence case (`.sf-section-title` + `.sf-section-num`) — sem caixa alta, sem barra âmbar
+- Ficha técnica em lista agrupada (`.sf-sheet` / `.sf-row`: rótulo à esquerda, valor à direita)
+- Status em texto com ponto (`.sf-status` + `.sf-dot`) — nunca valor técnico cru (`draft`, `confirmed`, `#id`)
+- Fotos como figuras com legenda (`Foto N`), lightbox CSS preservado
+- Sem pills decorativas, sem card-dentro-de-card, sem sombras pesadas
+- Fontes de sistema (`-apple-system`, SF Pro, serif New York/Georgia só no título) — sem Google Fonts (WebView offline)
+- Recomendação em `.sf-callout` (filete navy à esquerda); assinatura `.sf-signature` antes do rodapé
 
 ## Ícones — NUNCA genéricos (corrigir sempre)
 
@@ -52,6 +64,7 @@ Regra dura — aplicar em HTML **e** Flutter (sheets, cards, pins):
 - SEM texto de coordenadas ou endereço no sheet/card
 - SEM pills de localização no header
 - Em Relatórios → Mídia/Ocorrência: ação de localização = navegar para o pin no mapa
+- HTML documento editorial: linha da ficha técnica `Localização — Ponto registrado no mapa` (sem emoji)
 
 ## Rodapé
 
@@ -73,7 +86,8 @@ Regra dura — aplicar em HTML **e** Flutter (sheets, cards, pins):
 
 ## Checklist rápido (validar sempre)
 
-- [ ] Header com logo SoloForte oficial (imagem)
+- [ ] Header branco timbrado com logo SoloForte oficial (imagem, sem degradê/brilho radial)
+- [ ] Base `_sf_document_base.css` via `{{sf_base_css}}`, sem Google Fonts
 - [ ] Zero ícones genéricos decorativos
 - [ ] Localização = inline resumido OU “Ver no mapa” (sem lat/long)
 - [ ] Rodapé = 1 bloco SoloForte, sem meta ID/Sync
