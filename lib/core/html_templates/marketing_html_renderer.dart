@@ -30,19 +30,20 @@ class MarketingHtmlRenderer {
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'marketing_resultado.html',
     );
-    final branding = await RelatorioHtmlRenderer.brandingPlaceholders(
-      customBrandName: data['report_brand_name'] as String?,
-      customLogoPath: data['report_logo_path'] as String?,
-      consultantName: data['nome_vendedor'] as String?,
-      consultantRole: 'Consultoria',
-    );
+    final branding = await _branding(data);
     final fotoPrincipalUrl = data['foto_principal_url'] as String?;
     final foto = await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
       fotoPrincipalUrl,
       fetchRemoteBytes: fetchRemoteBytes,
     );
+    final dataCase = _parseDate(data['data_case'] as String?);
 
     final roi = _MarketingRoiData.from(data);
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'resultado_numeros',
+      include: roi != null || data['quantidade_produzida'] != null,
+    );
     tpl = _resolveAllIfBlocks(tpl, 'roi_agronomico', include: roi != null);
     tpl = _resolveAllIfBlocks(
       tpl,
@@ -61,32 +62,29 @@ class MarketingHtmlRenderer {
     );
     tpl = _resolveAllIfBlocks(
       tpl,
-      'data_case',
-      include: data['data_case'] != null,
+      'foto_principal_url',
+      include: foto.isNotEmpty,
     );
+    final contexto = _contexto(data);
+    tpl = _resolveCommonBlocks(tpl, data, contexto: contexto);
 
     final html = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
       ...branding,
-      'produtor_fazenda': RelatorioHtmlRenderer.escapeHtml(
-        data['produtor_fazenda'] as String? ?? '',
-      ),
-      'produto_utilizado': RelatorioHtmlRenderer.escapeHtml(
-        data['produto_utilizado'] as String? ?? '',
-      ),
-      'localizacao_texto': RelatorioHtmlRenderer.escapeHtml(
-        data['localizacao_texto'] as String? ?? '',
-      ),
-      'visibilidade': data['visibilidade'] as String? ?? '',
+      ..._commonValues(data, contexto: contexto),
       'foto_principal_url': foto,
+      'foto_legenda': dataCase.isEmpty ? 'Foto 1' : 'Foto 1 · $dataCase',
       'produtividade_valor': data['produtividade_valor']?.toString() ?? '',
-      'produtividade_unidade': data['produtividade_unidade'] as String? ?? '',
+      'produtividade_unidade': RelatorioHtmlRenderer.escapeHtml(
+        data['produtividade_unidade'] as String?,
+      ),
       'quantidade_produzida': data['quantidade_produzida']?.toString() ?? '',
       'prod_sem_produto': _formatNumber(roi?.prodSemProduto),
       'prod_com_produto': _formatNumber(roi?.prodComProduto),
-      'unidade_produtividade':
-          data['unidade_produtividade'] as String? ??
-          data['produtividade_unidade'] as String? ??
-          '',
+      'unidade_produtividade': RelatorioHtmlRenderer.escapeHtml(
+        data['unidade_produtividade'] as String? ??
+            data['produtividade_unidade'] as String? ??
+            '',
+      ),
       'custo_produto_por_ha': _formatMoney(roi?.custoProdutoPorHa),
       'valor_grao': _formatMoney(roi?.valorGrao),
       'ganho_sc_ha': _formatSigned(roi?.ganhoScHa),
@@ -105,21 +103,6 @@ class MarketingHtmlRenderer {
       'roi_calculado': data['roi_calculado']?.toString() ?? '',
       'roi_investimento': data['roi_investimento']?.toString() ?? '',
       'roi_retorno': data['roi_retorno']?.toString() ?? '',
-      'descricao': RelatorioHtmlRenderer.escapeHtml(
-        data['descricao'] as String? ?? '',
-      ),
-      'lat': data['lat']?.toString() ?? '',
-      'lng': data['lng']?.toString() ?? '',
-      'nome_vendedor': RelatorioHtmlRenderer.escapeHtml(
-        data['nome_vendedor'] as String? ?? '',
-      ),
-      'nome_vendedor_inicial': _inicial(data['nome_vendedor'] as String?),
-      'telefone_vendedor': RelatorioHtmlRenderer.escapeHtml(
-        data['telefone_vendedor'] as String? ?? '',
-      ),
-      'criado_em_formatado': _parseDate(data['criado_em'] as String?),
-      'status': data['status'] as String? ?? '',
-      'data_case_formatado': _parseDate(data['data_case'] as String?),
     });
     return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(html);
   }
@@ -131,12 +114,8 @@ class MarketingHtmlRenderer {
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'marketing_antes_depois.html',
     );
-    final branding = await RelatorioHtmlRenderer.brandingPlaceholders(
-      customBrandName: data['report_brand_name'] as String?,
-      customLogoPath: data['report_logo_path'] as String?,
-      consultantName: data['nome_vendedor'] as String?,
-      consultantRole: 'Consultoria',
-    );
+    final branding = await _branding(data);
+    final dataCase = _parseDate(data['data_case'] as String?);
 
     final parametros = _MarketingParametroData.listFrom(
       data['parametros_json'],
@@ -145,6 +124,15 @@ class MarketingHtmlRenderer {
       tpl,
       'parametros_comparativos',
       include: parametros.isNotEmpty,
+    );
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'resultados_legados',
+      include:
+          parametros.isEmpty &&
+          ((data['ganho_produtividade'] as String?)?.isNotEmpty == true ||
+              (data['economia_gerada'] as String?)?.isNotEmpty == true ||
+              data['produtividade_valor'] != null),
     );
     tpl = _resolveAllIfBlocks(
       tpl,
@@ -160,20 +148,6 @@ class MarketingHtmlRenderer {
       tpl,
       'produtividade_valor',
       include: data['produtividade_valor'] != null,
-    );
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'data_case',
-      include: data['data_case'] != null,
-    );
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'resultados_legados',
-      include:
-          parametros.isEmpty &&
-          ((data['ganho_produtividade'] as String?)?.isNotEmpty == true ||
-              (data['economia_gerada'] as String?)?.isNotEmpty == true ||
-              data['produtividade_valor'] != null),
     );
 
     final fotoAntes = await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
@@ -194,46 +168,27 @@ class MarketingHtmlRenderer {
       'foto_depois_url',
       include: fotoDepois.isNotEmpty,
     );
+    final contexto = _contexto(data);
+    tpl = _resolveCommonBlocks(tpl, data, contexto: contexto);
 
     final html = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
       ...branding,
-      'produtor_fazenda': RelatorioHtmlRenderer.escapeHtml(
-        data['produtor_fazenda'] as String? ?? '',
-      ),
-      'produto_utilizado': RelatorioHtmlRenderer.escapeHtml(
-        data['produto_utilizado'] as String? ?? '',
-      ),
-      'localizacao_texto': RelatorioHtmlRenderer.escapeHtml(
-        data['localizacao_texto'] as String? ?? '',
-      ),
-      'visibilidade': data['visibilidade'] as String? ?? '',
+      ..._commonValues(data, contexto: contexto),
       'foto_antes_url': fotoAntes,
       'foto_depois_url': fotoDepois,
+      'data_case_sufixo': dataCase.isEmpty ? '' : ' · $dataCase',
       'ganho_produtividade': RelatorioHtmlRenderer.escapeHtml(
         data['ganho_produtividade'] as String? ?? '',
       ),
       'produtividade_valor': data['produtividade_valor']?.toString() ?? '',
-      'produtividade_unidade': data['produtividade_unidade'] as String? ?? '',
+      'produtividade_unidade': RelatorioHtmlRenderer.escapeHtml(
+        data['produtividade_unidade'] as String?,
+      ),
       'economia_gerada': RelatorioHtmlRenderer.escapeHtml(
         data['economia_gerada'] as String? ?? '',
       ),
       'media_ganho_percent': _formatSigned(_mediaParametros(parametros)),
       'parametros_comparativos_html': _renderParametrosHtml(parametros),
-      'descricao': RelatorioHtmlRenderer.escapeHtml(
-        data['descricao'] as String? ?? '',
-      ),
-      'lat': data['lat']?.toString() ?? '',
-      'lng': data['lng']?.toString() ?? '',
-      'nome_vendedor': RelatorioHtmlRenderer.escapeHtml(
-        data['nome_vendedor'] as String? ?? '',
-      ),
-      'nome_vendedor_inicial': _inicial(data['nome_vendedor'] as String?),
-      'telefone_vendedor': RelatorioHtmlRenderer.escapeHtml(
-        data['telefone_vendedor'] as String? ?? '',
-      ),
-      'criado_em_formatado': _parseDate(data['criado_em'] as String?),
-      'status': data['status'] as String? ?? '',
-      'data_case_formatado': _parseDate(data['data_case'] as String?),
     });
     return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(html);
   }
@@ -245,70 +200,51 @@ class MarketingHtmlRenderer {
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'marketing_avaliacao.html',
     );
-    final branding = await RelatorioHtmlRenderer.brandingPlaceholders(
-      customBrandName: data['report_brand_name'] as String?,
-      customLogoPath: data['report_logo_path'] as String?,
-      consultantName: data['nome_vendedor'] as String?,
-      consultantRole: 'Consultoria',
-    );
+    final branding = await _branding(data);
 
     final avaliacoesLivres = _MarketingAvaliacaoData.listFrom(
       data['avaliacoes_json'],
     );
     final conclusao =
         data['conclusao_tecnica'] as String? ?? data['conclusao'] as String?;
-
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'data_case',
-      include: data['data_case'] != null,
+    final nomeTalhao = (data['nome_talhao'] as String?)?.trim() ?? '';
+    final tamanhoHa = RelatorioHtmlRenderer.formatHectares(
+      (data['tamanho_ha'] as num?)?.toDouble(),
     );
+    final contexto = _contexto(data, extra: nomeTalhao);
+
     tpl = _resolveAllIfBlocks(
       tpl,
       'conclusao',
       include: conclusao?.trim().isNotEmpty == true,
     );
     tpl = _resolveAllIfBlocks(tpl, 'roi_calculado', include: false);
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'nome_talhao',
+      include: nomeTalhao.isNotEmpty,
+    );
+    tpl = _resolveAllIfBlocks(tpl, 'tamanho_ha', include: tamanhoHa.isNotEmpty);
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'produtividade_valor',
+      include: data['produtividade_valor'] != null,
+    );
+    tpl = _resolveCommonBlocks(tpl, data, contexto: contexto);
 
     tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
       ...branding,
-      'produtor_fazenda': RelatorioHtmlRenderer.escapeHtml(
-        data['produtor_fazenda'] as String? ?? '',
-      ),
-      'produto_utilizado': RelatorioHtmlRenderer.escapeHtml(
-        data['produto_utilizado'] as String? ?? '',
-      ),
-      'localizacao_texto': RelatorioHtmlRenderer.escapeHtml(
-        data['localizacao_texto'] as String? ?? '',
-      ),
-      'visibilidade': data['visibilidade'] as String? ?? '',
-      'nome_talhao': RelatorioHtmlRenderer.escapeHtml(
-        data['nome_talhao'] as String? ?? '',
-      ),
-      'tamanho_ha': RelatorioHtmlRenderer.formatHectares(
-        (data['tamanho_ha'] as num?)?.toDouble(),
-      ),
+      ..._commonValues(data, contexto: contexto),
+      'nome_talhao': RelatorioHtmlRenderer.escapeHtml(nomeTalhao),
+      'tamanho_ha': tamanhoHa,
       'produtividade_valor': data['produtividade_valor']?.toString() ?? '',
-      'produtividade_unidade': data['produtividade_unidade'] as String? ?? '',
+      'produtividade_unidade': RelatorioHtmlRenderer.escapeHtml(
+        data['produtividade_unidade'] as String?,
+      ),
       'conclusao': RelatorioHtmlRenderer.escapeHtml(conclusao ?? ''),
       'roi_calculado': data['roi_calculado']?.toString() ?? '',
       'roi_investimento': data['roi_investimento']?.toString() ?? '',
       'roi_retorno': data['roi_retorno']?.toString() ?? '',
-      'descricao': RelatorioHtmlRenderer.escapeHtml(
-        data['descricao'] as String? ?? '',
-      ),
-      'lat': data['lat']?.toString() ?? '',
-      'lng': data['lng']?.toString() ?? '',
-      'nome_vendedor': RelatorioHtmlRenderer.escapeHtml(
-        data['nome_vendedor'] as String? ?? '',
-      ),
-      'nome_vendedor_inicial': _inicial(data['nome_vendedor'] as String?),
-      'telefone_vendedor': RelatorioHtmlRenderer.escapeHtml(
-        data['telefone_vendedor'] as String? ?? '',
-      ),
-      'criado_em_formatado': _parseDate(data['criado_em'] as String?),
-      'status': data['status'] as String? ?? '',
-      'data_case_formatado': _parseDate(data['data_case'] as String?),
     });
 
     final blocosHtml = StringBuffer();
@@ -326,15 +262,7 @@ class MarketingHtmlRenderer {
       final blocos = data['avaliacoes'] as List<dynamic>? ?? [];
       for (var index = 0; index < blocos.length; index++) {
         final bloco = blocos[index];
-        if (bloco is Map<String, dynamic>) {
-          blocosHtml.write(
-            await _renderAvaliacaoBloco(
-              bloco,
-              index + 1,
-              fetchRemoteBytes: fetchRemoteBytes,
-            ),
-          );
-        } else if (bloco is Map) {
+        if (bloco is Map) {
           blocosHtml.write(
             await _renderAvaliacaoBloco(
               Map<String, dynamic>.from(bloco),
@@ -344,6 +272,11 @@ class MarketingHtmlRenderer {
           );
         }
       }
+    }
+    if (blocosHtml.isEmpty) {
+      blocosHtml.write(
+        '<p class="sf-muted">Nenhuma avaliação registrada neste case.</p>',
+      );
     }
 
     tpl = RelatorioHtmlRenderer.resolveEachBlock(
@@ -355,49 +288,179 @@ class MarketingHtmlRenderer {
     return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
   }
 
+  static Future<Map<String, String>> _branding(Map<String, dynamic> data) {
+    return RelatorioHtmlRenderer.brandingPlaceholders(
+      customBrandName: data['report_brand_name'] as String?,
+      customLogoPath: data['report_logo_path'] as String?,
+      consultantName: data['nome_vendedor'] as String?,
+      consultantRole: 'Consultoria',
+    );
+  }
+
+  /// Linha de contexto do timbre: `Produto · [extra ·] Município · data`.
+  static String _contexto(Map<String, dynamic> data, {String extra = ''}) {
+    final dataCase = _parseDate(data['data_case'] as String?);
+    return [
+          data['produto_utilizado'] as String?,
+          extra,
+          data['localizacao_texto'] as String?,
+        ]
+        .map((value) => value?.trim() ?? '')
+        .where((value) => value.isNotEmpty)
+        .map(RelatorioHtmlRenderer.escapeHtml)
+        .followedBy([if (dataCase.isNotEmpty) dataCase])
+        .join(' · ');
+  }
+
+  static String _resolveCommonBlocks(
+    String template,
+    Map<String, dynamic> data, {
+    required String contexto,
+  }) {
+    bool hasText(String key) =>
+        (data[key] as String?)?.trim().isNotEmpty == true;
+
+    final conditions = <String, bool>{
+      'contexto_linha': contexto.isNotEmpty,
+      'status': hasText('status'),
+      'visibilidade': hasText('visibilidade'),
+      'produtor_fazenda': hasText('produtor_fazenda'),
+      'produto_utilizado': hasText('produto_utilizado'),
+      'localizacao_texto': hasText('localizacao_texto'),
+      'data_case': data['data_case'] != null,
+      'localizacao': data['lat'] != null && data['lng'] != null,
+      'descricao': hasText('descricao'),
+      'nome_vendedor': hasText('nome_vendedor'),
+      'telefone_vendedor': hasText('telefone_vendedor'),
+      'criado_em': hasText('criado_em'),
+    };
+    var current = template;
+    for (final entry in conditions.entries) {
+      current = _resolveAllIfBlocks(current, entry.key, include: entry.value);
+    }
+    return current;
+  }
+
+  static Map<String, String> _commonValues(
+    Map<String, dynamic> data, {
+    required String contexto,
+  }) {
+    final status = (data['status'] as String?)?.trim() ?? '';
+    return {
+      'contexto_linha': contexto,
+      'produtor_fazenda': RelatorioHtmlRenderer.escapeHtml(
+        data['produtor_fazenda'] as String? ?? '',
+      ),
+      'produto_utilizado': RelatorioHtmlRenderer.escapeHtml(
+        data['produto_utilizado'] as String? ?? '',
+      ),
+      'localizacao_texto': RelatorioHtmlRenderer.escapeHtml(
+        data['localizacao_texto'] as String? ?? '',
+      ),
+      'visibilidade_label': RelatorioHtmlRenderer.escapeHtml(
+        _visibilidadeLabel(data['visibilidade'] as String?),
+      ),
+      'status_label': RelatorioHtmlRenderer.escapeHtml(_statusLabel(status)),
+      'status_dot': _statusDot(status),
+      'descricao': RelatorioHtmlRenderer.escapeHtml(
+        data['descricao'] as String? ?? '',
+      ),
+      'nome_vendedor': RelatorioHtmlRenderer.escapeHtml(
+        data['nome_vendedor'] as String? ?? '',
+      ),
+      'telefone_vendedor': RelatorioHtmlRenderer.escapeHtml(
+        data['telefone_vendedor'] as String? ?? '',
+      ),
+      'emitido_em': _formatDateSafe(DateTime.now()),
+      'criado_em_formatado': _parseDate(data['criado_em'] as String?),
+      'data_case_formatado': _parseDate(data['data_case'] as String?),
+    };
+  }
+
+  static String _statusLabel(String status) {
+    switch (status) {
+      case 'draft':
+      case 'rascunho':
+        return 'Rascunho';
+      case 'pending_sync':
+        return 'Aguardando sincronização';
+      case 'published':
+      case 'publicado':
+        return 'Publicado';
+      case 'archived':
+      case 'arquivado':
+        return 'Arquivado';
+      default:
+        return RelatorioHtmlRenderer.humanizeKey(status);
+    }
+  }
+
+  static String _statusDot(String status) {
+    switch (status) {
+      case 'published':
+      case 'publicado':
+        return 'ok';
+      case 'pending_sync':
+        return 'media';
+      default:
+        return 'draft';
+    }
+  }
+
+  static String _visibilidadeLabel(String? visibilidade) {
+    final value = visibilidade?.trim().toLowerCase() ?? '';
+    switch (value) {
+      case 'ouro':
+        return 'Plano Ouro';
+      case 'prata':
+        return 'Plano Prata';
+      case 'bronze':
+        return 'Plano Bronze';
+      case 'publico':
+        return 'Público';
+      case 'privado':
+        return 'Privado';
+      default:
+        return RelatorioHtmlRenderer.humanizeKey(value);
+    }
+  }
+
   static Future<String> _renderAvaliacaoLivre(
     _MarketingAvaliacaoData data,
     int ordem, {
     Future<Uint8List?> Function(String url)? fetchRemoteBytes,
   }) async {
+    final nomeA = RelatorioHtmlRenderer.escapeHtml(data.nomeLadoA);
+    final nomeB = RelatorioHtmlRenderer.escapeHtml(data.nomeLadoB);
     final parametrosHtml = data.parametros.map((parametro) {
       final unidade = parametro.unidade == null || parametro.unidade!.isEmpty
           ? ''
           : ' ${RelatorioHtmlRenderer.escapeHtml(parametro.unidade)}';
-      final delta = parametro.testemunha == 0
-          ? '--'
-          : '${_formatSigned(parametro.deltaPercent)}%';
-      final deltaClass = parametro.deltaPercent < 0
-          ? 'negative'
-          : parametro.deltaPercent > 0
-          ? 'positive'
-          : 'neutral';
-      return '''
-        <div class="lado-obs">
-          <strong>${RelatorioHtmlRenderer.escapeHtml(parametro.titulo)}</strong><br>
-          ${RelatorioHtmlRenderer.escapeHtml(data.nomeLadoA)}: ${_formatNumber(parametro.testemunha)} → ${RelatorioHtmlRenderer.escapeHtml(data.nomeLadoB)}: ${_formatNumber(parametro.teste)}$unidade
-          <strong class="$deltaClass"> $delta</strong>
-        </div>
-      ''';
+      return _parametroRow(
+        parametro,
+        sub:
+            '$nomeA ${_formatNumber(parametro.testemunha)} → '
+            '$nomeB ${_formatNumber(parametro.teste)}$unidade',
+      );
     }).join();
+    final titulo = data.titulo.trim().isEmpty
+        ? 'Avaliação $ordem'
+        : data.titulo.trim();
+    final observacoes = data.observacoes?.trim() ?? '';
 
     return '''
-    <div class="avaliacao-block">
-      <div class="avaliacao-header">
-        <div class="avaliacao-ordem">
-          <div class="avaliacao-ordem-num">$ordem</div>
-          <span class="avaliacao-ordem-text">${RelatorioHtmlRenderer.escapeHtml(data.titulo.isEmpty ? 'Avaliação $ordem' : data.titulo)}</span>
-        </div>
-        <span class="avaliacao-layout-tag">Média ${_formatSigned(data.mediaGanhoPercent)}%</span>
+    <article class="mk-avaliacao avaliacao-block">
+      <div class="mk-avaliacao-head">
+        <span class="mk-avaliacao-title">${RelatorioHtmlRenderer.escapeHtml(titulo)}</span>
+        <span class="mk-avaliacao-media">Média <strong>${_formatSigned(data.mediaGanhoPercent)}%</strong></span>
       </div>
-      <div class="lados-grid">
-        ${await _renderLado('a', data.nomeLadoA, data.fotoLadoAPath, data.cultura, null, fetchRemoteBytes: fetchRemoteBytes)}
-        ${await _renderLado('b', data.nomeLadoB, data.fotoLadoBPath, data.cultura, data.observacoes, fetchRemoteBytes: fetchRemoteBytes)}
+      <div class="sf-figure-grid mk-compare">
+        ${await _ladoFigure(ordem, 'a', data.nomeLadoA, data.fotoLadoAPath, data.cultura, fetchRemoteBytes: fetchRemoteBytes)}
+        ${await _ladoFigure(ordem, 'b', data.nomeLadoB, data.fotoLadoBPath, data.cultura, fetchRemoteBytes: fetchRemoteBytes)}
       </div>
-      <div style="padding: 0 16px 16px;">
-        $parametrosHtml
-      </div>
-    </div>
+      ${parametrosHtml.isEmpty ? '' : '<div class="sf-sheet">$parametrosHtml</div>'}
+      ${observacoes.isEmpty ? '' : '<div class="sf-note"><p class="sf-note-label">Observações</p><p class="sf-prose">${RelatorioHtmlRenderer.escapeHtml(observacoes)}</p></div>'}
+    </article>
     ''';
   }
 
@@ -407,29 +470,42 @@ class MarketingHtmlRenderer {
     Future<Uint8List?> Function(String url)? fetchRemoteBytes,
   }) async {
     final isDuas = (data['layout'] as String? ?? 'duas_fotos') == 'duas_fotos';
+    final labelA = data['lado_a_label'] as String?;
+    final labelB = data['lado_b_label'] as String?;
+    final notas = <String>[
+      _ladoNota(labelA, 'Lado A', data['lado_a_obs'] as String?),
+      if (isDuas) _ladoNota(labelB, 'Lado B', data['lado_b_obs'] as String?),
+    ].where((nota) => nota.isNotEmpty).join();
+
     return '''
-    <div class="avaliacao-block">
-      <div class="avaliacao-header">
-        <div class="avaliacao-ordem">
-          <div class="avaliacao-ordem-num">$ordem</div>
-          <span class="avaliacao-ordem-text">Avaliação $ordem</span>
-        </div>
-        <span class="avaliacao-layout-tag">${isDuas ? 'Lado A vs Lado B' : 'Foto Única'}</span>
+    <article class="mk-avaliacao avaliacao-block">
+      <div class="mk-avaliacao-head">
+        <span class="mk-avaliacao-title">Avaliação $ordem</span>
+        <span class="mk-avaliacao-media">${isDuas ? 'Lado A e lado B' : 'Foto única'}</span>
       </div>
-      <div class="lados-grid${isDuas ? '' : ' uma-foto'}">
-        ${await _renderLado('a', data['lado_a_label'] as String?, data['lado_a_foto_url'] as String?, data['lado_a_cultura'] as String?, data['lado_a_obs'] as String?, fetchRemoteBytes: fetchRemoteBytes)}
-        ${isDuas ? await _renderLado('b', data['lado_b_label'] as String?, data['lado_b_foto_url'] as String?, data['lado_b_cultura'] as String?, data['lado_b_obs'] as String?, fetchRemoteBytes: fetchRemoteBytes) : ''}
+      <div class="sf-figure-grid mk-compare${isDuas ? '' : ' uma-foto'}">
+        ${await _ladoFigure(ordem, 'a', labelA, data['lado_a_foto_url'] as String?, data['lado_a_cultura'] as String?, fetchRemoteBytes: fetchRemoteBytes)}
+        ${isDuas ? await _ladoFigure(ordem, 'b', labelB, data['lado_b_foto_url'] as String?, data['lado_b_cultura'] as String?, fetchRemoteBytes: fetchRemoteBytes) : ''}
       </div>
-    </div>
+      $notas
+    </article>
     ''';
   }
 
-  static Future<String> _renderLado(
+  static String _ladoNota(String? label, String fallback, String? obs) {
+    final texto = obs?.trim() ?? '';
+    if (texto.isEmpty) return '';
+    final nome = label?.trim().isNotEmpty == true ? label!.trim() : fallback;
+    return '<div class="sf-note"><p class="sf-note-label">${RelatorioHtmlRenderer.escapeHtml(nome)}</p>'
+        '<p class="sf-prose">${RelatorioHtmlRenderer.escapeHtml(texto)}</p></div>';
+  }
+
+  static Future<String> _ladoFigure(
+    int ordem,
     String lado,
     String? label,
     String? fotoUrl,
-    String? cultura,
-    String? obs, {
+    String? cultura, {
     Future<Uint8List?> Function(String url)? fetchRemoteBytes,
   }) async {
     final resolvedFoto = fotoUrl != null && fotoUrl.isNotEmpty
@@ -438,22 +514,24 @@ class MarketingHtmlRenderer {
             fetchRemoteBytes: fetchRemoteBytes,
           )
         : '';
+    final nome = label?.trim().isNotEmpty == true
+        ? label!.trim()
+        : 'Lado ${lado.toUpperCase()}';
+    final legenda = [nome, cultura?.trim() ?? '']
+        .where((part) => part.isNotEmpty)
+        .map(RelatorioHtmlRenderer.escapeHtml)
+        .join(' · ');
+    final id = 'sf-mk-av-$ordem-$lado';
     final fotoHtml = resolvedFoto.isNotEmpty
-        ? '<img src="$resolvedFoto" alt="Lado ${lado.toUpperCase()}" loading="lazy">'
-        : '<div class="lado-foto-placeholder"><span>Sem foto</span></div>';
+        ? '<input type="checkbox" id="$id" class="sf-lb-toggle" hidden>'
+              '<label for="$id"><img src="$resolvedFoto" alt="${RelatorioHtmlRenderer.escapeHtml(nome)}" loading="lazy"></label>'
+        : '<div class="mk-photo-empty">Sem foto</div>';
 
     return '''
-    <div class="lado">
-      <div class="lado-header">
-        <span class="lado-badge $lado">${lado.toUpperCase()}</span>
-        <span class="lado-label">${RelatorioHtmlRenderer.escapeHtml(label)}</span>
-      </div>
-      <div class="lado-foto">$fotoHtml</div>
-      <div class="lado-info">
-        ${cultura != null ? '<span class="lado-cultura">${RelatorioHtmlRenderer.escapeHtml(cultura)}</span>' : ''}
-        ${obs != null ? '<div class="lado-obs">${RelatorioHtmlRenderer.escapeHtml(obs)}</div>' : ''}
-      </div>
-    </div>
+        <figure class="sf-figure lado">
+          $fotoHtml
+          <figcaption>$legenda</figcaption>
+        </figure>
     ''';
   }
 
@@ -466,9 +544,15 @@ class MarketingHtmlRenderer {
     }
   }
 
-  static String _inicial(String? nome) {
-    if (nome == null || nome.isEmpty) return '?';
-    return nome[0].toUpperCase();
+  /// `formatDate` exige `initializeDateFormatting('pt_BR')`; sem ela, cai
+  /// para dd/MM/yyyy montado à mão em vez de vazar a data ISO.
+  static String _formatDateSafe(DateTime value) {
+    try {
+      return RelatorioHtmlRenderer.formatDate(value);
+    } catch (_) {
+      String two(int n) => n.toString().padLeft(2, '0');
+      return '${two(value.day)}/${two(value.month)}/${value.year}';
+    }
   }
 
   static String _resolveAllIfBlocks(
@@ -522,22 +606,32 @@ class MarketingHtmlRenderer {
       final unidade = parametro.unidade == null || parametro.unidade!.isEmpty
           ? ''
           : ' ${RelatorioHtmlRenderer.escapeHtml(parametro.unidade)}';
-      final delta = parametro.testemunha == 0
-          ? '--'
-          : '${_formatSigned(parametro.deltaPercent)}%';
-      final deltaClass = parametro.deltaPercent < 0
-          ? 'negative'
-          : parametro.deltaPercent > 0
-          ? 'positive'
-          : 'neutral';
-      return '''
-        <div class="param-row">
-          <div class="param-title">${RelatorioHtmlRenderer.escapeHtml(parametro.titulo)}</div>
-          <div class="param-values">${_formatNumber(parametro.testemunha)} → ${_formatNumber(parametro.teste)}$unidade</div>
-          <div class="param-delta $deltaClass">$delta</div>
-        </div>
-      ''';
+      return _parametroRow(
+        parametro,
+        sub:
+            '${_formatNumber(parametro.testemunha)} → '
+            '${_formatNumber(parametro.teste)}$unidade',
+      );
     }).join();
+  }
+
+  static String _parametroRow(
+    _MarketingParametroData parametro, {
+    required String sub,
+  }) {
+    final delta = parametro.testemunha == 0
+        ? '--'
+        : '${_formatSigned(parametro.deltaPercent)}%';
+    final deltaClass = parametro.deltaPercent < 0
+        ? 'negative'
+        : parametro.deltaPercent > 0
+        ? 'positive'
+        : 'neutral';
+    return '<div class="sf-row param-row">'
+        '<span class="sf-row-label">${RelatorioHtmlRenderer.escapeHtml(parametro.titulo)}'
+        '<span class="sf-row-sub">$sub</span></span>'
+        '<span class="sf-row-value"><span class="mk-delta $deltaClass">$delta</span></span>'
+        '</div>';
   }
 }
 
