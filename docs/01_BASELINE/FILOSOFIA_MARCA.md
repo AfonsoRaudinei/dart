@@ -77,3 +77,4 @@ O SoloForte vende **produtividade com identidade própria**: resultado prático 
 - Navegação Map-First: o próximo passo é óbvio; nunca deixar o consultor perdido.
 - Visual: clean, premium, tokens existentes — não inventar paleta.
 - Feature nova: deve reduzir complexidade ou aumentar produtividade real no campo. Se não fizer nenhum dos dois, não entra.
+- Story de marketing: um card por tipo de case. Sem ícone genérico, sem nota ou frase inventada. O que o cadastro não tem não aparece.
