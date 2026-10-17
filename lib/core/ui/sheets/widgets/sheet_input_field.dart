@@ -14,6 +14,8 @@ class SheetInputField extends StatelessWidget {
     this.onTap,
     this.keyboardType,
     this.maxLines = 1,
+    this.textInputAction,
+    this.onSubmitted,
   });
 
   final TextEditingController? controller;
@@ -23,6 +25,8 @@ class SheetInputField extends StatelessWidget {
   final VoidCallback? onTap;
   final TextInputType? keyboardType;
   final int maxLines;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onSubmitted;
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +53,8 @@ class SheetInputField extends StatelessWidget {
       onTap: onTap,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      textInputAction: textInputAction,
+      onSubmitted: onSubmitted,
       onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       style: TextStyle(color: textColor),
       decoration: InputDecoration(
