@@ -11,12 +11,10 @@ import '../../domain/client.dart';
 import '../farm_map_download.dart';
 import '../providers/clients_providers.dart';
 import '../providers/field_providers.dart';
-import '../providers/talhao_card_ndvi_provider.dart';
 import '../widgets/client_detail_sub_widgets.dart';
 import '../widgets/farm_linked_field_list.dart';
 import '../widgets/link_drawing_to_farm_sheet.dart';
 import '../widgets/talhao_actions_sheet.dart';
-import '../widgets/talhao_union_sheet.dart';
 import '../widgets/talhao_map_preview.dart';
 
 class ClientFarmWithTalhoesSection extends ConsumerStatefulWidget {
@@ -131,7 +129,6 @@ class _ClientFarmWithTalhoesSectionState
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const Spacer(),
-              TalhaoCardNdviToggle(farmId: farm.id),
               TextButton.icon(
                 onPressed: () => context.go(
                   farmMapCreateUri(clientId: client.id, farmId: farm.id),
@@ -287,41 +284,19 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
     );
   }
 
-  List<TalhaoUnionCandidate> _unionCandidates(
-    ClientDrawingFieldSummary field,
-    List<ClientDrawingFieldSummary> allFields,
-  ) {
-    return allFields
-        .where((candidate) => candidate.id != field.id)
-        .map(
-          (candidate) => TalhaoUnionCandidate(
-            id: candidate.id,
-            name: candidate.name,
-            areaHa: candidate.areaHa,
-            vertices: candidate.vertices,
-          ),
-        )
-        .toList();
-  }
-
   Future<void> _openActions(
     BuildContext context,
     ClientDrawingFieldSummary field,
     List<ClientDrawingFieldSummary> allFields,
-  ) {
-    return showTalhaoActionsSheet(
-      context,
-      clientId: client.id,
-      farmId: field.farmId,
-      fieldId: field.id,
-      fieldName: field.name,
-      initialCultura: field.crop,
-      initialMaterial: field.material,
-      initialSafra: field.harvest,
-      fieldAreaHa: field.areaHa,
-      primaryVertices: field.vertices,
-      showUnionAction: true,
-      unionCandidates: _unionCandidates(field, allFields),
+  ) async {
+    context.go(
+      talhaoMapUri(
+        modo: 'desenho',
+        clientId: client.id,
+        farmId: field.farmId,
+        drawingId: field.id,
+        ferramentasCompleto: true,
+      ),
     );
   }
 

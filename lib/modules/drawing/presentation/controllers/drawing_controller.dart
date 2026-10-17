@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../domain/drawing_utils.dart';
 import '../../domain/drawing_state.dart';
+import '../../domain/drawing_feature_actions_mode.dart';
 import '../../domain/drawing_history.dart';
 import '../../data/repositories/drawing_repository.dart';
 import '../../data/data_sources/drawing_sync_service.dart' show DrawingSyncResult;
@@ -267,6 +268,8 @@ class DrawingController extends ChangeNotifier {
 
   // Interaction state
   DrawingFeature? _selectedFeature;
+  DrawingFeatureActionsMode _featureActionsMode =
+      DrawingFeatureActionsMode.compact;
   bool _multiSelectEnabled = false;
   final Set<String> _selectedFeatureIds = <String>{};
   DrawingInteraction _interactionMode = DrawingInteraction.normal;
@@ -305,6 +308,7 @@ class DrawingController extends ChangeNotifier {
   List<DrawingFeature> get features =>
       List.unmodifiable(_features.where((f) => f.properties.ativo));
   DrawingFeature? get selectedFeature => _selectedFeature;
+  DrawingFeatureActionsMode get featureActionsMode => _featureActionsMode;
   bool get isMultiSelectEnabled => _multiSelectEnabled;
   Set<String> get selectedFeatureIds => Set.unmodifiable(_selectedFeatureIds);
   List<DrawingFeature> get selectedFeatures => features
@@ -1033,23 +1037,33 @@ class DrawingController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void selectFeature(DrawingFeature? feature) {
+  void selectFeature(
+    DrawingFeature? feature, {
+    DrawingFeatureActionsMode actionsMode =
+        DrawingFeatureActionsMode.compact,
+  }) {
     if (_multiSelectEnabled) {
       toggleFeatureSelection(feature);
       return;
     }
     // ⚡ OTIMIZAÇÃO: Só notificar se a seleção mudou
     if (_selectedFeature?.id == feature?.id) {
+      if (feature != null && _featureActionsMode != actionsMode) {
+        _featureActionsMode = actionsMode;
+        notifyListeners();
+      }
       return; // Já está selecionado
     }
 
     if (feature == null) {
       _selectedFeature = null;
+      _featureActionsMode = DrawingFeatureActionsMode.compact;
       // Se SM estiver em selected, voltar ao idle
       if (_stateMachine.currentState == DrawingState.selected) {
         _stateMachine.exitSelected();
       }
     } else {
+      _featureActionsMode = actionsMode;
       _selectedFeature = _features.firstWhere(
         (f) => f.id == feature.id,
         orElse: () =>

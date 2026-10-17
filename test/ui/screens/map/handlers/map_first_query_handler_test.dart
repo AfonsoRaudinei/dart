@@ -24,12 +24,28 @@ void main() {
     ({
       WidgetRef ref,
       List<({MapSheetState state, String reason})> sheets,
-      List<({String drawingId, bool edit, bool union})> focuses,
+      List<
+        ({
+          String drawingId,
+          bool edit,
+          bool union,
+          bool ferramentasCompleto,
+        })
+      >
+      focuses,
     })
   >
   pumpHandlerHost(WidgetTester tester) async {
     final sheets = <({MapSheetState state, String reason})>[];
-    final focuses = <({String drawingId, bool edit, bool union})>[];
+    final focuses =
+        <
+          ({
+            String drawingId,
+            bool edit,
+            bool union,
+            bool ferramentasCompleto,
+          })
+        >[];
     late WidgetRef capturedRef;
 
     await tester.pumpWidget(
@@ -54,7 +70,15 @@ void main() {
   void handle({
     required WidgetRef ref,
     required List<({MapSheetState state, String reason})> sheets,
-    required List<({String drawingId, bool edit, bool union})> focuses,
+    required List<
+      ({
+        String drawingId,
+        bool edit,
+        bool union,
+        bool ferramentasCompleto,
+      })
+    >
+    focuses,
     required Uri uri,
     List<int>? mapMarks,
   }) {
@@ -65,8 +89,18 @@ void main() {
           sheets.add((state: state, reason: reason)),
       openMapMark: () => mapMarks?.add(1),
       focusDrawing:
-          (drawingId, {required bool edit, bool union = false}) async {
-            focuses.add((drawingId: drawingId, edit: edit, union: union));
+          (
+            drawingId, {
+            required bool edit,
+            bool union = false,
+            bool ferramentasCompleto = false,
+          }) async {
+            focuses.add((
+              drawingId: drawingId,
+              edit: edit,
+              union: union,
+              ferramentasCompleto: ferramentasCompleto,
+            ));
           },
       focusCoordinate: (LatLng point) {},
     );
@@ -107,6 +141,24 @@ void main() {
     expect(host.focuses, hasLength(1));
     expect(host.focuses.single.edit, isFalse);
     expect(host.focuses.single.union, isFalse);
+    expect(host.focuses.single.ferramentasCompleto, isFalse);
+  });
+
+  testWidgets('ferramentas=completo repassa flag ao focusDrawing', (
+    tester,
+  ) async {
+    final host = await pumpHandlerHost(tester);
+    handle(
+      ref: host.ref,
+      sheets: host.sheets,
+      focuses: host.focuses,
+      uri: Uri.parse(
+        '/map?modo=desenho&clienteId=c1&drawingId=d1&ferramentas=completo',
+      ),
+    );
+    await tester.pump();
+
+    expect(host.focuses.single.ferramentasCompleto, isTrue);
   });
 
   testWidgets('modo=desenho sem drawingId abre sheet de desenho', (

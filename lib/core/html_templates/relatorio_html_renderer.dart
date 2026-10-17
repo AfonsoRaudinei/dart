@@ -14,10 +14,36 @@ abstract class RelatorioHtmlRenderer {
   static const _assetsBase = 'assets/html_templates/';
   static const int maxInlineImageBytes = 900 * 1024;
   static const int maxInlineImageDimension = 1600;
+  static const baseCssAsset = '${_assetsBase}_sf_document_base.css';
+  static const _baseCssToken = '{{sf_base_css}}';
+  static final _googleFontsLink = RegExp(
+    r'<link\b[^>]*fonts\.(?:googleapis|gstatic)\.com[^>]*>\s*',
+    caseSensitive: false,
+  );
+
+  static String? _baseCssCache;
 
   /// Carrega o template HTML do asset bundle.
+  ///
+  /// Injeta a base de documento em `{{sf_base_css}}` e remove `<link>` de
+  /// Google Fonts: o WebView abre o HTML offline e a fonte remota não carrega.
   static Future<String> loadTemplate(String filename) async {
-    return rootBundle.loadString('$_assetsBase$filename');
+    var template = await rootBundle.loadString(
+      '$_assetsBase$filename',
+      cache: false,
+    );
+    template = template.replaceAll(_googleFontsLink, '');
+    if (template.contains(_baseCssToken)) {
+      template = template.replaceAll(_baseCssToken, await _loadBaseCss());
+    }
+    return template;
+  }
+
+  static Future<String> _loadBaseCss() async {
+    return _baseCssCache ??= await rootBundle.loadString(
+      baseCssAsset,
+      cache: false,
+    );
   }
 
   /// Substitui todos os {{placeholders}} do template pelos valores do mapa.
@@ -365,6 +391,51 @@ abstract class RelatorioHtmlRenderer {
   static String formatHectares(double? value) {
     if (value == null) return '';
     return NumberFormat('#,##0.0', 'pt_BR').format(value);
+  }
+
+  static const _knownKeyLabels = {
+    'estadio': 'Estádio',
+    'estadio_fenologico': 'Estádio fenológico',
+    'altura': 'Altura',
+    'pressao': 'Pressão',
+    'observacao': 'Observação',
+    'observacoes': 'Observações',
+    'severidade': 'Severidade',
+    'incidencia': 'Incidência',
+    'populacao': 'População',
+    'umidade': 'Umidade',
+    'area': 'Área',
+  };
+
+  static const _unitSuffixes = {
+    'cm': 'cm',
+    'mm': 'mm',
+    'm': 'm',
+    'ha': 'ha',
+    'pct': '%',
+    'kg': 'kg',
+  };
+
+  /// Converte chave técnica (`altura_cm`, `incidencia_pct`) em rótulo legível
+  /// (`Altura (cm)`, `Incidência (%)`). Não escapa HTML.
+  static String humanizeKey(String key) {
+    final normalized = key.trim().toLowerCase();
+    if (normalized.isEmpty) return key.trim();
+    final known = _knownKeyLabels[normalized];
+    if (known != null) return known;
+
+    final parts = normalized
+        .split(RegExp(r'[_\s]+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
+    String? unit;
+    if (parts.length > 1 && _unitSuffixes.containsKey(parts.last)) {
+      unit = _unitSuffixes[parts.removeLast()];
+    }
+    final baseKey = parts.join('_');
+    var base = _knownKeyLabels[baseKey] ?? parts.join(' ');
+    if (base.isNotEmpty) base = base[0].toUpperCase() + base.substring(1);
+    return unit == null ? base : '$base ($unit)';
   }
 
   /// Retorna os primeiros 8 caracteres de um UUID.

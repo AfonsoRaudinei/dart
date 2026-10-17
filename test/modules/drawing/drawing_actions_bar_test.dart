@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/modules/drawing/domain/drawing_feature_actions_mode.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/presentation/widgets/components/drawing_actions_bar.dart';
 
@@ -17,6 +18,7 @@ void main() {
           body: SingleChildScrollView(
             child: DrawingActionsBar(
               selectedFeature: _feature(),
+              actionsMode: DrawingFeatureActionsMode.full,
               onEditGeometry: () => calls.add('geometry'),
               onEditMetadata: () => calls.add('metadata'),
               onUnion: () => calls.add('union'),
@@ -83,6 +85,27 @@ void main() {
       'deleteSelected',
       'delete',
     ]);
+  });
+
+  testWidgets('modo compacto exibe só editar geometria e vincular dados', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DrawingActionsBar(
+            selectedFeature: _feature(),
+            actionsMode: DrawingFeatureActionsMode.compact,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Editar Geometria'), findsOneWidget);
+    expect(find.text('Vincular / editar dados'), findsOneWidget);
+    expect(find.text('União'), findsNothing);
+    expect(find.text('Exportar este talhão'), findsNothing);
+    expect(find.text('Excluir'), findsNothing);
   });
 }
 

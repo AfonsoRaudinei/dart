@@ -31,17 +31,32 @@ class VisitaHtmlRenderer {
     final monitoramentos = _listOfMaps(relatorio['monitoramentos']);
     final fotos = _listOfStrings(relatorio['fotos']);
     final publicacoesRefs = _listOfStrings(relatorio['publicacoesRefs']);
+    final periodStart = _formatIsoDateTime(relatorio['periodStart']);
+    final periodEnd = _formatIsoDateTime(relatorio['periodEnd']);
+    final role = consultantRole?.trim() ?? '';
+    final periodo = _periodoLinha(relatorio);
+    final contextoLinha = [
+      if (title.isNotEmpty && farmName.isNotEmpty)
+        RelatorioHtmlRenderer.escapeHtml(farmName),
+      if (clienteNome.trim().isNotEmpty)
+        RelatorioHtmlRenderer.escapeHtml(clienteNome.trim()),
+      if (periodo.isNotEmpty) periodo,
+    ].join(' · ');
 
     tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
       ...branding,
       'status': RelatorioHtmlRenderer.escapeHtml(status),
       'status_label': _statusLabel(status),
+      'status_dot': _statusDot(status),
       'title_ou_farm_name': RelatorioHtmlRenderer.escapeHtml(titleOuFarm),
+      'contexto_linha': contextoLinha,
       'farm_name': RelatorioHtmlRenderer.escapeHtml(farmName),
       'cliente_nome': RelatorioHtmlRenderer.escapeHtml(clienteNome),
       'agronomist_nome': RelatorioHtmlRenderer.escapeHtml(agronomistNome),
-      'period_start_formatado': _formatIsoDateTime(relatorio['periodStart']),
-      'period_end_formatado': _formatIsoDateTime(relatorio['periodEnd']),
+      'consultant_role': RelatorioHtmlRenderer.escapeHtml(role),
+      'emitido_em': RelatorioHtmlRenderer.formatDate(DateTime.now()),
+      'period_start_formatado': periodStart,
+      'period_end_formatado': periodEnd,
       'custom_notes': RelatorioHtmlRenderer.escapeHtml(
         _string(relatorio['customNotes']),
       ),
@@ -50,6 +65,21 @@ class VisitaHtmlRenderer {
       'gerado_em_formatado': RelatorioHtmlRenderer.geradoEm(),
     });
 
+    tpl = _resolveRepeatedIf(tpl, 'contexto_linha', contextoLinha.isNotEmpty);
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'agronomist_nome',
+      agronomistNome.trim().isNotEmpty,
+    );
+    tpl = _resolveRepeatedIf(tpl, 'consultant_role', role.isNotEmpty);
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'cliente_nome',
+      clienteNome.trim().isNotEmpty,
+    );
+    tpl = _resolveRepeatedIf(tpl, 'farm_name', farmName.isNotEmpty);
+    tpl = _resolveRepeatedIf(tpl, 'period_start', periodStart.isNotEmpty);
+    tpl = _resolveRepeatedIf(tpl, 'period_end', periodEnd.isNotEmpty);
     tpl = RelatorioHtmlRenderer.resolveIfBlock(
       tpl,
       'custom_notes',
@@ -59,9 +89,7 @@ class VisitaHtmlRenderer {
       tpl,
       'talhoes.length > 0',
       include: talhoes.isNotEmpty,
-      truthyHtml: '<div class="talhao-list">${_renderTalhoes(talhoes)}</div>',
-      falsyHtml:
-          '<div class="empty-section">Nenhum talhão registrado nesta visita.</div>',
+      truthyHtml: '<div class="sf-sheet">${_renderTalhoes(talhoes)}</div>',
     );
     tpl = RelatorioHtmlRenderer.resolveIfBlock(
       tpl,
@@ -69,62 +97,82 @@ class VisitaHtmlRenderer {
       include: ocorrencias.isNotEmpty,
       truthyHtml:
           '''
-    <div class="section-label">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Ocorrências Registradas</span>
-    </div>
     ${_renderOcorrenciasSummary(ocorrencias)}
-    <div class="ocorrencia-list">${await _renderOcorrencias(ocorrencias)}</div>
-    ''',
-      falsyHtml: '''
-    <div class="section-label">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Ocorrências Registradas</span>
-    </div>
-    <div class="ocorrencia-empty">Nenhuma ocorrência foi registrada nesta visita.</div>
+    <div class="sf-sheet">${await _renderOcorrencias(ocorrencias)}</div>
     ''',
     );
     tpl = RelatorioHtmlRenderer.resolveIfBlock(
       tpl,
       'monitoramentos.length > 0',
       include: monitoramentos.isNotEmpty,
-      truthyHtml:
-          '''
-    <div class="section-label">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Monitoramentos</span>
-    </div>
-    <div class="monitoramento-list">${_renderMonitoramentos(monitoramentos)}</div>
-    ''',
+      truthyHtml: _section(
+        'Monitoramentos',
+        _renderMonitoramentos(monitoramentos),
+      ),
     );
+    final fotosHtml = await _renderFotos(fotos);
     tpl = RelatorioHtmlRenderer.resolveIfBlock(
       tpl,
       'fotos.length > 0',
-      include: fotos.isNotEmpty,
-      truthyHtml:
-          '''
-    <div class="section-label">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Registro Fotográfico</span>
-    </div>
-    <div class="fotos-grid">${await _renderFotos(fotos)}</div>
-    ''',
+      include: fotosHtml.isNotEmpty,
+      truthyHtml: _section(
+        'Registro fotográfico',
+        '<div class="sf-figure-grid">$fotosHtml</div>',
+      ),
     );
     tpl = RelatorioHtmlRenderer.resolveIfBlock(
       tpl,
       'publicacoes_refs.length > 0',
       include: publicacoesRefs.isNotEmpty,
-      truthyHtml:
-          '''
-    <div class="section-label">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Publicações Técnicas</span>
-    </div>
-    <div class="publicacoes-list">${_renderPublicacoes(publicacoesRefs, publicacoesTitulos)}</div>
-    ''',
+      truthyHtml: _section(
+        'Publicações técnicas',
+        '<div class="sf-sheet">${_renderPublicacoes(publicacoesRefs, publicacoesTitulos)}</div>',
+      ),
     );
 
     return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
+  }
+
+  static String _resolveRepeatedIf(String tpl, String condition, bool include) {
+    var result = tpl;
+    for (var i = 0; i < 8; i++) {
+      final next = RelatorioHtmlRenderer.resolveIfBlock(
+        result,
+        condition,
+        include: include,
+      );
+      if (next == result) break;
+      result = next;
+    }
+    return result;
+  }
+
+  static String _section(String title, String body) {
+    return '''
+    <section class="sf-section">
+      <h2 class="sf-section-title"><span class="sf-section-num"></span>$title</h2>
+      $body
+    </section>
+    ''';
+  }
+
+  /// `03/06/2026 · 09:00–10:00` no mesmo dia; senão `início – fim`.
+  static String _periodoLinha(Map<String, dynamic> relatorio) {
+    final start = _parseIso(relatorio['periodStart']);
+    final end = _parseIso(relatorio['periodEnd']);
+    if (start == null) return '';
+    final startDate = RelatorioHtmlRenderer.formatDate(start);
+    final startTime = RelatorioHtmlRenderer.formatTime(start);
+    if (end == null) return '$startDate · $startTime';
+    final sameDay =
+        start.year == end.year &&
+        start.month == end.month &&
+        start.day == end.day;
+    if (sameDay) {
+      return '$startDate · $startTime–${RelatorioHtmlRenderer.formatTime(end)}';
+    }
+    return '${RelatorioHtmlRenderer.formatDateTime(start)} – '
+        '${RelatorioHtmlRenderer.formatDateTime(end)}';
   }
 
   static String _renderTalhoes(List<Map<String, dynamic>> talhoes) {
@@ -139,17 +187,15 @@ class VisitaHtmlRenderer {
       );
       final safra = RelatorioHtmlRenderer.escapeHtml(_string(talhao['safra']));
       final area = _double(talhao['areaHectares']);
+      final sub = [
+        if (cultura.isNotEmpty) 'Cultura: $cultura',
+        if (safra.isNotEmpty) 'Safra: $safra',
+      ].join(' · ');
 
       sb.write('''
-      <div class="talhao-card">
-        <div>
-          <div class="talhao-nome">$nome</div>
-          <div class="talhao-meta">
-            ${cultura.isNotEmpty ? '<span class="talhao-chip">Cultura: $cultura</span>' : ''}
-            ${safra.isNotEmpty ? '<span class="talhao-chip">Safra: $safra</span>' : ''}
-          </div>
-        </div>
-        ${area != null ? '<div class="talhao-area">${RelatorioHtmlRenderer.formatHectares(area)}<span class="talhao-area-unit">ha</span></div>' : ''}
+      <div class="sf-row talhao-row">
+        <span class="sf-row-label"><span class="sf-item-title">$nome</span>${sub.isNotEmpty ? '<span class="sf-row-sub">$sub</span>' : ''}</span>
+        ${area != null ? '<span class="sf-row-value">${RelatorioHtmlRenderer.formatHectares(area)} ha</span>' : ''}
       </div>
       ''');
     }
@@ -171,41 +217,37 @@ class VisitaHtmlRenderer {
       final meta = <String>[
         if (data.isNotEmpty && hora.isNotEmpty) '$data · $hora',
         if (data.isNotEmpty && hora.isEmpty) data,
-      ];
-      final detailMeta = <String>[
-        if (_stringOrNull(ocorrencia['cultivar']) case final cultivar?)
-          'Cultivar: ${RelatorioHtmlRenderer.escapeHtml(cultivar)}',
-        if (_stringOrNull(ocorrencia['estadioFenologico']) case final estadio?)
-          'Estádio: ${RelatorioHtmlRenderer.escapeHtml(estadio)}',
         if (_stringOrNull(ocorrencia['tipoOcorrencia']) case final categoria?)
-          'Categoria: ${RelatorioHtmlRenderer.escapeHtml(categoria)}',
+          RelatorioHtmlRenderer.escapeHtml(categoria),
+        if (_stringOrNull(ocorrencia['cultivar']) case final cultivar?)
+          'Cultivar ${RelatorioHtmlRenderer.escapeHtml(cultivar)}',
+        if (_stringOrNull(ocorrencia['estadioFenologico']) case final estadio?)
+          'Estádio ${RelatorioHtmlRenderer.escapeHtml(estadio)}',
+        if (_hasLocation(ocorrencia)) 'Ponto registrado no mapa',
       ];
-      final fotosHtml = await _renderOcorrenciaFotos(ocorrencia);
-      final descricaoHtml = _renderOcorrenciaSection(
-        label: 'Descrição',
-        content: _stringOrNull(ocorrencia['descricao']),
-      );
-      final recomendacoesHtml = _renderOcorrenciaSection(
-        label: 'Recomendação',
-        content: _stringOrNull(ocorrencia['recomendacoes']),
-      );
-      final localizacaoHtml = _renderOcorrenciaLocation(ocorrencia);
+      final fotos = await _resolveOcorrenciaFotos(ocorrencia);
+      final descricao = _stringOrNull(ocorrencia['descricao'])?.trim() ?? '';
+      final recomendacao =
+          _stringOrNull(ocorrencia['recomendacoes'])?.trim() ?? '';
+      final thumbHtml = fotos.isEmpty
+          ? ''
+          : '<img class="sf-thumb" src="${fotos.first}" alt="Foto da ocorrência" loading="lazy">';
+      final stripHtml = fotos.length > 1
+          ? '<div class="sf-thumb-strip">${fotos.skip(1).map((src) => '<img class="sf-thumb" src="$src" alt="Foto da ocorrência" loading="lazy">').join()}</div>'
+          : '';
 
       sb.write('''
-      <div class="ocorrencia-card">
-        <div class="ocorrencia-info">
-          <div class="ocorrencia-header">
-            <span class="ocorrencia-tipo">$tipo</span>
-            ${_renderSeverityBadge(severity)}
+      <div class="sf-item ocorrencia-row">
+        $thumbHtml
+        <div class="sf-item-body">
+          <div class="sf-item-head">
+            <span class="sf-item-title">$tipo</span>
+            ${_renderSeverityStatus(severity)}
           </div>
-          <div class="ocorrencia-meta">
-            ${meta.map((item) => '<span class="ocorrencia-meta-item">${RelatorioHtmlRenderer.escapeHtml(item)}</span>').join()}
-          </div>
-          ${detailMeta.isEmpty ? '' : '<div class="ocorrencia-details">${detailMeta.map((item) => '<span class="ocorrencia-detail-item">$item</span>').join()}</div>'}
-          $descricaoHtml
-          $recomendacoesHtml
-          $localizacaoHtml
-          $fotosHtml
+          ${meta.isEmpty ? '' : '<span class="sf-caption">${meta.join(' · ')}</span>'}
+          ${descricao.isEmpty ? '' : '<p class="sf-prose">${RelatorioHtmlRenderer.escapeHtml(descricao)}</p>'}
+          ${recomendacao.isEmpty ? '' : '<div class="sf-callout"><p class="sf-note-label">Recomendação</p><p class="sf-prose">${RelatorioHtmlRenderer.escapeHtml(recomendacao)}</p></div>'}
+          $stripHtml
         </div>
       </div>
       ''');
@@ -229,67 +271,44 @@ class VisitaHtmlRenderer {
     final leve = ocorrencias
         .where((ocorrencia) => _matchesSeverity(ocorrencia['severity'], 'leve'))
         .length;
+    final total = ocorrencias.length;
+    final totalLabel = total == 1 ? '1 ocorrência' : '$total ocorrências';
 
     return '''
-    <div class="ocorrencia-summary">
-      <div class="ocorrencia-summary-title">OCORRÊNCIAS REGISTRADAS (${ocorrencias.length})</div>
-      <div class="ocorrencia-summary-meta">Grave: $grave · Moderada: $moderada · Leve: $leve</div>
-    </div>
+    <p class="sf-section-caption ocorrencia-summary">$totalLabel · Grave: $grave · Moderada: $moderada · Leve: $leve</p>
     ''';
   }
 
-  static String _renderSeverityBadge(String? severity) {
+  static String _renderSeverityStatus(String? severity) {
     final normalized = severity?.trim();
     if (normalized == null || normalized.isEmpty) return '';
-    final badgeClass = switch (normalized.toLowerCase()) {
-      'leve' => 'ocorrencia-badge ocorrencia-badge-leve',
-      'moderada' => 'ocorrencia-badge ocorrencia-badge-moderada',
-      'grave' => 'ocorrencia-badge ocorrencia-badge-grave',
+    final dotClass = switch (normalized.toLowerCase()) {
+      'leve' => 'baixa',
+      'moderada' => 'media',
+      'grave' => 'alta',
       _ => '',
     };
-    if (badgeClass.isEmpty) return '';
-    return '<span class="$badgeClass">${RelatorioHtmlRenderer.escapeHtml(normalized)}</span>';
+    if (dotClass.isEmpty) return '';
+    final label =
+        normalized[0].toUpperCase() + normalized.substring(1).toLowerCase();
+    return '<span class="sf-status"><span class="sf-dot $dotClass"></span>${RelatorioHtmlRenderer.escapeHtml(label)}</span>';
   }
 
-  static String _renderOcorrenciaSection({
-    required String label,
-    required String? content,
-  }) {
-    final normalized = content?.trim();
-    if (normalized == null || normalized.isEmpty) return '';
-    return '''
-    <div class="ocorrencia-section">
-      <div class="ocorrencia-section-label">$label</div>
-      <div class="ocorrencia-section-content">${RelatorioHtmlRenderer.escapeHtml(normalized)}</div>
-    </div>
-    ''';
+  static bool _hasLocation(Map<String, dynamic> ocorrencia) {
+    return _double(ocorrencia['lat']) != null &&
+        _double(ocorrencia['lng']) != null;
   }
 
-  static String _renderOcorrenciaLocation(Map<String, dynamic> ocorrencia) {
-    final lat = _double(ocorrencia['lat']);
-    final lng = _double(ocorrencia['lng']);
-    if (lat == null || lng == null) return '';
-    return '''
-    <div class="ocorrencia-location">📍 ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}</div>
-    ''';
-  }
-
-  static Future<String> _renderOcorrenciaFotos(
+  static Future<List<String>> _resolveOcorrenciaFotos(
     Map<String, dynamic> ocorrencia,
   ) async {
-    final fotoPaths = _resolveFotoPaths(ocorrencia);
-    if (fotoPaths.isEmpty) return '';
-
     final items = <String>[];
-    for (final path in fotoPaths) {
+    for (final path in _resolveFotoPaths(ocorrencia)) {
       final fotoB64 = await RelatorioHtmlRenderer.photoPathToBase64(path);
       if (fotoB64 == null) continue;
-      items.add(
-        '<img class="ocorrencia-photo" src="$fotoB64" alt="Foto da ocorrência" loading="lazy">',
-      );
+      items.add(fotoB64);
     }
-    if (items.isEmpty) return '';
-    return '<div class="ocorrencia-photos">${items.join()}</div>';
+    return items;
   }
 
   static List<String> _resolveFotoPaths(Map<String, dynamic> ocorrencia) {
@@ -327,23 +346,16 @@ class VisitaHtmlRenderer {
       final dadosHtml = dados.entries
           .map(
             (entry) =>
-                '''
-        <div class="dado-item">
-          <div class="dado-chave">${RelatorioHtmlRenderer.escapeHtml(entry.key)}</div>
-          <div class="dado-valor">${RelatorioHtmlRenderer.escapeHtml(entry.value?.toString())}</div>
-        </div>
-      ''',
+                '<div class="sf-row">'
+                '<span class="sf-row-label">${RelatorioHtmlRenderer.escapeHtml(RelatorioHtmlRenderer.humanizeKey(entry.key))}</span>'
+                '<span class="sf-row-value">${RelatorioHtmlRenderer.escapeHtml(entry.value?.toString())}</span>'
+                '</div>',
           )
           .join();
 
       sb.write('''
-      <div class="monitoramento-card">
-        <div class="monitoramento-header">
-          <div class="monitoramento-tipo">$tipo</div>
-          <div class="monitoramento-data">$data</div>
-        </div>
-        <div class="monitoramento-dados">$dadosHtml</div>
-      </div>
+      <p class="sf-group-label">$tipo${data.isNotEmpty ? ' · $data' : ''}</p>
+      ${dadosHtml.isEmpty ? '' : '<div class="sf-sheet">$dadosHtml</div>'}
       ''');
     }
     return sb.toString();
@@ -352,13 +364,19 @@ class VisitaHtmlRenderer {
   static Future<String> _renderFotos(List<String> fotos) async {
     if (fotos.isEmpty) return '';
     final sb = StringBuffer();
+    var numero = 0;
     for (final path in fotos) {
       final b64 = await RelatorioHtmlRenderer.photoPathToBase64(path);
       if (b64 != null) {
+        numero++;
         sb.write('''
-        <div class="foto-item">
-          <img src="$b64" alt="Foto da visita" loading="lazy">
-        </div>
+        <figure class="sf-figure">
+          <input type="checkbox" id="sf-visita-foto-$numero" class="sf-lb-toggle" hidden>
+          <label for="sf-visita-foto-$numero">
+            <img src="$b64" alt="Foto $numero da visita" loading="lazy">
+          </label>
+          <figcaption>Foto $numero</figcaption>
+        </figure>
         ''');
       }
     }
@@ -376,9 +394,7 @@ class VisitaHtmlRenderer {
         titulos[ref] ?? 'Publicação ${RelatorioHtmlRenderer.shortId(ref)}',
       );
       sb.write('''
-      <div class="publicacao-badge">
-        $titulo
-      </div>
+      <div class="sf-row publicacao-row"><span class="sf-row-label">$titulo</span></div>
       ''');
     }
     return sb.toString();
@@ -391,8 +407,25 @@ class VisitaHtmlRenderer {
       case 'arquivado':
         return 'Arquivado';
       default:
-        return 'Em Revisão';
+        return 'Em revisão';
     }
+  }
+
+  static String _statusDot(String status) {
+    switch (status) {
+      case 'publicado':
+        return 'ok';
+      case 'arquivado':
+        return 'draft';
+      default:
+        return 'media';
+    }
+  }
+
+  static DateTime? _parseIso(Object? value) {
+    final raw = _string(value);
+    if (raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
   }
 
   static String _formatIsoDateTime(Object? value) {

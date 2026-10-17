@@ -6,7 +6,8 @@ class OcorrenciaHtmlRenderer {
   /// [data] = Occurrence convertido para Map pelo chamador.
   ///
   /// Estrutura esperada: campos do schema occurrences e campos calculados
-  /// opcionais: categoria_emoji, categoria_label, urgencia_class, foto_base64.
+  /// opcionais: categoria_label, urgencia_class, foto_base64, cliente_nome,
+  /// fazenda_nome, talhao_nome.
   static Future<String> renderDetalhe(
     Map<String, dynamic> data, {
     String? reportBrandName,
@@ -26,19 +27,57 @@ class OcorrenciaHtmlRenderer {
 
     final category = data['category'] as String? ?? '';
     final cat = _categoriaInfo(category);
+    final categoriaLabel = RelatorioHtmlRenderer.escapeHtml(
+      data['categoria_label'] as String? ?? cat.label,
+    );
+    final type = (data['type'] as String?)?.trim() ?? '';
+    final urgenciaClass =
+        data['urgencia_class'] as String? ?? _urgenciaClass(type);
+    final status = (data['status'] as String?)?.trim() ?? '';
+    final createdAt = _parseDateTime(data['created_at'] as String?);
+    final dataRegistro = RelatorioHtmlRenderer.formatDate(createdAt);
+    final consultantNome = consultantName?.trim() ?? '';
+    final heroSrc = data['foto_base64'] as String? ?? '';
+    final contextoLinha =
+        [data['cliente_nome'], data['fazenda_nome'], data['talhao_nome']]
+            .map((value) => (value as String?)?.trim() ?? '')
+            .where((value) => value.isNotEmpty)
+            .map(RelatorioHtmlRenderer.escapeHtml)
+            .followedBy([if (dataRegistro.isNotEmpty) dataRegistro])
+            .join(' · ');
 
     tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
       ...branding,
-      'categoria_emoji': data['categoria_emoji'] as String? ?? cat.emoji,
-      'categoria_label': data['categoria_label'] as String? ?? cat.label,
-      'category': category,
-      'type': RelatorioHtmlRenderer.escapeHtml(data['type'] as String? ?? ''),
-      'urgencia_class':
-          data['urgencia_class'] as String? ??
-          _urgenciaClass(data['type'] as String?),
-      'status': RelatorioHtmlRenderer.escapeHtml(
-        data['status'] as String? ?? 'draft',
+      'categoria_label': categoriaLabel,
+      'contexto_linha': contextoLinha,
+      'cliente_nome': RelatorioHtmlRenderer.escapeHtml(
+        data['cliente_nome'] as String?,
       ),
+      'fazenda_nome': RelatorioHtmlRenderer.escapeHtml(
+        data['fazenda_nome'] as String?,
+      ),
+      'talhao_nome': RelatorioHtmlRenderer.escapeHtml(
+        data['talhao_nome'] as String?,
+      ),
+      'category': category,
+      'type': RelatorioHtmlRenderer.escapeHtml(type),
+      'urgencia_class': urgenciaClass,
+      'urgencia_valor': _urgenciaValor(urgenciaClass),
+      'urgencia_label':
+          'Urgência ${_urgenciaValor(urgenciaClass).toLowerCase()}',
+      'status': RelatorioHtmlRenderer.escapeHtml(status),
+      'status_label': _statusLabel(status),
+      'status_dot': status == 'confirmed' ? 'ok' : 'draft',
+      'consultant_nome': RelatorioHtmlRenderer.escapeHtml(consultantNome),
+      'consultant_role': RelatorioHtmlRenderer.escapeHtml(
+        consultantRole?.trim(),
+      ),
+      'emitido_em': RelatorioHtmlRenderer.formatDate(DateTime.now()),
+      'foto_hero_legenda': [
+        'Foto 1',
+        categoriaLabel,
+        if (dataRegistro.isNotEmpty) dataRegistro,
+      ].join(' · '),
       'cultivar': RelatorioHtmlRenderer.escapeHtml(data['cultivar'] as String?),
       'estadio_fenologico': RelatorioHtmlRenderer.escapeHtml(
         data['estadio_fenologico'] as String?,
@@ -55,27 +94,40 @@ class OcorrenciaHtmlRenderer {
       ),
       'lat': data['lat']?.toString() ?? '',
       'long': data['long']?.toString() ?? '',
-      'created_at_formatado': RelatorioHtmlRenderer.formatDateTime(
-        _parseDateTime(data['created_at'] as String?),
-      ),
-      'updated_at_formatado': RelatorioHtmlRenderer.formatDateTime(
-        _parseDateTime(data['updated_at'] as String?),
-      ),
+      'created_at_formatado': RelatorioHtmlRenderer.formatDateTime(createdAt),
       'id_curto': RelatorioHtmlRenderer.shortId(data['id'] as String? ?? ''),
       'sync_status': data['sync_status'] as String? ?? '',
     });
 
     final galeria = await _renderGaleria(
       data['fotos_categorias_json'] as String?,
+      firstNumber: heroSrc.isNotEmpty ? 2 : 1,
     );
     final notas = _renderNotas(data['notas_categorias_json'] as String?);
     final metricas = _renderMetricas(data['metricas_json'] as String?);
     final nutrientes = _renderNutrientes(data['nutrientes_json'] as String?);
 
+    tpl = _resolveRepeatedIf(tpl, 'contexto_linha', contextoLinha.isNotEmpty);
+    for (final key in const ['cliente_nome', 'fazenda_nome', 'talhao_nome']) {
+      tpl = _resolveRepeatedIf(
+        tpl,
+        key,
+        (data[key] as String?)?.trim().isNotEmpty == true,
+      );
+    }
+    tpl = _resolveRepeatedIf(tpl, 'type', type.isNotEmpty);
+    tpl = _resolveRepeatedIf(tpl, 'status', status.isNotEmpty);
+    tpl = _resolveRepeatedIf(tpl, 'consultant_nome', consultantNome.isNotEmpty);
     tpl = _resolveRepeatedIf(
       tpl,
-      'status',
-      (data['status'] as String?)?.isNotEmpty == true,
+      'consultant_role',
+      consultantRole?.trim().isNotEmpty == true,
+    );
+    tpl = _resolveRepeatedIf(tpl, 'created_at', createdAt != null);
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'registro_fotografico',
+      heroSrc.isNotEmpty || galeria.isNotEmpty,
     );
     tpl = _resolveRepeatedIf(
       tpl,
@@ -170,9 +222,12 @@ class OcorrenciaHtmlRenderer {
         .length;
     final amostras = ocorrencias.where(_isAmostraSolo).length;
 
-    final alta = ocorrencias.where((data) => data['type'] == 'Alta').length;
-    final media = ocorrencias.where((data) => data['type'] == 'Média').length;
-    final baixa = ocorrencias.where((data) => data['type'] == 'Baixa').length;
+    int countUrgencia(String urgenciaClass) => ocorrencias
+        .where((data) => _urgenciaClassOrNull(data['type']) == urgenciaClass)
+        .length;
+    final alta = countUrgencia('alta');
+    final media = countUrgencia('media');
+    final baixa = countUrgencia('baixa');
 
     final pctAlta = total > 0 ? (alta / total * 100).round() : 0;
     final pctMedia = total > 0 ? (media / total * 100).round() : 0;
@@ -184,38 +239,72 @@ class OcorrenciaHtmlRenderer {
         .toSet()
         .length;
 
+    final dataVisitaFmt = RelatorioHtmlRenderer.formatDate(dataVisita);
+    final role = consultantRole?.trim() ?? '';
+    final contextoLinha = [fazendaNome, talhaoNome, cultivar]
+        .map((value) => value?.trim() ?? '')
+        .where((value) => value.isNotEmpty)
+        .map(RelatorioHtmlRenderer.escapeHtml)
+        .followedBy([if (dataVisitaFmt.isNotEmpty) dataVisitaFmt])
+        .join(' · ');
+
     tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
       ...branding,
+      'contexto_linha': contextoLinha,
       'cliente_nome': RelatorioHtmlRenderer.escapeHtml(clienteNome),
       'fazenda_nome': RelatorioHtmlRenderer.escapeHtml(fazendaNome),
       'talhao_nome': RelatorioHtmlRenderer.escapeHtml(talhaoNome),
       'cultivar': RelatorioHtmlRenderer.escapeHtml(cultivar),
       'agronomist_nome': RelatorioHtmlRenderer.escapeHtml(agronomistNome),
-      'data_visita_formatada': RelatorioHtmlRenderer.formatDate(dataVisita),
+      'consultant_role': RelatorioHtmlRenderer.escapeHtml(role),
+      'emitido_em': RelatorioHtmlRenderer.formatDate(DateTime.now()),
+      'data_visita_formatada': dataVisitaFmt,
       'total_ocorrencias': total.toString(),
+      'total_ocorrencias_label': total == 1 ? 'ocorrência' : 'ocorrências',
       'total_categorias': cats.toString(),
+      'total_categorias_label': cats == 1 ? 'categoria' : 'categorias',
       'total_fotos': totalFotos.toString(),
+      'total_fotos_label': totalFotos == 1 ? 'foto' : 'fotos',
       'amostras_solo': amostras.toString(),
+      'amostras_solo_label': amostras == 1
+          ? 'amostra de solo'
+          : 'amostras de solo',
       'count_alta': alta.toString(),
       'count_media': media.toString(),
       'count_baixa': baixa.toString(),
       'pct_alta': pctAlta.toString(),
       'pct_media': pctMedia.toString(),
       'pct_baixa': pctBaixa.toString(),
-      'gerado_em_formatado': RelatorioHtmlRenderer.geradoEm(),
-      'visit_session_id_curto': visitSessionId != null
-          ? RelatorioHtmlRenderer.shortId(visitSessionId)
-          : '',
     });
 
-    final grupos = await _renderGrupos(ocorrencias);
+    tpl = _resolveRepeatedIf(tpl, 'contexto_linha', contextoLinha.isNotEmpty);
+    for (final entry in {
+      'cliente_nome': clienteNome,
+      'fazenda_nome': fazendaNome,
+      'talhao_nome': talhaoNome,
+      'cultivar': cultivar,
+      'agronomist_nome': agronomistNome,
+      'data_visita_formatada': dataVisitaFmt,
+      'consultant_role': role,
+    }.entries) {
+      tpl = _resolveRepeatedIf(
+        tpl,
+        entry.key,
+        entry.value?.trim().isNotEmpty == true,
+      );
+    }
+    tpl = RelatorioHtmlRenderer.resolveIfBlock(
+      tpl,
+      'total_ocorrencias > 0',
+      include: total > 0,
+    );
+
+    final grupos = _renderGrupos(ocorrencias);
     tpl = RelatorioHtmlRenderer.resolveIfBlock(
       tpl,
       'grupos.length > 0',
       include: grupos.isNotEmpty,
       truthyHtml: grupos,
-      falsyHtml:
-          '<div class="empty-state"><div class="empty-state-text">Nenhuma ocorrência registrada nesta visita.</div></div>',
     );
 
     return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
@@ -235,9 +324,7 @@ class OcorrenciaHtmlRenderer {
     return result;
   }
 
-  static Future<String> _renderGrupos(
-    List<Map<String, dynamic>> ocorrencias,
-  ) async {
+  static String _renderGrupos(List<Map<String, dynamic>> ocorrencias) {
     final grouped = <String, List<Map<String, dynamic>>>{};
     for (final data in ocorrencias) {
       final key = data['category'] as String? ?? 'outro';
@@ -245,43 +332,54 @@ class OcorrenciaHtmlRenderer {
     }
 
     final sb = StringBuffer();
+    var numero = 0;
+    var fotoNumero = 0;
     for (final entry in grouped.entries) {
       final cat = _categoriaInfo(entry.key);
-      sb.write('<div class="grupo-categoria">');
-      sb.write('''
-        <div class="grupo-header">
-          <span class="grupo-emoji">${cat.emoji}</span>
-          <span class="grupo-titulo">${cat.label}</span>
-          <span class="grupo-count">${entry.value.length}</span>
-        </div>
-      ''');
+      sb.write(
+        '<p class="sf-group-label">${RelatorioHtmlRenderer.escapeHtml(cat.label)} · ${entry.value.length}</p>',
+      );
+      sb.write('<div class="sf-sheet">');
 
       for (final data in entry.value) {
-        final fotoB64 = data['foto_base64'] as String?;
-        final urgClass =
-            data['urgencia_class'] as String? ??
-            _urgenciaClass(data['type'] as String?);
-        final hasLoc = data['lat'] != null && data['long'] != null;
+        numero++;
+        final fotoSrc = RelatorioHtmlRenderer.sanitizePhotoSrc(
+          data['foto_base64'] as String?,
+        );
         final createdAt = _parseDateTime(data['created_at'] as String?);
+        final hora = RelatorioHtmlRenderer.formatTime(createdAt);
+        final descricao = (data['description'] as String?)?.trim() ?? '';
+
+        var thumbHtml = '';
+        String? fotoLegenda;
+        if (fotoSrc.isNotEmpty) {
+          fotoNumero++;
+          fotoLegenda = 'Foto $fotoNumero';
+          thumbHtml =
+              '''
+          <input type="checkbox" id="sf-lista-foto-$fotoNumero" class="sf-lb-toggle" hidden>
+          <label for="sf-lista-foto-$fotoNumero" class="sf-thumb-zoom">
+            <img class="sf-thumb" src="$fotoSrc" alt="$fotoLegenda" loading="lazy">
+          </label>''';
+        }
+
+        final meta = <String>[
+          if (hora.isNotEmpty) hora,
+          if (fotoLegenda != null) fotoLegenda,
+          if (data['lat'] != null && data['long'] != null)
+            'Ponto registrado no mapa',
+          if (_isAmostraSolo(data)) 'Amostra de solo coletada',
+        ];
 
         sb.write('''
-        <div class="ocorrencia-card">
-          <div class="ocorrencia-foto">
-            ${fotoB64 != null && fotoB64.isNotEmpty ? '<img src="$fotoB64" alt="Foto" loading="lazy">' : _svgPlaceholder()}
-          </div>
-          <div class="ocorrencia-info">
-            <div class="ocorrencia-top">
-              <span class="ocorrencia-urg-tag $urgClass">${RelatorioHtmlRenderer.escapeHtml(data['type'] as String?)}</span>
-              <span class="ocorrencia-id">#${RelatorioHtmlRenderer.shortId(data['id'] as String? ?? '')}</span>
+        <div class="sf-item ocorrencia-row">$thumbHtml
+          <div class="sf-item-body">
+            <div class="sf-item-head">
+              <span class="sf-item-title">Ocorrência $numero</span>
+              ${_renderUrgenciaStatus(data['type'])}
             </div>
-            <div class="ocorrencia-descricao">${RelatorioHtmlRenderer.escapeHtml(data['description'] as String?)}</div>
-            <div class="ocorrencia-meta">
-              <span class="ocorrencia-meta-item">
-                ${RelatorioHtmlRenderer.formatTime(createdAt)}
-              </span>
-              ${hasLoc ? '<span class="ocorrencia-meta-item sf-location" aria-label="Localização">📍</span>' : ''}
-              ${_isAmostraSolo(data) ? '<span class="ocorrencia-meta-item">Amostra coletada</span>' : ''}
-            </div>
+            ${meta.isEmpty ? '' : '<span class="sf-caption">${meta.join(' · ')}</span>'}
+            ${descricao.isEmpty ? '' : '<p class="sf-prose">${RelatorioHtmlRenderer.escapeHtml(descricao)}</p>'}
           </div>
         </div>
         ''');
@@ -292,12 +390,40 @@ class OcorrenciaHtmlRenderer {
     return sb.toString();
   }
 
-  static Future<String> _renderGaleria(String? fotosJson) async {
+  static String _renderUrgenciaStatus(Object? type) {
+    final raw = type?.toString().trim() ?? '';
+    if (raw.isEmpty) return '';
+    final urgenciaClass = _urgenciaClassOrNull(raw);
+    final label = urgenciaClass == null
+        ? RelatorioHtmlRenderer.escapeHtml(raw)
+        : _urgenciaValor(urgenciaClass);
+    return '<span class="sf-status"><span class="sf-dot ${urgenciaClass ?? ''}"></span>$label</span>';
+  }
+
+  static String? _urgenciaClassOrNull(Object? type) {
+    switch (type?.toString().trim().toLowerCase()) {
+      case 'alta':
+        return 'alta';
+      case 'média':
+      case 'media':
+        return 'media';
+      case 'baixa':
+        return 'baixa';
+      default:
+        return null;
+    }
+  }
+
+  static Future<String> _renderGaleria(
+    String? fotosJson, {
+    required int firstNumber,
+  }) async {
     if (fotosJson == null || fotosJson == '{}') return '';
     final map = _decodeMap(fotosJson);
     if (map.isEmpty) return '';
 
     final sb = StringBuffer();
+    var fotoIndex = 0;
     for (final entry in map.entries) {
       final fotos = _asStringList(entry.value);
       if (fotos.isEmpty) continue;
@@ -310,28 +436,38 @@ class OcorrenciaHtmlRenderer {
       if (imagens.isEmpty) continue;
 
       final cat = _categoriaInfo(entry.key);
-      sb.write('''
-        <div class="galeria-grupo">
-          <div class="galeria-grupo-header">
-            <span class="galeria-grupo-emoji">${cat.emoji}</span>
-            <span class="galeria-grupo-nome">${RelatorioHtmlRenderer.escapeHtml(cat.label)}</span>
-            <span class="galeria-grupo-count">${imagens.length} fotos</span>
-          </div>
-          <div class="galeria-grid">
-      ''');
+      final countLabel = imagens.length == 1
+          ? '1 foto'
+          : '${imagens.length} fotos';
+      sb.write(
+        '<p class="sf-group-label">${RelatorioHtmlRenderer.escapeHtml(cat.label)} · $countLabel</p>',
+      );
+      sb.write('<div class="sf-figure-grid">');
       for (final image in imagens) {
+        fotoIndex++;
+        final numero = firstNumber + fotoIndex - 1;
         sb.write('''
-            <div class="galeria-foto">
-              <img src="$image" alt="Foto" loading="lazy">
-            </div>
+          <figure class="sf-figure">
+            <input type="checkbox" id="sf-foto-$fotoIndex" class="sf-lb-toggle" hidden>
+            <label for="sf-foto-$fotoIndex" class="galeria-foto">
+              <img src="$image" alt="Foto $numero" loading="lazy">
+            </label>
+            <figcaption>Foto $numero</figcaption>
+          </figure>
         ''');
       }
-      sb.write('''
-          </div>
-        </div>
-      ''');
+      sb.write('</div>');
     }
     return sb.toString();
+  }
+
+  static String _section(String title, String body) {
+    return '''
+    <section class="sf-section">
+      <h2 class="sf-section-title"><span class="sf-section-num"></span>$title</h2>
+      $body
+    </section>
+    ''';
   }
 
   static String _renderNotas(String? notasJson) {
@@ -340,23 +476,19 @@ class OcorrenciaHtmlRenderer {
     if (map.isEmpty) return '';
 
     final sb = StringBuffer();
-    sb.write('<div class="notas-list">');
     for (final entry in map.entries) {
       final texto = entry.value?.toString().trim() ?? '';
       if (texto.isEmpty) continue;
       final cat = _categoriaInfo(entry.key);
       sb.write('''
-        <div class="nota-item">
-          <div class="nota-header">
-            <span class="nota-emoji">${cat.emoji}</span>
-            <span class="nota-categoria">${RelatorioHtmlRenderer.escapeHtml(cat.label)}</span>
-          </div>
-          <div class="nota-texto">${RelatorioHtmlRenderer.escapeHtml(texto)}</div>
+        <div class="sf-note">
+          <p class="sf-note-label">${RelatorioHtmlRenderer.escapeHtml(cat.label)}</p>
+          <p class="sf-prose">${RelatorioHtmlRenderer.escapeHtml(texto)}</p>
         </div>
       ''');
     }
-    sb.write('</div>');
-    return sb.toString();
+    if (sb.isEmpty) return '';
+    return _section('Notas técnicas', sb.toString());
   }
 
   static String _renderMetricas(String? metricasJson) {
@@ -365,7 +497,6 @@ class OcorrenciaHtmlRenderer {
     if (map.isEmpty) return '';
 
     final sb = StringBuffer();
-    sb.write('<div class="metricas-block">');
     for (final entry in map.entries) {
       final metrics = entry.value is Map ? entry.value as Map : const {};
       final visibleMetrics = metrics.entries
@@ -376,29 +507,22 @@ class OcorrenciaHtmlRenderer {
       if (visibleMetrics.isEmpty) continue;
 
       final cat = _categoriaInfo(entry.key);
-      sb.write('''
-        <div class="metricas-grupo">
-          <div class="metricas-grupo-titulo">
-            <span>${cat.emoji}</span>
-            <span>${RelatorioHtmlRenderer.escapeHtml(cat.label)}</span>
-          </div>
-          <div class="metricas-items">
-      ''');
+      sb.write(
+        '<p class="sf-group-label">${RelatorioHtmlRenderer.escapeHtml(cat.label)}</p>',
+      );
+      sb.write('<div class="sf-sheet">');
       for (final metric in visibleMetrics) {
-        sb.write('''
-            <div class="metrica-item">
-              <span class="metrica-nome">${RelatorioHtmlRenderer.escapeHtml(_metricLabel(metric.key.toString()))}</span>
-              <span class="metrica-valor">${RelatorioHtmlRenderer.escapeHtml(metric.value.toString())}</span>
-            </div>
-        ''');
+        sb.write(
+          '<div class="sf-row">'
+          '<span class="sf-row-label">${RelatorioHtmlRenderer.escapeHtml(RelatorioHtmlRenderer.humanizeKey(metric.key.toString()))}</span>'
+          '<span class="sf-row-value">${RelatorioHtmlRenderer.escapeHtml(metric.value.toString())}</span>'
+          '</div>',
+        );
       }
-      sb.write('''
-          </div>
-        </div>
-      ''');
+      sb.write('</div>');
     }
-    sb.write('</div>');
-    return sb.toString();
+    if (sb.isEmpty) return '';
+    return _section('Métricas avaliadas', sb.toString());
   }
 
   static String _renderNutrientes(String? nutrientesJson) {
@@ -406,18 +530,14 @@ class OcorrenciaHtmlRenderer {
     final nutrientes = _decodeList(nutrientesJson)
         .map((item) => item.toString().trim())
         .where((item) => item.isNotEmpty)
+        .map(RelatorioHtmlRenderer.escapeHtml)
         .toList();
     if (nutrientes.isEmpty) return '';
 
-    final sb = StringBuffer();
-    sb.write('<div class="nutrientes-list">');
-    for (final nutriente in nutrientes) {
-      sb.write(
-        '<span class="nutriente-badge">${RelatorioHtmlRenderer.escapeHtml(nutriente)}</span>',
-      );
-    }
-    sb.write('</div>');
-    return sb.toString();
+    return _section(
+      'Nutrientes identificados',
+      '<p class="sf-prose">${nutrientes.join(', ')}</p>',
+    );
   }
 
   static Map<String, dynamic> _decodeMap(String json) {
@@ -452,14 +572,6 @@ class OcorrenciaHtmlRenderer {
     return const [];
   }
 
-  static String _metricLabel(String key) {
-    return key.replaceAll('_', ' ');
-  }
-
-  static String _svgPlaceholder() => '''
-    <div class="ocorrencia-foto-placeholder"><span>Sem foto</span></div>
-  ''';
-
   static String _urgenciaClass(String? type) {
     switch (type?.toLowerCase()) {
       case 'alta':
@@ -470,6 +582,21 @@ class OcorrenciaHtmlRenderer {
       default:
         return 'baixa';
     }
+  }
+
+  static String _urgenciaValor(String urgenciaClass) {
+    switch (urgenciaClass) {
+      case 'alta':
+        return 'Alta';
+      case 'media':
+        return 'Média';
+      default:
+        return 'Baixa';
+    }
+  }
+
+  static String _statusLabel(String status) {
+    return status == 'confirmed' ? 'Confirmada' : 'Rascunho';
   }
 
   static String _formatDataPlantio(String? iso) {
@@ -501,28 +628,27 @@ class OcorrenciaHtmlRenderer {
   static _CatInfo _categoriaInfo(String? cat) {
     switch (cat) {
       case 'doenca':
-        return const _CatInfo('🦠', 'Doença');
+        return const _CatInfo('Doença');
       case 'insetos':
-        return const _CatInfo('🐛', 'Insetos');
+        return const _CatInfo('Insetos');
       case 'ervas_daninhas':
       case 'daninhas':
-        return const _CatInfo('🌿', 'Ervas Daninhas');
+        return const _CatInfo('Ervas Daninhas');
       case 'nutrientes':
       case 'nutricional':
-        return const _CatInfo('🧪', 'Nutrientes');
+        return const _CatInfo('Nutrientes');
       case 'agua':
-        return const _CatInfo('💧', 'Água');
+        return const _CatInfo('Água');
       case 'amostra_solo':
-        return const _CatInfo('🪨', 'Solo');
+        return const _CatInfo('Solo');
       default:
-        return const _CatInfo('🌾', 'Ocorrência');
+        return const _CatInfo('Ocorrência');
     }
   }
 }
 
 class _CatInfo {
-  final String emoji;
   final String label;
 
-  const _CatInfo(this.emoji, this.label);
+  const _CatInfo(this.label);
 }

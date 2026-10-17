@@ -130,7 +130,7 @@ void main() {
     expect(find.textContaining('Insetos'), findsWidgets);
     expect(find.text('Urgência: Média'), findsOneWidget);
 
-    await _openReportCardByTitle(tester, '🐛 Insetos');
+    await _openReportCardByTitle(tester, 'Insetos');
     expect(find.byTooltip('Confirmar'), findsOneWidget);
     await _tapViewerToolbar(tester, 'Confirmar');
     expect(find.text('Confirmar ocorrência?'), findsOneWidget);
@@ -140,7 +140,7 @@ void main() {
     expect(occurrenceRepository.get('occ-1')?.status, 'confirmed');
     expect(find.text('Confirmada'), findsOneWidget);
 
-    await _openReportCardByTitle(tester, '🐛 Insetos');
+    await _openReportCardByTitle(tester, 'Insetos');
     await _tapViewerToolbar(tester, 'Excluir');
     expect(find.text('Excluir ocorrência?'), findsOneWidget);
     await tester.tap(find.widgetWithText(FilledButton, 'Excluir'));
@@ -443,7 +443,9 @@ void main() {
     );
     expect(find.text('Vazio'), findsNothing);
 
-    await tester.tap(find.text('Produtor A · 1').first);
+    await tester.tap(find.text('Selecione um produtor'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Produtor A · 1').last);
     await tester.pumpAndSettle();
 
     expect(find.text('Resumo da Propriedade'), findsOneWidget);
@@ -485,15 +487,23 @@ void main() {
 
     await _selectSegment(tester, 'Ocorrências');
 
-    expect(find.textContaining('Selecione um produtor'), findsOneWidget);
+    expect(find.text('Selecione um produtor'), findsOneWidget);
+    expect(find.text('Lista de Ocorrências'), findsNothing);
+    expect(find.text('Exportar lista'), findsNothing);
+
+    await tester.tap(find.text('Selecione um produtor').first);
+    await tester.pumpAndSettle();
     expect(find.text('Produtor A · 1'), findsOneWidget);
     expect(find.text('Produtor B · 1'), findsOneWidget);
 
-    await tester.tap(find.text('Produtor A · 1').first);
+    await tester.tap(find.text('Produtor A · 1').last);
     await tester.pumpAndSettle();
 
+    expect(find.text('Lista de Ocorrências'), findsOneWidget);
+    expect(find.text('Exportar lista'), findsOneWidget);
     expect(find.text('1 ocorrência(s)'), findsOneWidget);
-    expect(find.text('Produtor B · 1'), findsOneWidget);
+    expect(find.text('Produtor A · 1'), findsOneWidget);
+    expect(find.text('Produtor B · 1'), findsNothing);
   });
 
   testWidgets('Marketing lista marketing case não gerado (rascunho)', (

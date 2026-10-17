@@ -8,6 +8,7 @@ import '../controllers/drawing_controller.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../domain/models/gps_walk_session.dart';
 import '../../domain/drawing_state.dart';
+import '../../domain/drawing_feature_actions_mode.dart';
 import '../../domain/repositories/i_clients_repository.dart';
 import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:soloforte_app/core/session/session_models.dart';
@@ -454,6 +455,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
   bool get _showsSelectedStickyFooter =>
       widget.controller.selectedFeature != null &&
+      widget.controller.featureActionsMode == DrawingFeatureActionsMode.full &&
       !_isEditingMetadata &&
       widget.controller.interactionMode != DrawingInteraction.editing &&
       widget.controller.currentState == DrawingState.selected;

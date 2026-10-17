@@ -9,7 +9,10 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/contracts/i_client_lookup.dart';
 import '../../../../core/contracts/i_client_lookup_provider.dart';
+import '../../../../core/contracts/i_farm_lookup_provider.dart';
+import '../../../../core/contracts/i_field_lookup_provider.dart';
 import '../../../../core/contracts/i_occurrence_access_reader_provider.dart';
+import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/html_templates/html_report_viewer.dart';
 import '../../../../core/html_templates/ocorrencia_html_renderer.dart';
@@ -30,6 +33,7 @@ import '../models/relatorio_status.dart';
 import '../models/relatorio_tecnico.dart';
 import '../providers/relatorio_providers.dart' as tech;
 import '../use_cases/publish_relatorio_use_case.dart';
+import 'relatorios_occurrence_location_resolver.dart';
 import '../../../settings/domain/entities/user_profile.dart';
 import '../../../settings/presentation/providers/settings_providers.dart';
 import '../../../settings/presentation/providers/user_profile_provider.dart';
@@ -480,23 +484,21 @@ class _OccurrenciasSectionState extends ConsumerState<_OccurrenciasSection> {
                 ),
                 const SizedBox(height: 12),
               ],
-              _GeneratedReportCard(
-                eyebrow: 'Exportar lista',
-                title: 'Lista de Ocorrências',
-                subtitle: exportEnabled
-                    ? '${scoped.length} ocorrência(s)'
-                    : producerIds.length > 1
-                    ? 'Selecione um produtor'
-                    : '${list.length} ocorrência(s)',
-                date: nowLabel,
-                enabled: exportEnabled,
-                buildPayload: () => _buildOccurrenceListPayload(
-                  ref,
-                  scoped,
-                  effectiveClientId!,
+              if (exportEnabled) ...[
+                _GeneratedReportCard(
+                  eyebrow: 'Exportar lista',
+                  title: 'Lista de Ocorrências',
+                  subtitle: '${scoped.length} ocorrência(s)',
+                  date: nowLabel,
+                  enabled: true,
+                  buildPayload: () => _buildOccurrenceListPayload(
+                    ref,
+                    scoped,
+                    effectiveClientId,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
+              ],
             ],
             if (list.isEmpty)
               _PremiumEmptyState(
@@ -644,8 +646,6 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
           width: 60,
           height: 80,
           color: category.markerColor.withValues(alpha: 0.12),
-          alignment: Alignment.center,
-          child: Text(category.emoji, style: const TextStyle(fontSize: 24)),
         ),
       ),
     );
@@ -680,6 +680,23 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
     if (cover != null) {
       data['photo_path'] = ImageStorageService().toStoredPath(cover);
     }
+    data['cliente_nome'] = await _occurrenceClienteNome(
+      ref,
+      occurrence.clientId,
+    );
+    final location = await resolveOccurrenceLocationNames(
+      clientId: occurrence.clientId,
+      lat: occurrence.lat,
+      lng: occurrence.long,
+      visitSessionId: occurrence.visitSessionId,
+      farmLookup: _tryReadContract(() => ref.read(iFarmLookupProvider)),
+      fieldLookup: _tryReadContract(() => ref.read(iFieldLookupProvider)),
+      visitSessionLookup: _tryReadContract(
+        () => ref.read(visitSessionLookupProvider),
+      ),
+    );
+    data['fazenda_nome'] = location.fazenda;
+    data['talhao_nome'] = location.talhao;
     final branding = await resolveReportBrandingContext(
       ref,
       fallbackConsultantName: 'Equipe técnica',
@@ -755,4 +772,23 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
         ? PremiumTokens.brandGreen
         : const Color(0xFFFF9500);
   }
+}
+
+/// Contratos sem override (ex.: testes) lançam ao ler o provider.
+T? _tryReadContract<T>(T Function() read) {
+  try {
+    return read();
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Vazio quando o nome não resolve — o HTML não exibe o UUID cru.
+Future<String> _occurrenceClienteNome(WidgetRef ref, String? clientId) async {
+  final id = clientId?.trim() ?? '';
+  if (id.isEmpty) return '';
+  final lookup = _tryReadContract(() => ref.read(clientLookupProvider));
+  if (lookup == null) return '';
+  final name = await _resolveClienteNome(lookup, id);
+  return name == id ? '' : name;
 }

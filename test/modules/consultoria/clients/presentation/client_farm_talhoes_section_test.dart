@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soloforte_app/core/contracts/i_ndvi_latest_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_ndvi_latest_lookup_provider.dart';
@@ -101,13 +103,33 @@ void main() {
     expect(find.byIcon(Icons.chevron_right), findsNothing);
   });
 
-  testWidgets('lápis abre menu curto e não navega imediatamente', (
+  testWidgets('Geometria e união navega ao mapa com ferramentas completas', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+
+    final router = GoRouter(
+      initialLocation: '/farm',
+      routes: [
+        GoRoute(
+          path: '/farm',
+          builder: (context, state) => Scaffold(
+            body: SingleChildScrollView(
+              child: ClientFarmWithTalhoesSection(client: client, farm: farm),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.map,
+          builder: (context, state) => Scaffold(
+            body: Text(state.uri.toString()),
+          ),
+        ),
+      ],
+    );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -117,38 +139,47 @@ void main() {
             (ref, farmId) async => linkedFields,
           ),
         ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: ClientFarmWithTalhoesSection(client: client, farm: farm),
-            ),
-          ),
-        ),
+        child: MaterialApp.router(routerConfig: router),
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.byTooltip('Abrir no mapa'), findsOneWidget);
-    expect(find.text('Editar geometria'), findsNothing);
-
     await tester.tap(find.byTooltip('Geometria e união'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
 
-    expect(find.text('Editar geometria'), findsOneWidget);
-    expect(find.text('Vincular / editar dados'), findsOneWidget);
-    expect(find.text('União'), findsNothing);
-    expect(find.byTooltip('Abrir no mapa'), findsOneWidget);
+    expect(find.textContaining('ferramentas=completo'), findsOneWidget);
+    expect(find.textContaining('drawingId=drawing-1'), findsOneWidget);
+    expect(find.textContaining('modo=desenho'), findsOneWidget);
   });
 
-  testWidgets('lápis mostra União quando há outro talhão drawing na fazenda', (
+  testWidgets('Geometria e união no segundo card usa o drawingId correto', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+
+    final router = GoRouter(
+      initialLocation: '/farm',
+      routes: [
+        GoRoute(
+          path: '/farm',
+          builder: (context, state) => Scaffold(
+            body: SingleChildScrollView(
+              child: ClientFarmWithTalhoesSection(client: client, farm: farm),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.map,
+          builder: (context, state) => Scaffold(
+            body: Text(state.uri.toString()),
+          ),
+        ),
+      ],
+    );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -158,13 +189,7 @@ void main() {
             (ref, farmId) async => twoDrawingFields,
           ),
         ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: ClientFarmWithTalhoesSection(client: client, farm: farm),
-            ),
-          ),
-        ),
+        child: MaterialApp.router(routerConfig: router),
       ),
     );
     await tester.pump();
@@ -172,14 +197,11 @@ void main() {
 
     expect(find.byTooltip('Geometria e união'), findsNWidgets(2));
 
-    await tester.tap(find.byTooltip('Geometria e união').first);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.byTooltip('Geometria e união').last);
+    await tester.pumpAndSettle();
 
-    expect(find.text('Editar geometria'), findsOneWidget);
-    expect(find.text('Vincular / editar dados'), findsOneWidget);
-    expect(find.text('União'), findsOneWidget);
-    expect(find.byTooltip('Abrir no mapa'), findsNWidgets(2));
+    expect(find.textContaining('drawingId=drawing-2'), findsOneWidget);
+    expect(find.textContaining('ferramentas=completo'), findsOneWidget);
   });
 
   testWidgets('modo Mapa não consulta NDVI; toque em NDVI consulta', (
@@ -216,9 +238,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(counter.value, 0);
-    expect(find.text('Mapa'), findsOneWidget);
+    expect(find.text('Mapa'), findsNothing);
+    expect(find.text('NDVI'), findsNothing);
+    expect(find.byTooltip('Ver NDVI no card'), findsWidgets);
 
-    await tester.tap(find.text('NDVI'));
+    await tester.tap(find.byTooltip('Ver NDVI no card').first);
     await tester.pump();
     await tester.pump();
 

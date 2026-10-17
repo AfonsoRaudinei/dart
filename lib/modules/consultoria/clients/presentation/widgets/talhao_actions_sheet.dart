@@ -24,6 +24,7 @@ String talhaoMapUri({
   String? farmId,
   required String drawingId,
   bool ndvi = false,
+  bool ferramentasCompleto = false,
 }) {
   return Uri(
     path: AppRoutes.map,
@@ -33,6 +34,7 @@ String talhaoMapUri({
       if (farmId != null && farmId.isNotEmpty) 'fazendaId': farmId,
       'drawingId': drawingId,
       if (ndvi) 'ndvi': '1',
+      if (ferramentasCompleto) 'ferramentas': 'completo',
     },
   ).toString();
 }
