@@ -444,7 +444,7 @@ class OcorrenciaHtmlRenderer {
       for (final metric in visibleMetrics) {
         sb.write(
           '<div class="sf-row">'
-          '<span class="sf-row-label">${RelatorioHtmlRenderer.escapeHtml(_metricLabel(metric.key.toString()))}</span>'
+          '<span class="sf-row-label">${RelatorioHtmlRenderer.escapeHtml(RelatorioHtmlRenderer.humanizeKey(metric.key.toString()))}</span>'
           '<span class="sf-row-value">${RelatorioHtmlRenderer.escapeHtml(metric.value.toString())}</span>'
           '</div>',
         );
@@ -500,12 +500,6 @@ class OcorrenciaHtmlRenderer {
           .toList();
     }
     return const [];
-  }
-
-  static String _metricLabel(String key) {
-    final label = key.replaceAll('_', ' ').trim();
-    if (label.isEmpty) return label;
-    return label[0].toUpperCase() + label.substring(1);
   }
 
   static String _svgPlaceholder() => '''
