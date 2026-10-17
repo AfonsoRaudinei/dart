@@ -11,23 +11,17 @@ import '../map_layers_sheet.dart';
 
 class MapToolsBottomSheet extends StatefulWidget {
   final DrawingController drawingController;
-  final Future<void> Function()? onCoordinateSearch;
-  final Future<void> Function()? onMunicipalitySearch;
   final Future<void> Function()? onDownloadOfflineArea;
 
   const MapToolsBottomSheet({
     super.key,
     required this.drawingController,
-    this.onCoordinateSearch,
-    this.onMunicipalitySearch,
     this.onDownloadOfflineArea,
   });
 
   static Future<void> show({
     required BuildContext context,
     required DrawingController drawingController,
-    Future<void> Function()? onCoordinateSearch,
-    Future<void> Function()? onMunicipalitySearch,
     Future<void> Function()? onDownloadOfflineArea,
   }) {
     return showSoloForteSheet<void>(
@@ -38,8 +32,6 @@ class MapToolsBottomSheet extends StatefulWidget {
       barrierColor: Colors.black.withValues(alpha: 0.20),
       builder: (_) => MapToolsBottomSheet(
         drawingController: drawingController,
-        onCoordinateSearch: onCoordinateSearch,
-        onMunicipalitySearch: onMunicipalitySearch,
         onDownloadOfflineArea: onDownloadOfflineArea,
       ),
     );
@@ -112,8 +104,6 @@ class _MapToolsBottomSheetState extends State<MapToolsBottomSheet> {
                             context,
                             rootNavigator: false,
                           ).pop(),
-                          onCoordinateSearch: widget.onCoordinateSearch,
-                          onMunicipalitySearch: widget.onMunicipalitySearch,
                           onDownloadOfflineArea: widget.onDownloadOfflineArea,
                         ),
                 ),
