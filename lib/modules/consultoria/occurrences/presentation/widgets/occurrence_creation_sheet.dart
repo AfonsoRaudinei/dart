@@ -607,8 +607,9 @@ class _OccurrenceCreationSheetState
                         lastDate: DateTime.now().add(const Duration(days: 365)),
                         helpText: 'Data de Plantio',
                       );
-                      if (picked != null)
+                      if (picked != null) {
                         _patchForm(() => _dataPlantio = picked);
+                      }
                     },
                     child: Container(
                       padding: const EdgeInsets.all(14),

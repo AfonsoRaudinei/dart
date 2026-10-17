@@ -60,20 +60,20 @@ Padding _actionBarPadding(WidgetTester tester) {
   });
 }
 
-void main() {
-  Future<void> _setKeyboardView(WidgetTester tester) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1.0;
-    tester.view.padding = const FakeViewPadding(bottom: 34);
-    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    addTearDown(tester.view.resetPadding);
-    addTearDown(tester.view.resetViewInsets);
-  }
+Future<void> setKeyboardViewForTest(WidgetTester tester) async {
+  tester.view.physicalSize = const Size(390, 844);
+  tester.view.devicePixelRatio = 1.0;
+  tester.view.padding = const FakeViewPadding(bottom: 34);
+  tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+  addTearDown(tester.view.resetPadding);
+  addTearDown(tester.view.resetViewInsets);
+}
 
+void main() {
   testWidgets('teclado no modal levanta a barra Salvar', (tester) async {
-    await _setKeyboardView(tester);
+    await setKeyboardViewForTest(tester);
     await tester.pumpWidget(_buildSheet());
     await tester.pump();
 
@@ -101,7 +101,7 @@ void main() {
   });
 
   testWidgets('host do mapa não soma teclado no footer', (tester) async {
-    await _setKeyboardView(tester);
+    await setKeyboardViewForTest(tester);
     await tester.pumpWidget(_buildSheet(liftStickyActionsForKeyboard: false));
     await tester.pump();
 
