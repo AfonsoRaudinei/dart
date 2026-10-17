@@ -21,6 +21,8 @@ import 'package:soloforte_app/modules/visitas/domain/models/visit_session.dart';
 import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_controller.dart';
 import 'package:soloforte_app/modules/clima/presentation/providers/radar_providers.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/domain/map_models.dart';
+import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/modules/map/presentation/widgets/visit_active_card.dart';
 import 'package:soloforte_app/ui/components/map/widgets/map_controls_overlay.dart';
@@ -104,6 +106,25 @@ void main() {
       expect(find.text('Editando: Talhão 2'), findsOneWidget);
       final contextTop = tester.getTopLeft(find.byType(VisitActiveCard)).dy;
       expect(contextTop, safeTop + 72);
+    });
+
+    testWidgets('toggle de basemap alterna satélite e mapa no chrome', (
+      tester,
+    ) async {
+      await _pumpMapControlsOverlay(tester);
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(MapControlsOverlay)),
+      );
+      expect(container.read(activeLayerProvider), LayerType.satellite);
+
+      await tester.tap(find.byKey(const Key('map_control_basemap_toggle')));
+      await tester.pump();
+      expect(container.read(activeLayerProvider), LayerType.standard);
+
+      await tester.tap(find.byKey(const Key('map_control_basemap_toggle')));
+      await tester.pump();
+      expect(container.read(activeLayerProvider), LayerType.satellite);
     });
 
     testWidgets('layers FAB não dispara onOpenMapTools durante editing', (
