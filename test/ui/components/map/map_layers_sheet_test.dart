@@ -55,12 +55,13 @@ void main() {
       expect(offlineCalls, 1);
     });
 
-    testWidgets('oculta ações quando callbacks não são fornecidos', (
+    testWidgets('não exibe fluxo ir para local (movido para chrome do mapa)', (
       tester,
     ) async {
       await _pumpLayersSheet(tester);
 
       expect(find.text('Ir para coordenada'), findsNothing);
+      expect(find.text('Ir para município'), findsNothing);
       expect(find.text('Baixar área visível'), findsNothing);
     });
 
@@ -224,7 +225,6 @@ void main() {
 
 Future<void> _pumpLayersSheet(
   WidgetTester tester, {
-  Future<void> Function()? onCoordinateSearch,
   Future<void> Function()? onDownloadOfflineArea,
 }) async {
   SharedPreferences.setMockInitialValues({});
@@ -249,7 +249,6 @@ Future<void> _pumpLayersSheet(
             height: 2200,
             child: LayersSheet(
               onClose: () {},
-              onCoordinateSearch: onCoordinateSearch,
               onDownloadOfflineArea: onDownloadOfflineArea,
               renderTilePreviews: false,
             ),
