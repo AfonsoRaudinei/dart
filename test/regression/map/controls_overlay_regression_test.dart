@@ -70,6 +70,10 @@ void main() {
       (tester) async {
         await _pumpMapControlsOverlay(tester);
 
+        expect(
+          find.byKey(const Key('map_control_go_to_local_btn')),
+          findsOneWidget,
+        );
         expect(find.byKey(const Key('map_control_layers_btn')), findsOneWidget);
         expect(find.byKey(const Key('map_control_actions_btn')), findsNothing);
         expect(find.byKey(const Key('map_control_check_in')), findsOneWidget);
@@ -292,6 +296,7 @@ void main() {
                 onLocationModeChanged: (_) {},
                 onToggleDrawMode: () {},
                 onOpenMapTools: () {},
+                onOpenGoToLocal: () {},
                 onTabSelected: (_, _) {},
                 isDrawMode: false,
                 showCheckInAction: true,
@@ -615,6 +620,7 @@ Future<void> _pumpMapControlsOverlay(
             onLocationModeChanged: (_) {},
             onToggleDrawMode: () {},
             onOpenMapTools: onOpenMapTools ?? () {},
+            onOpenGoToLocal: () {},
             onTabSelected: (_, _) {},
             isDrawMode: isDrawMode,
             showCheckInAction: showCheckInAction,
@@ -672,6 +678,7 @@ Future<void> _pumpOverlayWithFabHarness(
                 onLocationModeChanged: (_) {},
                 onToggleDrawMode: () {},
                 onOpenMapTools: () {},
+                onOpenGoToLocal: () {},
                 onTabSelected: (_, _) {},
                 isDrawMode: false,
                 showCheckInAction: true,
