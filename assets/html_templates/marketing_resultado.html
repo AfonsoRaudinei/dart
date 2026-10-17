@@ -3,831 +3,233 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>SoloForte — Relatório de Resultado</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>SoloForte — Case de resultado</title>
 <style>
-  /* ═══════════════════════════════════════════
-     TOKENS — Paleta oficial SoloForte (do logo)
-  ═══════════════════════════════════════════ */
-  :root {
-    --sf-samsung:    #1428A0;
-    --sf-navy:       #2C5564;
-    --sf-navy-light: #3A6B7D;
-    --sf-green:      #2E7D32;
-    --sf-green-leaf: #8BC34A;
-    --sf-amber:      #F5B935;
-    --sf-amber-pale: #FEF3C7;
-    --sf-cream:      #F7F5F0;
-    --sf-stone:      #E8E4DC;
-    --sf-text:       #1D1D1F;
-    --sf-text-muted: #6B7280;
-    --sf-white:      #FFFFFF;
-    --sf-gray:       #F5F5F7;
-    --sf-shadow:     rgba(44, 85, 100, 0.12);
-    --sf-shadow-md:  rgba(44, 85, 100, 0.20);
-
-    /* Semântica ROI */
-    --roi-positive: #16A34A;
-    --roi-neutral:  #6B7280;
-    --roi-warn:     #DC2626;
-  }
-
-  /* ═══════════════════════════════════════════
-     RESET + BASE
-  ═══════════════════════════════════════════ */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  html, body {
-    width: 100%;
-    overflow-x: hidden;
-    background: var(--sf-white);
-  }
-
-  body {
-    font-family: 'DM Sans', system-ui, sans-serif;
-    font-size: 14px;
-    line-height: 1.6;
-    background: var(--sf-cream);
-    color: var(--sf-text);
-    -webkit-font-smoothing: antialiased;
-    min-height: 100vh;
-  }
-
-  .page {
-    max-width: 860px;
-    margin: 0 auto;
-    background: var(--sf-white);
-    min-height: 100vh;
-    width: 100%;
-    overflow-x: hidden;
-  }
-
-  /* ═══════════════════════════════════════════
-     HEADER
-  ═══════════════════════════════════════════ */
-  .header {
-    background: linear-gradient(135deg, var(--sf-samsung) 0%, var(--sf-navy) 100%);
-    padding: 28px 32px 24px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .header::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-image:
-      radial-gradient(circle at 80% 20%, rgba(139,195,74,0.15) 0%, transparent 50%),
-      radial-gradient(circle at 10% 80%, rgba(245,185,53,0.10) 0%, transparent 40%);
-    pointer-events: none;
-  }
-
-  .header-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    position: relative;
-    z-index: 1;
-  }
-
-  .logo-area {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .logo-img {
-    width: 38px;
-    height: 38px;
-    object-fit: contain;
-    filter: brightness(0) invert(1);
-    opacity: 0.92;
-  }
-
-  .logo-name {
-    font-family: 'DM Serif Display', serif;
-    font-size: 20px;
-    color: var(--sf-white);
-    letter-spacing: 0.02em;
-  }
-
-  .tipo-badge {
-    background: var(--sf-amber);
-    color: var(--sf-navy);
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 4px 12px;
-    border-radius: 100px;
-  }
-
-  .header-meta {
-    position: relative;
-    z-index: 1;
-  }
-
-  .header-fazenda {
-    font-family: 'DM Serif Display', serif;
-    font-size: 26px;
-    color: var(--sf-white);
-    line-height: 1.2;
-    margin-bottom: 6px;
-  }
-
-  .header-produto {
-    font-size: 13px;
-    color: var(--sf-green-leaf);
-    font-weight: 500;
-    margin-bottom: 14px;
-    letter-spacing: 0.02em;
-  }
-
-  .header-pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 100px;
-    padding: 4px 12px;
-    font-size: 11.5px;
-    color: rgba(255,255,255,0.85);
-  }
-
-  .pill-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--sf-amber);
-    flex-shrink: 0;
-  }
-
-  /* ═══════════════════════════════════════════
-     BODY CONTENT
-  ═══════════════════════════════════════════ */
-  .content {
-    padding: 28px 32px;
-  }
-
-  /* ═══════════════════════════════════════════
-     SECTION LABEL
-  ═══════════════════════════════════════════ */
-  .section-label {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-
-  .section-label-bar {
-    width: 3px;
-    height: 20px;
-    background: var(--sf-amber);
-    border-radius: 2px;
-    flex-shrink: 0;
-  }
-
-  .section-label-text {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.10em;
-    text-transform: uppercase;
-    color: var(--sf-text-muted);
-  }
-
-  /* ═══════════════════════════════════════════
-     FOTO PRINCIPAL (única, em destaque)
-  ═══════════════════════════════════════════ */
-  .photo-hero {
-    border-radius: 16px;
-    overflow: hidden;
-    position: relative;
-    aspect-ratio: 16/10;
-    background: var(--sf-stone);
-    box-shadow: 0 4px 24px var(--sf-shadow);
-    margin-bottom: 28px;
-  }
-
-  .photo-hero img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
-  /* overlay gradiente sutil no rodapé da foto */
-  .photo-hero::after {
-    content: '';
-    position: absolute;
-    inset: auto 0 0 0;
-    height: 40%;
-    background: linear-gradient(to top, rgba(44,85,100,0.55), transparent);
-    pointer-events: none;
-  }
-
-  .photo-caption {
-    position: absolute;
-    bottom: 14px;
-    left: 16px;
-    right: 16px;
-    z-index: 1;
-    color: var(--sf-white);
-    font-size: 12.5px;
-    font-weight: 500;
-    letter-spacing: 0.03em;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .photo-caption svg {
-    width: 14px;
-    height: 14px;
-    fill: var(--sf-amber);
-    flex-shrink: 0;
-  }
-
-  .photo-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    color: var(--sf-text-muted);
-    font-size: 13px;
-    background: var(--sf-stone);
-  }
-
-  .photo-placeholder svg {
-    opacity: 0.35;
-  }
-
-  /* ═══════════════════════════════════════════
-     RESULTADO / KPIs
-  ═══════════════════════════════════════════ */
-  .kpi-strip {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 12px;
-    margin-bottom: 28px;
-  }
-
-  .kpi-card {
-    background: var(--sf-cream);
-    border: 1px solid var(--sf-stone);
-    border-radius: 14px;
-    padding: 18px 20px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: var(--sf-amber);
-    border-radius: 14px 14px 0 0;
-  }
-
-  .kpi-label {
-    font-size: 10.5px;
-    font-weight: 500;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--sf-text-muted);
-    margin-bottom: 6px;
-  }
-
-  .kpi-value {
-    font-family: 'DM Serif Display', serif;
-    font-size: 26px;
-    color: var(--sf-navy);
-    line-height: 1;
-    margin-bottom: 2px;
-  }
-
-  .kpi-unit {
-    font-size: 11px;
-    color: var(--sf-text-muted);
-    font-weight: 400;
-  }
-
-  /* ═══════════════════════════════════════════
-     BLOCO ROI AGRONOMICO (destaque especial)
-     Condicional — só renderiza se roi_agronomico existir
-  ═══════════════════════════════════════════ */
-  .roi-block {
-    background: linear-gradient(135deg, var(--sf-navy) 0%, var(--sf-navy-light) 100%);
-    border-radius: 16px;
-    padding: 24px 24px 22px;
-    margin-bottom: 28px;
-    position: relative;
-    overflow: hidden;
-    color: var(--sf-white);
-  }
-
-  .roi-block::before {
-    content: '';
-    position: absolute;
-    top: -40%;
-    right: -10%;
-    width: 60%;
-    height: 180%;
-    background: radial-gradient(ellipse, rgba(245,185,53,0.18) 0%, transparent 60%);
-    pointer-events: none;
-  }
-
-  .roi-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 18px;
-    position: relative;
-    z-index: 1;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .roi-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .roi-title-icon {
-    width: 28px;
-    height: 28px;
-    background: var(--sf-amber);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .roi-title-icon svg {
-    width: 16px;
-    height: 16px;
-    fill: var(--sf-navy);
-  }
-
-  .roi-title-text {
-    font-family: 'DM Serif Display', serif;
-    font-size: 18px;
-    color: var(--sf-white);
-    letter-spacing: 0.02em;
-  }
-
-  .roi-badge {
-    background: rgba(245,185,53,0.20);
-    border: 1px solid rgba(245,185,53,0.40);
-    color: var(--sf-amber);
-    font-size: 10.5px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    padding: 4px 11px;
-    border-radius: 100px;
-    white-space: nowrap;
-  }
-
-  .roi-main {
-    position: relative;
-    z-index: 1;
-    margin-bottom: 18px;
-  }
-
-  .roi-main-label {
-    font-size: 10.5px;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.55);
-    margin-bottom: 4px;
-  }
-
-  .roi-main-value {
-    font-family: 'DM Serif Display', serif;
-    font-size: 44px;
-    color: var(--sf-amber);
-    line-height: 1;
-    letter-spacing: -0.01em;
-  }
-
-  .roi-main-unit {
-    display: inline-block;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    color: rgba(255,255,255,0.6);
-    margin-left: 4px;
-    font-weight: 400;
-  }
-
-  .roi-breakdown {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    position: relative;
-    z-index: 1;
-    padding-top: 16px;
-    border-top: 1px solid rgba(255,255,255,0.12);
-  }
-
-  .roi-note {
-    margin-top: 12px;
-    font-size: 11px;
-    color: rgba(255,255,255,0.72);
-    position: relative;
-    z-index: 1;
-  }
-
-  .roi-item-label {
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.55);
-    margin-bottom: 4px;
-  }
-
-  .roi-item-value {
-    font-family: 'DM Serif Display', serif;
-    font-size: 18px;
-    color: var(--sf-white);
-    line-height: 1.2;
-  }
-
-  /* ═══════════════════════════════════════════
-     DESCRIÇÃO
-  ═══════════════════════════════════════════ */
-  .descricao-block {
-    background: var(--sf-cream);
-    border-left: 3px solid var(--sf-navy);
-    border-radius: 0 12px 12px 0;
-    padding: 16px 20px;
-    margin-bottom: 28px;
-    font-size: 13.5px;
-    color: var(--sf-text);
-    line-height: 1.7;
-    font-style: italic;
-  }
-
-  /* ═══ LOCALIZAÇÃO (inline resumido) ═══ */
-  .localizacao-inline {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 28px;
-    padding: 6px 0;
-  }
-
-  /* ═══════════════════════════════════════════
-     VENDEDOR
-  ═══════════════════════════════════════════ */
-  .vendedor-block {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    background: var(--sf-navy);
-    border-radius: 14px;
-    padding: 18px 20px;
-    margin-bottom: 28px;
-  }
-
-  .vendedor-avatar {
-    width: 44px;
-    height: 44px;
-    background: var(--sf-amber);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'DM Serif Display', serif;
-    font-size: 18px;
-    color: var(--sf-navy);
-    flex-shrink: 0;
-  }
-
-  .vendedor-info { flex: 1; min-width: 0; overflow: hidden; }
-
-  .vendedor-label {
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.55);
-    margin-bottom: 2px;
-  }
-
-  .vendedor-nome {
-    font-size: 14px;
-    font-weight: 600;
-    color: white;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-  }
-
-  .vendedor-tel {
-    font-size: 12px;
-    color: var(--sf-green-leaf);
-    margin-top: 1px;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-  }
-
-  /* ═══════════════════════════════════════════
-     FOOTER
-  ═══════════════════════════════════════════ */
-  .footer {
-    background: var(--sf-cream);
-    border-top: 1px solid var(--sf-stone);
-    padding: 18px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .footer-brand {
-    font-family: 'DM Serif Display', serif;
-    font-size: 13px;
-    color: var(--sf-navy);
-    opacity: 0.7;
-    white-space: nowrap;
-  }
-
-
-  /* ═══════════════════════════════════════════
-     PRINT
-  ═══════════════════════════════════════════ */
-  @media print {
-    body { background: white; }
-    .page { box-shadow: none; max-width: 100%; }
-    .header,
-    .roi-block,
-    .vendedor-block {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    .photo-hero img { page-break-inside: avoid; }
-  }
-
-  /* ═══════════════════════════════════════════
-     MOBILE
-  ═══════════════════════════════════════════ */
-  @media (max-width: 600px) {
-    .header { padding: 22px 20px 20px; }
-    .content { padding: 22px 20px; }
-    .header-fazenda { font-size: 21px; }
-    .kpi-strip { grid-template-columns: 1fr 1fr; }
-    .footer { padding: 16px 20px; }
-    .header-pills { gap: 6px; }
-    .pill { font-size: 10.5px; padding: 3px 9px; }
-    .kpi-value { font-size: 22px; }
-
-    .roi-block { padding: 20px; }
-    .roi-main-value { font-size: 36px; }
-    .roi-item-value { font-size: 16px; }
-    .photo-hero { aspect-ratio: 4/3; }
-  }
-
-  @media (max-width: 380px) {
-    .header-fazenda { font-size: 18px; }
-    .kpi-strip { grid-template-columns: 1fr; }
-    .roi-breakdown { grid-template-columns: 1fr; gap: 10px; }
-  }
-
-  .logo-area:empty { display: none; }
-
-  .sf-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex: 1 1 100%;
-    min-width: 0;
-  }
-
-  .sf-brand-logo {
-    width: 22px;
-    height: 22px;
-    object-fit: contain;
-    flex-shrink: 0;
-  }
-
-  .sf-brand-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  .sf-brand-copy strong {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--sf-text, #1D1D1F);
-  }
-
-  .sf-brand-tagline {
-    font-size: 11px;
-    line-height: 1.4;
-    color: #667085;
-  }
-
-  .sf-location {
-    font-size: 16px;
-    line-height: 1;
-  }
+{{sf_base_css}}
+
+/* Números de vitrine do case (template-local). */
+.mk-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: var(--sf-space-4);
+  padding: var(--sf-space-4) 0;
+  border-top: 0.5px solid var(--sf-hairline);
+  border-bottom: 0.5px solid var(--sf-hairline);
+}
+
+.mk-figure-label {
+  font-size: 12px;
+  color: var(--sf-text-secondary);
+}
+
+.mk-figure-value {
+  margin-top: var(--sf-space-1);
+  font-family: var(--sf-font-title);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--sf-text);
+}
+
+.mk-figure-accent .mk-figure-value { color: var(--sf-navy); }
+
+.mk-figure-unit {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--sf-text-tertiary);
+}
+
+.mk-lead { margin-bottom: var(--sf-space-4); }
+
+.mk-lead-value {
+  margin-top: var(--sf-space-1);
+  font-family: var(--sf-font-title);
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--sf-navy);
+}
+
+.mk-lead-value .mk-lead-unit {
+  margin-left: 4px;
+  font-family: var(--sf-font-text);
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--sf-text-secondary);
+}
+
+.mk-lead + .sf-sheet { margin-top: var(--sf-space-3); }
+
+.sf-sheet + .sf-caption { margin-top: var(--sf-space-2); }
+
+@media (min-width: 640px) {
+  .mk-figure-value { font-size: 32px; }
+  .mk-lead-value { font-size: 48px; }
+}
+
+@media print {
+  .mk-figures, .mk-lead { page-break-inside: avoid; break-inside: avoid; }
+}
 </style>
 </head>
 <body>
-<div class="page">
+<div class="sf-doc">
 
-  <!-- ══════════ HEADER ══════════ -->
-  <header class="header">
-    <div class="header-top">
-      <div class="logo-area">
+  <header class="sf-letterhead">
+    <div class="sf-letterhead-row">
+      <div class="sf-logo-area">
         {{report_header_signature}}
       </div>
-      <span class="tipo-badge">Resultado</span>
+      <span class="sf-doc-type">Case de resultado</span>
     </div>
-
-    <div class="header-meta">
-      <div class="header-fazenda">{{produtor_fazenda}}</div>
-      <div class="header-produto">{{produto_utilizado}}</div>
-      <div class="header-pills">
-        <!-- {{#if roi_agronomico}} -->
-        <span class="pill"><span class="pill-dot"></span>Ganho {{ganho_sc_ha}} {{unidade_produtividade}}</span>
-        <!-- {{/if}} -->
-        <!-- {{#if quantidade_produzida}} -->
-        <span class="pill"><span class="pill-dot"></span>{{quantidade_produzida}} {{produtividade_unidade}}</span>
-        <!-- {{/if}} -->
-        <!-- {{#if data_case}} -->
-        <span class="pill"><span class="pill-dot"></span>{{data_case_formatado}}</span>
-        <!-- {{/if}} -->
-        <span class="pill"><span class="pill-dot"></span>{{visibilidade}}</span>
-      </div>
+    <h1 class="sf-title">{{produtor_fazenda}}</h1>
+    <!-- {{#if contexto_linha}} -->
+    <p class="sf-subtitle">{{contexto_linha}}</p>
+    <!-- {{/if}} -->
+    <div class="sf-status-line">
+      <!-- {{#if status}} -->
+      <span class="sf-status"><span class="sf-dot {{status_dot}}"></span>{{status_label}}</span>
+      <!-- {{/if}} -->
+      <!-- {{#if visibilidade}} -->
+      <span class="sf-status">{{visibilidade_label}}</span>
+      <!-- {{/if}} -->
     </div>
   </header>
 
-  <!-- ══════════ CONTEÚDO ══════════ -->
-  <main class="content">
+  <main>
 
-    <!-- FOTO PRINCIPAL (única, hero) -->
-    <div class="section-label">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Registro Visual</span>
-    </div>
-
-    <div class="photo-hero">
-      <!-- {{#if foto_principal_url}} -->
-      <img
-        src="{{foto_principal_url}}"
-        alt="Foto do Resultado"
-        loading="lazy"
-        onerror="this.parentElement.innerHTML='<div class=\'photo-placeholder\'><span>Sem foto</span></div>'"
-      >
-      <!-- {{else}} -->
-      <!-- placeholder via onerror -->
-      <!-- {{/if}} -->
-
-      <div class="photo-caption">
-        <span class="sf-location" aria-label="Localização">📍</span>
-      </div>
-    </div>
-
-    <!-- KPIs de Produtividade -->
-    <!-- {{#if roi_agronomico}} -->
-    <div class="section-label">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Produtividade</span>
-    </div>
-
-    <div class="kpi-strip">
-      <div class="kpi-card">
-        <div class="kpi-label">Testemunha</div>
-        <div class="kpi-value">{{prod_sem_produto}}</div>
-        <div class="kpi-unit">{{unidade_produtividade}}</div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-label">Com Produto</div>
-        <div class="kpi-value">{{prod_com_produto}}</div>
-        <div class="kpi-unit">{{unidade_produtividade}}</div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-label">Ganho</div>
-        <div class="kpi-value">{{ganho_sc_ha}}</div>
-        <div class="kpi-unit">{{unidade_produtividade}}</div>
-      </div>
-    </div>
-    <!-- {{/if}} -->
-
-    <!-- BLOCO ROI — só renderiza se roi_agronomico existir -->
-    <!-- {{#if roi_agronomico}} -->
-    <div class="section-label">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Retorno sobre Investimento</span>
-    </div>
-
-    <div class="roi-block">
-      <div class="roi-header">
-        <div class="roi-title">
-          <span class="roi-title-text">ROI Calculado</span>
+    <!-- {{#if resultado_numeros}} -->
+    <section class="sf-section">
+      <h2 class="sf-section-title"><span class="sf-section-num"></span>Resultado</h2>
+      <div class="mk-figures">
+        <!-- {{#if roi_agronomico}} -->
+        <div class="mk-figure">
+          <p class="mk-figure-label">Testemunha</p>
+          <p class="mk-figure-value">{{prod_sem_produto}}</p>
+          <span class="mk-figure-unit">{{unidade_produtividade}}</span>
         </div>
-        <span class="roi-badge">Análise Financeira</span>
-      </div>
-
-      <div class="roi-main">
-        <div class="roi-main-label">ROI líquido por hectare</div>
-        <div>
-          <span class="roi-main-value">{{roi_liquido_rs_ha}}</span><span class="roi-main-unit">/ha</span>
+        <div class="mk-figure">
+          <p class="mk-figure-label">Com produto</p>
+          <p class="mk-figure-value">{{prod_com_produto}}</p>
+          <span class="mk-figure-unit">{{unidade_produtividade}}</span>
         </div>
-      </div>
-
-      <div class="roi-breakdown">
-        <div>
-          <div class="roi-item-label">Custo Produto</div>
-          <div class="roi-item-value">{{custo_produto_por_ha}}/ha</div>
-        </div>
-        <div>
-          <div class="roi-item-label">Valor do Grão</div>
-          <div class="roi-item-value">{{valor_grao}}/sc</div>
-        </div>
-        <div>
-          <div class="roi-item-label">ROI em Sacas</div>
-          <div class="roi-item-value">{{roi_em_sacas_ha}} sc/ha</div>
-        </div>
-        <!-- {{#if roi_talhao}} -->
-        <div>
-          <div class="roi-item-label">No Talhão ({{tamanho_ha}} ha)</div>
-          <div class="roi-item-value">{{roi_sacas_talhao}} sc · {{roi_reais_talhao}}</div>
+        <div class="mk-figure mk-figure-accent">
+          <p class="mk-figure-label">Ganho</p>
+          <p class="mk-figure-value">{{ganho_sc_ha}}</p>
+          <span class="mk-figure-unit">{{unidade_produtividade}}</span>
         </div>
         <!-- {{/if}} -->
-        <!-- {{#if roi_total}} -->
-        <div>
-          <div class="roi-item-label">Estimativa Área Total ({{area_total}} ha)</div>
-          <div class="roi-item-value">{{roi_sacas_total}} sc · {{roi_reais_total}}</div>
+        <!-- {{#if quantidade_produzida}} -->
+        <div class="mk-figure">
+          <p class="mk-figure-label">Quantidade produzida</p>
+          <p class="mk-figure-value">{{quantidade_produzida}}</p>
+          <span class="mk-figure-unit">{{produtividade_unidade}}</span>
         </div>
+        <!-- {{/if}} -->
+      </div>
+    </section>
+    <!-- {{/if}} -->
+
+    <!-- {{#if roi_agronomico}} -->
+    <section class="sf-section">
+      <h2 class="sf-section-title"><span class="sf-section-num"></span>Retorno sobre investimento</h2>
+      <div class="mk-lead">
+        <p class="mk-figure-label">ROI líquido por hectare</p>
+        <p class="mk-lead-value">{{roi_liquido_rs_ha}}<span class="mk-lead-unit">/ha</span></p>
+      </div>
+      <div class="sf-sheet">
+        <div class="sf-row"><span class="sf-row-label">Custo do produto</span><span class="sf-row-value">{{custo_produto_por_ha}}/ha</span></div>
+        <div class="sf-row"><span class="sf-row-label">Valor do grão</span><span class="sf-row-value">{{valor_grao}}/sc</span></div>
+        <div class="sf-row"><span class="sf-row-label">Receita do ganho</span><span class="sf-row-value">{{receita_ganho}}/ha</span></div>
+        <div class="sf-row"><span class="sf-row-label">ROI em sacas</span><span class="sf-row-value">{{roi_em_sacas_ha}} sc/ha</span></div>
+        <!-- {{#if roi_talhao}} -->
+        <div class="sf-row roi-talhao"><span class="sf-row-label">No talhão<span class="sf-row-sub">{{tamanho_ha}} ha</span></span><span class="sf-row-value">{{roi_sacas_talhao}} sc · {{roi_reais_talhao}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if roi_total}} -->
+        <div class="sf-row roi-total"><span class="sf-row-label">Estimativa na área total<span class="sf-row-sub">{{area_total}} ha</span></span><span class="sf-row-value">{{roi_sacas_total}} sc · {{roi_reais_total}}</span></div>
         <!-- {{/if}} -->
       </div>
       <!-- {{#if roi_total}} -->
-      <div class="roi-note">Estimativa baseada na área total do produtor.</div>
+      <p class="sf-caption">Estimativa baseada na área total do produtor.</p>
       <!-- {{/if}} -->
-    </div>
+    </section>
     <!-- {{/if}} -->
 
-    <!-- DESCRIÇÃO -->
+    <!-- {{#if foto_principal_url}} -->
+    <section class="sf-section">
+      <h2 class="sf-section-title"><span class="sf-section-num"></span>Registro fotográfico</h2>
+      <figure class="sf-figure sf-figure-hero">
+        <input type="checkbox" id="sf-mk-foto-1" class="sf-lb-toggle" hidden>
+        <label for="sf-mk-foto-1" class="photo-hero">
+          <img src="{{foto_principal_url}}" alt="Foto do resultado" loading="lazy">
+        </label>
+        <figcaption>{{foto_legenda}}</figcaption>
+      </figure>
+    </section>
+    <!-- {{/if}} -->
+
     <!-- {{#if descricao}} -->
-    <div class="section-label">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Observações</span>
-    </div>
-    <div class="descricao-block">
-      {{descricao}}
-    </div>
+    <section class="sf-section">
+      <h2 class="sf-section-title"><span class="sf-section-num"></span>Observações</h2>
+      <p class="sf-prose">{{descricao}}</p>
+    </section>
     <!-- {{/if}} -->
 
-    <!-- LOCALIZAÇÃO (inline resumido) -->
-    <div class="localizacao-inline">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Localização</span>
-      <span class="sf-location" aria-label="Localização">📍</span>
-    </div>
-
-    <!-- VENDEDOR -->
-    <!-- {{#if nome_vendedor}} -->
-    <div class="section-label">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Responsável Comercial</span>
-    </div>
-    <div class="vendedor-block">
-      <div class="vendedor-avatar">{{nome_vendedor_inicial}}</div>
-      <div class="vendedor-info">
-        <div class="vendedor-label">Vendedor / Responsável</div>
-        <div class="vendedor-nome">{{nome_vendedor}}</div>
+    <section class="sf-section">
+      <h2 class="sf-section-title"><span class="sf-section-num"></span>Ficha do case</h2>
+      <div class="sf-sheet">
+        <!-- {{#if produtor_fazenda}} -->
+        <div class="sf-row"><span class="sf-row-label">Produtor</span><span class="sf-row-value">{{produtor_fazenda}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if produto_utilizado}} -->
+        <div class="sf-row"><span class="sf-row-label">Produto</span><span class="sf-row-value">{{produto_utilizado}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if localizacao_texto}} -->
+        <div class="sf-row"><span class="sf-row-label">Município</span><span class="sf-row-value">{{localizacao_texto}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if data_case}} -->
+        <div class="sf-row"><span class="sf-row-label">Data do case</span><span class="sf-row-value">{{data_case_formatado}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if visibilidade}} -->
+        <div class="sf-row"><span class="sf-row-label">Divulgação</span><span class="sf-row-value">{{visibilidade_label}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if status}} -->
+        <div class="sf-row"><span class="sf-row-label">Situação</span><span class="sf-row-value">{{status_label}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if localizacao}} -->
+        <div class="sf-row localizacao-inline"><span class="sf-row-label">Localização</span><span class="sf-row-value">Ponto registrado no mapa</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if nome_vendedor}} -->
+        <div class="sf-row"><span class="sf-row-label">Responsável comercial</span><span class="sf-row-value">{{nome_vendedor}}</span></div>
+        <!-- {{/if}} -->
         <!-- {{#if telefone_vendedor}} -->
-        <div class="vendedor-tel">{{telefone_vendedor}}</div>
+        <div class="sf-row"><span class="sf-row-label">Telefone</span><span class="sf-row-value">{{telefone_vendedor}}</span></div>
         <!-- {{/if}} -->
       </div>
-    </div>
-    <!-- {{/if}} -->
+    </section>
 
   </main>
 
-  <!-- ══════════ FOOTER ══════════ -->
-  <footer class="footer">
+  <!-- {{#if nome_vendedor}} -->
+  <div class="sf-signature">
+    <div class="sf-signature-line"></div>
+    <div class="sf-signature-name">{{nome_vendedor}}</div>
+    <div class="sf-signature-role">Responsável comercial</div>
+    <div class="sf-signature-date">Emitido em {{emitido_em}}</div>
+  </div>
+  <!-- {{/if}} -->
+
+  <!-- {{#if criado_em}} -->
+  <p class="sf-meta-right sf-created-at">Criado em {{criado_em_formatado}}</p>
+  <!-- {{/if}} -->
+
+  <footer class="sf-footer">
     {{report_footer_signature}}
   </footer>
 
