@@ -3,758 +3,241 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>SoloForte — Relatório Antes &amp; Depois</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>SoloForte — Case antes e depois</title>
 <style>
-  /* ═══════════════════════════════════════════
-     TOKENS — Paleta oficial SoloForte (do logo)
-  ═══════════════════════════════════════════ */
-  :root {
-    --sf-samsung:    #1428A0;
-    --sf-navy:       #2C5564;
-    --sf-navy-light: #3A6B7D;
-    --sf-green:      #2E7D32;
-    --sf-green-leaf: #8BC34A;
-    --sf-amber:      #F5B935;
-    --sf-amber-pale: #FEF3C7;
-    --sf-cream:      #F7F5F0;
-    --sf-stone:      #E8E4DC;
-    --sf-text:       #1D1D1F;
-    --sf-text-muted: #6B7280;
-    --sf-white:      #FFFFFF;
-    --sf-gray:       #F5F5F7;
-    --sf-shadow:     rgba(44, 85, 100, 0.12);
-    --sf-shadow-md:  rgba(44, 85, 100, 0.20);
-
-    /* Semânticas de urgência */
-    --urg-alta:   #DC2626;
-    --urg-media:  #F59E0B;
-    --urg-baixa:  #16A34A;
-  }
-
-  /* ═══════════════════════════════════════════
-     RESET + BASE
-  ═══════════════════════════════════════════ */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: 'DM Sans', system-ui, sans-serif;
-    font-size: 14px;
-    line-height: 1.6;
-    background: var(--sf-cream);
-    color: var(--sf-text);
-    -webkit-font-smoothing: antialiased;
-    min-height: 100vh;
-  }
-
-  /* ═══════════════════════════════════════════
-     PÁGINA / CONTAINER
-  ═══════════════════════════════════════════ */
-  .page {
-    max-width: 860px;
-    margin: 0 auto;
-    background: var(--sf-white);
-    min-height: 100vh;
-    /* garante que não vaze fora da viewport em WebView iOS */
-    width: 100%;
-    overflow-x: hidden;
-  }
-
-  /* WebView iOS: sem margens laterais expostas */
-  html, body {
-    width: 100%;
-    overflow-x: hidden;
-    background: var(--sf-white);
-  }
-
-  /* ═══════════════════════════════════════════
-     HEADER
-  ═══════════════════════════════════════════ */
-  .header {
-    background: linear-gradient(135deg, var(--sf-samsung) 0%, var(--sf-navy) 100%);
-    padding: 28px 32px 24px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  /* textura sutil no header */
-  .header::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-image:
-      radial-gradient(circle at 80% 20%, rgba(139,195,74,0.15) 0%, transparent 50%),
-      radial-gradient(circle at 10% 80%, rgba(245,185,53,0.10) 0%, transparent 40%);
-    pointer-events: none;
-  }
-
-  .header-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    position: relative;
-    z-index: 1;
-  }
-
-  .logo-area {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .logo-img {
-    width: 38px;
-    height: 38px;
-    object-fit: contain;
-    filter: brightness(0) invert(1);
-    opacity: 0.92;
-  }
-
-  .logo-name {
-    font-family: 'DM Serif Display', serif;
-    font-size: 20px;
-    color: var(--sf-white);
-    letter-spacing: 0.02em;
-  }
-
-  .tipo-badge {
-    background: var(--sf-amber);
-    color: var(--sf-navy);
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 4px 12px;
-    border-radius: 100px;
-  }
-
-  .header-meta {
-    position: relative;
-    z-index: 1;
-  }
-
-  .header-fazenda {
-    font-family: 'DM Serif Display', serif;
-    font-size: 26px;
-    color: var(--sf-white);
-    line-height: 1.2;
-    margin-bottom: 6px;
-  }
-
-  .header-produto {
-    font-size: 13px;
-    color: var(--sf-green-leaf);
-    font-weight: 500;
-    margin-bottom: 14px;
-    letter-spacing: 0.02em;
-  }
-
-  .header-pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 100px;
-    padding: 4px 12px;
-    font-size: 11.5px;
-    color: rgba(255,255,255,0.85);
-  }
-
-  .pill-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--sf-amber);
-    flex-shrink: 0;
-  }
-
-  /* ═══════════════════════════════════════════
-     BODY CONTENT
-  ═══════════════════════════════════════════ */
-  .content {
-    padding: 28px 32px;
-  }
-
-  /* ═══════════════════════════════════════════
-     SECTION LABEL
-  ═══════════════════════════════════════════ */
-  .section-label {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-
-  .section-label-bar {
-    width: 3px;
-    height: 20px;
-    background: var(--sf-amber);
-    border-radius: 2px;
-    flex-shrink: 0;
-  }
-
-  .section-label-text {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.10em;
-    text-transform: uppercase;
-    color: var(--sf-text-muted);
-  }
-
-  /* ═══════════════════════════════════════════
-     GRID ANTES / DEPOIS
-  ═══════════════════════════════════════════ */
-  .photo-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 28px;
-  }
-
-  .photo-card {
-    border-radius: 14px;
-    overflow: hidden;
-    position: relative;
-    aspect-ratio: 3/4;
-    background: var(--sf-stone);
-    box-shadow: 0 2px 12px var(--sf-shadow);
-  }
-
-  .photo-card img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: transform 0.3s ease;
-  }
-
-  .photo-card:hover img { transform: scale(1.02); }
-
-  .photo-label {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    padding: 5px 12px;
-    border-radius: 100px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-  }
-
-  .photo-label.antes {
-    background: rgba(220, 38, 38, 0.80);
-    color: white;
-  }
-
-  .photo-label.depois {
-    background: rgba(22, 163, 74, 0.85);
-    color: white;
-  }
-
-  /* placeholder sem foto */
-  .photo-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    color: var(--sf-text-muted);
-    font-size: 12px;
-    background: var(--sf-stone);
-  }
-
-  .photo-placeholder svg {
-    opacity: 0.35;
-  }
-
-  /* ═══════════════════════════════════════════
-     RESULTADO / KPIs
-  ═══════════════════════════════════════════ */
-  .kpi-strip {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 12px;
-    margin-bottom: 28px;
-  }
-
-  .kpi-card {
-    background: var(--sf-cream);
-    border: 1px solid var(--sf-stone);
-    border-radius: 14px;
-    padding: 18px 20px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: var(--sf-amber);
-    border-radius: 14px 14px 0 0;
-  }
-
-  .kpi-label {
-    font-size: 10.5px;
-    font-weight: 500;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--sf-text-muted);
-    margin-bottom: 6px;
-  }
-
-  .kpi-value {
-    font-family: 'DM Serif Display', serif;
-    font-size: 26px;
-    color: var(--sf-navy);
-    line-height: 1;
-    margin-bottom: 2px;
-  }
-
-  .kpi-unit {
-    font-size: 11px;
-    color: var(--sf-text-muted);
-    font-weight: 400;
-  }
-
-  .parametros-block {
-    background: var(--sf-white);
-    border: 1px solid var(--sf-stone);
-    border-radius: 16px;
-    padding: 18px;
-    margin-bottom: 28px;
-  }
-
-  .parametros-media {
-    font-family: 'DM Serif Display', serif;
-    font-size: 30px;
-    line-height: 1;
-    color: var(--sf-navy);
-    margin-bottom: 14px;
-  }
-
-  .parametros-media span {
-    display: block;
-    font-family: Inter, -apple-system, sans-serif;
-    font-size: 11px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--sf-text-muted);
-    margin-bottom: 6px;
-  }
-
-  .param-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1.2fr) auto auto;
-    gap: 10px;
-    align-items: center;
-    padding: 10px 0;
-    border-top: 1px solid var(--sf-stone);
-  }
-
-  .param-title {
-    font-weight: 700;
-    color: var(--sf-navy);
-    min-width: 0;
-    word-break: break-word;
-  }
-
-  .param-values {
-    font-size: 12px;
-    color: var(--sf-text-muted);
-    white-space: nowrap;
-  }
-
-  .param-delta {
-    font-size: 13px;
-    font-weight: 800;
-    white-space: nowrap;
-  }
-
-  .param-delta.positive { color: var(--sf-green); }
-  .param-delta.negative { color: #D92D20; }
-  .param-delta.neutral { color: var(--sf-text-muted); }
-
-  /* ═══════════════════════════════════════════
-     DESCRIÇÃO
-  ═══════════════════════════════════════════ */
-  .descricao-block {
-    background: var(--sf-cream);
-    border-left: 3px solid var(--sf-navy);
-    border-radius: 0 12px 12px 0;
-    padding: 16px 20px;
-    margin-bottom: 28px;
-    font-size: 13.5px;
-    color: var(--sf-text);
-    line-height: 1.7;
-    font-style: italic;
-  }
-
-  /* ═══ LOCALIZAÇÃO (inline resumido) ═══ */
-  .localizacao-inline {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 28px;
-    padding: 6px 0;
-  }
-
-  /* ═══════════════════════════════════════════
-     VENDEDOR
-  ═══════════════════════════════════════════ */
-  .vendedor-block {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    background: var(--sf-navy);
-    border-radius: 14px;
-    padding: 18px 20px;
-    margin-bottom: 28px;
-  }
-
-  .vendedor-avatar {
-    width: 44px;
-    height: 44px;
-    background: var(--sf-amber);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'DM Serif Display', serif;
-    font-size: 18px;
-    color: var(--sf-navy);
-    flex-shrink: 0;
-  }
-
-  .vendedor-info {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-  }
-
-  .vendedor-label {
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.55);
-    margin-bottom: 2px;
-  }
-
-  .vendedor-nome {
-    font-size: 14px;
-    font-weight: 600;
-    color: white;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-  }
-
-  .vendedor-tel {
-    font-size: 12px;
-    color: var(--sf-green-leaf);
-    margin-top: 1px;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-  }
-
-  /* ═══════════════════════════════════════════
-     FOOTER
-  ═══════════════════════════════════════════ */
-  .footer {
-    background: var(--sf-cream);
-    border-top: 1px solid var(--sf-stone);
-    padding: 18px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .footer-brand {
-    font-family: 'DM Serif Display', serif;
-    font-size: 13px;
-    color: var(--sf-navy);
-    opacity: 0.7;
-    white-space: nowrap;
-  }
-
-
-  /* ═══════════════════════════════════════════
-     DIVIDER
-  ═══════════════════════════════════════════ */
-  .divider {
-    height: 1px;
-    background: var(--sf-stone);
-    margin: 24px 0;
-  }
-
-  /* ═══════════════════════════════════════════
-     VISIBILIDADE BADGE
-  ═══════════════════════════════════════════ */
-  .visib-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 10px;
-    border-radius: 100px;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .visib-ouro   { background: #FEF3C7; color: #92400E; }
-  .visib-prata  { background: #F3F4F6; color: #374151; }
-  .visib-bronze { background: #FEF3C7; color: #78350F; }
-
-  /* ═══════════════════════════════════════════
-     PRINT
-  ═══════════════════════════════════════════ */
-  @media print {
-    body { background: white; }
-    .page { box-shadow: none; max-width: 100%; }
-    .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .photo-card img { page-break-inside: avoid; }
-  }
-
-  /* ═══════════════════════════════════════════
-     MOBILE (WebView iOS)
-  ═══════════════════════════════════════════ */
-  @media (max-width: 600px) {
-    .header { padding: 22px 20px 20px; }
-    .content { padding: 22px 20px; }
-    .header-fazenda { font-size: 21px; }
-    .kpi-strip { grid-template-columns: 1fr 1fr; }
-    .footer { padding: 16px 20px; }
-    .photo-grid { gap: 8px; }
-    /* pills não ultrapassam a borda */
-    .header-pills { gap: 6px; }
-    .pill { font-size: 10.5px; padding: 3px 9px; }
-    /* kpi value menor em telas muito estreitas */
-    .kpi-value { font-size: 22px; }
-  }
-
-  @media (max-width: 380px) {
-    .header-fazenda { font-size: 18px; }
-    .kpi-strip { grid-template-columns: 1fr; }
-    .photo-grid { grid-template-columns: 1fr; }
-  }
-
-  .logo-area:empty { display: none; }
-
-  .sf-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex: 1 1 100%;
-    min-width: 0;
-  }
-
-  .sf-brand-logo {
-    width: 22px;
-    height: 22px;
-    object-fit: contain;
-    flex-shrink: 0;
-  }
-
-  .sf-brand-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  .sf-brand-copy strong {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--sf-text, #1D1D1F);
-  }
-
-  .sf-brand-tagline {
-    font-size: 11px;
-    line-height: 1.4;
-    color: #667085;
-  }
-
-  .sf-location {
-    font-size: 16px;
-    line-height: 1;
-  }
+{{sf_base_css}}
+
+/* Números de vitrine e comparativo visual (template-local). */
+.mk-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: var(--sf-space-4);
+  padding: var(--sf-space-4) 0;
+  border-top: 0.5px solid var(--sf-hairline);
+  border-bottom: 0.5px solid var(--sf-hairline);
+}
+
+.mk-figure-label {
+  font-size: 12px;
+  color: var(--sf-text-secondary);
+}
+
+.mk-figure-value {
+  margin-top: var(--sf-space-1);
+  font-family: var(--sf-font-title);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--sf-text);
+}
+
+.mk-figure-accent .mk-figure-value { color: var(--sf-navy); }
+
+.mk-figure-unit {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--sf-text-tertiary);
+}
+
+.mk-lead { margin-bottom: var(--sf-space-3); }
+
+.mk-lead-value {
+  margin-top: var(--sf-space-1);
+  font-family: var(--sf-font-title);
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--sf-navy);
+}
+
+.mk-compare .sf-figure img,
+.mk-photo-empty { aspect-ratio: 3 / 4; }
+
+.mk-photo-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--sf-grouped-bg);
+  font-size: 13px;
+  color: var(--sf-text-secondary);
+}
+
+.mk-delta { font-weight: 600; }
+.mk-delta.positive { color: var(--sf-urg-baixa); }
+.mk-delta.negative { color: var(--sf-urg-alta); }
+.mk-delta.neutral { color: var(--sf-text-secondary); }
+
+@media (min-width: 640px) {
+  .mk-figure-value { font-size: 32px; }
+  .mk-lead-value { font-size: 48px; }
+}
+
+@media print {
+  .mk-figures, .mk-lead, .mk-compare { page-break-inside: avoid; break-inside: avoid; }
+}
 </style>
 </head>
 <body>
-<div class="page">
+<div class="sf-doc">
 
-  <!-- ══════════ HEADER ══════════ -->
-  <header class="header">
-    <div class="header-top">
-      <div class="logo-area">
+  <header class="sf-letterhead">
+    <div class="sf-letterhead-row">
+      <div class="sf-logo-area">
         {{report_header_signature}}
       </div>
-      <span class="tipo-badge">Antes &amp; Depois</span>
+      <span class="sf-doc-type">Case antes e depois</span>
     </div>
-
-    <div class="header-meta">
-      <div class="header-fazenda">{{produtor_fazenda}}</div>
-      <div class="header-produto">{{produto_utilizado}}</div>
-      <div class="header-pills">
-        <!-- {{#if ganho_produtividade}} -->
-        <span class="pill"><span class="pill-dot"></span>Ganho: {{ganho_produtividade}}</span>
-        <!-- {{/if}} -->
-        <!-- {{#if data_case}} -->
-        <span class="pill"><span class="pill-dot"></span>{{data_case_formatado}}</span>
-        <!-- {{/if}} -->
-        <!-- visibilidade: ouro | prata | bronze -->
-        <span class="pill"><span class="pill-dot"></span>{{visibilidade}}</span>
-      </div>
+    <h1 class="sf-title">{{produtor_fazenda}}</h1>
+    <!-- {{#if contexto_linha}} -->
+    <p class="sf-subtitle">{{contexto_linha}}</p>
+    <!-- {{/if}} -->
+    <div class="sf-status-line">
+      <!-- {{#if status}} -->
+      <span class="sf-status"><span class="sf-dot {{status_dot}}"></span>{{status_label}}</span>
+      <!-- {{/if}} -->
+      <!-- {{#if visibilidade}} -->
+      <span class="sf-status">{{visibilidade_label}}</span>
+      <!-- {{/if}} -->
     </div>
   </header>
 
-  <!-- ══════════ CONTEÚDO ══════════ -->
-  <main class="content">
+  <main>
 
-    <!-- FOTOS ANTES / DEPOIS -->
-    <div class="section-label">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Comparativo Visual</span>
-    </div>
-
-    <div class="photo-grid">
-      <!-- ANTES -->
-      <div class="photo-card">
-        <!-- {{#if foto_antes_url}} -->
-        <img
-          src="{{foto_antes_url}}"
-          alt="Foto Antes"
-          loading="lazy"
-        >
-        <!-- {{else}} -->
-        <div class="photo-placeholder"><span>Sem foto</span></div>
-        <!-- {{/if}} -->
-        <div class="photo-label antes">Antes</div>
+    <section class="sf-section">
+      <h2 class="sf-section-title"><span class="sf-section-num"></span>Comparativo visual</h2>
+      <div class="sf-figure-grid mk-compare">
+        <figure class="sf-figure">
+          <!-- {{#if foto_antes_url}} -->
+          <input type="checkbox" id="sf-mk-antes" class="sf-lb-toggle" hidden>
+          <label for="sf-mk-antes">
+            <img src="{{foto_antes_url}}" alt="Foto antes" loading="lazy">
+          </label>
+          <!-- {{else}} -->
+          <div class="mk-photo-empty">Sem foto</div>
+          <!-- {{/if}} -->
+          <figcaption class="photo-label antes">Antes</figcaption>
+        </figure>
+        <figure class="sf-figure">
+          <!-- {{#if foto_depois_url}} -->
+          <input type="checkbox" id="sf-mk-depois" class="sf-lb-toggle" hidden>
+          <label for="sf-mk-depois">
+            <img src="{{foto_depois_url}}" alt="Foto depois" loading="lazy">
+          </label>
+          <!-- {{else}} -->
+          <div class="mk-photo-empty">Sem foto</div>
+          <!-- {{/if}} -->
+          <figcaption class="photo-label depois">Depois{{data_case_sufixo}}</figcaption>
+        </figure>
       </div>
+    </section>
 
-      <!-- DEPOIS -->
-      <div class="photo-card">
-        <!-- {{#if foto_depois_url}} -->
-        <img
-          src="{{foto_depois_url}}"
-          alt="Foto Depois"
-          loading="lazy"
-        >
-        <!-- {{else}} -->
-        <div class="photo-placeholder"><span>Sem foto</span></div>
-        <!-- {{/if}} -->
-        <div class="photo-label depois">Depois</div>
-      </div>
-    </div>
-
-    <!-- Parâmetros Comparativos -->
     <!-- {{#if parametros_comparativos}} -->
-    <div class="section-label">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Parâmetros Comparativos</span>
-    </div>
-
-    <div class="parametros-block">
-      <div class="parametros-media">
-        <span>Média de ganho</span>
-        {{media_ganho_percent}}%
+    <section class="sf-section">
+      <h2 class="sf-section-title"><span class="sf-section-num"></span>Parâmetros comparativos</h2>
+      <div class="mk-lead">
+        <p class="mk-figure-label">Média de ganho</p>
+        <p class="mk-lead-value">{{media_ganho_percent}}%</p>
       </div>
-      {{parametros_comparativos_html}}
-    </div>
+      <div class="sf-sheet">
+        {{parametros_comparativos_html}}
+      </div>
+    </section>
     <!-- {{/if}} -->
 
-    <!-- KPIs legados -->
     <!-- {{#if resultados_legados}} -->
-    <div class="section-label">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Resultados</span>
-    </div>
-
-    <div class="kpi-strip">
-      <!-- {{#if produtividade_valor}} -->
-      <div class="kpi-card">
-        <div class="kpi-label">Produtividade</div>
-        <div class="kpi-value">{{produtividade_valor}}</div>
-        <div class="kpi-unit">{{produtividade_unidade}}</div>
-      </div>
-      <!-- {{/if}} -->
-
-      <!-- {{#if ganho_produtividade}} -->
-      <div class="kpi-card">
-        <div class="kpi-label">Ganho</div>
-        <div class="kpi-value">{{ganho_produtividade}}</div>
-        <div class="kpi-unit">vs. sem produto</div>
-      </div>
-      <!-- {{/if}} -->
-
-      <!-- {{#if economia_gerada}} -->
-      <div class="kpi-card">
-        <div class="kpi-label">Economia Gerada</div>
-        <div class="kpi-value">{{economia_gerada}}</div>
-        <div class="kpi-unit">estimado</div>
-      </div>
-      <!-- {{/if}} -->
-    </div>
-    <!-- {{/if}} -->
-
-    <!-- DESCRIÇÃO -->
-    <!-- {{#if descricao}} -->
-    <div class="section-label">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Observações</span>
-    </div>
-    <div class="descricao-block">
-      {{descricao}}
-    </div>
-    <!-- {{/if}} -->
-
-    <!-- LOCALIZAÇÃO (inline resumido) -->
-    <div class="localizacao-inline">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Localização</span>
-      <span class="sf-location" aria-label="Localização">📍</span>
-    </div>
-
-    <!-- VENDEDOR -->
-    <!-- {{#if nome_vendedor}} -->
-    <div class="section-label">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Responsável Comercial</span>
-    </div>
-    <div class="vendedor-block">
-      <div class="vendedor-avatar">
-        <!-- Inicial do nome -->
-        {{nome_vendedor_inicial}}
-      </div>
-      <div class="vendedor-info">
-        <div class="vendedor-label">Vendedor / Responsável</div>
-        <div class="vendedor-nome">{{nome_vendedor}}</div>
-        <!-- {{#if telefone_vendedor}} -->
-        <div class="vendedor-tel">{{telefone_vendedor}}</div>
+    <section class="sf-section">
+      <h2 class="sf-section-title"><span class="sf-section-num"></span>Resultados</h2>
+      <div class="mk-figures">
+        <!-- {{#if produtividade_valor}} -->
+        <div class="mk-figure">
+          <p class="mk-figure-label">Produtividade</p>
+          <p class="mk-figure-value">{{produtividade_valor}}</p>
+          <span class="mk-figure-unit">{{produtividade_unidade}}</span>
+        </div>
+        <!-- {{/if}} -->
+        <!-- {{#if ganho_produtividade}} -->
+        <div class="mk-figure mk-figure-accent">
+          <p class="mk-figure-label">Ganho</p>
+          <p class="mk-figure-value">{{ganho_produtividade}}</p>
+          <span class="mk-figure-unit">vs. sem produto</span>
+        </div>
+        <!-- {{/if}} -->
+        <!-- {{#if economia_gerada}} -->
+        <div class="mk-figure">
+          <p class="mk-figure-label">Economia gerada</p>
+          <p class="mk-figure-value">{{economia_gerada}}</p>
+          <span class="mk-figure-unit">estimado</span>
+        </div>
         <!-- {{/if}} -->
       </div>
-    </div>
+    </section>
     <!-- {{/if}} -->
+
+    <!-- {{#if descricao}} -->
+    <section class="sf-section">
+      <h2 class="sf-section-title"><span class="sf-section-num"></span>Observações</h2>
+      <p class="sf-prose">{{descricao}}</p>
+    </section>
+    <!-- {{/if}} -->
+
+    <section class="sf-section">
+      <h2 class="sf-section-title"><span class="sf-section-num"></span>Ficha do case</h2>
+      <div class="sf-sheet">
+        <!-- {{#if produtor_fazenda}} -->
+        <div class="sf-row"><span class="sf-row-label">Produtor</span><span class="sf-row-value">{{produtor_fazenda}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if produto_utilizado}} -->
+        <div class="sf-row"><span class="sf-row-label">Produto</span><span class="sf-row-value">{{produto_utilizado}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if localizacao_texto}} -->
+        <div class="sf-row"><span class="sf-row-label">Município</span><span class="sf-row-value">{{localizacao_texto}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if data_case}} -->
+        <div class="sf-row"><span class="sf-row-label">Data do case</span><span class="sf-row-value">{{data_case_formatado}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if ganho_produtividade}} -->
+        <div class="sf-row"><span class="sf-row-label">Ganho de produtividade</span><span class="sf-row-value">{{ganho_produtividade}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if visibilidade}} -->
+        <div class="sf-row"><span class="sf-row-label">Divulgação</span><span class="sf-row-value">{{visibilidade_label}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if status}} -->
+        <div class="sf-row"><span class="sf-row-label">Situação</span><span class="sf-row-value">{{status_label}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if localizacao}} -->
+        <div class="sf-row localizacao-inline"><span class="sf-row-label">Localização</span><span class="sf-row-value">Ponto registrado no mapa</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if nome_vendedor}} -->
+        <div class="sf-row"><span class="sf-row-label">Responsável comercial</span><span class="sf-row-value">{{nome_vendedor}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if telefone_vendedor}} -->
+        <div class="sf-row"><span class="sf-row-label">Telefone</span><span class="sf-row-value">{{telefone_vendedor}}</span></div>
+        <!-- {{/if}} -->
+      </div>
+    </section>
 
   </main>
 
-  <!-- ══════════ FOOTER ══════════ -->
-  <footer class="footer">
+  <!-- {{#if nome_vendedor}} -->
+  <div class="sf-signature">
+    <div class="sf-signature-line"></div>
+    <div class="sf-signature-name">{{nome_vendedor}}</div>
+    <div class="sf-signature-role">Responsável comercial</div>
+    <div class="sf-signature-date">Emitido em {{emitido_em}}</div>
+  </div>
+  <!-- {{/if}} -->
+
+  <!-- {{#if criado_em}} -->
+  <p class="sf-meta-right sf-created-at">Criado em {{criado_em_formatado}}</p>
+  <!-- {{/if}} -->
+
+  <footer class="sf-footer">
     {{report_footer_signature}}
   </footer>
 
