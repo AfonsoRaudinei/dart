@@ -13,9 +13,6 @@
 
   <header class="sf-letterhead">
     <div class="sf-letterhead-row">
-      <div class="sf-logo-area">
-        {{report_header_signature}}
-      </div>
       <span class="sf-doc-type">Relatório de visita</span>
     </div>
     <!-- title (editável) ou fallback farm_name -->
@@ -31,12 +28,10 @@
 
   <main>
 
+    <!-- {{#if ficha_tecnica}} -->
     <section class="sf-section">
       <h2 class="sf-section-title"><span class="sf-section-num"></span>Ficha técnica</h2>
       <div class="sf-sheet">
-        <!-- {{#if agronomist_nome}} -->
-        <div class="sf-row"><span class="sf-row-label">Agrônomo</span><span class="sf-row-value">{{agronomist_nome}}</span></div>
-        <!-- {{/if}} -->
         <!-- {{#if cliente_nome}} -->
         <div class="sf-row"><span class="sf-row-label">Cliente</span><span class="sf-row-value">{{cliente_nome}}</span></div>
         <!-- {{/if}} -->
@@ -50,9 +45,9 @@
         <!-- {{#if period_end}} -->
         <div class="sf-row"><span class="sf-row-label">Fim</span><span class="sf-row-value">{{period_end_formatado}}</span></div>
         <!-- {{/if}} -->
-        <div class="sf-row"><span class="sf-row-label">Situação</span><span class="sf-row-value">{{status_label}}</span></div>
       </div>
     </section>
+    <!-- {{/if}} -->
 
     <!-- {{#if custom_notes}} -->
     <section class="sf-section">
