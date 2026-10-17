@@ -1,11 +1,28 @@
 import 'dart:math' as math;
 
+import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
+import 'google_maps_link_parser.dart';
+
 class CoordinateParser {
+  /// Coordenadas em texto ou link do Google Maps (resolve redirects quando necessário).
+  static Future<LatLng?> parseAsync(
+    String raw, {
+    http.Client? httpClient,
+  }) async {
+    final sync = parse(raw);
+    if (sync != null) return sync;
+    if (!GoogleMapsLinkParser.looksLikeGoogleMapsLink(raw)) return null;
+    return GoogleMapsLinkParser(client: httpClient).resolve(raw);
+  }
+
   static LatLng? parse(String raw) {
     final input = raw.trim();
     if (input.isEmpty) return null;
+
+    final fromUrl = GoogleMapsLinkParser.parseCoordinatesFromUrl(input);
+    if (fromUrl != null) return fromUrl;
 
     final epsg = _parseEpsg(input);
     if (epsg != null) return epsg;
