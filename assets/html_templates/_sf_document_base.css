@@ -76,43 +76,17 @@ body {
   background: linear-gradient(90deg, var(--sf-samsung) 0%, var(--sf-navy) 100%);
 }
 
+/* Marca SoloForte só no rodapé — o timbre não repete o logo. */
 .sf-letterhead-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--sf-space-3);
-  margin-bottom: var(--sf-space-5);
-}
-
-.sf-logo-area {
-  display: flex;
-  align-items: center;
-  gap: var(--sf-space-2);
-  min-width: 0;
-}
-
-.sf-logo-area:empty { display: none; }
-
-.sf-letterhead .logo-img {
-  width: 32px;
-  height: 32px;
-  object-fit: contain;
-  filter: none;
-  opacity: 1;
-}
-
-.sf-letterhead .logo-name {
-  font-family: var(--sf-font-text);
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--sf-navy);
+  margin-bottom: var(--sf-space-3);
 }
 
 .sf-doc-type {
   font-size: 12px;
   color: var(--sf-text-secondary);
-  text-align: right;
   white-space: nowrap;
 }
 
@@ -363,6 +337,13 @@ body {
   }
 }
 
+/* No app, cada foto vira link sfphoto://N aberto no visualizador nativo. */
+.sf-photo-link {
+  display: block;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* ═══ Linhas com miniatura ═══ */
 .sf-item {
   display: flex;
@@ -516,13 +497,6 @@ body {
   font-weight: 600;
   color: var(--sf-text);
 }
-
-.sf-brand-tagline {
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--sf-text-secondary);
-}
-
 /* ═══ Impressão ═══ */
 @media print {
   @page { size: A4; margin: 18mm 16mm; }
