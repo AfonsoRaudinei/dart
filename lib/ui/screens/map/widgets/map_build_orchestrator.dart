@@ -597,6 +597,9 @@ class _MapControlsHost extends ConsumerWidget {
       onLocationModeChanged: onLocationModeChanged,
       onToggleDrawMode: toggleDrawMode,
       onOpenGoToLocal: () {
+        if (drawingMetrics.state == DrawingState.editing) {
+          return;
+        }
         onMapUserInteraction?.call();
         showMapGoToLocalSheet(
           context,
