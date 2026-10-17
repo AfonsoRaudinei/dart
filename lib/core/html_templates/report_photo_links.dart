@@ -61,6 +61,13 @@ abstract final class ReportPhotoLinks {
     caseSensitive: false,
   );
 
+  /// `<label for="sf-foto-*">` só serve ao lightbox CSS; no app a foto é link.
+  static final _labelAroundPhotoLink = RegExp(
+    r'<label\b[^>]*>\s*(<a class="sf-photo-link"[^>]*>.*?</a>)\s*</label>',
+    caseSensitive: false,
+    dotAll: true,
+  );
+
   static final _digits = RegExp(r'^\d+$');
 
   static String linkFor(int index) => '$scheme://$index';
@@ -103,8 +110,21 @@ abstract final class ReportPhotoLinks {
   /// Cópia do HTML para exibição no app: cada foto numerada vira link
   /// `sfphoto://N` e o lightbox CSS (checkbox) é removido.
   static String prepareInAppHtml(String html) {
-    final withoutLightbox = html.replaceAll(_lightboxToggle, '');
-    return withoutLightbox.replaceAllMapped(_imgTag, _linkPhotoTag);
+    var prepared = html.replaceAll(_lightboxToggle, '');
+    prepared = prepared.replaceAllMapped(_imgTag, _linkPhotoTag);
+    prepared = prepared.replaceAllMapped(
+      _labelAroundPhotoLink,
+      (match) => match.group(1)!,
+    );
+    if (prepared.contains('class="sf-doc"')) {
+      prepared = prepared.replaceFirst(
+        'class="sf-doc"',
+        'class="sf-doc sf-in-app"',
+      );
+    } else if (prepared.contains('<body>')) {
+      prepared = prepared.replaceFirst('<body>', '<body class="sf-in-app">');
+    }
+    return prepared;
   }
 
   static String _linkPhotoTag(Match match) {
