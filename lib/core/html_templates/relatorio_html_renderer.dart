@@ -14,10 +14,36 @@ abstract class RelatorioHtmlRenderer {
   static const _assetsBase = 'assets/html_templates/';
   static const int maxInlineImageBytes = 900 * 1024;
   static const int maxInlineImageDimension = 1600;
+  static const baseCssAsset = '${_assetsBase}_sf_document_base.css';
+  static const _baseCssToken = '{{sf_base_css}}';
+  static final _googleFontsLink = RegExp(
+    r'<link\b[^>]*fonts\.(?:googleapis|gstatic)\.com[^>]*>\s*',
+    caseSensitive: false,
+  );
+
+  static String? _baseCssCache;
 
   /// Carrega o template HTML do asset bundle.
+  ///
+  /// Injeta a base de documento em `{{sf_base_css}}` e remove `<link>` de
+  /// Google Fonts: o WebView abre o HTML offline e a fonte remota não carrega.
   static Future<String> loadTemplate(String filename) async {
-    return rootBundle.loadString('$_assetsBase$filename');
+    var template = await rootBundle.loadString(
+      '$_assetsBase$filename',
+      cache: false,
+    );
+    template = template.replaceAll(_googleFontsLink, '');
+    if (template.contains(_baseCssToken)) {
+      template = template.replaceAll(_baseCssToken, await _loadBaseCss());
+    }
+    return template;
+  }
+
+  static Future<String> _loadBaseCss() async {
+    return _baseCssCache ??= await rootBundle.loadString(
+      baseCssAsset,
+      cache: false,
+    );
   }
 
   /// Substitui todos os {{placeholders}} do template pelos valores do mapa.
