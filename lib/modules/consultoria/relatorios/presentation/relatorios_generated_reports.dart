@@ -188,7 +188,8 @@ Future<_GeneratedReportPayload> _buildPropertySummaryPayload(
     for (final talhao in report.talhoes) {
       fieldsById[talhao.talhaoId] = {
         'nome': talhao.nomeTalhao,
-        'codigo': talhao.talhaoId,
+        // TalhaoVisitado não tem código humano; talhaoId é UUID interno.
+        'codigo': '',
         'area_produtiva': talhao.areaHectares,
         'centro_geo': '',
         'bordadura_geo': '',
@@ -235,10 +236,9 @@ Future<_GeneratedReportPayload> _buildPropertySummaryPayload(
       'fields': fields,
     },
     csv: ConsultoriaReportExportData.toCsv([
-      ['talhao_id', 'nome', 'area_ha', 'cultura', 'safra'],
+      ['nome', 'area_ha', 'cultura', 'safra'],
       ...fields.map(
         (field) => [
-          field['codigo'],
           field['nome'],
           field['area_produtiva'],
           field['cultura'],
@@ -256,15 +256,21 @@ Future<_GeneratedReportPayload> _buildVisitHistoryPayload(
 ) async {
   final sorted = _sortRelatoriosByPeriodStart(relatorios);
   final rows = sorted.map(_historyRow).toList();
-  final agronomists = {
-    for (final report in sorted) report.agronomistId: report.agronomistId,
-  };
 
   final branding = await _resolveReportBrandingContext(
     ref,
     fallbackConsultantName: 'Equipe técnica',
     fallbackConsultantRole: 'Consultoria',
   );
+  final currentUserId = await _resolveCurrentUserProfileId(ref);
+  // Só o usuário atual tem nome resolvível; outros agrônomos ficam sem
+  // entrada para nunca imprimir UUID no HTML.
+  final agronomists = <String, String>{
+    for (final report in sorted)
+      if (report.agronomistId.trim().isNotEmpty &&
+          report.agronomistId.trim() == currentUserId)
+        report.agronomistId: branding.consultantName,
+  };
   final clienteNome = await _resolveClienteNomeForId(ref, clientId);
   final html = await PropriedadeHtmlRenderer.renderHistorico(
     clienteNome: clienteNome,
@@ -320,6 +326,15 @@ Future<_GeneratedReportPayload> _buildVisitHistoryPayload(
       ),
     ]),
   );
+}
+
+Future<String> _resolveCurrentUserProfileId(WidgetRef ref) async {
+  try {
+    final profile = await ref.read(currentUserProfileProvider.future);
+    return profile?.id.trim() ?? '';
+  } catch (_) {
+    return '';
+  }
 }
 
 Map<String, dynamic> _historyRow(RelatorioTecnico report) {
