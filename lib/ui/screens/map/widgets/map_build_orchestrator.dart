@@ -53,6 +53,7 @@ import '../../../components/map/widgets/pin_position_correction_overlay.dart';
 import '../../map/providers/pin_position_correction_provider.dart';
 import '../../../components/map/widgets/map_long_press_hint.dart';
 import '../../../components/map/widgets/map_state_boundaries_layer.dart';
+import '../../../components/map/map_go_to_local_sheet.dart';
 import '../../../components/map/widgets/map_tools_bottom_sheet.dart';
 import '../../../components/map/widgets/producer_map_context_card.dart';
 import '../../../components/map/map_sheet_state.dart';
@@ -595,6 +596,14 @@ class _MapControlsHost extends ConsumerWidget {
       onCenterUser: centerOnUser,
       onLocationModeChanged: onLocationModeChanged,
       onToggleDrawMode: toggleDrawMode,
+      onOpenGoToLocal: () {
+        onMapUserInteraction?.call();
+        showMapGoToLocalSheet(
+          context,
+          onMunicipalitySearch: openMunicipalitySearch,
+          onCoordinateSearch: openCoordinateSearch,
+        );
+      },
       onOpenMapTools: () {
         if (drawingMetrics.state == DrawingState.editing) {
           return;
@@ -603,8 +612,6 @@ class _MapControlsHost extends ConsumerWidget {
         MapToolsBottomSheet.show(
           context: context,
           drawingController: ref.read(drawingControllerProvider),
-          onCoordinateSearch: openCoordinateSearch,
-          onMunicipalitySearch: openMunicipalitySearch,
           onDownloadOfflineArea: downloadOfflineArea,
         );
       },
