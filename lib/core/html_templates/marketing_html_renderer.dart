@@ -104,7 +104,7 @@ class MarketingHtmlRenderer {
       'roi_investimento': data['roi_investimento']?.toString() ?? '',
       'roi_retorno': data['roi_retorno']?.toString() ?? '',
     });
-    return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(html);
+    return RelatorioHtmlRenderer.finalizeDocument(html);
   }
 
   static Future<String> _renderAntesDepois(
@@ -125,20 +125,25 @@ class MarketingHtmlRenderer {
       'parametros_comparativos',
       include: parametros.isNotEmpty,
     );
+    final hasGanho =
+        (data['ganho_produtividade'] as String?)?.isNotEmpty == true;
+    final resultadosLegados =
+        parametros.isEmpty &&
+        (hasGanho ||
+            (data['economia_gerada'] as String?)?.isNotEmpty == true ||
+            data['produtividade_valor'] != null);
     tpl = _resolveAllIfBlocks(
       tpl,
       'resultados_legados',
-      include:
-          parametros.isEmpty &&
-          ((data['ganho_produtividade'] as String?)?.isNotEmpty == true ||
-              (data['economia_gerada'] as String?)?.isNotEmpty == true ||
-              data['produtividade_valor'] != null),
+      include: resultadosLegados,
     );
+    // Com resultados legados o ganho já aparece em "Resultados".
     tpl = _resolveAllIfBlocks(
       tpl,
-      'ganho_produtividade',
-      include: (data['ganho_produtividade'] as String?)?.isNotEmpty == true,
+      'ganho_produtividade_ficha',
+      include: hasGanho && !resultadosLegados,
     );
+    tpl = _resolveAllIfBlocks(tpl, 'ganho_produtividade', include: hasGanho);
     tpl = _resolveAllIfBlocks(
       tpl,
       'economia_gerada',
@@ -190,7 +195,7 @@ class MarketingHtmlRenderer {
       'media_ganho_percent': _formatSigned(_mediaParametros(parametros)),
       'parametros_comparativos_html': _renderParametrosHtml(parametros),
     });
-    return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(html);
+    return RelatorioHtmlRenderer.finalizeDocument(html);
   }
 
   static Future<String> _renderAvaliacao(
@@ -285,7 +290,7 @@ class MarketingHtmlRenderer {
       html: blocosHtml.toString(),
     );
 
-    return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
+    return RelatorioHtmlRenderer.finalizeDocument(tpl);
   }
 
   static Future<Map<String, String>> _branding(Map<String, dynamic> data) {
@@ -524,7 +529,7 @@ class MarketingHtmlRenderer {
     final id = 'sf-mk-av-$ordem-$lado';
     final fotoHtml = resolvedFoto.isNotEmpty
         ? '<input type="checkbox" id="$id" class="sf-lb-toggle" hidden>'
-              '<label for="$id"><img src="$resolvedFoto" alt="${RelatorioHtmlRenderer.escapeHtml(nome)}" loading="lazy"></label>'
+              '<label for="$id"><img data-sf-photo src="$resolvedFoto" alt="${RelatorioHtmlRenderer.escapeHtml(nome)}" loading="lazy"></label>'
         : '<div class="mk-photo-empty">Sem foto</div>';
 
     return '''
