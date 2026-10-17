@@ -88,9 +88,6 @@
 
   <header class="sf-letterhead">
     <div class="sf-letterhead-row">
-      <div class="sf-logo-area">
-        {{report_header_signature}}
-      </div>
       <span class="sf-doc-type">Case antes e depois</span>
     </div>
     <h1 class="sf-title">{{produtor_fazenda}}</h1>
@@ -116,7 +113,7 @@
           <!-- {{#if foto_antes_url}} -->
           <input type="checkbox" id="sf-mk-antes" class="sf-lb-toggle" hidden>
           <label for="sf-mk-antes">
-            <img src="{{foto_antes_url}}" alt="Foto antes" loading="lazy">
+            <img data-sf-photo src="{{foto_antes_url}}" alt="Foto antes" loading="lazy">
           </label>
           <!-- {{else}} -->
           <div class="mk-photo-empty">Sem foto</div>
@@ -127,7 +124,7 @@
           <!-- {{#if foto_depois_url}} -->
           <input type="checkbox" id="sf-mk-depois" class="sf-lb-toggle" hidden>
           <label for="sf-mk-depois">
-            <img src="{{foto_depois_url}}" alt="Foto depois" loading="lazy">
+            <img data-sf-photo src="{{foto_depois_url}}" alt="Foto depois" loading="lazy">
           </label>
           <!-- {{else}} -->
           <div class="mk-photo-empty">Sem foto</div>
@@ -201,20 +198,11 @@
         <!-- {{#if data_case}} -->
         <div class="sf-row"><span class="sf-row-label">Data do case</span><span class="sf-row-value">{{data_case_formatado}}</span></div>
         <!-- {{/if}} -->
-        <!-- {{#if ganho_produtividade}} -->
+        <!-- {{#if ganho_produtividade_ficha}} -->
         <div class="sf-row"><span class="sf-row-label">Ganho de produtividade</span><span class="sf-row-value">{{ganho_produtividade}}</span></div>
-        <!-- {{/if}} -->
-        <!-- {{#if visibilidade}} -->
-        <div class="sf-row"><span class="sf-row-label">Divulgação</span><span class="sf-row-value">{{visibilidade_label}}</span></div>
-        <!-- {{/if}} -->
-        <!-- {{#if status}} -->
-        <div class="sf-row"><span class="sf-row-label">Situação</span><span class="sf-row-value">{{status_label}}</span></div>
         <!-- {{/if}} -->
         <!-- {{#if localizacao}} -->
         <div class="sf-row localizacao-inline"><span class="sf-row-label">Localização</span><span class="sf-row-value">Ponto registrado no mapa</span></div>
-        <!-- {{/if}} -->
-        <!-- {{#if nome_vendedor}} -->
-        <div class="sf-row"><span class="sf-row-label">Responsável comercial</span><span class="sf-row-value">{{nome_vendedor}}</span></div>
         <!-- {{/if}} -->
         <!-- {{#if telefone_vendedor}} -->
         <div class="sf-row"><span class="sf-row-label">Telefone</span><span class="sf-row-value">{{telefone_vendedor}}</span></div>
