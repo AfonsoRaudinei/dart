@@ -23,15 +23,22 @@ alwaysApply: false
 - `--sf-gray: #F5F5F7`
 - `--sf-text: #1D1D1F`
 
-Header: cabeçalho branco timbrado — logo oficial SoloForte + tipo do documento + título; filete de marca 2px (samsung→navy) no topo. Proibido header em bloco degradê com brilhos radiais.
+Header: cabeçalho branco timbrado — filete de marca 2px (samsung→navy) no topo + tipo do documento + título + linha de contexto. **Sem logo.** Proibido header em bloco degradê com brilhos radiais.
 
-## Header — OBRIGATÓRIO
+## Header (timbre) — OBRIGATÓRIO
 
-- **SEMPRE** logo oficial SoloForte (`assets/images/soloforte_logo.png`) via `{{report_header_signature}}`
-- Logo = imagem real (base64/data-URI), **nunca** emoji 🌱 / folha / ícone genérico no lugar da marca
-- Logo em cores originais sobre fundo branco — sem `filter: invert`
-- Tipo do documento em texto secundário pequeno (não pill); título + linha de contexto (`Cliente · Fazenda · Talhão · data`) abaixo do logo
-- `brandingPlaceholders()` **deve** preencher `report_header_signature` com o logo SoloForte
+- **SEM** logo / nome "SoloForte" no timbre — a marca aparece uma única vez, no rodapé
+- Templates **não** usam `{{report_header_signature}}`; `brandingPlaceholders()` devolve esse valor vazio (inofensivo para quem ainda referencia)
+- Tipo do documento em texto secundário pequeno (não pill); título + linha de contexto (`Cliente · Fazenda · Talhão · data`)
+- Linha de status (`.sf-status-line`) só com o que **não** se repete na ficha (ocorrência: só `Urgência <nível>`, sem "Rascunho"/"Confirmada")
+- Linha de contexto **não** leva o nome do consultor (ele fica só na assinatura)
+
+## Sem dado repetido (OBRIGATÓRIO)
+
+- Status / urgência / situação / plano (divulgação) aparecem **uma vez** — no header; proibido repetir em linha da ficha (`Situação`, `Urgência`, `Divulgação`)
+- Consultor / agrônomo / responsável comercial aparece **só** no bloco `.sf-signature` — sem linha `Agrônomo` / `Responsável comercial` na ficha, sem nome no rodapé ou na linha de contexto
+- Cliente / Fazenda / Talhão podem repetir a linha de contexto na ficha (identificação formal do documento)
+- Número já exibido em destaque (ex.: "Ganho" em Resultados) não se repete como linha da ficha
 
 ## Linguagem visual (documento editorial iOS)
 
@@ -39,7 +46,8 @@ Header: cabeçalho branco timbrado — logo oficial SoloForte + tipo do document
 - Seções numeradas em sentence case (`.sf-section-title` + `.sf-section-num`) — sem caixa alta, sem barra âmbar
 - Ficha técnica em lista agrupada (`.sf-sheet` / `.sf-row`: rótulo à esquerda, valor à direita)
 - Status em texto com ponto (`.sf-status` + `.sf-dot`) — nunca valor técnico cru (`draft`, `confirmed`, `#id`)
-- Fotos como figuras com legenda (`Foto N`), lightbox CSS preservado
+- Fotos como figuras com legenda (`Foto N`); toda `<img>` de foto começa com `<img data-sf-photo ` e `RelatorioHtmlRenderer.finalizeDocument` numera `data-sf-photo="N"` (0-based, ordem do documento). Logo do rodapé **não** é foto
+- HTML exportado mantém o lightbox CSS (checkbox) como fallback em navegador externo
 - Sem pills decorativas, sem card-dentro-de-card, sem sombras pesadas
 - Fontes de sistema (`-apple-system`, SF Pro, serif New York/Georgia só no título) — sem Google Fonts (WebView offline)
 - Recomendação em `.sf-callout` (filete navy à esquerda); assinatura `.sf-signature` antes do rodapé
@@ -66,18 +74,24 @@ Regra dura — aplicar em HTML **e** Flutter (sheets, cards, pins):
 - Em Relatórios → Mídia/Ocorrência: ação de localização = navegar para o pin no mapa
 - HTML documento editorial: linha da ficha técnica `Localização — Ponto registrado no mapa` (sem emoji)
 
+## Visualizador de fotos no app
+
+- `HtmlReportViewer` (WebView, JavaScript **desabilitado**) carrega uma cópia via `ReportPhotoLinks.prepareInAppHtml`: cada foto vira `<a href="sfphoto://N">` e o checkbox do lightbox é removido
+- `onNavigationRequest` intercepta `sfphoto://N` (prevent) e abre `ReportPhotoViewer` (rota modal Flutter): fundo preto, swipe entre fotos, pinça/duplo toque para zoom (1×–5×), botão fechar + contador `N de M`, legenda do `alt`. Sem AppBar
+- Export/compartilhar usa sempre o `htmlContent` original (sem `sfphoto://`)
+
 ## Rodapé
 
-- UM único bloco: logo SoloForte (imagem) + "SoloForte" + tagline (responsável técnico opcional)
+- UM único bloco: logo SoloForte (imagem) + "SoloForte" — **nada mais**
+- SEM nome/cargo do consultor, SEM tagline "Responsável: …"
 - SEM `footer-meta` (ID, Sync, Sessão, Status técnico, Gerado em)
-- SEM duplicação de marca (consultor + SoloForte separados)
-- SEM emoji 🌱 no rodapé — usar a mesma imagem do logo oficial
+- SEM emoji 🌱 no rodapé — usar a imagem do logo oficial (cores originais, sem `filter: invert`)
 
 ## Branding customizado (Settings)
 
-- Logo/nome do consultor em Settings **não** substitui o logo SoloForte no header HTML
+- Logo/nome do consultor em Settings **não** substitui o logo SoloForte no rodapé HTML
 - `brandingPlaceholders()` ignora `customBrandName` / `customLogoPath` de propósito
-- Responsável técnico vai só na tagline do rodapé SoloForte
+- Consultor aparece só no bloco de assinatura (nome, cargo, "Emitido em")
 
 ## Export (iPad)
 
@@ -86,10 +100,12 @@ Regra dura — aplicar em HTML **e** Flutter (sheets, cards, pins):
 
 ## Checklist rápido (validar sempre)
 
-- [ ] Header branco timbrado com logo SoloForte oficial (imagem, sem degradê/brilho radial)
+- [ ] Header branco timbrado **sem logo** (filete 2px + tipo + título + contexto, sem degradê/brilho radial)
+- [ ] Nenhum status/urgência/plano/consultor repetido entre header, ficha, assinatura e rodapé
+- [ ] Fotos com `data-sf-photo="N"` sequencial; no app abrem no visualizador nativo
 - [ ] Base `_sf_document_base.css` via `{{sf_base_css}}`, sem Google Fonts
 - [ ] Zero ícones genéricos decorativos
 - [ ] Localização = inline resumido OU “Ver no mapa” (sem lat/long)
-- [ ] Rodapé = 1 bloco SoloForte, sem meta ID/Sync
+- [ ] Rodapé = 1 bloco SoloForte (logo + nome), sem consultor, sem meta ID/Sync
 - [ ] Cores: samsung + petróleo
 - [ ] Export passa `sharePositionOrigin`
