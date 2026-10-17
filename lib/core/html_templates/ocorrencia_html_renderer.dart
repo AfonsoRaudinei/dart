@@ -33,7 +33,6 @@ class OcorrenciaHtmlRenderer {
     final type = (data['type'] as String?)?.trim() ?? '';
     final urgenciaClass =
         data['urgencia_class'] as String? ?? _urgenciaClass(type);
-    final status = (data['status'] as String?)?.trim() ?? '';
     final createdAt = _parseDateTime(data['created_at'] as String?);
     final dataRegistro = RelatorioHtmlRenderer.formatDate(createdAt);
     final consultantNome = consultantName?.trim() ?? '';
@@ -62,12 +61,8 @@ class OcorrenciaHtmlRenderer {
       'category': category,
       'type': RelatorioHtmlRenderer.escapeHtml(type),
       'urgencia_class': urgenciaClass,
-      'urgencia_valor': _urgenciaValor(urgenciaClass),
       'urgencia_label':
           'Urgência ${_urgenciaValor(urgenciaClass).toLowerCase()}',
-      'status': RelatorioHtmlRenderer.escapeHtml(status),
-      'status_label': _statusLabel(status),
-      'status_dot': status == 'confirmed' ? 'ok' : 'draft',
       'consultant_nome': RelatorioHtmlRenderer.escapeHtml(consultantNome),
       'consultant_role': RelatorioHtmlRenderer.escapeHtml(
         consultantRole?.trim(),
@@ -116,7 +111,6 @@ class OcorrenciaHtmlRenderer {
       );
     }
     tpl = _resolveRepeatedIf(tpl, 'type', type.isNotEmpty);
-    tpl = _resolveRepeatedIf(tpl, 'status', status.isNotEmpty);
     tpl = _resolveRepeatedIf(tpl, 'consultant_nome', consultantNome.isNotEmpty);
     tpl = _resolveRepeatedIf(
       tpl,
@@ -190,7 +184,7 @@ class OcorrenciaHtmlRenderer {
       data['lat'] != null && data['long'] != null,
     );
 
-    return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
+    return RelatorioHtmlRenderer.finalizeDocument(tpl);
   }
 
   static Future<String> renderLista({
@@ -307,7 +301,7 @@ class OcorrenciaHtmlRenderer {
       truthyHtml: grupos,
     );
 
-    return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
+    return RelatorioHtmlRenderer.finalizeDocument(tpl);
   }
 
   static String _resolveRepeatedIf(String tpl, String condition, bool include) {
@@ -359,7 +353,7 @@ class OcorrenciaHtmlRenderer {
               '''
           <input type="checkbox" id="sf-lista-foto-$fotoNumero" class="sf-lb-toggle" hidden>
           <label for="sf-lista-foto-$fotoNumero" class="sf-thumb-zoom">
-            <img class="sf-thumb" src="$fotoSrc" alt="$fotoLegenda" loading="lazy">
+            <img data-sf-photo class="sf-thumb" src="$fotoSrc" alt="$fotoLegenda" loading="lazy">
           </label>''';
         }
 
@@ -450,7 +444,7 @@ class OcorrenciaHtmlRenderer {
           <figure class="sf-figure">
             <input type="checkbox" id="sf-foto-$fotoIndex" class="sf-lb-toggle" hidden>
             <label for="sf-foto-$fotoIndex" class="galeria-foto">
-              <img src="$image" alt="Foto $numero" loading="lazy">
+              <img data-sf-photo src="$image" alt="Foto $numero" loading="lazy">
             </label>
             <figcaption>Foto $numero</figcaption>
           </figure>
@@ -593,10 +587,6 @@ class OcorrenciaHtmlRenderer {
       default:
         return 'Baixa';
     }
-  }
-
-  static String _statusLabel(String status) {
-    return status == 'confirmed' ? 'Confirmada' : 'Rascunho';
   }
 
   static String _formatDataPlantio(String? iso) {
