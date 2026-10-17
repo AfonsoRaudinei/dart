@@ -30,6 +30,11 @@ Map<String, dynamic> _base(String tipo) => {
   'telefone_vendedor': '(63) 99999-0000',
 };
 
+List<int> _photoIndices(String html) => RegExp(r'data-sf-photo="(\d+)"')
+    .allMatches(html)
+    .map((match) => int.parse(match.group(1)!))
+    .toList();
+
 final _emoji = RegExp(r'[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]', unicode: true);
 
 void _expectEditorialShell(String html, String reason) {
@@ -38,19 +43,41 @@ void _expectEditorialShell(String html, String reason) {
   expect(html, isNot(contains(RegExp(r'\{\{[^}]+\}\}'))), reason: reason);
   expect(html, isNot(contains(_emoji)), reason: reason);
   expect(html, contains('class="sf-letterhead"'), reason: reason);
+  final letterheadStart = html.indexOf('<header class="sf-letterhead">');
+  final letterhead = html.substring(
+    letterheadStart,
+    html.indexOf('</header>', letterheadStart),
+  );
+  expect(letterhead, isNot(contains('<img')), reason: reason);
+  expect(html, isNot(contains('logo-img')), reason: reason);
+  final footer = html.substring(html.indexOf('<footer class="sf-footer">'));
   expect(
-    html,
-    contains(RegExp(r'class="logo-img" src="data:image/png;base64,')),
+    footer,
+    contains(RegExp(r'class="sf-brand-logo" src="data:image/png;base64,')),
     reason: reason,
   );
-  expect(html, contains('class="sf-brand-logo"'), reason: reason);
+  expect(footer, isNot(contains('Responsável')), reason: reason);
+  expect(footer, isNot(contains('Carlos Souza')), reason: reason);
   expect(html, contains('class="sf-section-num"'), reason: reason);
   expect(html, contains('class="sf-sheet"'), reason: reason);
-  expect(html, contains('Plano Ouro'), reason: reason);
-  expect(html, contains('Publicado'), reason: reason);
+  expect(letterhead, contains('Plano Ouro'), reason: reason);
+  expect(letterhead, contains('Publicado'), reason: reason);
+  for (final once in ['Plano Ouro', 'Publicado', 'Carlos Souza']) {
+    expect(
+      RegExp(once).allMatches(html).length,
+      1,
+      reason: '$reason: $once repetido',
+    );
+  }
+  for (final duplicateRow in [
+    '>Situação</span>',
+    '>Divulgação</span>',
+    '>Responsável comercial</span>',
+  ]) {
+    expect(html, isNot(contains(duplicateRow)), reason: reason);
+  }
   expect(html, contains('Ponto registrado no mapa'), reason: reason);
   expect(html, contains('class="sf-signature"'), reason: reason);
-  expect(html, contains('Carlos Souza'), reason: reason);
   expect(html, contains('(63) 99999-0000'), reason: reason);
   for (final legacy in [
     'tipo-badge',
@@ -102,6 +129,7 @@ void main() {
     expect(html, contains('Estimativa baseada na área total do produtor.'));
     expect(html, contains('id="sf-mk-foto-1" class="sf-lb-toggle"'));
     expect(html, contains('src="data:image/jpeg;base64,'));
+    expect(_photoIndices(html), [0]);
     expect(html, contains('<figcaption>Foto 1 · 14/10/2026</figcaption>'));
   });
 
@@ -142,6 +170,32 @@ void main() {
       expect(html, contains('<span class="mk-delta negative">-10,0%</span>'));
       expect(html, contains('50,0 → 45,0 cm'));
       expect(html, isNot(contains('Sem foto')));
+      expect(_photoIndices(html), [0, 1]);
+    },
+  );
+
+  test(
+    'antes/depois legado não repete ganho na ficha do case',
+    () async {
+      final html = await MarketingHtmlRenderer.render({
+        ..._base('antes_depois'),
+        'ganho_produtividade': '+12%',
+      });
+
+      expect(html, contains('class="mk-figures"'));
+      expect(RegExp(r'\+12%').allMatches(html).length, 1);
+      expect(html, isNot(contains('Ganho de produtividade')));
+
+      final comParametros = await MarketingHtmlRenderer.render({
+        ..._base('antes_depois'),
+        'ganho_produtividade': '+12%',
+        'parametros_json': jsonEncode([
+          {'titulo': 'Altura', 'testemunha': 50, 'teste': 55},
+        ]),
+      });
+      expect(comParametros, isNot(contains('class="mk-figures"')));
+      expect(comParametros, contains('Ganho de produtividade'));
+      expect(RegExp(r'\+12%').allMatches(comParametros).length, 1);
     },
   );
 
@@ -177,6 +231,7 @@ void main() {
     expect(html, contains('Média <strong>+20,0%</strong>'));
     expect(html, contains('id="sf-mk-av-1-a" class="sf-lb-toggle"'));
     expect(html, contains('id="sf-mk-av-1-b" class="sf-lb-toggle"'));
+    expect(_photoIndices(html), [0, 1]);
     expect(html, contains('<figcaption>Testemunha · Soja</figcaption>'));
     expect(html, contains('Testemunha 10,0 → Bioestimulante X 12,0'));
     expect(html, contains('Diferença visual clara.'));
