@@ -125,6 +125,22 @@ void main() {
       await tester.pumpAndSettle();
       expect(opened, isFalse);
     });
+
+    testWidgets('go-to-local não dispara onOpenGoToLocal durante editing', (
+      tester,
+    ) async {
+      var opened = false;
+      await _pumpMapControlsOverlay(
+        tester,
+        drawingState: DrawingState.editing,
+        editingFieldName: 'Talhão 2',
+        onOpenGoToLocal: () => opened = true,
+      );
+
+      await tester.tap(find.byKey(const Key('map_control_go_to_local_btn')));
+      await tester.pumpAndSettle();
+      expect(opened, isFalse);
+    });
   });
 
   group('BUG-005 controls_overlay_publicacoes_regression', () {
@@ -460,7 +476,13 @@ void main() {
       final classEnd = source.indexOf('class _MapToolsFab extends', classStart);
       final mapButtonSource = source.substring(classStart, classEnd);
 
-      expect(mapButtonSource.contains('onLongPress: _showTemporaryLabel'), isTrue);
+      final onLongPressStart = mapButtonSource.indexOf('onLongPress:');
+      final onLongPressEnd = mapButtonSource.indexOf('behavior:', onLongPressStart);
+      final onLongPressBlock = mapButtonSource.substring(
+        onLongPressStart,
+        onLongPressEnd,
+      );
+      expect(onLongPressBlock.contains('_showTemporaryLabel'), isTrue);
       final onTapStart = mapButtonSource.indexOf('onTap: () {');
       final onTapEnd = mapButtonSource.indexOf('onLongPress:', onTapStart);
       final onTapBlock = mapButtonSource.substring(onTapStart, onTapEnd);
@@ -589,6 +611,7 @@ Future<void> _pumpMapControlsOverlay(
   DrawingState drawingState = DrawingState.idle,
   String? editingFieldName,
   VoidCallback? onOpenMapTools,
+  VoidCallback? onOpenGoToLocal,
   EdgeInsets safePadding = EdgeInsets.zero,
 }) async {
   _setViewport(tester, safePadding);
@@ -620,7 +643,7 @@ Future<void> _pumpMapControlsOverlay(
             onLocationModeChanged: (_) {},
             onToggleDrawMode: () {},
             onOpenMapTools: onOpenMapTools ?? () {},
-            onOpenGoToLocal: () {},
+            onOpenGoToLocal: onOpenGoToLocal ?? () {},
             onTabSelected: (_, _) {},
             isDrawMode: isDrawMode,
             showCheckInAction: showCheckInAction,
