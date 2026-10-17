@@ -221,7 +221,7 @@ void main() {
   });
 
   test(
-    'render visita inclui assinatura SoloForte unica e responsavel tecnico',
+    'render visita: marca SoloForte só no rodapé, consultor só na assinatura',
     () async {
       await initializeDateFormatting('pt_BR');
 
@@ -249,9 +249,19 @@ void main() {
 
       expect(html, isNot(contains('Agro Forte Consultoria')));
       expect(html, contains('SoloForte'));
-      expect(html, contains('logo-img'));
+      expect(html, isNot(contains('logo-img')));
       expect(html, contains('sf-brand-logo'));
-      expect(html, contains('Responsável: Agronomo Teste · Consultoria'));
+      expect(html, isNot(contains('Responsável:')));
+      expect(html, isNot(contains('sf-brand-tagline')));
+      expect(
+        RegExp('Agronomo Teste').allMatches(html).length,
+        1,
+        reason: 'consultor aparece só no bloco de assinatura',
+      );
+      expect(
+        _between(html, '<div class="sf-signature">', '<footer'),
+        contains('Agronomo Teste'),
+      );
       expect(
         html,
         isNot(contains('Plataforma oficial de relatórios e exportação')),
@@ -262,7 +272,7 @@ void main() {
   );
 
   test(
-    'ocorrencia detalhada: logo header, localizacao inline, sem meta rodape',
+    'ocorrencia detalhada: sem logo no timbre, localizacao inline, sem meta rodape',
     () async {
       await initializeDateFormatting('pt_BR');
 
@@ -283,7 +293,11 @@ void main() {
         consultantRole: 'consultor',
       );
 
-      expect(html, contains('logo-img'));
+      expect(html, isNot(contains('logo-img')));
+      expect(
+        _between(html, '<header class="sf-letterhead">', '</header>'),
+        isNot(contains('<img')),
+      );
       expect(html, contains('SoloForte'));
       expect(html, contains('localizacao-inline'));
       expect(html, isNot(contains('localizacao-block')));
@@ -378,11 +392,23 @@ void main() {
     expect(html, isNot(contains(RegExp(r'\{\{[^}]+\}\}'))), reason: reason);
     expect(html, contains('.sf-letterhead'), reason: reason);
     expect(html, contains('class="sf-letterhead"'), reason: reason);
-    expect(
+    final letterhead = _between(
       html,
-      contains(RegExp(r'class="logo-img" src="data:image/png;base64,')),
+      '<header class="sf-letterhead">',
+      '</header>',
+    );
+    expect(letterhead, isNot(contains('<img')), reason: reason);
+    expect(letterhead, isNot(contains('SoloForte')), reason: reason);
+    final footer = _between(html, '<footer class="sf-footer">', '</footer>');
+    expect(
+      footer,
+      contains(RegExp(r'class="sf-brand-logo" src="data:image/png;base64,')),
       reason: reason,
     );
+    expect(footer, contains('<strong>SoloForte</strong>'), reason: reason);
+    expect(footer, isNot(contains('Responsável')), reason: reason);
+    expect(footer, isNot(contains('Agronomo Teste')), reason: reason);
+    expect(html, isNot(contains('logo-img')), reason: reason);
     expect(html, isNot(contains('invert(1)')), reason: reason);
     expect(html, isNot(contains('radial-gradient')), reason: reason);
     expect(html, isNot(contains('section-label-bar')), reason: reason);
@@ -438,8 +464,14 @@ void main() {
 
         expectEditorialDocument(html, reason: 'ocorrencia');
         expect(html, contains('Relatório de ocorrência'));
-        expect(html, contains('Urgência média'));
-        expect(html, contains('Rascunho'));
+        expect(RegExp('Urgência média').allMatches(html).length, 1);
+        expect(
+          _between(html, '<header class="sf-letterhead">', '</header>'),
+          contains('Urgência média'),
+        );
+        expect(html, isNot(contains('>Urgência</span>')));
+        expect(html, isNot(contains('Rascunho')));
+        expect(html, isNot(contains('>Situação</span>')));
         expect(html, isNot(contains(RegExp(r'>\s*draft\s*<'))));
         expect(html, isNot(contains('#OCC-EDIT')));
         expect(html, isNot(contains('OCC-EDIT')));
@@ -457,7 +489,7 @@ void main() {
       },
     );
 
-    test('ocorrencia confirmada mostra situação por extenso', () async {
+    test('ocorrencia confirmada mostra só a urgência, sem situação', () async {
       await initializeDateFormatting('pt_BR');
 
       final html = await OcorrenciaHtmlRenderer.renderDetalhe({
@@ -468,8 +500,9 @@ void main() {
         'created_at': now.toIso8601String(),
       });
 
-      expect(html, contains('Confirmada'));
-      expect(html, contains('Urgência alta'));
+      expect(html, isNot(contains('Confirmada')));
+      expect(html, isNot(contains('>Situação</span>')));
+      expect(RegExp('Urgência alta').allMatches(html).length, 1);
       expect(html, isNot(contains(RegExp(r'>\s*confirmed\s*<'))));
       expect(html, isNot(contains('class="sf-signature"')));
     });
@@ -528,7 +561,9 @@ void main() {
       expect(html, contains('Relatório de visita'));
       expect(html, contains('Visita técnica'));
       expect(html, contains('Fazenda Modelo · Cliente Teste · 03/06/2026'));
-      expect(html, contains('Publicado'));
+      expect(RegExp('Publicado').allMatches(html).length, 1);
+      expect(html, isNot(contains('>Situação</span>')));
+      expect(html, isNot(contains('>Agrônomo</span>')));
       expect(html, contains('Talhao Norte'));
       expect(html, contains('Cultura: Soja · Safra: 2025/26'));
       expect(html, contains('42,0 ha'));
@@ -601,7 +636,8 @@ void main() {
           contains('Fazenda Modelo · Talhao Norte · BRS 1010 · 03/06/2026'),
         );
         expect(html, contains('>Cultivar</span>'));
-        expect(html, contains('>Agrônomo</span>'));
+        expect(html, isNot(contains('>Agrônomo</span>')));
+        expect(RegExp('Agronomo Teste').allMatches(html).length, 1);
         expect(html, contains('>Data da visita</span>'));
         expect(html, contains('class="sf-stats"'));
         expect(html, contains('>ocorrências</span>'));
@@ -813,7 +849,8 @@ void main() {
       expectNoLegacyChrome(html, reason: 'planejamento');
       expect(html, contains('Planejamento semanal'));
       expect(html, contains(RegExp(r'Semana de 6 jul\.? – 12 jul\.? 2026')));
-      expect(html, contains('Agronomo Teste · 2 eventos'));
+      expect(html, contains('<p class="sf-subtitle">2 eventos</p>'));
+      expect(RegExp('Agronomo Teste').allMatches(html).length, 1);
       expect(html, contains('>50%</span>'));
       expect(html, contains('>de eficiência</span>'));
       expect(html, contains('Segunda-feira · 6 jul 2026 · 1 de 2 concluídos'));
@@ -895,6 +932,118 @@ void main() {
       expect(html, contains('>Categoria</span>'));
     },
   );
+
+  group('data-sf-photo', () {
+    List<int> photoIndices(String html) => RegExp(r'data-sf-photo="(\d+)"')
+        .allMatches(html)
+        .map((match) => int.parse(match.group(1)!))
+        .toList();
+
+    test('ocorrencia detalhada numera capa e galeria em sequência', () async {
+      await initializeDateFormatting('pt_BR');
+
+      final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+        'id': 'occ-idx',
+        'type': 'Alta',
+        'category': 'insetos',
+        'created_at': now.toIso8601String(),
+        'foto_base64': 'https://example.com/capa.jpg',
+        'fotos_categorias_json': jsonEncode({
+          'insetos': ['https://example.com/a.jpg', 'https://example.com/b.jpg'],
+          'doenca': ['https://example.com/c.jpg'],
+        }),
+      });
+
+      expect(photoIndices(html), [0, 1, 2, 3]);
+      expect(html, isNot(contains(RegExp(r'data-sf-photo(?!=)'))));
+      expect(
+        html,
+        contains('<img data-sf-photo="0" src="https://example.com/capa.jpg"'),
+      );
+      expect(html, isNot(contains('sf-brand-logo" data-sf-photo')));
+    });
+
+    test('visita numera miniaturas de ocorrência e fotos da visita', () async {
+      await initializeDateFormatting('pt_BR');
+
+      final html = await VisitaHtmlRenderer.render(
+        relatorio: {
+          'id': 'rel-idx',
+          'status': 'publicado',
+          'title': 'Visita',
+          'farmName': 'Fazenda',
+          'periodStart': now.toIso8601String(),
+          'ocorrencias': [
+            {
+              'tipo': 'Insetos',
+              'fotoPaths': [
+                'https://example.com/o1.jpg',
+                'https://example.com/o2.jpg',
+              ],
+            },
+          ],
+          'fotos': const [
+            'https://example.com/v1.jpg',
+            'https://example.com/v2.jpg',
+          ],
+        },
+        agronomistNome: '',
+        clienteNome: 'Cliente',
+        publicacoesTitulos: const {},
+      );
+
+      expect(photoIndices(html), [0, 1, 2, 3]);
+      expect(
+        html.indexOf('data-sf-photo="0"'),
+        lessThan(html.indexOf('https://example.com/o1.jpg')),
+      );
+      expect(
+        html.indexOf('data-sf-photo="3"'),
+        lessThan(html.indexOf('https://example.com/v2.jpg')),
+      );
+    });
+
+    test('lista de ocorrências numera miniaturas', () async {
+      await initializeDateFormatting('pt_BR');
+
+      final html = await OcorrenciaHtmlRenderer.renderLista(
+        clienteNome: 'Cliente',
+        ocorrencias: [
+          for (var i = 0; i < 3; i++)
+            {
+              'id': 'occ-$i',
+              'type': 'Baixa',
+              'category': 'insetos',
+              'foto_base64': 'https://example.com/l$i.jpg',
+            },
+        ],
+      );
+
+      expect(photoIndices(html), [0, 1, 2]);
+    });
+
+    test('texto livre com marcador escapado não vira foto', () async {
+      await initializeDateFormatting('pt_BR');
+
+      final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+        'id': 'occ-xss',
+        'type': 'Baixa',
+        'category': 'insetos',
+        'description': '<img data-sf-photo src="x">',
+      });
+
+      expect(photoIndices(html), isEmpty);
+      expect(html, contains('&lt;img data-sf-photo'));
+    });
+  });
+}
+
+String _between(String html, String start, String end) {
+  final from = html.indexOf(start);
+  expect(from, greaterThanOrEqualTo(0), reason: 'faltou $start');
+  final to = html.indexOf(end, from + start.length);
+  expect(to, greaterThan(from), reason: 'faltou $end');
+  return html.substring(from, to);
 }
 
 Map<String, dynamic> _marketingBase(String tipo) {
