@@ -302,7 +302,10 @@ abstract class RelatorioHtmlRenderer {
 
   /// Placeholders de marca SoloForte para todos os HTML de relatório.
   ///
-  /// Header: logo oficial obrigatório. Rodapé: mesma marca + tagline.
+  /// A marca aparece uma única vez, no rodapé (logo + "SoloForte").
+  /// `report_header_signature` fica vazio: o timbre não repete a marca.
+  /// O consultor aparece só no bloco de assinatura do template — por isso
+  /// [consultantName] / [consultantRole] não entram no rodapé.
   /// Branding customizado (Settings) é ignorado de propósito — ver
   /// `.cursor/rules/soloforte-designer.mdc`.
   static Future<Map<String, String>> brandingPlaceholders({
@@ -311,33 +314,41 @@ abstract class RelatorioHtmlRenderer {
     String? consultantName,
     String? consultantRole,
   }) async {
-    // customBrandName / customLogoPath ignorados de propósito.
     final logoSrc = await assetImageToBase64(soloForteLogoAsset);
-    final escapedConsultant = escapeHtml(consultantName);
-    final escapedRole = escapeHtml(consultantRole);
-    final issuerCaption = escapedConsultant.isNotEmpty
-        ? escapedRole.isNotEmpty
-              ? 'Responsável: $escapedConsultant · $escapedRole'
-              : 'Responsável: $escapedConsultant'
-        : 'Agronomia inteligente · www.soloforte.app';
 
     return {
-      'report_header_signature':
-          '''
-<img class="logo-img" src="$logoSrc" alt="SoloForte" width="38" height="38">
-<span class="logo-name">SoloForte</span>
-''',
+      'report_header_signature': '',
       'report_footer_signature':
           '''
 <div class="sf-brand">
   <img class="sf-brand-logo" src="$logoSrc" alt="" width="22" height="22" aria-hidden="true">
   <div class="sf-brand-copy">
     <strong>SoloForte</strong>
-    <span class="sf-brand-tagline">$issuerCaption</span>
   </div>
 </div>
 ''',
     };
+  }
+
+  /// Toda foto do relatório começa com `<img data-sf-photo ` (atributo sem
+  /// valor). [finalizeDocument] troca cada ocorrência por `data-sf-photo="N"`
+  /// (0-based, ordem do documento) — índice usado pelo visualizador nativo.
+  /// Texto livre chega escapado (`&lt;img`), então não colide com o marcador.
+  static final _photoImgMarker = RegExp(r'<img data-sf-photo(?=[\s>])');
+
+  /// Numera as fotos marcadas na ordem do documento.
+  static String indexReportPhotos(String html) {
+    var index = 0;
+    return html.replaceAllMapped(
+      _photoImgMarker,
+      (_) => '<img data-sf-photo="${index++}"',
+    );
+  }
+
+  /// Etapa final comum dos renderers: remove tokens remanescentes e numera
+  /// as fotos do relatório.
+  static String finalizeDocument(String html) {
+    return indexReportPhotos(stripUnresolvedPlaceholders(html));
   }
 
   static Uint8List? _compressImage(
