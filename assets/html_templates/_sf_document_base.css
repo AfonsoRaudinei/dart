@@ -505,7 +505,7 @@ body {
 
   * { box-shadow: none !important; }
 
-  .sf-figure, .sf-sheet, .sf-item, .sf-callout, .sf-signature {
+  .sf-figure, .sf-row, .sf-item, .sf-callout, .sf-signature {
     page-break-inside: avoid;
     break-inside: avoid;
   }
