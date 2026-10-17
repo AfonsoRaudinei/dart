@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
@@ -8,6 +10,24 @@ import '../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../core/ui/sheets/widgets/sheet_input_field.dart';
 import '../../../modules/clima/data/datasources/ibge_localidades_datasource.dart';
 import '../../../modules/clima/data/services/city_geocoder.dart';
+
+/// Escolhe o município a geocodificar após busca (testável).
+IbgeMunicipio? resolveMapMunicipalityForSearch({
+  required List<IbgeMunicipio> filtered,
+  required String query,
+  IbgeMunicipio? selected,
+}) {
+  if (selected != null) return selected;
+  final term = query.trim();
+  if (term.isEmpty) return null;
+
+  final exact = filtered
+      .where((m) => m.nome.toLowerCase() == term.toLowerCase())
+      .toList();
+  if (exact.length == 1) return exact.first;
+  if (filtered.length == 1) return filtered.single;
+  return null;
+}
 
 /// Abre busca IBGE de município para navegar no mapa.
 Future<void> showMapMunicipalitySearch(
@@ -41,6 +61,7 @@ class _MapMunicipalitySearchSheetState
   List<IbgeEstado> _estados = [];
   List<IbgeMunicipio> _municipios = [];
   IbgeEstado? _estadoSelecionado;
+  IbgeMunicipio? _selectedMunicipio;
   bool _loadingEstados = true;
   bool _loadingMunicipios = false;
   bool _geocoding = false;
@@ -86,7 +107,12 @@ class _MapMunicipalitySearchSheetState
   void initState() {
     super.initState();
     _loadEstados();
-    _searchController.addListener(() => setState(() {}));
+    _searchController.addListener(() {
+      setState(() {
+        _error = null;
+        _selectedMunicipio = null;
+      });
+    });
   }
 
   @override
@@ -164,6 +190,27 @@ class _MapMunicipalitySearchSheetState
     Navigator.of(context).pop();
   }
 
+  Future<void> _submitSearch() async {
+    if (_geocoding || _loadingMunicipios) return;
+
+    final municipio = resolveMapMunicipalityForSearch(
+      filtered: _filteredMunicipios,
+      query: _searchController.text,
+      selected: _selectedMunicipio,
+    );
+
+    if (municipio == null) {
+      setState(() {
+        _error = _searchController.text.trim().isEmpty
+            ? 'Digite o nome do município ou selecione na lista.'
+            : 'Selecione um município na lista ou refine a busca.';
+      });
+      return;
+    }
+
+    await _selectMunicipio(municipio);
+  }
+
   List<IbgeMunicipio> get _filteredMunicipios {
     return _datasource.filterMunicipios(_municipios, _searchController.text);
   }
@@ -205,6 +252,17 @@ class _MapMunicipalitySearchSheetState
     final iconColor = isIos
         ? SoloForteSheetSkinIos.subtitleColor
         : SoloForteSheetTokens.categoryLabel;
+    final ctaBg = isIos
+        ? SoloForteSheetSkinIos.ctaBackground
+        : SoloForteSheetTokens.chipBorderActive;
+    final ctaFg = isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+    final ghostBorder = isIos
+        ? SoloForteSheetSkinIos.ghostBorder
+        : SoloForteSheetTokens.divider;
+    final ghostText = isIos
+        ? SoloForteSheetSkinIos.ghostText
+        : SoloForteSheetTokens.chipTextInactive;
+    final canSubmit = !_geocoding && !_loadingMunicipios;
 
     return SingleChildScrollView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -252,6 +310,7 @@ class _MapMunicipalitySearchSheetState
                       setState(() {
                         _estadoSelecionado = estado;
                         _searchController.clear();
+                        _selectedMunicipio = null;
                       });
                       _loadMunicipios(estado);
                     },
@@ -263,6 +322,8 @@ class _MapMunicipalitySearchSheetState
                 controller: _searchController,
                 hintText: 'Buscar município…',
                 prefixIcon: Icon(Icons.search, color: hintColor),
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) => _submitSearch(),
               ),
             ),
             const SizedBox(height: 12),
@@ -306,12 +367,15 @@ class _MapMunicipalitySearchSheetState
                         ),
                         itemBuilder: (context, index) {
                           final municipio = _filteredMunicipios[index];
+                          final isSelected =
+                              _selectedMunicipio?.id == municipio.id;
                           return Material(
                             color: Colors.transparent,
                             child: InkWell(
                               onTap: () {
                                 HapticFeedback.selectionClick();
-                                _selectMunicipio(municipio);
+                                setState(() => _selectedMunicipio = municipio);
+                                unawaited(_selectMunicipio(municipio));
                               },
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
@@ -322,7 +386,10 @@ class _MapMunicipalitySearchSheetState
                                   municipio.nome,
                                   style: TextStyle(
                                     fontSize: 16,
-                                    color: inputText,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
+                                    color: isSelected ? accent : inputText,
                                   ),
                                 ),
                               ),
@@ -331,6 +398,50 @@ class _MapMunicipalitySearchSheetState
                         },
                       ),
                     ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: ghostText,
+                      side: BorderSide(color: ghostBorder),
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          isIos
+                              ? SoloForteSheetSkinIos.ghostRadius
+                              : SoloForteSheetTokens.chipRadius,
+                        ),
+                      ),
+                    ),
+                    onPressed: _geocoding
+                        ? null
+                        : () => Navigator.of(context).pop(),
+                    child: const Text('Cancelar'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: ctaBg,
+                      foregroundColor: ctaFg,
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          isIos
+                              ? SoloForteSheetSkinIos.ctaRadius
+                              : SoloForteSheetTokens.chipRadius,
+                        ),
+                      ),
+                    ),
+                    onPressed: canSubmit ? _submitSearch : null,
+                    child: const Text('Ir'),
+                  ),
+                ),
+              ],
             ),
           ],
         ],
