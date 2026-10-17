@@ -14,6 +14,7 @@ import '../../core/config/map_config.dart';
 import '../../core/providers/connectivity_provider.dart';
 import '../../core/services/offline_tile_cache_service.dart';
 import '../../core/utils/coordinate_parser.dart';
+import '../../core/utils/google_maps_link_parser.dart';
 import '../../modules/auth/services/auth_service.dart';
 import '../../core/utils/app_logger.dart';
 import '../../modules/drawing/presentation/providers/drawing_provider.dart';
@@ -581,12 +582,23 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     final value = await showMapCoordinateSearchSheet(context);
     if (!mounted || value == null || value.isEmpty) return;
 
-    final parsed = CoordinateParser.parse(value);
+    final resolvingLink = GoogleMapsLinkParser.looksLikeGoogleMapsLink(value);
+    if (resolvingLink) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Resolvendo link do Google Maps…'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+
+    final parsed = await CoordinateParser.parseAsync(value);
+    if (!mounted) return;
     if (parsed == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Formato inválido. Use decimal, DMS/DDM (com hemisfério) ou UTM.',
+            'Formato inválido. Use decimal, DMS/DDM, UTM ou link do Google Maps.',
           ),
         ),
       );
