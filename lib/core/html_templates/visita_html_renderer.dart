@@ -66,6 +66,15 @@ class VisitaHtmlRenderer {
     });
 
     tpl = _resolveRepeatedIf(tpl, 'contexto_linha', contextoLinha.isNotEmpty);
+    tpl = RelatorioHtmlRenderer.resolveIfBlock(
+      tpl,
+      'ficha_tecnica',
+      include:
+          clienteNome.trim().isNotEmpty ||
+          farmName.isNotEmpty ||
+          periodStart.isNotEmpty ||
+          periodEnd.isNotEmpty,
+    );
     tpl = _resolveRepeatedIf(
       tpl,
       'agronomist_nome',
@@ -130,7 +139,7 @@ class VisitaHtmlRenderer {
       ),
     );
 
-    return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
+    return RelatorioHtmlRenderer.finalizeDocument(tpl);
   }
 
   static String _resolveRepeatedIf(String tpl, String condition, bool include) {
@@ -231,9 +240,9 @@ class VisitaHtmlRenderer {
           _stringOrNull(ocorrencia['recomendacoes'])?.trim() ?? '';
       final thumbHtml = fotos.isEmpty
           ? ''
-          : '<img class="sf-thumb" src="${fotos.first}" alt="Foto da ocorrência" loading="lazy">';
+          : '<img data-sf-photo class="sf-thumb" src="${fotos.first}" alt="Foto da ocorrência" loading="lazy">';
       final stripHtml = fotos.length > 1
-          ? '<div class="sf-thumb-strip">${fotos.skip(1).map((src) => '<img class="sf-thumb" src="$src" alt="Foto da ocorrência" loading="lazy">').join()}</div>'
+          ? '<div class="sf-thumb-strip">${fotos.skip(1).map((src) => '<img data-sf-photo class="sf-thumb" src="$src" alt="Foto da ocorrência" loading="lazy">').join()}</div>'
           : '';
 
       sb.write('''
@@ -373,7 +382,7 @@ class VisitaHtmlRenderer {
         <figure class="sf-figure">
           <input type="checkbox" id="sf-visita-foto-$numero" class="sf-lb-toggle" hidden>
           <label for="sf-visita-foto-$numero">
-            <img src="$b64" alt="Foto $numero da visita" loading="lazy">
+            <img data-sf-photo src="$b64" alt="Foto $numero da visita" loading="lazy">
           </label>
           <figcaption>Foto $numero</figcaption>
         </figure>
