@@ -118,13 +118,78 @@ void main() {
   });
 
   group('ReportPhotoLinks.indexFromUrl', () {
-    test('reconhece só sfphoto://N', () {
+    test('aceita índice no host ou no path', () {
+      expect(ReportPhotoLinks.linkFor(3), 'sfphoto://3');
       expect(ReportPhotoLinks.indexFromUrl('sfphoto://0'), 0);
       expect(ReportPhotoLinks.indexFromUrl('sfphoto://12/'), 12);
-      expect(ReportPhotoLinks.linkFor(3), 'sfphoto://3');
+      expect(ReportPhotoLinks.indexFromUrl('sfphoto:///7'), 7);
       expect(ReportPhotoLinks.indexFromUrl('about:blank'), isNull);
       expect(ReportPhotoLinks.indexFromUrl('https://soloforte.app'), isNull);
       expect(ReportPhotoLinks.indexFromUrl('sfphoto://abc'), isNull);
+    });
+  });
+
+  group('ReportPhotoLinks.decideNavigation', () {
+    void expectOpens(String url, int index) {
+      final decision = ReportPhotoLinks.decideNavigation(url);
+      expect(decision.action, ReportNavigationAction.openPhoto, reason: url);
+      expect(decision.photoIndex, index, reason: url);
+    }
+
+    void expectAction(String url, ReportNavigationAction action) {
+      final decision = ReportPhotoLinks.decideNavigation(url);
+      expect(decision.action, action, reason: url);
+      expect(decision.photoIndex, isNull, reason: url);
+    }
+
+    test('sfphoto com índice abre o visualizador', () {
+      expectOpens('sfphoto://0', 0);
+      expectOpens('sfphoto://3/', 3);
+      expectOpens('sfphoto:///5', 5);
+      expectOpens('sfphoto:///5/', 5);
+    });
+
+    test('about: e data: são permitidos (documento inicial)', () {
+      for (final url in [
+        'about:blank',
+        'about:srcdoc',
+        'about:blank#top',
+        'data:text/html;charset=utf-8,%3Chtml%3E',
+        'data:text/html;base64,PGh0bWw+',
+      ]) {
+        expectAction(url, ReportNavigationAction.allow);
+      }
+    });
+
+    test('qualquer outra URL é bloqueada (WebView sem voltar)', () {
+      for (final url in [
+        'https://soloforte.app',
+        'http://example.com/x',
+        'file:///tmp/relatorio.html',
+        'mailto:contato@soloforte.app',
+        'tel:+5563999990000',
+        'javascript:alert(1)',
+        '',
+      ]) {
+        expectAction(url, ReportNavigationAction.prevent);
+      }
+    });
+
+    test('sfphoto malformado é bloqueado', () {
+      for (final url in [
+        'sfphoto://',
+        'sfphoto:///',
+        'sfphoto://abc',
+        'sfphoto://-1',
+        'sfphoto://1.5',
+        'sfphoto://1/2',
+        'sfphoto:///1/2',
+        'sfphoto://1?x=2',
+        'sfphoto://1#foto',
+        'sfphoto:1x',
+      ]) {
+        expectAction(url, ReportNavigationAction.prevent);
+      }
     });
   });
 }
