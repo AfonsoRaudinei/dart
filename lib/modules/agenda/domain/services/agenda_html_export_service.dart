@@ -48,7 +48,6 @@ class AgendaHtmlExportService {
           )
           .join();
 
-      final headerSig = branding['report_header_signature'] ?? '';
       final footerSig = branding['report_footer_signature'] ?? '';
 
       return '''
@@ -74,9 +73,6 @@ class AgendaHtmlExportService {
   html{background:var(--bg)!important;color:var(--sf-text)!important;}
   body{background:var(--bg)!important;color:var(--sf-text)!important;font-family:var(--sans);font-size:16px;padding:0 0 56px;max-width:600px;margin:0 auto;}
   .hdr{background:linear-gradient(135deg,var(--sf-samsung) 0%,var(--sf-navy) 100%)!important;padding:20px 20px 16px;margin-bottom:24px;color:#fff;}
-  .brand{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
-  .logo-img{width:32px;height:32px;object-fit:contain;filter:brightness(0) invert(1);opacity:.92;}
-  .logo-name{font-size:14px;font-weight:700;letter-spacing:.04em;color:#fff!important;}
   .hdr-title{font-size:24px;font-weight:700;color:#fff!important;letter-spacing:-.4px;line-height:1.15;margin-bottom:5px;}
   .hdr-meta{font-size:12px;color:rgba(255,255,255,.85)!important;}
   .hdr-meta b{color:#fff!important;font-weight:500;}
@@ -127,15 +123,11 @@ class AgendaHtmlExportService {
   .sf-brand-logo{width:22px;height:22px;object-fit:contain;}
   .sf-brand-copy{display:flex;flex-direction:column;gap:2px;}
   .sf-brand-copy strong{font-size:14px;font-weight:600;color:var(--sf-text);}
-  .sf-brand-tagline{font-size:11px;line-height:1.4;color:#667085;}
 </style>
 </head>
 <body>
 
 <div class="hdr">
-  <div class="brand">
-    $headerSig
-  </div>
   <div class="hdr-title">Agenda de Visitas</div>
   <div class="hdr-meta"><b>$total eventos</b>$periodoHtml</div>
 </div>
