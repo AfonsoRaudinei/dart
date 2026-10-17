@@ -83,9 +83,6 @@
 
   <header class="sf-letterhead">
     <div class="sf-letterhead-row">
-      <div class="sf-logo-area">
-        {{report_header_signature}}
-      </div>
       <span class="sf-doc-type">Case de resultado</span>
     </div>
     <h1 class="sf-title">{{produtor_fazenda}}</h1>
@@ -167,7 +164,7 @@
       <figure class="sf-figure sf-figure-hero">
         <input type="checkbox" id="sf-mk-foto-1" class="sf-lb-toggle" hidden>
         <label for="sf-mk-foto-1" class="photo-hero">
-          <img src="{{foto_principal_url}}" alt="Foto do resultado" loading="lazy">
+          <img data-sf-photo src="{{foto_principal_url}}" alt="Foto do resultado" loading="lazy">
         </label>
         <figcaption>{{foto_legenda}}</figcaption>
       </figure>
@@ -196,17 +193,8 @@
         <!-- {{#if data_case}} -->
         <div class="sf-row"><span class="sf-row-label">Data do case</span><span class="sf-row-value">{{data_case_formatado}}</span></div>
         <!-- {{/if}} -->
-        <!-- {{#if visibilidade}} -->
-        <div class="sf-row"><span class="sf-row-label">Divulgação</span><span class="sf-row-value">{{visibilidade_label}}</span></div>
-        <!-- {{/if}} -->
-        <!-- {{#if status}} -->
-        <div class="sf-row"><span class="sf-row-label">Situação</span><span class="sf-row-value">{{status_label}}</span></div>
-        <!-- {{/if}} -->
         <!-- {{#if localizacao}} -->
         <div class="sf-row localizacao-inline"><span class="sf-row-label">Localização</span><span class="sf-row-value">Ponto registrado no mapa</span></div>
-        <!-- {{/if}} -->
-        <!-- {{#if nome_vendedor}} -->
-        <div class="sf-row"><span class="sf-row-label">Responsável comercial</span><span class="sf-row-value">{{nome_vendedor}}</span></div>
         <!-- {{/if}} -->
         <!-- {{#if telefone_vendedor}} -->
         <div class="sf-row"><span class="sf-row-label">Telefone</span><span class="sf-row-value">{{telefone_vendedor}}</span></div>
