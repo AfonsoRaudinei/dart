@@ -6,7 +6,7 @@ import '../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../core/ui/sheets/widgets/sheet_input_field.dart';
 
-/// Abre sheet para ir a coordenada (decimal, DMS/DDM ou UTM).
+/// Abre sheet para ir a coordenada (decimal, DMS/DDM, UTM ou link Google Maps).
 Future<String?> showMapCoordinateSearchSheet(BuildContext context) {
   return showSoloForteSheet<String>(
     context: context,
@@ -87,13 +87,14 @@ class _MapCoordinateSearchSheetState extends State<MapCoordinateSearchSheet> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Decimal, DMS/DDM (com hemisfério) ou UTM.',
+              'Decimal, DMS/DDM (com hemisfério), UTM ou link do Google Maps.',
               style: TextStyle(color: bodyColor, fontSize: 13),
             ),
             const SizedBox(height: 16),
             SheetInputField(
               controller: _controller,
-              hintText: 'Ex: -10.1823,-48.3331 | 22K 788000 8872000',
+              hintText:
+                  'Ex: -10.1823,-48.3331 | https://maps.app.goo.gl/…',
             ),
             const SizedBox(height: 20),
             Row(
