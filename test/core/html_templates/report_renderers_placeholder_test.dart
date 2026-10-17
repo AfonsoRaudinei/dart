@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -6,6 +7,7 @@ import 'package:soloforte_app/core/html_templates/marketing_html_renderer.dart';
 import 'package:soloforte_app/core/html_templates/ocorrencia_html_renderer.dart';
 import 'package:soloforte_app/core/html_templates/planejamento_html_renderer.dart';
 import 'package:soloforte_app/core/html_templates/propriedade_html_renderer.dart';
+import 'package:soloforte_app/core/html_templates/relatorio_html_renderer.dart';
 import 'package:soloforte_app/core/html_templates/visita_html_renderer.dart';
 
 void main() {
@@ -491,7 +493,7 @@ void main() {
             {
               'id': 'mon-1',
               'tipo': 'Fenologia',
-              'dados': {'estadio': 'V4'},
+              'dados': {'estadio': 'V4', 'altura_cm': 38},
               'coletadoEm': now.toIso8601String(),
             },
           ],
@@ -519,6 +521,11 @@ void main() {
       expect(html, isNot(contains('-10.1234')));
       expect(html, contains('Fenologia'));
       expect(html, contains('V4'));
+      expect(html, isNot(contains('>estadio<')));
+      expect(html, isNot(contains('>altura_cm<')));
+      expect(html, contains('>Estádio<'));
+      expect(html, contains('>Altura (cm)<'));
+      expect(html, contains('>38<'));
       expect(html, contains('Manejo integrado'));
       expect(html, contains('Notas finais'));
       expect(html, contains('class="sf-signature"'));
@@ -526,6 +533,46 @@ void main() {
       expect(html, isNot(contains('publicacao-badge')));
     });
   });
+
+  test('humanizeKey converte chaves técnicas em rótulos legíveis', () {
+    expect(RelatorioHtmlRenderer.humanizeKey('estadio'), 'Estádio');
+    expect(RelatorioHtmlRenderer.humanizeKey('altura_cm'), 'Altura (cm)');
+    expect(
+      RelatorioHtmlRenderer.humanizeKey('incidencia_pct'),
+      'Incidência (%)',
+    );
+    expect(RelatorioHtmlRenderer.humanizeKey('area_ha'), 'Área (ha)');
+    expect(
+      RelatorioHtmlRenderer.humanizeKey('plantas_por_metro'),
+      'Plantas por metro',
+    );
+    expect(RelatorioHtmlRenderer.humanizeKey('severidade'), 'Severidade');
+  });
+
+  test(
+    'base CSS de impressão não força a lista agrupada inteira na página',
+    () {
+      final css = File(
+        'assets/html_templates/_sf_document_base.css',
+      ).readAsStringSync();
+      final printBlock = css.substring(css.indexOf('@media print'));
+      final avoidRule = RegExp(
+        r'([^{}]+)\{[^}]*page-break-inside:\s*avoid',
+      ).firstMatch(printBlock);
+      expect(avoidRule, isNotNull);
+      final selectors = avoidRule!.group(1)!;
+      expect(selectors, isNot(contains('.sf-sheet')));
+      for (final selector in [
+        '.sf-row',
+        '.sf-item',
+        '.sf-figure',
+        '.sf-callout',
+        '.sf-signature',
+      ]) {
+        expect(selectors, contains(selector));
+      }
+    },
+  );
 
   test(
     'ocorrencia detalhada oculta cards de cliente/fazenda/talhão vazios',
