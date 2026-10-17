@@ -344,6 +344,33 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Cópia in-app: nunca expandir lightbox CSS (visualizador nativo). */
+@media screen {
+  .sf-doc.sf-in-app .sf-lb-toggle:checked + label {
+    position: relative;
+    inset: auto;
+    width: auto;
+    height: auto;
+    z-index: auto;
+    margin: 0;
+    padding: 0;
+    display: block;
+    background: transparent;
+    border-radius: var(--sf-radius-md);
+    overflow: visible;
+    cursor: pointer;
+  }
+
+  .sf-doc.sf-in-app .sf-lb-toggle:checked + label img {
+    width: 100%;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    object-fit: cover;
+    border-radius: var(--sf-radius-md);
+  }
+}
+
 /* ═══ Linhas com miniatura ═══ */
 .sf-item {
   display: flex;
