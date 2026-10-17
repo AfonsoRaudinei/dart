@@ -228,6 +228,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                 icon: SFIcons.search,
                 label: 'Ir para local',
                 activeColor: activeColor,
+                enabled: widget.drawingState != DrawingState.editing,
                 onTap: widget.onOpenGoToLocal,
               ),
               const SizedBox(height: kMapActionColumnSpacingAboveCheckIn),
@@ -299,6 +300,7 @@ class _MapActionButton extends StatefulWidget {
   final String label;
   final VoidCallback onTap;
   final bool isActive;
+  final bool enabled;
   final Color activeColor;
   final Key? buttonKey;
 
@@ -309,6 +311,7 @@ class _MapActionButton extends StatefulWidget {
     required this.activeColor,
     this.buttonKey,
     this.isActive = false,
+    this.enabled = true,
   });
 
   @override
@@ -343,16 +346,23 @@ class _MapActionButtonState extends State<_MapActionButton> {
         _MapButtonLabel(text: widget.label, isVisible: _showLabel),
         const SizedBox(width: 8),
         Semantics(
-          button: true,
+          button: widget.enabled,
           label: widget.label,
           child: GestureDetector(
             onTap: () {
+              if (!widget.enabled) return;
               HapticFeedback.selectionClick();
               widget.onTap();
             },
-            onLongPress: _showTemporaryLabel,
+            onLongPress: () {
+              if (!widget.enabled) return;
+              _showTemporaryLabel();
+            },
             behavior: HitTestBehavior.opaque,
-            child: Container(
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 180),
+              opacity: widget.enabled ? 1 : 0.45,
+              child: Container(
               key: widget.buttonKey,
               width: kMapActionColumnButtonSize,
               height: kMapActionColumnButtonSize,
@@ -374,6 +384,7 @@ class _MapActionButtonState extends State<_MapActionButton> {
                     ? widget.activeColor
                     : Colors.grey.shade600,
               ),
+            ),
             ),
           ),
         ),
