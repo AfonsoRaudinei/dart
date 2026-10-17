@@ -334,6 +334,7 @@ Future<void> _pumpMapControlsOverlay(
             onLocationModeChanged: (_) {},
             onToggleDrawMode: _noop,
             onOpenMapTools: _noop,
+            onOpenGoToLocal: _noop,
             onTabSelected: (_, _) {},
             isDrawMode: isDrawMode,
             showCheckInAction: showCheckInAction,
