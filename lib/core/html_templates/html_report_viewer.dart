@@ -9,6 +9,8 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../design/sf_icons.dart';
 import '../utils/share_position.dart';
 import 'report_export_service.dart';
+import 'report_photo_links.dart';
+import 'report_photo_viewer.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 /// Ações opcionais na AppBar do viewer (Relatórios — opt-in).
@@ -81,6 +83,7 @@ class HtmlReportViewer extends StatefulWidget {
 
 class _HtmlReportViewerState extends State<HtmlReportViewer> {
   WebViewController? _controller;
+  List<ReportPhoto> _photos = const [];
   bool _loading = true;
   bool _actionBusy = false;
   final GlobalKey _exportButtonKey = GlobalKey();
@@ -94,15 +97,28 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
       _loading = false;
       return;
     }
+    // Export/compartilhar continuam usando widget.htmlContent (original).
+    _photos = ReportPhotoLinks.extractPhotos(widget.htmlContent);
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.disabled)
       ..setBackgroundColor(const Color(0xFF2C5564))
       ..setNavigationDelegate(
         NavigationDelegate(
+          onNavigationRequest: _onNavigationRequest,
           onPageFinished: (_) => setState(() => _loading = false),
         ),
       )
-      ..loadHtmlString(widget.htmlContent);
+      ..loadHtmlString(ReportPhotoLinks.prepareInAppHtml(widget.htmlContent));
+  }
+
+  NavigationDecision _onNavigationRequest(NavigationRequest request) {
+    final index = ReportPhotoLinks.indexFromUrl(request.url);
+    if (index == null) return NavigationDecision.navigate;
+    final position = _photos.indexWhere((photo) => photo.index == index);
+    if (position >= 0 && mounted) {
+      ReportPhotoViewer.open(context, photos: _photos, initialIndex: position);
+    }
+    return NavigationDecision.prevent;
   }
 
   Future<bool?> _confirmAction({
