@@ -28,6 +28,27 @@ class ReportPhoto {
   }
 }
 
+enum ReportNavigationAction { allow, prevent, openPhoto }
+
+/// Decisão de [ReportPhotoLinks.decideNavigation].
+class ReportNavigation {
+  const ReportNavigation.allow()
+    : action = ReportNavigationAction.allow,
+      photoIndex = null;
+
+  const ReportNavigation.prevent()
+    : action = ReportNavigationAction.prevent,
+      photoIndex = null;
+
+  const ReportNavigation.openPhoto(int this.photoIndex)
+    : action = ReportNavigationAction.openPhoto;
+
+  final ReportNavigationAction action;
+
+  /// Valor de `data-sf-photo` quando [action] é `openPhoto`.
+  final int? photoIndex;
+}
+
 /// Ponte HTML ↔ visualizador nativo de fotos (WebView com JavaScript
 /// desabilitado). Funções puras: o HTML exportado não passa por aqui.
 abstract final class ReportPhotoLinks {
@@ -40,13 +61,43 @@ abstract final class ReportPhotoLinks {
     caseSensitive: false,
   );
 
+  static final _digits = RegExp(r'^\d+$');
+
   static String linkFor(int index) => '$scheme://$index';
 
-  /// Índice N de `sfphoto://N`; `null` para qualquer outra URL.
+  /// Índice N de `sfphoto://N`, `sfphoto://N/` ou `sfphoto:///N`;
+  /// `null` para outra URL ou `sfphoto` malformado.
   static int? indexFromUrl(String url) {
-    final uri = Uri.tryParse(url);
+    final uri = Uri.tryParse(url.trim());
     if (uri == null || uri.scheme != scheme) return null;
-    return int.tryParse(uri.host);
+    if (uri.hasQuery || uri.hasFragment) return null;
+    final path = uri.path;
+    final String candidate;
+    if (uri.host.isNotEmpty) {
+      if (path.isNotEmpty && path != '/') return null;
+      candidate = uri.host;
+    } else {
+      final trimmed = path.startsWith('/') ? path.substring(1) : path;
+      candidate = trimmed.endsWith('/')
+          ? trimmed.substring(0, trimmed.length - 1)
+          : trimmed;
+    }
+    if (!_digits.hasMatch(candidate)) return null;
+    return int.tryParse(candidate);
+  }
+
+  /// Política de navegação do WebView do relatório (sem botão voltar):
+  /// - `sfphoto` com índice → abrir visualizador (a navegação é bloqueada);
+  /// - `about:*` / `data:` → permitir (documento inicial do `loadHtmlString`);
+  /// - qualquer outra URL (inclusive `sfphoto` malformado) → bloquear.
+  static ReportNavigation decideNavigation(String url) {
+    final index = indexFromUrl(url);
+    if (index != null) return ReportNavigation.openPhoto(index);
+    final scheme = Uri.tryParse(url.trim())?.scheme;
+    if (scheme == 'about' || scheme == 'data') {
+      return const ReportNavigation.allow();
+    }
+    return const ReportNavigation.prevent();
   }
 
   /// Cópia do HTML para exibição no app: cada foto numerada vira link
