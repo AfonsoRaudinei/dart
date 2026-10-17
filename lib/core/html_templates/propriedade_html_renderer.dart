@@ -97,7 +97,7 @@ class PropriedadeHtmlRenderer {
       truthyHtml: '<div class="sf-sheet field-list">$fieldsHtml</div>',
     );
 
-    return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
+    return RelatorioHtmlRenderer.finalizeDocument(tpl);
   }
 
   // ─── T-08: Histórico de Visitas ──────────────────────────────────
@@ -197,7 +197,7 @@ class PropriedadeHtmlRenderer {
       truthyHtml: '<div class="sf-sheet timeline">$timelineHtml</div>',
     );
 
-    return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
+    return RelatorioHtmlRenderer.finalizeDocument(tpl);
   }
 
   static String _resolveSignature(
