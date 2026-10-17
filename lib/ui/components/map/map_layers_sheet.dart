@@ -163,7 +163,10 @@ class LayersSheet extends ConsumerWidget {
                             : Colors.white,
                       ),
                     ),
-                    onTap: onMunicipalitySearch,
+                    onTap: () async {
+                      Navigator.of(context).pop();
+                      await onMunicipalitySearch?.call();
+                    },
                   ),
                 if (onCoordinateSearch != null)
                   ListTile(
@@ -182,7 +185,10 @@ class LayersSheet extends ConsumerWidget {
                             : Colors.white,
                       ),
                     ),
-                    onTap: onCoordinateSearch,
+                    onTap: () async {
+                      Navigator.of(context).pop();
+                      await onCoordinateSearch?.call();
+                    },
                   ),
                 const SizedBox(height: kFabSafeArea),
               ],
