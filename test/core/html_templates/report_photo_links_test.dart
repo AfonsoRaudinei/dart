@@ -61,7 +61,8 @@ void main() {
 
       expect(original, contains('class="sf-lb-toggle"'));
       expect(inApp, isNot(contains('class="sf-lb-toggle"')));
-      expect(inApp, contains('<label for="sf-foto-hero" class="photo-hero">'));
+      expect(inApp, isNot(contains('<label for="sf-foto-hero"')));
+      expect(inApp, contains('<body class="sf-in-app">'));
     });
 
     test('não toca no logo do rodapé nem em HTML sem fotos', () {
