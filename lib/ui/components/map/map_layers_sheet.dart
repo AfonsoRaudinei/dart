@@ -16,16 +16,12 @@ class LayersSheet extends ConsumerWidget {
   static const _accent = PremiumTokens.brandGreenDark;
 
   final VoidCallback? onClose; // 🔧 FIX: Callback de fechamento externo
-  final Future<void> Function()? onCoordinateSearch;
-  final Future<void> Function()? onMunicipalitySearch;
   final Future<void> Function()? onDownloadOfflineArea;
   final bool renderTilePreviews;
 
   const LayersSheet({
     super.key,
     this.onClose,
-    this.onCoordinateSearch,
-    this.onMunicipalitySearch,
     this.onDownloadOfflineArea,
     this.renderTilePreviews = true,
   });
@@ -146,50 +142,6 @@ class LayersSheet extends ConsumerWidget {
                 MapOfflineStatusCard(
                   onDownloadOfflineArea: onDownloadOfflineArea,
                 ),
-                if (onMunicipalitySearch != null)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(
-                      Icons.location_city_outlined,
-                      color: isIos
-                          ? SoloForteSheetSkinIos.iconStroke
-                          : Colors.white70,
-                    ),
-                    title: Text(
-                      'Ir para município',
-                      style: TextStyle(
-                        color: isIos
-                            ? SoloForteSheetSkinIos.titleColor
-                            : Colors.white,
-                      ),
-                    ),
-                    onTap: () async {
-                      Navigator.of(context).pop();
-                      await onMunicipalitySearch?.call();
-                    },
-                  ),
-                if (onCoordinateSearch != null)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(
-                      Icons.search_rounded,
-                      color: isIos
-                          ? SoloForteSheetSkinIos.iconStroke
-                          : Colors.white70,
-                    ),
-                    title: Text(
-                      'Ir para coordenada',
-                      style: TextStyle(
-                        color: isIos
-                            ? SoloForteSheetSkinIos.titleColor
-                            : Colors.white,
-                      ),
-                    ),
-                    onTap: () async {
-                      Navigator.of(context).pop();
-                      await onCoordinateSearch?.call();
-                    },
-                  ),
                 const SizedBox(height: kFabSafeArea),
               ],
             ),
