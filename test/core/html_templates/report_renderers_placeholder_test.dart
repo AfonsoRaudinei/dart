@@ -20,6 +20,7 @@ void main() {
     final html = await render();
     expect(html, isNotEmpty, reason: type);
     expect(html, isNot(contains(RegExp(r'\{\{[^}]+\}\}'))), reason: type);
+    expect(html, isNot(contains('fonts.googleapis.com')), reason: type);
   }
 
   test('renderers oficiais nao vazam placeholders handlebars', () async {
@@ -323,6 +324,7 @@ void main() {
 
     expect(html, contains('id="sf-foto-hero" class="sf-lb-toggle"'));
     expect(html, contains('<label for="sf-foto-hero" class="photo-hero">'));
+    expect(html, contains('Foto 1 · Insetos · 03/06/2026'));
     for (final n in [1, 2, 3]) {
       expect(
         RegExp('id="sf-foto-$n"').allMatches(html).length,
@@ -330,6 +332,7 @@ void main() {
         reason: 'id sf-foto-$n deve ser único',
       );
       expect(html, contains('<label for="sf-foto-$n" class="galeria-foto">'));
+      expect(html, contains('<figcaption>Foto ${n + 1}</figcaption>'));
     }
     expect(html, isNot(contains('id="sf-foto-4"')));
     expect(html, contains('.sf-lb-toggle:checked + label'));
@@ -343,17 +346,185 @@ void main() {
 
     expect(html, isNot(contains('Histórico')));
     expect(html, isNot(contains('Atualizado em')));
-    expect(html, contains('<div class="sf-created-at">Criado em '));
+    expect(html, contains('sf-created-at">Criado em '));
     expect(
       html.indexOf('class="sf-created-at"'),
       lessThan(html.indexOf('<footer')),
     );
 
     expect(html, contains('Produtor &lt;Teste&gt;'));
-    expect(html, contains('>Fazenda</div>'));
+    expect(html, contains('>Fazenda</span>'));
     expect(html, contains('Fazenda Norte'));
-    expect(html, contains('>Talhão</div>'));
+    expect(html, contains('>Talhão</span>'));
     expect(html, contains('Talhão 7'));
+    expect(
+      html,
+      contains(
+        'Produtor &lt;Teste&gt; · Fazenda Norte · Talhão 7 · 03/06/2026',
+      ),
+    );
+  });
+
+  group('documento editorial (pilotos)', () {
+    final emoji = RegExp(
+      r'[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]',
+      unicode: true,
+    );
+
+    void expectEditorialDocument(String html, {required String reason}) {
+      expect(html, isNot(contains('fonts.googleapis.com')), reason: reason);
+      expect(html, isNot(contains('{{sf_base_css}}')), reason: reason);
+      expect(html, isNot(contains(RegExp(r'\{\{[^}]+\}\}'))), reason: reason);
+      expect(html, contains('.sf-letterhead'), reason: reason);
+      expect(html, contains('class="sf-letterhead"'), reason: reason);
+      expect(
+        html,
+        contains(RegExp(r'class="logo-img" src="data:image/png;base64,')),
+        reason: reason,
+      );
+      expect(html, isNot(contains('invert(1)')), reason: reason);
+      expect(html, isNot(contains('radial-gradient')), reason: reason);
+      expect(html, isNot(contains('section-label-bar')), reason: reason);
+      expect(
+        html,
+        isNot(contains('text-transform: uppercase')),
+        reason: reason,
+      );
+      expect(html, isNot(contains(emoji)), reason: reason);
+    }
+
+    test(
+      'ocorrencia detalhada usa base editorial sem rótulos técnicos',
+      () async {
+        await initializeDateFormatting('pt_BR');
+
+        final html = await OcorrenciaHtmlRenderer.renderDetalhe(
+          {
+            'id': 'occ-editorial-1234',
+            'type': 'Média',
+            'description': 'Lagarta no baixeiro',
+            'category': 'insetos',
+            'status': 'draft',
+            'created_at': now.toIso8601String(),
+            'lat': -10.1,
+            'long': -48.2,
+            'recomendacoes': 'Aplicar inseticida biológico.',
+            'nutrientes_json': jsonEncode(['N', 'K']),
+            'cliente_nome': 'Cliente Teste',
+          },
+          consultantName: 'Agronomo Teste',
+          consultantRole: 'Consultoria',
+        );
+
+        expectEditorialDocument(html, reason: 'ocorrencia');
+        expect(html, contains('Relatório de ocorrência'));
+        expect(html, contains('Urgência média'));
+        expect(html, contains('Rascunho'));
+        expect(html, isNot(contains(RegExp(r'>\s*draft\s*<'))));
+        expect(html, isNot(contains('#OCC-EDIT')));
+        expect(html, isNot(contains('OCC-EDIT')));
+        expect(html, contains('Ponto registrado no mapa'));
+        expect(html, isNot(contains('-10.1')));
+        expect(html, contains('<p class="sf-prose">N, K</p>'));
+        expect(html, isNot(contains('nutriente-badge')));
+        expect(html, contains('class="sf-callout"'));
+        expect(html, contains('class="sf-signature"'));
+        expect(html, contains('Agronomo Teste'));
+        expect(
+          html.indexOf('class="sf-signature"'),
+          lessThan(html.indexOf('<footer')),
+        );
+      },
+    );
+
+    test('ocorrencia confirmada mostra situação por extenso', () async {
+      await initializeDateFormatting('pt_BR');
+
+      final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+        'id': 'occ-conf',
+        'type': 'Alta',
+        'category': 'doenca',
+        'status': 'confirmed',
+        'created_at': now.toIso8601String(),
+      });
+
+      expect(html, contains('Confirmada'));
+      expect(html, contains('Urgência alta'));
+      expect(html, isNot(contains(RegExp(r'>\s*confirmed\s*<'))));
+      expect(html, isNot(contains('class="sf-signature"')));
+    });
+
+    test('relatorio visita usa base editorial e preserva dados', () async {
+      await initializeDateFormatting('pt_BR');
+
+      final html = await VisitaHtmlRenderer.render(
+        relatorio: {
+          'id': 'rel-editorial',
+          'status': 'publicado',
+          'title': 'Visita técnica',
+          'farmName': 'Fazenda Modelo',
+          'periodStart': now.toIso8601String(),
+          'periodEnd': now.add(const Duration(hours: 1)).toIso8601String(),
+          'customNotes': 'Notas finais',
+          'ocorrencias': [
+            {
+              'id': 'occ-1',
+              'tipo': 'Insetos',
+              'descricao': 'Lagarta em reboleira',
+              'severity': 'moderada',
+              'recomendacoes': 'Monitorar em 7 dias',
+              'lat': -10.1234,
+              'lng': -48.5678,
+              'registradaEm': now.toIso8601String(),
+            },
+          ],
+          'talhoes': [
+            {
+              'talhaoId': 'talhao-1',
+              'nomeTalhao': 'Talhao Norte',
+              'areaHectares': 42.0,
+              'cultura': 'Soja',
+              'safra': '2025/26',
+            },
+          ],
+          'monitoramentos': [
+            {
+              'id': 'mon-1',
+              'tipo': 'Fenologia',
+              'dados': {'estadio': 'V4'},
+              'coletadoEm': now.toIso8601String(),
+            },
+          ],
+          'fotos': const <String>[],
+          'publicacoesRefs': const ['pub-1'],
+        },
+        agronomistNome: 'Agronomo Teste',
+        clienteNome: 'Cliente Teste',
+        publicacoesTitulos: const {'pub-1': 'Manejo integrado'},
+        consultantRole: 'Consultoria',
+      );
+
+      expectEditorialDocument(html, reason: 'visita');
+      expect(html, contains('Relatório de visita'));
+      expect(html, contains('Visita técnica'));
+      expect(html, contains('Fazenda Modelo · Cliente Teste · 03/06/2026'));
+      expect(html, contains('Publicado'));
+      expect(html, contains('Talhao Norte'));
+      expect(html, contains('Cultura: Soja · Safra: 2025/26'));
+      expect(html, contains('42,0 ha'));
+      expect(html, contains('Lagarta em reboleira'));
+      expect(html, contains('Monitorar em 7 dias'));
+      expect(html, contains('Moderada'));
+      expect(html, contains('Ponto registrado no mapa'));
+      expect(html, isNot(contains('-10.1234')));
+      expect(html, contains('Fenologia'));
+      expect(html, contains('V4'));
+      expect(html, contains('Manejo integrado'));
+      expect(html, contains('Notas finais'));
+      expect(html, contains('class="sf-signature"'));
+      expect(html, isNot(contains('talhao-chip')));
+      expect(html, isNot(contains('publicacao-badge')));
+    });
   });
 
   test(
@@ -369,10 +540,10 @@ void main() {
         'cliente_nome': '',
       });
 
-      expect(html, isNot(contains('>Cliente</div>')));
-      expect(html, isNot(contains('>Fazenda</div>')));
-      expect(html, isNot(contains('>Talhão</div>')));
-      expect(html, contains('>Categoria</div>'));
+      expect(html, isNot(contains('>Cliente</span>')));
+      expect(html, isNot(contains('>Fazenda</span>')));
+      expect(html, isNot(contains('>Talhão</span>')));
+      expect(html, contains('>Categoria</span>'));
     },
   );
 }
