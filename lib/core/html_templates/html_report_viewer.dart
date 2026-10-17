@@ -112,13 +112,30 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
   }
 
   NavigationDecision _onNavigationRequest(NavigationRequest request) {
-    final index = ReportPhotoLinks.indexFromUrl(request.url);
-    if (index == null) return NavigationDecision.navigate;
-    final position = _photos.indexWhere((photo) => photo.index == index);
-    if (position >= 0 && mounted) {
-      ReportPhotoViewer.open(context, photos: _photos, initialIndex: position);
+    final decision = ReportPhotoLinks.decideNavigation(request.url);
+    switch (decision.action) {
+      case ReportNavigationAction.allow:
+        return NavigationDecision.navigate;
+      case ReportNavigationAction.prevent:
+        return NavigationDecision.prevent;
+      case ReportNavigationAction.openPhoto:
+        final position = _photos.indexWhere(
+          (photo) => photo.index == decision.photoIndex,
+        );
+        if (position >= 0) {
+          // A decisão precisa voltar ao WebView antes de empilhar a rota.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            ReportPhotoViewer.open(
+              context,
+              photos: _photos,
+              initialIndex: position,
+            );
+          });
+          WidgetsBinding.instance.scheduleFrame();
+        }
+        return NavigationDecision.prevent;
     }
-    return NavigationDecision.prevent;
   }
 
   Future<bool?> _confirmAction({
