@@ -11,10 +11,11 @@ import '../../../../modules/dashboard/domain/location_state.dart';
 import '../../../../modules/map/presentation/providers/map_location_mode_provider.dart';
 import '../../../../modules/settings/presentation/providers/settings_providers.dart';
 import '../../../../core/constants/layout_constants.dart';
+import '../../../../core/domain/map_models.dart';
+import '../../../../core/state/map_state.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../modules/clima/presentation/providers/radar_providers.dart';
 import '../../../../core/contracts/i_radar_overlay_controller_provider.dart';
-import '../../../../core/state/map_state.dart';
 import '../../../../core/utils/area_display_format.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_bottom_toolbar_overlay.dart';
@@ -23,6 +24,7 @@ import '../../../../core/utils/app_logger.dart';
 import '../../../../modules/map/presentation/widgets/visit_active_card.dart';
 import 'selected_talhao_card.dart';
 
+part 'map_controls_basemap_button.dart';
 part 'map_controls_location_button.dart';
 part 'map_controls_measurement.dart';
 
@@ -161,6 +163,8 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             children: [
               // Indicador unificado: offline / online / clima no mapa
               const _MapStatusIndicator(),
+              const SizedBox(width: 6),
+              _MapBasemapToggleButton(activeColor: activeColor),
               const SizedBox(width: 6),
               // Botão de Localização com 3 estados
               _LocationButton(
