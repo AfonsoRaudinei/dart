@@ -121,6 +121,7 @@ flutter:
     - assets/E351DC81-7916-4231-A063-9359D2AA64F3.png
     - assets/images/
     - assets/story.html
+    - assets/html_templates/_sf_document_base.css
     - assets/html_templates/marketing_resultado.html
     - assets/html_templates/marketing_antes_depois.html
     - assets/html_templates/marketing_avaliacao.html
