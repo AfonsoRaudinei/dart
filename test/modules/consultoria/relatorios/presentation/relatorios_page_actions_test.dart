@@ -27,6 +27,7 @@ import 'package:soloforte_app/modules/marketing/presentation/providers/marketing
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
 import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
 import 'package:soloforte_app/modules/settings/data/settings_repository.dart';
+import 'package:soloforte_app/modules/settings/domain/entities/user_profile.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/settings_providers.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
 
@@ -232,6 +233,100 @@ void main() {
     expect(find.text('Pré-visualização HTML'), findsOneWidget);
     expect(find.byTooltip('Exportar'), findsOneWidget);
     expect(find.byTooltip('Excluir'), findsNothing);
+  });
+
+  group('consolidados não expõem UUID', () {
+    const currentAgronomistUuid = '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b';
+    const otherAgronomistUuid = '7d6c5b4a-3e2f-4a1b-9c8d-0e1f2a3b4c5d';
+    const talhaoUuid = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d';
+
+    final profile = UserProfile(
+      id: currentAgronomistUuid,
+      email: 'ana@soloforte.test',
+      fullName: 'Ana Agrônoma',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    );
+
+    FakeRelatorioRepository seededRepository() {
+      return FakeRelatorioRepository()
+        ..seed([
+          makeRelatorio(
+            id: 'rel-current',
+            agronomistId: currentAgronomistUuid,
+            farmName: 'Fazenda Atual',
+            status: RelatorioStatus.publicado,
+          ).copyWith(
+            talhoes: const [
+              TalhaoVisitado(
+                talhaoId: talhaoUuid,
+                nomeTalhao: 'Talhao Norte',
+                areaHectares: 42,
+                cultura: 'Soja',
+                safra: '2025/26',
+              ),
+            ],
+          ),
+          makeRelatorio(
+            id: 'rel-other',
+            agronomistId: otherAgronomistUuid,
+            farmName: 'Fazenda Outra',
+            status: RelatorioStatus.publicado,
+          ),
+        ]);
+    }
+
+    testWidgets('histórico usa nome do consultor e omite UUID do agrônomo', (
+      tester,
+    ) async {
+      await _pumpScreen(
+        tester,
+        relatorioRepository: seededRepository(),
+        occurrenceRepository: FakeOccurrenceRepository(),
+        profileOverride: profile,
+      );
+
+      await _selectSegment(tester, 'Consolidados');
+      await _openReportCardByTitle(tester, 'Histórico de Visitas');
+
+      final viewer = tester.widget<HtmlReportViewer>(
+        find.byType(HtmlReportViewer),
+      );
+      final timelineCaptionsWithName = RegExp(
+        r'class="sf-caption">[^<]*Ana Agrônoma',
+      ).allMatches(viewer.htmlContent);
+      expect(timelineCaptionsWithName, hasLength(1));
+      expect(viewer.htmlContent, isNot(contains(currentAgronomistUuid)));
+      expect(viewer.htmlContent, isNot(contains(otherAgronomistUuid)));
+    });
+
+    testWidgets('resumo da propriedade não usa UUID do talhão como código', (
+      tester,
+    ) async {
+      await _pumpScreen(
+        tester,
+        relatorioRepository: seededRepository(),
+        occurrenceRepository: FakeOccurrenceRepository(),
+        profileOverride: profile,
+      );
+
+      await _selectSegment(tester, 'Consolidados');
+      await _openReportCardByTitle(tester, 'Resumo da Propriedade');
+
+      final viewer = tester.widget<HtmlReportViewer>(
+        find.byType(HtmlReportViewer),
+      );
+      expect(viewer.htmlContent, contains('Talhao Norte'));
+      expect(viewer.htmlContent, isNot(contains(talhaoUuid)));
+      expect(viewer.htmlContent, isNot(contains('Código')));
+      expect(viewer.csvData, contains('Talhao Norte'));
+      expect(viewer.csvData, isNot(contains(talhaoUuid)));
+      final fields = viewer.jsonData!['fields'] as List;
+      expect(
+        fields.map((field) => (field as Map)['codigo']),
+        everyElement(isEmpty),
+      );
+    });
   });
 
   testWidgets(
@@ -677,6 +772,7 @@ Future<void> _pumpScreen(
   FakeMarketingCaseRepository? marketingRepository,
   List<MarketingCase>? marketingCases,
   UserPlan? planoOverride,
+  UserProfile? profileOverride,
 }) async {
   final overrides = <Override>[
     htmlReportViewerBodyBuilderProvider.overrideWithValue(
@@ -704,6 +800,11 @@ Future<void> _pumpScreen(
   if (planoOverride != null) {
     overrides.add(
       planoAtivoProvider.overrideWith((ref) async => planoOverride),
+    );
+  }
+  if (profileOverride != null) {
+    overrides.add(
+      currentUserProfileProvider.overrideWith((ref) async => profileOverride),
     );
   }
 
