@@ -347,7 +347,7 @@ class VisitaHtmlRenderer {
           .map(
             (entry) =>
                 '<div class="sf-row">'
-                '<span class="sf-row-label">${RelatorioHtmlRenderer.escapeHtml(entry.key)}</span>'
+                '<span class="sf-row-label">${RelatorioHtmlRenderer.escapeHtml(RelatorioHtmlRenderer.humanizeKey(entry.key))}</span>'
                 '<span class="sf-row-value">${RelatorioHtmlRenderer.escapeHtml(entry.value?.toString())}</span>'
                 '</div>',
           )
