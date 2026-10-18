@@ -16,7 +16,6 @@ import '../../../../core/state/map_state.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../modules/clima/presentation/providers/radar_providers.dart';
 import '../../../../core/contracts/i_radar_overlay_controller_provider.dart';
-import '../../../../core/state/map_state.dart';
 import '../../../../core/utils/area_display_format.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_bottom_toolbar_overlay.dart';
@@ -47,6 +46,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final ValueChanged<MapLocationMode> onLocationModeChanged;
   final VoidCallback onToggleDrawMode;
   final VoidCallback onOpenMapTools;
+  final VoidCallback? onLongPressMapTools;
   final VoidCallback onOpenGoToLocal;
   final Function(int, String) onTabSelected;
   final bool isDrawMode;
@@ -77,6 +77,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     required this.onLocationModeChanged,
     required this.onToggleDrawMode,
     required this.onOpenMapTools,
+    this.onLongPressMapTools,
     required this.onOpenGoToLocal,
     required this.isDrawMode,
     this.isCheckInActive = false,
@@ -256,6 +257,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                 enabled: widget.drawingState != DrawingState.editing,
                 activeColor: activeColor,
                 onTap: widget.onOpenMapTools,
+                onLongPress: widget.onLongPressMapTools,
               ),
               if (!_hidesCheckInForDrawing && widget.showCheckInAction) ...[
                 const SizedBox(height: kMapActionColumnSpacingAboveCheckIn),
@@ -417,25 +419,33 @@ class _MapToolsFab extends StatelessWidget {
   final bool enabled;
   final Color activeColor;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   const _MapToolsFab({
     required this.isActive,
     this.enabled = true,
     required this.activeColor,
     required this.onTap,
+    this.onLongPress,
   });
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Ferramentas do mapa',
+      label: 'Desenho',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: enabled
             ? () {
                 HapticFeedback.selectionClick();
                 onTap();
+              }
+            : null,
+        onLongPress: enabled && onLongPress != null
+            ? () {
+                HapticFeedback.mediumImpact();
+                onLongPress!();
               }
             : null,
         child: AnimatedOpacity(
