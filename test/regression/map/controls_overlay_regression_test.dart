@@ -89,7 +89,7 @@ void main() {
     });
 
     testWidgets(
-      'coluna direita mantém ferramentas essenciais do mapa (layers, check-in)',
+      'chrome mantém basemap no topo e ferramentas na coluna direita',
       (tester) async {
         await _pumpMapControlsOverlay(tester);
 
@@ -104,6 +104,12 @@ void main() {
         expect(find.byKey(const Key('map_control_layers_btn')), findsOneWidget);
         expect(find.byKey(const Key('map_control_actions_btn')), findsNothing);
         expect(find.byKey(const Key('map_control_check_in')), findsOneWidget);
+
+        final basemapTop =
+            tester.getTopLeft(find.byKey(const Key('map_control_basemap_toggle_btn'))).dy;
+        final layersTop =
+            tester.getTopLeft(find.byKey(const Key('map_control_layers_btn'))).dy;
+        expect(basemapTop, lessThan(layersTop));
       },
     );
   });
@@ -394,6 +400,7 @@ void main() {
       expect(overlay.contains('class _MapRoundToggleButton'), isTrue);
       expect(overlay.contains('class _IconOffSlash'), isTrue);
       expect(overlay.contains('BoxShape.circle'), isTrue);
+      expect(overlay.contains('class _BasemapToggleButton'), isTrue);
       expect(overlay.contains('_MapRoundToggleButton('), isTrue);
       expect(location.contains('_MapRoundToggleButton('), isTrue);
       expect(location.contains('BorderRadius.circular(12)'), isFalse);
