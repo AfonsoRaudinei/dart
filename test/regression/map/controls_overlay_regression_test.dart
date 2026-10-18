@@ -74,6 +74,10 @@ void main() {
           find.byKey(const Key('map_control_go_to_local_btn')),
           findsOneWidget,
         );
+        expect(
+          find.byKey(const Key('map_control_basemap_toggle_btn')),
+          findsOneWidget,
+        );
         expect(find.byKey(const Key('map_control_layers_btn')), findsOneWidget);
         expect(find.byKey(const Key('map_control_actions_btn')), findsNothing);
         expect(find.byKey(const Key('map_control_check_in')), findsOneWidget);

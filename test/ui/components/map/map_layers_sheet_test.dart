@@ -139,23 +139,6 @@ void main() {
       expect(container.read(showMarkersProvider), isFalse);
     });
 
-    testWidgets('alterna camada ao tocar na miniatura, não só no rótulo', (
-      tester,
-    ) async {
-      await _pumpLayersSheet(tester);
-
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(LayersSheet)),
-      );
-      expect(container.read(activeLayerProvider), LayerType.satellite);
-
-      final mapaLabel = tester.getCenter(find.text('Mapa'));
-      await tester.tapAt(mapaLabel - const Offset(0, 28));
-      await tester.pump();
-
-      expect(container.read(activeLayerProvider), LayerType.standard);
-    });
-
     testWidgets('ativa chuva e troca para satélite quando estava em mapa', (
       tester,
     ) async {
@@ -176,7 +159,7 @@ void main() {
             home: Scaffold(
               body: SizedBox(
                 height: 800,
-                child: LayersSheet(onClose: () {}, renderTilePreviews: false),
+                child: LayersSheet(onClose: () {}),
               ),
             ),
           ),
@@ -250,7 +233,6 @@ Future<void> _pumpLayersSheet(
             child: LayersSheet(
               onClose: () {},
               onDownloadOfflineArea: onDownloadOfflineArea,
-              renderTilePreviews: false,
             ),
           ),
         ),
