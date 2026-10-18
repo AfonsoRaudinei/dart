@@ -7,6 +7,7 @@ import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
 import 'package:soloforte_app/core/services/connectivity_service.dart';
 import 'package:soloforte_app/core/services/sync_service.dart';
+import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/core/state/side_menu_state.dart';
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
 import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
@@ -108,6 +109,28 @@ void main() {
 
       expect(find.text('Foco no que importa'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Ir para local incrementa pedido e fecha o menu', (
+      tester,
+    ) async {
+      await _pumpSideMenu(tester, profile: _profile(role: 'produtor'));
+
+      final item = find.byKey(const Key('side_menu_go_to_local_item'));
+      await tester.scrollUntilVisible(
+        item,
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(item);
+      await tester.pump();
+      await tester.pump();
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(SideMenuOverlay)),
+      );
+      expect(container.read(pendingGoToLocalSheetRequestProvider), 1);
+      expect(container.read(sideMenuOpenProvider), isFalse);
     });
   });
 }
