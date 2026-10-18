@@ -32,6 +32,72 @@ fail() { echo -e "  ${RED}❌ FAIL${NC}  $1"; VIOLATIONS=$((VIOLATIONS + 1)); }
 warn() { echo -e "  ${YELLOW}⚠️  WARN${NC}  $1"; WARNINGS=$((WARNINGS + 1)); }
 info() { echo -e "  ${CYAN}ℹ️  INFO${NC}  $1"; }
 
+# macOS: plutil. Linux/CI: plistlib (plutil ausente — falso FAIL em Cloud Agent).
+sf_plutil_lint() {
+  local f="$1"
+  if command -v plutil >/dev/null 2>&1; then
+    plutil -lint "$f" >/dev/null 2>&1
+    return $?
+  fi
+  python3 -c "import plistlib,sys; plistlib.load(open(sys.argv[1],'rb'))" "$f" >/dev/null 2>&1
+}
+
+sf_plutil_extract_raw() {
+  local f="$1"
+  local key="$2"
+  if command -v plutil >/dev/null 2>&1; then
+    plutil -extract "$key" raw -o - "$f" 2>/dev/null || echo "MISSING"
+    return 0
+  fi
+  python3 - <<'PY' "$f" "$key"
+import plistlib, sys
+path, key = sys.argv[1], sys.argv[2]
+try:
+    data = plistlib.load(open(path, "rb"))
+except OSError:
+    print("MISSING")
+    raise SystemExit
+val = data.get(key, "MISSING")
+if val is True:
+    print("true")
+elif val is False:
+    print("false")
+else:
+    print(val)
+PY
+}
+
+sf_plutil_json_contains() {
+  local f="$1"
+  local plist_key="$2"
+  local needle="$3"
+  if command -v plutil >/dev/null 2>&1; then
+    plutil -extract "$plist_key" json -o - "$f" 2>/dev/null | rg -q "$needle"
+    return $?
+  fi
+  python3 - <<'PY' "$f" "$plist_key" "$needle"
+import json, plistlib, sys
+path, plist_key, needle = sys.argv[1], sys.argv[2], sys.argv[3]
+data = plistlib.load(open(path, "rb"))
+blob = json.dumps(data.get(plist_key, []))
+sys.exit(0 if needle in blob else 1)
+PY
+}
+
+sf_plutil_has_key() {
+  local f="$1"
+  local key="$2"
+  if command -v plutil >/dev/null 2>&1; then
+    plutil -extract "$key" raw -o - "$f" >/dev/null 2>&1
+    return $?
+  fi
+  python3 - <<'PY' "$f" "$key"
+import plistlib, sys
+data = plistlib.load(open(sys.argv[1], "rb"))
+raise SystemExit(0 if sys.argv[2] in data else 1)
+PY
+}
+
 PRIVACY_MANIFEST="$ROOT/ios/Runner/PrivacyInfo.xcprivacy"
 INFO_PLIST="$ROOT/ios/Runner/Info.plist"
 PBXPROJ="$ROOT/ios/Runner.xcodeproj/project.pbxproj"
@@ -51,10 +117,10 @@ if [[ ! -f "$PRIVACY_MANIFEST" ]]; then
   fail "Arquivo ausente: ios/Runner/PrivacyInfo.xcprivacy"
 else
   pass "Arquivo presente"
-  if plutil -lint "$PRIVACY_MANIFEST" >/dev/null 2>&1; then
-    pass "plutil -lint PrivacyInfo.xcprivacy"
+  if sf_plutil_lint "$PRIVACY_MANIFEST"; then
+    pass "plist lint PrivacyInfo.xcprivacy"
   else
-    fail "plutil -lint PrivacyInfo.xcprivacy"
+    fail "plist lint PrivacyInfo.xcprivacy"
   fi
 fi
 
@@ -65,19 +131,19 @@ else
 fi
 
 if [[ -f "$PRIVACY_MANIFEST" ]]; then
-  if plutil -extract NSPrivacyTracking raw -o - "$PRIVACY_MANIFEST" 2>/dev/null | rg -q "false"; then
+  if [[ "$(sf_plutil_extract_raw "$PRIVACY_MANIFEST" NSPrivacyTracking)" == "false" ]]; then
     pass "NSPrivacyTracking = false"
   else
     fail "NSPrivacyTracking deve ser false"
   fi
 
-  if plutil -extract NSPrivacyAccessedAPITypes json -o - "$PRIVACY_MANIFEST" 2>/dev/null | rg -q "NSPrivacyAccessedAPICategoryUserDefaults"; then
+  if sf_plutil_json_contains "$PRIVACY_MANIFEST" NSPrivacyAccessedAPITypes NSPrivacyAccessedAPICategoryUserDefaults; then
     pass "Required Reason API: UserDefaults (CA92.1)"
   else
     fail "NSPrivacyAccessedAPITypes sem UserDefaults — revisar CA92.1"
   fi
 
-  if plutil -extract NSPrivacyAccessedAPITypes json -o - "$PRIVACY_MANIFEST" 2>/dev/null | rg -q "NSPrivacyAccessedAPICategoryFileTimestamp"; then
+  if sf_plutil_json_contains "$PRIVACY_MANIFEST" NSPrivacyAccessedAPITypes NSPrivacyAccessedAPICategoryFileTimestamp; then
     pass "Required Reason API: FileTimestamp (C617.1)"
   else
     fail "NSPrivacyAccessedAPITypes sem FileTimestamp — revisar C617.1"
@@ -104,13 +170,13 @@ echo -e "── ${CYAN}iOS${NC} Info.plist ────────────�
 if [[ ! -f "$INFO_PLIST" ]]; then
   fail "Info.plist ausente"
 else
-  if plutil -lint "$INFO_PLIST" >/dev/null 2>&1; then
-    pass "plutil -lint Info.plist"
+  if sf_plutil_lint "$INFO_PLIST"; then
+    pass "plist lint Info.plist"
   else
-    fail "plutil -lint Info.plist"
+    fail "plist lint Info.plist"
   fi
 
-  ENCRYPTION=$(plutil -extract ITSAppUsesNonExemptEncryption raw -o - "$INFO_PLIST" 2>/dev/null || echo "MISSING")
+  ENCRYPTION=$(sf_plutil_extract_raw "$INFO_PLIST" ITSAppUsesNonExemptEncryption)
   if [[ "$ENCRYPTION" == "false" ]]; then
     pass "ITSAppUsesNonExemptEncryption = false"
   else
@@ -118,7 +184,7 @@ else
   fi
 
   for KEY in NSLocationWhenInUseUsageDescription NSCameraUsageDescription NSPhotoLibraryUsageDescription; do
-    if plutil -extract "$KEY" raw -o - "$INFO_PLIST" >/dev/null 2>&1; then
+    if sf_plutil_has_key "$INFO_PLIST" "$KEY"; then
       pass "Usage description: $KEY"
     else
       warn "Usage description ausente: $KEY"
@@ -176,8 +242,8 @@ if [[ -n "$IPA_PATH" ]]; then
     IPA_PRIVACY=$(find "$IPA_TMP/Payload" -name "PrivacyInfo.xcprivacy" -print -quit)
     if [[ -n "$IPA_PRIVACY" ]]; then
       pass "PrivacyInfo.xcprivacy presente no bundle IPA"
-      if plutil -lint "$IPA_PRIVACY" >/dev/null 2>&1; then
-        pass "plutil -lint PrivacyInfo no IPA"
+      if sf_plutil_lint "$IPA_PRIVACY"; then
+        pass "plist lint PrivacyInfo no IPA"
       else
         fail "PrivacyInfo no IPA inválido"
       fi
@@ -187,7 +253,7 @@ if [[ -n "$IPA_PATH" ]]; then
 
     IPA_INFO=$(find "$IPA_TMP/Payload" -name "Info.plist" -path "*/Runner.app/Info.plist" -print -quit)
     if [[ -n "$IPA_INFO" ]]; then
-      IPA_ENC=$(plutil -extract ITSAppUsesNonExemptEncryption raw -o - "$IPA_INFO" 2>/dev/null || echo "MISSING")
+      IPA_ENC=$(sf_plutil_extract_raw "$IPA_INFO" ITSAppUsesNonExemptEncryption)
       if [[ "$IPA_ENC" == "false" ]]; then
         pass "IPA ITSAppUsesNonExemptEncryption = false"
       else
