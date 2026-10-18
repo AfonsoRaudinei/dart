@@ -82,7 +82,6 @@ Future<void> _pumpOverlay(
           body: MapControlsOverlay(
             onCenterUser: () {},
             onLocationModeChanged: (_) {},
-            onToggleDrawMode: () {},
             onOpenMapTools: () {},
             onOpenGoToLocal: () {},
             onTabSelected: (_, _) {},

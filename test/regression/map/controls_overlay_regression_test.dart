@@ -32,12 +32,27 @@ const _kSafeBottom = 34.0;
 /// BUG-002 / BUG-005 — Map: botões errados na coluna direita / publicações removidas.
 void main() {
   group('BUG-002 controls_overlay_regression', () {
-    test('map_build_orchestrator não abre MapToolsBottomSheet no chrome', () {
+    test('map_tools_bottom_sheet removido após RF3', () {
+      expect(
+        File('lib/ui/components/map/widgets/map_tools_bottom_sheet.dart').existsSync(),
+        isFalse,
+      );
+    });
+
+    test('map_build_orchestrator não referencia MapToolsBottomSheet', () {
       final source = File(
         'lib/ui/screens/map/widgets/map_build_orchestrator.dart',
       ).readAsStringSync();
 
       expect(source.contains('MapToolsBottomSheet'), isFalse);
+    });
+
+    test('map_controls_overlay não declara onToggleDrawMode órfão', () {
+      final source = File(
+        'lib/ui/components/map/widgets/map_controls_overlay.dart',
+      ).readAsStringSync();
+
+      expect(source.contains('onToggleDrawMode'), isFalse);
     });
 
     test('map_controls_overlay.dart não referencia botões legados de coordenada/offline', () {
@@ -322,7 +337,6 @@ void main() {
               body: MapControlsOverlay(
                 onCenterUser: () {},
                 onLocationModeChanged: (_) {},
-                onToggleDrawMode: () {},
                 onOpenMapTools: () {},
                 onOpenGoToLocal: () {},
                 onTabSelected: (_, _) {},
@@ -653,7 +667,6 @@ Future<void> _pumpMapControlsOverlay(
           body: MapControlsOverlay(
             onCenterUser: () {},
             onLocationModeChanged: (_) {},
-            onToggleDrawMode: () {},
             onOpenMapTools: onOpenMapTools ?? () {},
             onOpenGoToLocal: onOpenGoToLocal ?? () {},
             onTabSelected: (_, _) {},
@@ -711,7 +724,6 @@ Future<void> _pumpOverlayWithFabHarness(
               MapControlsOverlay(
                 onCenterUser: () {},
                 onLocationModeChanged: (_) {},
-                onToggleDrawMode: () {},
                 onOpenMapTools: () {},
                 onOpenGoToLocal: () {},
                 onTabSelected: (_, _) {},
