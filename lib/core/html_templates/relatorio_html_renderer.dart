@@ -7,6 +7,8 @@ import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 
 import '../utils/local_media_path_resolver.dart';
+import 'report_export_gallery.dart';
+import 'report_map_links.dart';
 
 /// Utilitários base compartilhados por todos os renderers HTML.
 /// Não depende de nenhum módulo de domínio.
@@ -348,7 +350,19 @@ abstract class RelatorioHtmlRenderer {
   /// Etapa final comum dos renderers: remove tokens remanescentes e numera
   /// as fotos do relatório.
   static String finalizeDocument(String html) {
-    return indexReportPhotos(stripUnresolvedPlaceholders(html));
+    final doc = indexReportPhotos(stripUnresolvedPlaceholders(html));
+    return ReportExportGallery.inject(doc);
+  }
+
+  /// Link clicável «Ponto registrado no mapa» para ficha técnica.
+  static String mapLocationAnchor(double lat, double lng) {
+    return ReportMapLinks.anchorHtml(lat, lng);
+  }
+
+  static double? readCoordinate(Object? value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value.trim());
+    return null;
   }
 
   static Uint8List? _compressImage(
