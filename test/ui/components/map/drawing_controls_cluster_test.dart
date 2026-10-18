@@ -332,7 +332,6 @@ Future<void> _pumpMapControlsOverlay(
           body: MapControlsOverlay(
             onCenterUser: _noop,
             onLocationModeChanged: (_) {},
-            onToggleDrawMode: _noop,
             onOpenMapTools: _noop,
             onOpenGoToLocal: _noop,
             onTabSelected: (_, _) {},
