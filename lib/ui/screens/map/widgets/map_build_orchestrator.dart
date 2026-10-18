@@ -53,7 +53,6 @@ import '../../../components/map/widgets/pin_position_correction_overlay.dart';
 import '../../map/providers/pin_position_correction_provider.dart';
 import '../../../components/map/widgets/map_long_press_hint.dart';
 import '../../../components/map/widgets/map_state_boundaries_layer.dart';
-import '../../../components/map/map_go_to_local_sheet.dart';
 import '../../../components/map/map_layers_sheet.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../components/map/widgets/producer_map_context_card.dart';
@@ -596,17 +595,6 @@ class _MapControlsHost extends ConsumerWidget {
     return MapControlsOverlay(
       onCenterUser: centerOnUser,
       onLocationModeChanged: onLocationModeChanged,
-      onOpenGoToLocal: () {
-        if (drawingMetrics.state == DrawingState.editing) {
-          return;
-        }
-        onMapUserInteraction?.call();
-        showMapGoToLocalSheet(
-          context,
-          onMunicipalitySearch: openMunicipalitySearch,
-          onCoordinateSearch: openCoordinateSearch,
-        );
-      },
       onOpenMapTools: () {
         if (drawingMetrics.state == DrawingState.editing) {
           return;
