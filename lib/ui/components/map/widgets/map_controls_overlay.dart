@@ -11,6 +11,8 @@ import '../../../../modules/dashboard/domain/location_state.dart';
 import '../../../../modules/map/presentation/providers/map_location_mode_provider.dart';
 import '../../../../modules/settings/presentation/providers/settings_providers.dart';
 import '../../../../core/constants/layout_constants.dart';
+import '../../../../core/domain/map_models.dart';
+import '../../../../core/state/map_state.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../modules/clima/presentation/providers/radar_providers.dart';
 import '../../../../core/contracts/i_radar_overlay_controller_provider.dart';
@@ -117,6 +119,8 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
     final safeTop = MediaQuery.of(context).padding.top;
     final safeBottom = MediaQuery.of(context).padding.bottom;
     final activeColor = _themeColor(ref.watch(themeProvider));
+    final activeLayer = ref.watch(activeLayerProvider);
+    final isSatelliteLayer = activeLayer == LayerType.satellite;
     final areaUnit = ref.watch(areaDisplayUnitProvider);
     final distanceUnit = ref.watch(distanceDisplayUnitProvider);
     final showEditingPill =
@@ -230,6 +234,21 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                 activeColor: activeColor,
                 enabled: widget.drawingState != DrawingState.editing,
                 onTap: widget.onOpenGoToLocal,
+              ),
+              const SizedBox(height: kMapActionColumnSpacingAboveCheckIn),
+              _MapActionButton(
+                buttonKey: const Key('map_control_basemap_toggle_btn'),
+                icon: isSatelliteLayer ? SFIcons.satellite : SFIcons.mapOutlined,
+                label: isSatelliteLayer ? 'Satélite' : 'Mapa',
+                isActive: isSatelliteLayer,
+                activeColor: activeColor,
+                enabled: widget.drawingState != DrawingState.editing,
+                onTap: () {
+                  final next = isSatelliteLayer
+                      ? LayerType.standard
+                      : LayerType.satellite;
+                  ref.read(activeLayerProvider.notifier).setLayer(next);
+                },
               ),
               const SizedBox(height: kMapActionColumnSpacingAboveCheckIn),
               _MapToolsFab(
