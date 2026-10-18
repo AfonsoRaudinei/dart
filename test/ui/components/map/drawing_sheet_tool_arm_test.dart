@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
 import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
-import 'package:soloforte_app/ui/components/map/widgets/map_tools_bottom_sheet.dart';
+import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_sheet.dart';
 
 class _MockDrawingRepository extends DrawingRepository {
   @override
@@ -60,12 +61,19 @@ void main() {
                 body: Center(
                   child: ElevatedButton(
                     onPressed: () {
-                      MapToolsBottomSheet.show(
+                      showSoloForteSheet<void>(
                         context: context,
-                        drawingController: controller,
+                        showDragHandle: true,
+                        useSafeArea: true,
+                        maxHeightFraction: 0.78,
+                        builder: (_) => DrawingSheet(
+                          controller: controller,
+                          onClose: () => Navigator.of(context).pop(),
+                          onSaved: (_) => Navigator.of(context).pop(),
+                        ),
                       );
                     },
-                    child: const Text('Abrir Ferramentas'),
+                    child: const Text('Abrir Desenho'),
                   ),
                 ),
               );
@@ -75,7 +83,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Abrir Ferramentas'));
+    await tester.tap(find.text('Abrir Desenho'));
     await tester.pumpAndSettle();
 
     expect(find.text('Polígono'), findsOneWidget);
