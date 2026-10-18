@@ -46,7 +46,6 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final ValueChanged<MapLocationMode> onLocationModeChanged;
   final VoidCallback onOpenMapTools;
   final VoidCallback? onLongPressMapTools;
-  final VoidCallback onOpenGoToLocal;
   final Function(int, String) onTabSelected;
   final bool isDrawMode;
   final bool isCheckInActive;
@@ -76,7 +75,6 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     required this.onLocationModeChanged,
     required this.onOpenMapTools,
     this.onLongPressMapTools,
-    required this.onOpenGoToLocal,
     required this.isDrawMode,
     this.isCheckInActive = false,
     this.showCheckInAction = true,
@@ -226,15 +224,6 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _MapActionButton(
-                buttonKey: const Key('map_control_go_to_local_btn'),
-                icon: SFIcons.search,
-                label: 'Ir para local',
-                activeColor: activeColor,
-                enabled: widget.drawingState != DrawingState.editing,
-                onTap: widget.onOpenGoToLocal,
-              ),
-              const SizedBox(height: kMapActionColumnSpacingAboveCheckIn),
               _MapActionButton(
                 buttonKey: const Key('map_control_basemap_toggle_btn'),
                 icon: isSatelliteLayer ? SFIcons.satellite : SFIcons.mapOutlined,
