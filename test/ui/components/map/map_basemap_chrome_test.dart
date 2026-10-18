@@ -83,7 +83,6 @@ Future<void> _pumpOverlay(
             onCenterUser: () {},
             onLocationModeChanged: (_) {},
             onOpenMapTools: () {},
-            onOpenGoToLocal: () {},
             onTabSelected: (_, _) {},
             isDrawMode: false,
             showCheckInAction: false,
