@@ -66,10 +66,9 @@ final pendingOccurrenceLocationProvider = StateProvider.autoDispose<LatLng?>(
   (ref) => null,
 );
 
-/// Pedido do SideMenu para abrir [showMapGoToLocalSheet] no mapa.
-/// Incrementa a cada toque; [PrivateMapScreen] escuta e abre o sheet no próximo frame.
-/// Sem autoDispose: o pedido deve sobreviver ao fechamento do drawer.
-final pendingGoToLocalSheetRequestProvider = StateProvider<int>((ref) => 0);
+/// Pedido sticky do SideMenu para abrir [showMapGoToLocalSheet] no mapa.
+/// Permanece true até [GoToLocalSheetListener] consumir (inclui após bootstrap).
+final pendingGoToLocalSheetProvider = StateProvider<bool>((ref) => false);
 
 /// Marcador efêmero de destino para navegação por coordenadas.
 /// Null = sem marcador ativo.
