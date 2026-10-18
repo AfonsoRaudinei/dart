@@ -27,6 +27,7 @@ import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
 import '../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../components/map/map_camera_ease.dart';
+import '../components/map/map_go_to_local_sheet.dart';
 import '../components/map/map_coordinate_search_sheet.dart';
 import '../components/map/map_municipality_search_sheet.dart';
 import '../components/map/map_offline_download_sheet.dart';
@@ -887,6 +888,23 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           zoom: zoom < 16 ? 17.0 : zoom,
         ),
       );
+    });
+
+    ref.listen<int>(pendingGoToLocalSheetRequestProvider, (previous, next) {
+      if (next <= (previous ?? 0)) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (ref.read(drawingControllerProvider).currentState ==
+            DrawingState.editing) {
+          return;
+        }
+        _onMapUserInteraction();
+        showMapGoToLocalSheet(
+          context,
+          onMunicipalitySearch: _openMunicipalitySearch,
+          onCoordinateSearch: _openCoordinateSearch,
+        );
+      });
     });
 
     return PopScope(
