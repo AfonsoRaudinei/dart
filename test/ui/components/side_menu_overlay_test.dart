@@ -111,7 +111,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('Ir para local incrementa pedido e fecha o menu', (
+    testWidgets('Ir para local define pedido sticky e fecha o menu', (
       tester,
     ) async {
       await _pumpSideMenu(tester, profile: _profile(role: 'produtor'));
@@ -129,8 +129,37 @@ void main() {
       final container = ProviderScope.containerOf(
         tester.element(find.byType(SideMenuOverlay)),
       );
-      expect(container.read(pendingGoToLocalSheetRequestProvider), 1);
+      expect(container.read(pendingGoToLocalSheetProvider), isTrue);
       expect(container.read(sideMenuOpenProvider), isFalse);
+    });
+
+    testWidgets('Ir para local na agenda define pending e navega para mapa', (
+      tester,
+    ) async {
+      final router = await _pumpSideMenu(
+        tester,
+        initialLocation: AppRoutes.agenda,
+        profile: _profile(role: 'produtor'),
+      );
+
+      final item = find.byKey(const Key('side_menu_go_to_local_item'));
+      await tester.scrollUntilVisible(
+        item,
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(item);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(SideMenuOverlay)),
+      );
+      expect(container.read(pendingGoToLocalSheetProvider), isTrue);
+      expect(
+        router.routerDelegate.currentConfiguration.uri.path,
+        AppRoutes.map,
+      );
     });
   });
 }
@@ -138,6 +167,7 @@ void main() {
 Future<GoRouter> _pumpSideMenu(
   WidgetTester tester, {
   Size size = const Size(390, 844),
+  String initialLocation = AppRoutes.map,
   UserProfile? profile,
   UserRole role = UserRole.produtor,
 }) async {
@@ -150,7 +180,7 @@ Future<GoRouter> _pumpSideMenu(
   final preferences = await SharedPreferences.getInstance();
   final settingsRepository = SettingsRepository(preferences);
   final router = GoRouter(
-    initialLocation: AppRoutes.map,
+    initialLocation: initialLocation,
     routes: [
       GoRoute(path: AppRoutes.map, builder: (_, __) => const _MenuHost()),
       GoRoute(path: AppRoutes.agenda, builder: (_, __) => const _MenuHost()),
