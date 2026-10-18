@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,6 +22,17 @@ import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_con
 import 'package:soloforte_app/ui/components/map/widgets/map_controls_overlay.dart';
 
 void main() {
+  test('SFIcons.satellite não reutiliza ícone de bússola/nearMe', () {
+    final source =
+        File('lib/core/design/sf_icons.dart').readAsStringSync();
+    expect(source.contains('location_north_fill'), isTrue);
+    expect(
+      source.contains('satellite =\n      CupertinoIcons.location_north_fill'),
+      isFalse,
+    );
+    expect(source.contains('Icons.satellite_alt_outlined'), isTrue);
+  });
+
   testWidgets('toggle basemap no chrome alterna activeLayerProvider', (
     tester,
   ) async {
