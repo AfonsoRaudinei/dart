@@ -84,8 +84,7 @@ class SFIcons {
   static const IconData science =
       Icons.science_outlined; // Fallback to Material for specific domain icon
   static const IconData waterDrop = CupertinoIcons.drop_fill; // Water
-  static const IconData satellite =
-      CupertinoIcons.location_north_fill; // Satellite view
+  static const IconData satellite = Icons.satellite_alt_outlined;
   static const IconData business = CupertinoIcons.building_2_fill;
   static const IconData businessCenter = CupertinoIcons.briefcase_fill;
   static const IconData campaign = CupertinoIcons.speaker_2_fill;
