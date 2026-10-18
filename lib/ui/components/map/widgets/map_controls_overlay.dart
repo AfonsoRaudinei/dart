@@ -116,8 +116,6 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
     final safeTop = MediaQuery.of(context).padding.top;
     final safeBottom = MediaQuery.of(context).padding.bottom;
     final activeColor = _themeColor(ref.watch(themeProvider));
-    final activeLayer = ref.watch(activeLayerProvider);
-    final isSatelliteLayer = activeLayer == LayerType.satellite;
     final areaUnit = ref.watch(areaDisplayUnitProvider);
     final distanceUnit = ref.watch(distanceDisplayUnitProvider);
     final showEditingPill =
@@ -164,6 +162,11 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             children: [
               // Indicador unificado: offline / online / clima no mapa
               const _MapStatusIndicator(),
+              const SizedBox(width: 6),
+              _BasemapToggleButton(
+                activeColor: activeColor,
+                enabled: widget.drawingState != DrawingState.editing,
+              ),
               const SizedBox(width: 6),
               // Botão de Localização com 3 estados
               _LocationButton(
@@ -224,21 +227,6 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _MapActionButton(
-                buttonKey: const Key('map_control_basemap_toggle_btn'),
-                icon: isSatelliteLayer ? SFIcons.satellite : SFIcons.mapOutlined,
-                label: isSatelliteLayer ? 'Satélite' : 'Mapa',
-                isActive: isSatelliteLayer,
-                activeColor: activeColor,
-                enabled: widget.drawingState != DrawingState.editing,
-                onTap: () {
-                  final next = isSatelliteLayer
-                      ? LayerType.standard
-                      : LayerType.satellite;
-                  ref.read(activeLayerProvider.notifier).setLayer(next);
-                },
-              ),
-              const SizedBox(height: kMapActionColumnSpacingAboveCheckIn),
               _MapToolsFab(
                 isActive: widget.isDrawMode,
                 enabled: widget.drawingState != DrawingState.editing,
@@ -308,7 +296,6 @@ class _MapActionButton extends StatefulWidget {
   final String label;
   final VoidCallback onTap;
   final bool isActive;
-  final bool enabled;
   final Color activeColor;
   final Key? buttonKey;
 
@@ -319,7 +306,6 @@ class _MapActionButton extends StatefulWidget {
     required this.activeColor,
     this.buttonKey,
     this.isActive = false,
-    this.enabled = true,
   });
 
   @override
@@ -354,23 +340,16 @@ class _MapActionButtonState extends State<_MapActionButton> {
         _MapButtonLabel(text: widget.label, isVisible: _showLabel),
         const SizedBox(width: 8),
         Semantics(
-          button: widget.enabled,
+          button: true,
           label: widget.label,
           child: GestureDetector(
             onTap: () {
-              if (!widget.enabled) return;
               HapticFeedback.selectionClick();
               widget.onTap();
             },
-            onLongPress: () {
-              if (!widget.enabled) return;
-              _showTemporaryLabel();
-            },
+            onLongPress: _showTemporaryLabel,
             behavior: HitTestBehavior.opaque,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 180),
-              opacity: widget.enabled ? 1 : 0.45,
-              child: Container(
+            child: Container(
               key: widget.buttonKey,
               width: kMapActionColumnButtonSize,
               height: kMapActionColumnButtonSize,
@@ -392,7 +371,6 @@ class _MapActionButtonState extends State<_MapActionButton> {
                     ? widget.activeColor
                     : Colors.grey.shade600,
               ),
-            ),
             ),
           ),
         ),
@@ -514,7 +492,83 @@ class _MapButtonLabel extends StatelessWidget {
   }
 }
 
-/// Botão circular do topo direito (Chuva / Localização).
+/// Alterna mapa padrão / satélite no topo direito (estilo circular).
+class _BasemapToggleButton extends ConsumerStatefulWidget {
+  const _BasemapToggleButton({
+    required this.activeColor,
+    required this.enabled,
+  });
+
+  final Color activeColor;
+  final bool enabled;
+
+  @override
+  ConsumerState<_BasemapToggleButton> createState() =>
+      _BasemapToggleButtonState();
+}
+
+class _BasemapToggleButtonState extends ConsumerState<_BasemapToggleButton> {
+  Timer? _labelTimer;
+  bool _showLabel = false;
+
+  @override
+  void dispose() {
+    _labelTimer?.cancel();
+    super.dispose();
+  }
+
+  void _showTemporaryLabel() {
+    _labelTimer?.cancel();
+    setState(() => _showLabel = true);
+    _labelTimer = Timer(const Duration(milliseconds: 1600), () {
+      if (mounted) setState(() => _showLabel = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isSatellite =
+        ref.watch(activeLayerProvider) == LayerType.satellite;
+    final label = isSatellite ? 'Satélite' : 'Mapa';
+
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 180),
+      opacity: widget.enabled ? 1 : 0.45,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _MapButtonLabel(text: label, isVisible: _showLabel),
+          const SizedBox(width: 6),
+          Semantics(
+            button: widget.enabled,
+            label: label,
+            child: _MapRoundToggleButton(
+            buttonKey: const Key('map_control_basemap_toggle_btn'),
+            icon: isSatellite ? SFIcons.satellite : SFIcons.mapOutlined,
+            iconColor: isSatellite
+                ? widget.activeColor
+                : Colors.grey.shade600,
+            isOn: isSatellite,
+            showSlash: false,
+            onTap: widget.enabled
+                ? () {
+                    HapticFeedback.selectionClick();
+                    final next = isSatellite
+                        ? LayerType.standard
+                        : LayerType.satellite;
+                    ref.read(activeLayerProvider.notifier).setLayer(next);
+                  }
+                : null,
+            onLongPress: widget.enabled ? _showTemporaryLabel : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Botão circular do topo direito (Chuva / basemap / localização).
 /// Diferencia da coluna direita, que permanece quadrado com r=12.
 class _MapRoundToggleButton extends StatelessWidget {
   const _MapRoundToggleButton({
