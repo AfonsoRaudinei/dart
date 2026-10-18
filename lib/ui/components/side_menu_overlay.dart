@@ -10,6 +10,7 @@ import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
 import 'package:soloforte_app/core/services/connectivity_service.dart';
 import 'package:soloforte_app/core/services/sync_service.dart';
+import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/core/state/side_menu_state.dart';
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
 import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
@@ -659,5 +660,28 @@ void _closeAndNavigate(BuildContext context, WidgetRef ref, String route) {
   final router = GoRouter.of(context);
   WidgetsBinding.instance.addPostFrameCallback((_) {
     router.go(route);
+  });
+}
+
+void _requestGoToLocalFromSideMenu(BuildContext context, WidgetRef ref) {
+  final container = ProviderScope.containerOf(context, listen: false);
+  final router = GoRouter.of(context);
+  final onMap =
+      router.routerDelegate.currentConfiguration.uri.path == AppRoutes.map;
+
+  ref.read(sideMenuOpenProvider.notifier).state = false;
+
+  void bumpRequest() {
+    container.read(pendingGoToLocalSheetRequestProvider.notifier).state++;
+  }
+
+  if (onMap) {
+    bumpRequest();
+    return;
+  }
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    router.go(AppRoutes.map);
+    WidgetsBinding.instance.addPostFrameCallback((_) => bumpRequest());
   });
 }
