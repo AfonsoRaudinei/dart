@@ -37,7 +37,7 @@ Header: cabeçalho branco timbrado — filete de marca 2px (samsung→navy) no t
 
 - Status / urgência / situação / plano (divulgação) aparecem **uma vez** — no header; proibido repetir em linha da ficha (`Situação`, `Urgência`, `Divulgação`)
 - Consultor / agrônomo / responsável comercial aparece **só** no bloco `.sf-signature` — sem linha `Agrônomo` / `Responsável comercial` na ficha, sem nome no rodapé ou na linha de contexto
-- Cliente / Fazenda / Talhão podem repetir a linha de contexto na ficha (identificação formal do documento)
+- Cliente / Fazenda / Talhão aparecem **só** na linha de contexto do header (ou no título em listas) — **proibido** repetir como linhas da ficha técnica em `ocorrencia_detalhada.html` e `ocorrencias_lista.html`
 - Número já exibido em destaque (ex.: "Ganho" em Resultados) não se repete como linha da ficha
 
 ## Linguagem visual (documento editorial iOS)
