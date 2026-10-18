@@ -159,6 +159,18 @@ void main() {
       expect(opened, isFalse);
     });
 
+    testWidgets('editing omite basemap do topo (clearance P2)', (tester) async {
+      await _pumpMapControlsOverlay(
+        tester,
+        drawingState: DrawingState.editing,
+        editingFieldName: 'Talhão 2',
+      );
+
+      expect(
+        find.byKey(const Key('map_control_basemap_toggle_btn')),
+        findsNothing,
+      );
+    });
   });
 
   group('BUG-005 controls_overlay_publicacoes_regression', () {
