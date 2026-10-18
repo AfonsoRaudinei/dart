@@ -95,7 +95,7 @@ void main() {
 
         expect(
           find.byKey(const Key('map_control_go_to_local_btn')),
-          findsOneWidget,
+          findsNothing,
         );
         expect(
           find.byKey(const Key('map_control_basemap_toggle_btn')),
@@ -153,21 +153,6 @@ void main() {
       expect(opened, isFalse);
     });
 
-    testWidgets('go-to-local não dispara onOpenGoToLocal durante editing', (
-      tester,
-    ) async {
-      var opened = false;
-      await _pumpMapControlsOverlay(
-        tester,
-        drawingState: DrawingState.editing,
-        editingFieldName: 'Talhão 2',
-        onOpenGoToLocal: () => opened = true,
-      );
-
-      await tester.tap(find.byKey(const Key('map_control_go_to_local_btn')));
-      await tester.pumpAndSettle();
-      expect(opened, isFalse);
-    });
   });
 
   group('BUG-005 controls_overlay_publicacoes_regression', () {
@@ -338,7 +323,6 @@ void main() {
                 onCenterUser: () {},
                 onLocationModeChanged: (_) {},
                 onOpenMapTools: () {},
-                onOpenGoToLocal: () {},
                 onTabSelected: (_, _) {},
                 isDrawMode: false,
                 showCheckInAction: true,
@@ -637,7 +621,6 @@ Future<void> _pumpMapControlsOverlay(
   DrawingState drawingState = DrawingState.idle,
   String? editingFieldName,
   VoidCallback? onOpenMapTools,
-  VoidCallback? onOpenGoToLocal,
   EdgeInsets safePadding = EdgeInsets.zero,
 }) async {
   _setViewport(tester, safePadding);
@@ -668,7 +651,6 @@ Future<void> _pumpMapControlsOverlay(
             onCenterUser: () {},
             onLocationModeChanged: (_) {},
             onOpenMapTools: onOpenMapTools ?? () {},
-            onOpenGoToLocal: onOpenGoToLocal ?? () {},
             onTabSelected: (_, _) {},
             isDrawMode: isDrawMode,
             showCheckInAction: showCheckInAction,
@@ -725,7 +707,6 @@ Future<void> _pumpOverlayWithFabHarness(
                 onCenterUser: () {},
                 onLocationModeChanged: (_) {},
                 onOpenMapTools: () {},
-                onOpenGoToLocal: () {},
                 onTabSelected: (_, _) {},
                 isDrawMode: false,
                 showCheckInAction: true,
