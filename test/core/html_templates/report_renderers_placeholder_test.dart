@@ -310,7 +310,7 @@ void main() {
   );
 
   test('ocorrencia detalhada: fotos ampliáveis, sem emoji, só Criado em e '
-      'cliente/fazenda/talhão', () async {
+      'cliente/fazenda/talhão só no header', () async {
     await initializeDateFormatting('pt_BR');
 
     final html = await OcorrenciaHtmlRenderer.renderDetalhe({
@@ -368,17 +368,23 @@ void main() {
       lessThan(html.indexOf('<footer')),
     );
 
-    expect(html, contains('Produtor &lt;Teste&gt;'));
-    expect(html, contains('>Fazenda</span>'));
-    expect(html, contains('Fazenda Norte'));
-    expect(html, contains('>Talhão</span>'));
-    expect(html, contains('Talhão 7'));
     expect(
       html,
       contains(
         'Produtor &lt;Teste&gt; · Fazenda Norte · Talhão 7 · 03/06/2026',
       ),
     );
+    final ficha = _between(
+      html,
+      '<span class="sf-section-num"></span>Ficha técnica',
+      '</section>',
+    );
+    expect(ficha, isNot(contains('>Cliente</span>')));
+    expect(ficha, isNot(contains('>Fazenda</span>')));
+    expect(ficha, isNot(contains('>Talhão</span>')));
+    expect(RegExp('Produtor &lt;Teste&gt;').allMatches(html).length, 1);
+    expect(RegExp('Fazenda Norte').allMatches(html).length, 1);
+    expect(RegExp('Talhão 7').allMatches(html).length, 1);
   });
 
   final emoji = RegExp(
@@ -477,6 +483,16 @@ void main() {
         expect(html, isNot(contains('OCC-EDIT')));
         expect(html, contains('Ponto registrado no mapa'));
         expect(html, isNot(contains('-10.1')));
+        final ficha = _between(
+          html,
+          '<span class="sf-section-num"></span>Ficha técnica',
+          '</section>',
+        );
+        expect(ficha, isNot(contains('>Cliente</span>')));
+        expect(
+          _between(html, '<header class="sf-letterhead">', '</header>'),
+          contains('Cliente Teste'),
+        );
         expect(html, contains('<p class="sf-prose">N, K</p>'));
         expect(html, isNot(contains('nutriente-badge')));
         expect(html, contains('class="sf-callout"'));
@@ -636,6 +652,9 @@ void main() {
           contains('Fazenda Modelo · Talhao Norte · BRS 1010 · 03/06/2026'),
         );
         expect(html, contains('>Cultivar</span>'));
+        expect(html, isNot(contains('>Cliente</span>')));
+        expect(html, isNot(contains('>Fazenda</span>')));
+        expect(html, isNot(contains('>Talhão</span>')));
         expect(html, isNot(contains('>Agrônomo</span>')));
         expect(RegExp('Agronomo Teste').allMatches(html).length, 1);
         expect(html, contains('>Data da visita</span>'));
