@@ -10,6 +10,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 
+if [[ "$(uname -s)" != "Darwin" ]]; then
+  echo "❌ ERRO: build IPA exige macOS + Xcode (ambiente atual: $(uname -s))."
+  echo "   Use o MacBook (~/dev/appdart) com .env.local.json e ./build_testflight.sh"
+  exit 1
+fi
+
 # App Store Connect 90068 (Spring 2027): MinimumOSVersion >= 15.0 em todos os bundles.
 # O Flutter SDK ainda grava 13.0 em App.framework/Info.plist após o build — corrigimos no archive.
 IOS_MIN_VERSION="15.0"
