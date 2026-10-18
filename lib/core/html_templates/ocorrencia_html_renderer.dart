@@ -89,6 +89,7 @@ class OcorrenciaHtmlRenderer {
       ),
       'lat': data['lat']?.toString() ?? '',
       'long': data['long']?.toString() ?? '',
+      'localizacao_mapa': _localizacaoMapa(data),
       'created_at_formatado': RelatorioHtmlRenderer.formatDateTime(createdAt),
       'id_curto': RelatorioHtmlRenderer.shortId(data['id'] as String? ?? ''),
       'sync_status': data['sync_status'] as String? ?? '',
@@ -596,6 +597,15 @@ class OcorrenciaHtmlRenderer {
     } catch (_) {
       return null;
     }
+  }
+
+  static String _localizacaoMapa(Map<String, dynamic> data) {
+    final lat = RelatorioHtmlRenderer.readCoordinate(data['lat']);
+    final lng = RelatorioHtmlRenderer.readCoordinate(data['long']);
+    if (lat == null || lng == null) {
+      return '';
+    }
+    return RelatorioHtmlRenderer.mapLocationAnchor(lat, lng);
   }
 
   static bool _isAmostraSolo(Map<String, dynamic> data) {

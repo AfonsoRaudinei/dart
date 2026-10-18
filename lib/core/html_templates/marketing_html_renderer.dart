@@ -379,7 +379,17 @@ class MarketingHtmlRenderer {
       'emitido_em': _formatDateSafe(DateTime.now()),
       'criado_em_formatado': _parseDate(data['criado_em'] as String?),
       'data_case_formatado': _parseDate(data['data_case'] as String?),
+      'localizacao_mapa': _localizacaoMapa(data),
     };
+  }
+
+  static String _localizacaoMapa(Map<String, dynamic> data) {
+    final lat = RelatorioHtmlRenderer.readCoordinate(data['lat']);
+    final lng = RelatorioHtmlRenderer.readCoordinate(data['lng']);
+    if (lat == null || lng == null) {
+      return '';
+    }
+    return RelatorioHtmlRenderer.mapLocationAnchor(lat, lng);
   }
 
   static String _statusLabel(String status) {
