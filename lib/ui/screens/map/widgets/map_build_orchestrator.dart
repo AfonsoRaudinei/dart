@@ -54,7 +54,8 @@ import '../../map/providers/pin_position_correction_provider.dart';
 import '../../../components/map/widgets/map_long_press_hint.dart';
 import '../../../components/map/widgets/map_state_boundaries_layer.dart';
 import '../../../components/map/map_go_to_local_sheet.dart';
-import '../../../components/map/widgets/map_tools_bottom_sheet.dart';
+import '../../../components/map/map_layers_sheet.dart';
+import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../components/map/widgets/producer_map_context_card.dart';
 import '../../../components/map/map_sheet_state.dart';
 import '../../../../core/design/sf_icons.dart';
@@ -612,10 +613,22 @@ class _MapControlsHost extends ConsumerWidget {
           return;
         }
         onMapUserInteraction?.call();
-        MapToolsBottomSheet.show(
+        toggleDrawMode();
+      },
+      onLongPressMapTools: () {
+        if (drawingMetrics.state == DrawingState.editing) {
+          return;
+        }
+        onMapUserInteraction?.call();
+        showSoloForteSheet<void>(
           context: context,
-          drawingController: ref.read(drawingControllerProvider),
-          onDownloadOfflineArea: downloadOfflineArea,
+          showDragHandle: true,
+          useSafeArea: true,
+          maxHeightFraction: 0.52,
+          builder: (sheetContext) => LayersSheet(
+            onClose: () => Navigator.of(sheetContext, rootNavigator: false).pop(),
+            onDownloadOfflineArea: downloadOfflineArea,
+          ),
         );
       },
       isDrawMode: isDrawMode,
