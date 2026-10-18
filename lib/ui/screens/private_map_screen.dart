@@ -27,7 +27,6 @@ import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
 import '../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../components/map/map_camera_ease.dart';
-import '../components/map/map_go_to_local_sheet.dart';
 import '../components/map/map_coordinate_search_sheet.dart';
 import '../components/map/map_municipality_search_sheet.dart';
 import '../components/map/map_offline_download_sheet.dart';
@@ -43,6 +42,7 @@ import 'map/providers/map_armed_mode_provider.dart';
 import 'map/providers/map_ready_state_provider.dart';
 import '../../modules/map/presentation/providers/map_location_mode_provider.dart';
 import 'map/providers/pin_position_correction_provider.dart';
+import 'map/widgets/go_to_local_sheet_listener.dart';
 import 'map/widgets/map_build_orchestrator.dart';
 import 'map/handlers/map_location_handler.dart';
 import 'map/controllers/map_viewport_controller.dart';
@@ -890,49 +890,37 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       );
     });
 
-    ref.listen<int>(pendingGoToLocalSheetRequestProvider, (previous, next) {
-      if (next <= (previous ?? 0)) return;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        if (ref.read(drawingControllerProvider).currentState ==
-            DrawingState.editing) {
-          return;
-        }
-        _onMapUserInteraction();
-        showMapGoToLocalSheet(
-          context,
-          onMunicipalitySearch: _openMunicipalitySearch,
-          onCoordinateSearch: _openCoordinateSearch,
-        );
-      });
-    });
-
-    return PopScope(
-      canPop: !pinCorrectionActive,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && ref.read(pinPositionCorrectionProvider) != null) {
-          ref.cancelPinCorrection();
-        }
-      },
-      child: MapBuildOrchestrator(
-        mapController: _mapController,
-        setSheetState: _setSheetState,
-        openOccurrenceSheet: _openOccurrenceSheet,
-        handleMapLongPress: _handleMapLongPress,
-        finishDrawing: _finishDrawing,
-        toggleDrawMode: _toggleDrawMode,
-        centerOnUser: _centerOnUser,
-        onLocationModeChanged: _handleLocationModeChanged,
-        stopFollowing: () =>
-            MapLocationHandler.stopFollowing(mapController: _mapController),
-        handleOccurrencePinTap: _handleOccurrencePinTap,
-        applyInitialViewport: _applyInitialViewport,
-        openCoordinateSearch: _openCoordinateSearch,
-        openMunicipalitySearch: _openMunicipalitySearch,
-        downloadOfflineArea: _downloadOfflineArea,
-        absorbMapPointers: _actionsSheetOpen,
-        showLongPressHint: _showLongPressHint,
-        onMapUserInteraction: _onMapUserInteraction,
+    return GoToLocalSheetListener(
+      onMunicipalitySearch: _openMunicipalitySearch,
+      onCoordinateSearch: _openCoordinateSearch,
+      onBeforeOpen: _onMapUserInteraction,
+      child: PopScope(
+        canPop: !pinCorrectionActive,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop && ref.read(pinPositionCorrectionProvider) != null) {
+            ref.cancelPinCorrection();
+          }
+        },
+        child: MapBuildOrchestrator(
+          mapController: _mapController,
+          setSheetState: _setSheetState,
+          openOccurrenceSheet: _openOccurrenceSheet,
+          handleMapLongPress: _handleMapLongPress,
+          finishDrawing: _finishDrawing,
+          toggleDrawMode: _toggleDrawMode,
+          centerOnUser: _centerOnUser,
+          onLocationModeChanged: _handleLocationModeChanged,
+          stopFollowing: () =>
+              MapLocationHandler.stopFollowing(mapController: _mapController),
+          handleOccurrencePinTap: _handleOccurrencePinTap,
+          applyInitialViewport: _applyInitialViewport,
+          openCoordinateSearch: _openCoordinateSearch,
+          openMunicipalitySearch: _openMunicipalitySearch,
+          downloadOfflineArea: _downloadOfflineArea,
+          absorbMapPointers: _actionsSheetOpen,
+          showLongPressHint: _showLongPressHint,
+          onMapUserInteraction: _onMapUserInteraction,
+        ),
       ),
     );
   }
