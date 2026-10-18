@@ -670,18 +670,11 @@ void _requestGoToLocalFromSideMenu(BuildContext context, WidgetRef ref) {
       router.routerDelegate.currentConfiguration.uri.path == AppRoutes.map;
 
   ref.read(sideMenuOpenProvider.notifier).state = false;
+  container.read(pendingGoToLocalSheetProvider.notifier).state = true;
 
-  void bumpRequest() {
-    container.read(pendingGoToLocalSheetRequestProvider.notifier).state++;
+  if (!onMap) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      router.go(AppRoutes.map);
+    });
   }
-
-  if (onMap) {
-    bumpRequest();
-    return;
-  }
-
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    router.go(AppRoutes.map);
-    WidgetsBinding.instance.addPostFrameCallback((_) => bumpRequest());
-  });
 }
