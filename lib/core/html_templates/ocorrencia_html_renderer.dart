@@ -103,13 +103,6 @@ class OcorrenciaHtmlRenderer {
     final nutrientes = _renderNutrientes(data['nutrientes_json'] as String?);
 
     tpl = _resolveRepeatedIf(tpl, 'contexto_linha', contextoLinha.isNotEmpty);
-    for (final key in const ['cliente_nome', 'fazenda_nome', 'talhao_nome']) {
-      tpl = _resolveRepeatedIf(
-        tpl,
-        key,
-        (data[key] as String?)?.trim().isNotEmpty == true,
-      );
-    }
     tpl = _resolveRepeatedIf(tpl, 'type', type.isNotEmpty);
     tpl = _resolveRepeatedIf(tpl, 'consultant_nome', consultantNome.isNotEmpty);
     tpl = _resolveRepeatedIf(
@@ -273,9 +266,6 @@ class OcorrenciaHtmlRenderer {
 
     tpl = _resolveRepeatedIf(tpl, 'contexto_linha', contextoLinha.isNotEmpty);
     for (final entry in {
-      'cliente_nome': clienteNome,
-      'fazenda_nome': fazendaNome,
-      'talhao_nome': talhaoNome,
       'cultivar': cultivar,
       'agronomist_nome': agronomistNome,
       'data_visita_formatada': dataVisitaFmt,
