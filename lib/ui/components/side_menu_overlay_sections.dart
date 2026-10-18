@@ -111,6 +111,79 @@ class _SideMenuContent extends StatelessWidget {
           const SizedBox(height: 16),
           const _MotivationalCard(),
         ],
+        const SizedBox(height: 18),
+        const _GoToLocalMenuItem(),
+      ],
+    );
+  }
+}
+
+class _GoToLocalMenuItem extends ConsumerWidget {
+  const _GoToLocalMenuItem();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _MenuPanel(
+      children: [
+        InkWell(
+          key: const Key('side_menu_go_to_local_item'),
+          borderRadius: BorderRadius.circular(15),
+          onTap: () => _requestGoToLocalFromSideMenu(context, ref),
+          child: SizedBox(
+            height: 57,
+            child: Row(
+              children: [
+                const SizedBox(width: 12),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: _menuIconBg(context),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.search_rounded,
+                    color: _menuAccent(context),
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Ir para local',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        'Município ou coordenada',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.outline,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                  size: 20,
+                ),
+                const SizedBox(width: 9),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
