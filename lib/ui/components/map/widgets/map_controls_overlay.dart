@@ -44,7 +44,6 @@ Color _themeColor(String theme) {
 class MapControlsOverlay extends ConsumerStatefulWidget {
   final VoidCallback onCenterUser;
   final ValueChanged<MapLocationMode> onLocationModeChanged;
-  final VoidCallback onToggleDrawMode;
   final VoidCallback onOpenMapTools;
   final VoidCallback? onLongPressMapTools;
   final VoidCallback onOpenGoToLocal;
@@ -75,7 +74,6 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     super.key,
     required this.onCenterUser,
     required this.onLocationModeChanged,
-    required this.onToggleDrawMode,
     required this.onOpenMapTools,
     this.onLongPressMapTools,
     required this.onOpenGoToLocal,

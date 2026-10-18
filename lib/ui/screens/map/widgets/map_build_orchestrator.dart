@@ -596,7 +596,6 @@ class _MapControlsHost extends ConsumerWidget {
     return MapControlsOverlay(
       onCenterUser: centerOnUser,
       onLocationModeChanged: onLocationModeChanged,
-      onToggleDrawMode: toggleDrawMode,
       onOpenGoToLocal: () {
         if (drawingMetrics.state == DrawingState.editing) {
           return;
