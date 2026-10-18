@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -11,6 +12,7 @@ import '../utils/share_position.dart';
 import 'report_export_service.dart';
 import 'report_photo_links.dart';
 import 'report_photo_viewer.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 /// Ações opcionais na AppBar do viewer (Relatórios — opt-in).
@@ -130,6 +132,20 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
               context,
               photos: _photos,
               initialIndex: position,
+            );
+          });
+          WidgetsBinding.instance.scheduleFrame();
+        }
+        return NavigationDecision.prevent;
+      case ReportNavigationAction.openMap:
+        final lat = decision.mapLat;
+        final lng = decision.mapLng;
+        if (lat != null && lng != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            context.go(
+              '${AppRoutes.map}?modo=foco&lat=${lat.toStringAsFixed(6)}'
+              '&lng=${lng.toStringAsFixed(6)}',
             );
           });
           WidgetsBinding.instance.scheduleFrame();

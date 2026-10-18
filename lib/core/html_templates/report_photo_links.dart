@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'report_map_links.dart';
+
 /// Foto de relatório extraída de `img[data-sf-photo]`.
 class ReportPhoto {
   const ReportPhoto({required this.index, required this.src, this.caption});
@@ -28,25 +30,40 @@ class ReportPhoto {
   }
 }
 
-enum ReportNavigationAction { allow, prevent, openPhoto }
+enum ReportNavigationAction { allow, prevent, openPhoto, openMap }
 
 /// Decisão de [ReportPhotoLinks.decideNavigation].
 class ReportNavigation {
   const ReportNavigation.allow()
     : action = ReportNavigationAction.allow,
-      photoIndex = null;
+      photoIndex = null,
+      mapLat = null,
+      mapLng = null;
 
   const ReportNavigation.prevent()
     : action = ReportNavigationAction.prevent,
-      photoIndex = null;
+      photoIndex = null,
+      mapLat = null,
+      mapLng = null;
 
   const ReportNavigation.openPhoto(int this.photoIndex)
-    : action = ReportNavigationAction.openPhoto;
+    : action = ReportNavigationAction.openPhoto,
+      mapLat = null,
+      mapLng = null;
+
+  const ReportNavigation.openMap({required double lat, required double lng})
+    : action = ReportNavigationAction.openMap,
+      photoIndex = null,
+      mapLat = lat,
+      mapLng = lng;
 
   final ReportNavigationAction action;
 
   /// Valor de `data-sf-photo` quando [action] é `openPhoto`.
   final int? photoIndex;
+
+  final double? mapLat;
+  final double? mapLng;
 }
 
 /// Ponte HTML ↔ visualizador nativo de fotos (WebView com JavaScript
@@ -100,6 +117,13 @@ abstract final class ReportPhotoLinks {
   static ReportNavigation decideNavigation(String url) {
     final index = indexFromUrl(url);
     if (index != null) return ReportNavigation.openPhoto(index);
+    final mapCoords = ReportMapLinks.navigationCoordinatesForUrl(url);
+    if (mapCoords != null) {
+      return ReportNavigation.openMap(
+        lat: mapCoords.lat,
+        lng: mapCoords.lng,
+      );
+    }
     final scheme = Uri.tryParse(url.trim())?.scheme;
     if (scheme == 'about' || scheme == 'data') {
       return const ReportNavigation.allow();
@@ -110,7 +134,8 @@ abstract final class ReportPhotoLinks {
   /// Cópia do HTML para exibição no app: cada foto numerada vira link
   /// `sfphoto://N` e o lightbox CSS (checkbox) é removido.
   static String prepareInAppHtml(String html) {
-    var prepared = html.replaceAll(_lightboxToggle, '');
+    var prepared = ReportMapLinks.rewriteForInApp(html);
+    prepared = prepared.replaceAll(_lightboxToggle, '');
     prepared = prepared.replaceAllMapped(_imgTag, _linkPhotoTag);
     prepared = prepared.replaceAllMapped(
       _labelAroundPhotoLink,
