@@ -300,6 +300,7 @@ void main() {
       );
       expect(html, contains('SoloForte'));
       expect(html, contains('localizacao-inline'));
+      expect(html, isNot(contains('class="sf-map-link"')));
       expect(html, isNot(contains('localizacao-block')));
       expect(html, isNot(contains('footer-meta')));
       expect(html, isNot(contains('ID: OCC-BRAN')));
@@ -481,8 +482,10 @@ void main() {
         expect(html, isNot(contains(RegExp(r'>\s*draft\s*<'))));
         expect(html, isNot(contains('#OCC-EDIT')));
         expect(html, isNot(contains('OCC-EDIT')));
+        expect(html, contains('class="sf-map-link"'));
         expect(html, contains('Ponto registrado no mapa'));
-        expect(html, isNot(contains('-10.1')));
+        expect(html, contains('google.com/maps/search'));
+        expect(html, isNot(contains('-10.1</span>')));
         final ficha = _between(
           html,
           '<span class="sf-section-num"></span>Ficha técnica',
