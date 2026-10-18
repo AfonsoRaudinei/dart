@@ -321,8 +321,8 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     // NOTA ARQUITETURAL: O handle (pílula de drag) é renderizado pelo
     // componente pai (lib/ui/screens/private_map_sheets.dart / MapBottomSheet).
     // Este widget não inclui handle próprio.
-    // Tema Azul: fundo transparente — herda prata do host (MapToolsBottomSheet /
-    // MapBottomSheet). Evita painel escuro aninhado fora do padrão iOS.
+    // Tema Azul: fundo transparente — herda prata do host do sheet de desenho
+    // (MapBottomSheet). Evita painel escuro aninhado fora do padrão iOS.
     final isIos = soloForteSheetIsIos(context);
     final sheetBg = isIos
         ? Colors.transparent
