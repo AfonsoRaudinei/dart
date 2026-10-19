@@ -15,6 +15,7 @@ import '../../../../core/contracts/i_occurrence_access_reader_provider.dart';
 import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/design/sf_icons.dart';
+import '../../../../core/html_templates/combinado_html_renderer.dart';
 import '../../../../core/html_templates/html_report_viewer.dart';
 import '../../../../core/html_templates/ocorrencia_html_renderer.dart';
 import '../../../../core/html_templates/propriedade_html_renderer.dart';
@@ -57,6 +58,7 @@ part 'relatorios_producer_helpers.dart';
 part 'relatorios_generated_reports.dart';
 part 'relatorios_marketing_reports.dart';
 part 'relatorios_consolidated_reports.dart';
+part 'relatorios_combined_composer.dart';
 part 'relatorios_shared_widgets.dart';
 part 'relatorios_visit_photos_section.dart';
 part 'relatorios_report_visuals.dart';
@@ -225,16 +227,10 @@ class _RelatoriosScreenState extends ConsumerState<RelatoriosScreen> {
           ],
         );
       case _RelatoriosSegment.consolidados:
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-          children: [
-            _ConsolidatedReportsSection(
-              dateFormat: _dateFormat,
-              selectedProducerClientId: _selectedProducerClientId,
-              onProducerSelected: _selectProducer,
-            ),
-            const SizedBox(height: kFabSafeArea),
-          ],
+        return _ConsolidatedReportsSection(
+          dateFormat: _dateFormat,
+          selectedProducerClientId: _selectedProducerClientId,
+          onProducerSelected: _selectProducer,
         );
       case _RelatoriosSegment.midia:
         return _VisitPhotosSection(dateFormat: _dateFormat);
@@ -734,49 +730,8 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
     );
   }
 
-  Future<String> _buildHtml(WidgetRef ref, Occurrence occurrence) async {
-    final data = occurrence.toMap();
-    final cover = coverPhotoPath(occurrence);
-    data['foto_base64'] =
-        await RelatorioHtmlRenderer.photoPathToBase64(cover) ?? '';
-    if (occurrence.fotosCategoriasJson != null) {
-      data['fotos_categorias_json'] = encodeFotosCategoriasJson(
-        occurrence.fotosCategoriasJson,
-        ImageStorageService().toStoredPath,
-      );
-    }
-    if (cover != null) {
-      data['photo_path'] = ImageStorageService().toStoredPath(cover);
-    }
-    data['cliente_nome'] = await _occurrenceClienteNome(
-      ref,
-      occurrence.clientId,
-    );
-    final location = await resolveOccurrenceLocationNames(
-      clientId: occurrence.clientId,
-      lat: occurrence.lat,
-      lng: occurrence.long,
-      visitSessionId: occurrence.visitSessionId,
-      farmLookup: _tryReadContract(() => ref.read(iFarmLookupProvider)),
-      fieldLookup: _tryReadContract(() => ref.read(iFieldLookupProvider)),
-      visitSessionLookup: _tryReadContract(
-        () => ref.read(visitSessionLookupProvider),
-      ),
-    );
-    data['fazenda_nome'] = location.fazenda;
-    data['talhao_nome'] = location.talhao;
-    final branding = await resolveReportBrandingContext(
-      ref,
-      fallbackConsultantName: 'Equipe técnica',
-      fallbackConsultantRole: 'Consultoria',
-    );
-    return OcorrenciaHtmlRenderer.renderDetalhe(
-      data,
-      reportBrandName: branding.brandName,
-      reportLogoPath: branding.logoPath,
-      consultantName: branding.consultantName,
-      consultantRole: branding.consultantRole,
-    );
+  Future<String> _buildHtml(WidgetRef ref, Occurrence occurrence) {
+    return _buildOccurrenceReportHtml(ref, occurrence);
   }
 
   Future<void> _showEditSheet(

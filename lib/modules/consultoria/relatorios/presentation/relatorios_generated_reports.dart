@@ -384,3 +384,111 @@ Future<_GeneratedReportPayload> _buildMarketingPayload(
     csv: bundle.csv,
   );
 }
+
+Future<String> _buildOccurrenceReportHtml(
+  WidgetRef ref,
+  Occurrence occurrence, {
+  bool asFragment = false,
+}) async {
+  final data = occurrence.toMap();
+  final cover = coverPhotoPath(occurrence);
+  data['foto_base64'] =
+      await RelatorioHtmlRenderer.photoPathToBase64(cover) ?? '';
+  if (occurrence.fotosCategoriasJson != null) {
+    data['fotos_categorias_json'] = encodeFotosCategoriasJson(
+      occurrence.fotosCategoriasJson,
+      ImageStorageService().toStoredPath,
+    );
+  }
+  if (cover != null) {
+    data['photo_path'] = ImageStorageService().toStoredPath(cover);
+  }
+  data['cliente_nome'] = await _occurrenceClienteNome(ref, occurrence.clientId);
+  final location = await resolveOccurrenceLocationNames(
+    clientId: occurrence.clientId,
+    lat: occurrence.lat,
+    lng: occurrence.long,
+    visitSessionId: occurrence.visitSessionId,
+    farmLookup: _tryReadContract(() => ref.read(iFarmLookupProvider)),
+    fieldLookup: _tryReadContract(() => ref.read(iFieldLookupProvider)),
+    visitSessionLookup: _tryReadContract(
+      () => ref.read(visitSessionLookupProvider),
+    ),
+  );
+  data['fazenda_nome'] = location.fazenda;
+  data['talhao_nome'] = location.talhao;
+  final branding = await resolveReportBrandingContext(
+    ref,
+    fallbackConsultantName: 'Equipe técnica',
+    fallbackConsultantRole: 'Consultoria',
+  );
+  return OcorrenciaHtmlRenderer.renderDetalhe(
+    data,
+    reportBrandName: branding.brandName,
+    reportLogoPath: branding.logoPath,
+    consultantName: branding.consultantName,
+    consultantRole: branding.consultantRole,
+    asFragment: asFragment,
+  );
+}
+
+Future<_GeneratedReportPayload> _buildCombinedReportPayload(
+  WidgetRef ref, {
+  required String clientId,
+  required List<_CombinedReportEvent> selected,
+}) async {
+  final branding = await _resolveReportBrandingContext(
+    ref,
+    fallbackConsultantName: 'Equipe técnica',
+    fallbackConsultantRole: 'Consultoria',
+  );
+  final clienteNome = await _resolveClienteNomeForId(ref, clientId);
+  final chapters = <CombinadoHtmlChapter>[];
+  for (final event in selected) {
+    chapters.add(
+      CombinadoHtmlChapter(
+        kind: event.kind,
+        occurredAt: event.occurredAt,
+        title: event.title,
+        fragmentHtml: await event.buildFragment(ref),
+      ),
+    );
+  }
+  final html = await CombinadoHtmlRenderer.render(
+    clienteNome: clienteNome.isNotEmpty ? clienteNome : 'Produtor',
+    chapters: chapters,
+    reportBrandName: branding.brandName,
+    reportLogoPath: branding.logoPath,
+    consultantName: branding.consultantName,
+    consultantRole: branding.consultantRole,
+  );
+  final sorted = CombinadoHtmlRenderer.sortChronologically(chapters);
+  return _GeneratedReportPayload(
+    title: 'Relatório combinado — $clienteNome',
+    fileBaseName: 'relatorio_combinado_$clientId',
+    html: html,
+    json: {
+      'tipo': 'relatorio_combinado',
+      'clientId': clientId,
+      'clienteNome': clienteNome,
+      'capitulos': [
+        for (final chapter in sorted)
+          {
+            'kind': chapter.kind,
+            'title': chapter.title,
+            'occurredAt': chapter.occurredAt.toIso8601String(),
+          },
+      ],
+    },
+    csv: ConsultoriaReportExportData.toCsv([
+      ['kind', 'titulo', 'occurred_at'],
+      ...sorted.map(
+        (chapter) => [
+          chapter.kind,
+          chapter.title,
+          chapter.occurredAt.toIso8601String(),
+        ],
+      ),
+    ]),
+  );
+}

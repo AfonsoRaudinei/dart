@@ -1,6 +1,6 @@
 part of 'relatorios_page.dart';
 
-/// Aba Consolidados — Resumo + Histórico por produtor (clientId único).
+/// Aba Consolidados — Resumo, Histórico e combinação cronológica por produtor.
 class _ConsolidatedReportsSection extends ConsumerWidget {
   final DateFormat dateFormat;
   final String? selectedProducerClientId;
@@ -15,48 +15,93 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final relatoriosAsync = ref.watch(_relatoriosTecnicosListProvider);
+    final occurrencesAsync = ref.watch(occurrencesListProvider);
+    final marketingAsync = ref.watch(marketingCaseReportsListProvider);
 
-    if (relatoriosAsync.isLoading) {
-      return const _SectionLoading(title: 'Relatórios Consolidados');
+    if (relatoriosAsync.isLoading && !relatoriosAsync.hasValue) {
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+        children: const [
+          _SectionLoading(title: 'Relatórios Consolidados'),
+          SizedBox(height: kFabSafeArea),
+        ],
+      );
     }
-    if (relatoriosAsync.hasError) {
-      return _SectionError(
-        title: 'Relatórios Consolidados',
-        onRetry: () => ref.invalidate(_relatoriosTecnicosListProvider),
+    if (relatoriosAsync.hasError && !relatoriosAsync.hasValue) {
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+        children: [
+          _SectionError(
+            title: 'Relatórios Consolidados',
+            onRetry: () => ref.invalidate(_relatoriosTecnicosListProvider),
+          ),
+          const SizedBox(height: kFabSafeArea),
+        ],
       );
     }
 
     final relatorios =
         relatoriosAsync.valueOrNull ?? const <RelatorioTecnico>[];
+    final allOccurrences =
+        occurrencesAsync.valueOrNull ?? const <Occurrence>[];
+    final allMarketing =
+        marketingAsync.valueOrNull ?? const <MarketingCaseReportSnapshot>[];
     final nowLabel = dateFormat.format(DateTime.now());
-    final producerCounts =
-        _producerCountsFromIds(relatorios.map((r) => r.clientId));
+    final producerCounts = _producerCountsFromIds([
+      ...relatorios.map((r) => r.clientId),
+      ...allOccurrences.map((o) => o.clientId),
+      ...allMarketing.map((c) => c.clientId),
+    ]);
     final producerIds = producerCounts.keys.toList()..sort();
     final effectiveClientId = resolveRelatoriosProducerClientId(
       selectedClientId: selectedProducerClientId,
       routeClientId: _relatoriosRouteClienteId(context),
       producerIds: producerIds,
     );
-    final scoped = producerIds.isEmpty
+    final scopedVisits = producerIds.isEmpty
         ? relatorios
         : effectiveClientId == null
         ? const <RelatorioTecnico>[]
         : relatorios
             .where((report) => report.clientId == effectiveClientId)
             .toList();
-    final hasProperty = scoped.any(
+    final scopedOccurrences = effectiveClientId == null
+        ? const <Occurrence>[]
+        : _sortOccurrencesByCreatedAt(
+            allOccurrences
+                .where((o) => o.clientId == effectiveClientId)
+                .toList(),
+          );
+    final scopedMarketing = effectiveClientId == null
+        ? const <MarketingCaseReportSnapshot>[]
+        : allMarketing
+            .where((item) => item.clientId == effectiveClientId)
+            .toList();
+    final hasProperty = scopedVisits.any(
       (report) => report.farmName.trim().isNotEmpty,
     );
-    final exportsEnabled = effectiveClientId != null && scoped.isNotEmpty;
+    final hasAnySource =
+        relatorios.isNotEmpty ||
+        allOccurrences.isNotEmpty ||
+        allMarketing.isNotEmpty;
+    final needsProducerPick =
+        producerIds.length > 1 && effectiveClientId == null;
+    final combinedEvents = effectiveClientId == null
+        ? const <_CombinedReportEvent>[]
+        : _combinedEventsForProducer(
+            visits: scopedVisits,
+            occurrences: scopedOccurrences,
+            marketing: scopedMarketing,
+          );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       children: [
-        const _InsetGroupHeader(title: 'Relatórios Consolidados', count: 2),
-        if (relatorios.isEmpty)
+        const _InsetGroupHeader(title: 'Relatórios Consolidados', count: 3),
+        if (!hasAnySource)
           _PremiumEmptyState(
             message:
-                'Sem dados para consolidar. Gere relatórios de visita na aba Visitas (via mapa).',
+                'Sem dados para consolidar. Gere relatórios de visita, ocorrência ou marketing no mapa.',
             ctaLabel: 'Abrir mapa',
             onCta: () => context.go(AppRoutes.map),
           )
@@ -68,61 +113,61 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
             effectiveClientId: effectiveClientId,
             onSelected: onProducerSelected,
           ),
-          if (!exportsEnabled)
-            _PremiumEmptyState(
-              message: producerIds.length > 1
-                  ? 'Selecione um produtor para consolidar visitas e exportar relatórios.'
-                  : 'Nenhum relatório vinculado a produtor para consolidar.',
+          if (needsProducerPick)
+            const _PremiumEmptyState(
+              message:
+                  'Selecione um produtor para consolidar visitas e combinar relatórios.',
             )
-          else
-            Builder(
-              builder: (context) {
-                final clientId = effectiveClientId;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _GeneratedReportCard(
-                      leading: _relatoriosReportIconBadge(
-                        icon: SFIcons.business,
-                        accent: const Color(0xFF2C5564),
-                      ),
-                      eyebrow: 'Gerado sob demanda',
-                      title: 'Resumo da Propriedade',
-                      subtitle: _propertySubtitle(scoped),
-                      date: nowLabel,
-                      enabled: hasProperty,
-                      buildPayload: () => _buildPropertySummaryPayload(
-                        ref,
-                        scoped,
-                        clientId,
-                      ),
-                    ),
-                    _GeneratedReportCard(
-                      leading: _relatoriosReportIconBadge(
-                        icon: SFIcons.calendar,
-                        accent: PremiumTokens.brandGreen,
-                      ),
-                      eyebrow: 'Gerado sob demanda',
-                      title: 'Histórico de Visitas',
-                      subtitle: '${scoped.length} visita(s)',
-                      date: nowLabel,
-                      enabled: scoped.isNotEmpty,
-                      buildPayload: () => _buildVisitHistoryPayload(
-                        ref,
-                        scoped,
-                        clientId,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _VisitHistoryTimeline(
-                      relatorios: scoped,
-                      dateFormat: dateFormat,
-                    ),
-                  ],
-                );
-              },
+          else if (effectiveClientId == null)
+            const _PremiumEmptyState(
+              message: 'Nenhum relatório vinculado a produtor para consolidar.',
+            )
+          else ...[
+            _GeneratedReportCard(
+              leading: _relatoriosReportIconBadge(
+                icon: SFIcons.business,
+                accent: const Color(0xFF2C5564),
+              ),
+              eyebrow: 'Gerado sob demanda',
+              title: 'Resumo da Propriedade',
+              subtitle: _propertySubtitle(scopedVisits),
+              date: nowLabel,
+              enabled: hasProperty,
+              buildPayload: () => _buildPropertySummaryPayload(
+                ref,
+                scopedVisits,
+                effectiveClientId,
+              ),
             ),
+            _GeneratedReportCard(
+              leading: _relatoriosReportIconBadge(
+                icon: SFIcons.calendar,
+                accent: PremiumTokens.brandGreen,
+              ),
+              eyebrow: 'Gerado sob demanda',
+              title: 'Histórico de Visitas',
+              subtitle: '${scopedVisits.length} visita(s)',
+              date: nowLabel,
+              enabled: scopedVisits.isNotEmpty,
+              buildPayload: () => _buildVisitHistoryPayload(
+                ref,
+                scopedVisits,
+                effectiveClientId,
+              ),
+            ),
+            if (combinedEvents.isEmpty)
+              const _PremiumEmptyState(
+                message: 'Nenhum relatório deste produtor para combinar.',
+              )
+            else
+              _CombinedReportsComposer(
+                clientId: effectiveClientId,
+                dateFormat: dateFormat,
+                events: combinedEvents,
+              ),
+          ],
         ],
+        const SizedBox(height: kFabSafeArea),
       ],
     );
   }
@@ -134,103 +179,5 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
         .map((talhao) => talhao.talhaoId)
         .toSet();
     return '${farms.length} propriedade(s), ${talhoes.length} talhão(ões)';
-  }
-}
-
-/// Timeline compacta do histórico de visitas (Consolidados).
-class _VisitHistoryTimeline extends StatelessWidget {
-  final List<RelatorioTecnico> relatorios;
-  final DateFormat dateFormat;
-
-  const _VisitHistoryTimeline({
-    required this.relatorios,
-    required this.dateFormat,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sorted = _sortRelatoriosByPeriodStart(relatorios);
-    final items = sorted.take(8).toList();
-    if (items.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
-          child: Text(
-            'Linha do tempo',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: context.premiumTextSecondary,
-            ),
-          ),
-        ),
-        ...items.map((report) {
-          final title = report.title?.isNotEmpty == true
-              ? report.title!
-              : report.farmName;
-          final status = switch (report.status) {
-            RelatorioStatus.publicado => 'Publicado',
-            RelatorioStatus.arquivado => 'Arquivado',
-            RelatorioStatus.pendente_revisao => 'Rascunho',
-          };
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Column(
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      margin: const EdgeInsets.only(top: 4),
-                      decoration: const BoxDecoration(
-                        color: PremiumTokens.brandGreen,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    Container(
-                      width: 2,
-                      height: 28,
-                      color: const Color(0xFFE5E5EA),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: context.premiumTextPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        '${dateFormat.format(report.periodStart.toLocal())} · $status · ${report.farmName}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: context.premiumTextSecondary,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }),
-      ],
-    );
   }
 }
