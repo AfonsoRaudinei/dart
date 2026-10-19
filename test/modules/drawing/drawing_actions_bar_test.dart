@@ -106,6 +106,26 @@ void main() {
     expect(find.text('União'), findsNothing);
     expect(find.text('Exportar este talhão'), findsNothing);
     expect(find.text('Excluir'), findsNothing);
+    expect(find.text('Ver mapa NDVI'), findsNothing);
+  });
+
+  testWidgets('modo compacto com callback exibe Ver mapa NDVI', (tester) async {
+    var tapped = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DrawingActionsBar(
+            selectedFeature: _feature(),
+            actionsMode: DrawingFeatureActionsMode.compact,
+            onShowNdviMap: () => tapped = true,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Ver mapa NDVI'), findsOneWidget);
+    await tester.tap(find.text('Ver mapa NDVI'));
+    expect(tapped, isTrue);
   });
 }
 
