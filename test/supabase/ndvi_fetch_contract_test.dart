@@ -61,4 +61,12 @@ void main() {
     expect(edgeFunction, contains('no_images_available'));
     expect(edgeFunction, contains('status: 404'));
   });
+
+  test('process com geometria que falha repete só com bbox', () {
+    expect(edgeFunction, contains('processGeometry = undefined'));
+    expect(
+      edgeFunction,
+      contains('Polígono recusado pelo process: repete só com bbox'),
+    );
+  });
 }

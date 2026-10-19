@@ -695,13 +695,24 @@ async function trySentinelBackends(
         : catalog.dates[0])
       : catalog.dates[0];
 
-    const result = await fetchSentinelImage(
+    let processGeometry = geometry;
+    let result = await fetchSentinelImage(
       backend.apiBase,
       bbox,
       token,
       finalDate,
-      geometry,
+      processGeometry,
     );
+    // Polígono recusado pelo process: repete só com bbox, sem máscara.
+    if (!result && geometry) {
+      processGeometry = undefined;
+      result = await fetchSentinelImage(
+        backend.apiBase,
+        bbox,
+        token,
+        finalDate,
+      );
+    }
     if (!result) {
       lastReason = `${backend.id}_process_failed`;
       continue;
@@ -715,7 +726,7 @@ async function trySentinelBackends(
       bbox,
       token,
       finalDate,
-      geometry,
+      processGeometry,
     );
     if (stats) {
       ndviMin = stats.ndviMin;

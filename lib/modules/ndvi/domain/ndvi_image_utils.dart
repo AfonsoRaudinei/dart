@@ -32,7 +32,7 @@ String normalizeNdviSource(String source) {
 
 bool ndviIsColormapSource(String source) {
   return switch (normalizeNdviSource(source)) {
-    'planet_preview' => false,
+    'planet_preview' || 'unavailable' => false,
     _ => true,
   };
 }
@@ -43,6 +43,7 @@ String ndviSourceLabel(String source) {
   return switch (normalizeNdviSource(source)) {
     'sentinel' => 'Sentinel NDVI',
     'planet_preview' => 'Preview RGB (Planet)',
+    'unavailable' => 'NDVI indisponivel',
     _ => 'Auto',
   };
 }
@@ -70,6 +71,10 @@ String? ndviPreviewDisclaimer(
   String source, {
   String? sentinelDegradedReason,
 }) {
+  if (normalizeNdviSource(source) == 'unavailable') {
+    return ndviDegradedReasonLabel(sentinelDegradedReason) ??
+        'Mapa NDVI indisponivel para esta area.';
+  }
   if (ndviIsColormapSource(source)) return null;
   final detail = ndviDegradedReasonLabel(sentinelDegradedReason);
   if (detail != null) {
