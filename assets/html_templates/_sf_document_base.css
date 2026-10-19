@@ -552,6 +552,37 @@ body.sf-export-gallery-open { overflow: hidden; }
   color: var(--sf-text-secondary);
 }
 
+/* ═══ Capítulos de relatório combinado ═══ */
+.sf-chapter {
+  margin-bottom: var(--sf-space-6);
+  padding-top: var(--sf-space-5);
+  border-top: 0.5px solid var(--sf-hairline);
+}
+
+.sf-chapter:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.sf-chapter-kicker {
+  font-size: 12px;
+  color: var(--sf-text-secondary);
+}
+
+.sf-chapter-title {
+  margin: var(--sf-space-1) 0 var(--sf-space-4);
+  font-family: var(--sf-font-title);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--sf-text);
+}
+
+.sf-chapter-body > .sf-section:first-child {
+  margin-top: 0;
+}
+
 .sf-meta-right {
   margin-top: var(--sf-space-3);
   text-align: right;
@@ -613,10 +644,12 @@ body.sf-export-gallery-open { overflow: hidden; }
 
   * { box-shadow: none !important; }
 
-  .sf-figure, .sf-row, .sf-item, .sf-callout, .sf-signature {
+  .sf-figure, .sf-row, .sf-item, .sf-callout, .sf-signature, .sf-chapter-head {
     page-break-inside: avoid;
     break-inside: avoid;
   }
+
+  .sf-chapter-head { page-break-after: avoid; break-after: avoid; }
 
   .sf-section-title { page-break-after: avoid; break-after: avoid; }
 
