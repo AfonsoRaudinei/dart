@@ -1,12 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:soloforte_app/core/html_templates/combinado_html_renderer.dart';
+import 'package:soloforte_app/core/html_templates/marketing_html_renderer.dart';
 import 'package:soloforte_app/core/html_templates/ocorrencia_html_renderer.dart';
 import 'package:soloforte_app/core/html_templates/relatorio_html_renderer.dart';
 import 'package:soloforte_app/core/html_templates/visita_html_renderer.dart';
 
+import '../../support/path_provider_test_bindings.dart';
+
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  installPathProviderTestBindings();
 
   final older = DateTime.utc(2026, 1, 10, 12);
   final newer = DateTime.utc(2026, 6, 3, 12);
@@ -153,6 +156,37 @@ void main() {
       'ocorrencia',
       'resultado',
     ]);
+  });
+
+  test('capítulo marketing no combinado mantém CSS de vitrine .mk-*', () async {
+    final fragment = await MarketingHtmlRenderer.render({
+      'tipo': 'resultado',
+      'produtor_fazenda': 'Fazenda Marketing',
+      'quantidade_produzida': 120,
+      'produtividade_unidade': 'sc',
+    }, asFragment: true);
+
+    expect(fragment, contains('class="mk-figures"'));
+    expect(fragment, isNot(contains('sf-letterhead')));
+    expect(fragment, isNot(contains('sf-footer')));
+
+    final html = await CombinadoHtmlRenderer.render(
+      clienteNome: 'Cliente Teste',
+      chapters: [
+        CombinadoHtmlChapter(
+          kind: 'resultado',
+          occurredAt: older,
+          title: 'Fazenda Marketing',
+          fragmentHtml: fragment,
+        ),
+      ],
+    );
+
+    expect('class="sf-letterhead"'.allMatches(html).length, 1);
+    expect('class="sf-footer"'.allMatches(html).length, 1);
+    expect(html, contains('.mk-figures'));
+    expect(html, contains('.mk-lead-value'));
+    expect(html, contains('class="mk-figures"'));
   });
 
   test('completeRender fragment vs documento', () {
