@@ -14,6 +14,7 @@ class OcorrenciaHtmlRenderer {
     String? reportLogoPath,
     String? consultantName,
     String? consultantRole,
+    bool asFragment = false,
   }) async {
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'ocorrencia_detalhada.html',
@@ -178,7 +179,7 @@ class OcorrenciaHtmlRenderer {
       data['lat'] != null && data['long'] != null,
     );
 
-    return RelatorioHtmlRenderer.finalizeDocument(tpl);
+    return RelatorioHtmlRenderer.completeRender(tpl, asFragment: asFragment);
   }
 
   static Future<String> renderLista({

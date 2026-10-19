@@ -10,22 +10,40 @@ class MarketingHtmlRenderer {
   static Future<String> render(
     Map<String, dynamic> data, {
     Future<Uint8List?> Function(String url)? fetchRemoteBytes,
+    bool asFragment = false,
   }) async {
     switch (data['tipo'] as String? ?? 'resultado') {
       case 'resultado':
-        return _renderResultado(data, fetchRemoteBytes: fetchRemoteBytes);
+        return _renderResultado(
+          data,
+          fetchRemoteBytes: fetchRemoteBytes,
+          asFragment: asFragment,
+        );
       case 'antes_depois':
-        return _renderAntesDepois(data, fetchRemoteBytes: fetchRemoteBytes);
+        return _renderAntesDepois(
+          data,
+          fetchRemoteBytes: fetchRemoteBytes,
+          asFragment: asFragment,
+        );
       case 'avaliacao':
-        return _renderAvaliacao(data, fetchRemoteBytes: fetchRemoteBytes);
+        return _renderAvaliacao(
+          data,
+          fetchRemoteBytes: fetchRemoteBytes,
+          asFragment: asFragment,
+        );
       default:
-        return _renderResultado(data, fetchRemoteBytes: fetchRemoteBytes);
+        return _renderResultado(
+          data,
+          fetchRemoteBytes: fetchRemoteBytes,
+          asFragment: asFragment,
+        );
     }
   }
 
   static Future<String> _renderResultado(
     Map<String, dynamic> data, {
     Future<Uint8List?> Function(String url)? fetchRemoteBytes,
+    bool asFragment = false,
   }) async {
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'marketing_resultado.html',
@@ -104,12 +122,13 @@ class MarketingHtmlRenderer {
       'roi_investimento': data['roi_investimento']?.toString() ?? '',
       'roi_retorno': data['roi_retorno']?.toString() ?? '',
     });
-    return RelatorioHtmlRenderer.finalizeDocument(html);
+    return RelatorioHtmlRenderer.completeRender(html, asFragment: asFragment);
   }
 
   static Future<String> _renderAntesDepois(
     Map<String, dynamic> data, {
     Future<Uint8List?> Function(String url)? fetchRemoteBytes,
+    bool asFragment = false,
   }) async {
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'marketing_antes_depois.html',
@@ -195,12 +214,13 @@ class MarketingHtmlRenderer {
       'media_ganho_percent': _formatSigned(_mediaParametros(parametros)),
       'parametros_comparativos_html': _renderParametrosHtml(parametros),
     });
-    return RelatorioHtmlRenderer.finalizeDocument(html);
+    return RelatorioHtmlRenderer.completeRender(html, asFragment: asFragment);
   }
 
   static Future<String> _renderAvaliacao(
     Map<String, dynamic> data, {
     Future<Uint8List?> Function(String url)? fetchRemoteBytes,
+    bool asFragment = false,
   }) async {
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'marketing_avaliacao.html',
@@ -290,7 +310,7 @@ class MarketingHtmlRenderer {
       html: blocosHtml.toString(),
     );
 
-    return RelatorioHtmlRenderer.finalizeDocument(tpl);
+    return RelatorioHtmlRenderer.completeRender(tpl, asFragment: asFragment);
   }
 
   static Future<Map<String, String>> _branding(Map<String, dynamic> data) {
