@@ -41,6 +41,7 @@ Exportação estruturada obrigatória futura: `JSON` e `CSV` para os dados tabul
 | `R-MKT-RESULTADO` | Marketing resultado | `MarketingCase.toMap()/toJson()` com `tipo = resultado` | `assets/html_templates/marketing_resultado.html` | `MarketingHtmlRenderer.render()` | Sem ação UI oficial no módulo de relatórios | Renderer HTML | JSON do case, export público/share | Parcial |
 | `R-MKT-ANTES-DEPOIS` | Marketing antes/depois | `MarketingCase.toMap()/toJson()` com `tipo = antes_depois` | `assets/html_templates/marketing_antes_depois.html` | `MarketingHtmlRenderer.render()` | Sem ação UI oficial no módulo de relatórios | Renderer HTML | JSON do case, export público/share | Parcial |
 | `R-MKT-AVALIACAO` | Marketing avaliação | `MarketingCase.toMap()/toJson()` com `tipo = avaliacao` + avaliações | `assets/html_templates/marketing_avaliacao.html` | `MarketingHtmlRenderer.render()` | Sem ação UI oficial no módulo de relatórios | Renderer HTML | JSON do case, JSON/CSV das avaliações | Parcial |
+| `R-COMBINADO-PRODUTOR` | Relatório combinado | Visitas + ocorrências + marketing do produtor (`clientId`), capítulos em ordem cronológica | `assets/html_templates/relatorio_combinado.html` | `CombinadoHtmlRenderer.render()` | Aba Consolidados em `RelatoriosScreen` (compositor com desfazer) | HTML, PDF, share HTML | JSON do pack, CSV dos capítulos | Completo |
 
 ---
 
@@ -231,6 +232,27 @@ Regras:
 Arquivos:
 - `lib/core/html_templates/marketing_html_renderer.dart`
 - `assets/html_templates/marketing_avaliacao.html`
+
+### R-COMBINADO-PRODUTOR
+
+Responsabilidade: emitir um único documento HTML/PDF do produtor com capítulos cronológicos, sem repetir letterhead/rodapé.
+
+Campos mínimos:
+- `clientId`
+- Lista de capítulos (`kind`, `occurredAt`, `title`, fragmento de `main`)
+
+Regras:
+- Um `.sf-letterhead` e um `.sf-footer` no documento final.
+- Capítulos usam `render(..., asFragment: true)` dos tipos visita, ocorrência e marketing.
+- Ordem no papel: mais antigo → mais recente; na lista do compositor: mais recente primeiro.
+- Marketing entra só via `IMarketingCaseReportsLookup` (ADR-050).
+- Não persiste na tabela `relatorios` (exportação sob demanda).
+- Compositor na aba Consolidados com Desfazer/Limpar.
+
+Arquivos:
+- `lib/core/html_templates/combinado_html_renderer.dart`
+- `assets/html_templates/relatorio_combinado.html`
+- `lib/modules/consultoria/relatorios/presentation/relatorios_combined_composer.dart`
 
 ---
 
