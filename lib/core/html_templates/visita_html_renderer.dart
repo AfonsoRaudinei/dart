@@ -13,6 +13,7 @@ class VisitaHtmlRenderer {
     String? reportBrandName,
     String? reportLogoPath,
     String? consultantRole,
+    bool asFragment = false,
   }) async {
     var tpl = await RelatorioHtmlRenderer.loadTemplate('relatorio_visita.html');
     final branding = await RelatorioHtmlRenderer.brandingPlaceholders(
@@ -139,7 +140,7 @@ class VisitaHtmlRenderer {
       ),
     );
 
-    return RelatorioHtmlRenderer.finalizeDocument(tpl);
+    return RelatorioHtmlRenderer.completeRender(tpl, asFragment: asFragment);
   }
 
   static String _resolveRepeatedIf(String tpl, String condition, bool include) {

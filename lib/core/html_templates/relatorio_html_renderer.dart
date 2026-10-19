@@ -347,6 +347,25 @@ abstract class RelatorioHtmlRenderer {
     );
   }
 
+  static final _mainInnerPattern = RegExp(
+    r'<main\b[^>]*>([\s\S]*?)</main>',
+    caseSensitive: false,
+  );
+
+  /// Corpo interno de `<main>` para capítulos de relatório combinado.
+  /// Não numera fotos nem injeta galeria — isso fica no documento pai.
+  static String extractMainFragment(String html) {
+    final match = _mainInnerPattern.firstMatch(html);
+    final inner = match?.group(1) ?? html;
+    return stripUnresolvedPlaceholders(inner).trim();
+  }
+
+  /// [asFragment] devolve só o miolo de `<main>`; senão finaliza o documento.
+  static String completeRender(String html, {bool asFragment = false}) {
+    if (asFragment) return extractMainFragment(html);
+    return finalizeDocument(html);
+  }
+
   /// Etapa final comum dos renderers: remove tokens remanescentes e numera
   /// as fotos do relatório.
   static String finalizeDocument(String html) {
