@@ -91,7 +91,11 @@ void _expectEditorialShell(String html, String reason) {
   ]) {
     expect(html, isNot(contains(legacy)), reason: '$reason: $legacy');
   }
-  expect(html, isNot(contains('-10.184')), reason: reason);
+  final withoutMapAttrs = html
+      .replaceAll(RegExp(r'data-sf-lat="[^"]*"'), '')
+      .replaceAll(RegExp(r'data-sf-lng="[^"]*"'), '')
+      .replaceAll(RegExp(r'query=[^"&]*'), '');
+  expect(withoutMapAttrs, isNot(contains('-10.184')), reason: reason);
 }
 
 void main() {

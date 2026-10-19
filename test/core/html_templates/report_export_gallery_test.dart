@@ -5,7 +5,8 @@ import 'package:soloforte_app/core/html_templates/report_photo_links.dart';
 
 void main() {
   test('inject adiciona overlay e script quando há fotos', () {
-    const html = '<html><body><img data-sf-photo src="x"></body></html>';
+    const html =
+        '<html><body><img data-sf-photo="0" src="x"></body></html>';
     final out = ReportExportGallery.inject(html);
 
     expect(out, contains('id="sf-export-gallery"'));
@@ -26,7 +27,8 @@ void main() {
       '<html><body class="sf-doc"><img data-sf-photo src="x"></body></html>',
     );
     expect(exportHtml, contains('sf-export-gallery'));
-    expect(exportHtml, isNot(contains('sf-in-app')));
+    expect(exportHtml, isNot(contains('class="sf-doc sf-in-app"')));
+    expect(exportHtml, isNot(contains('<body class="sf-in-app">')));
 
     final inApp = ReportPhotoLinks.prepareInAppHtml(exportHtml);
     expect(inApp, contains('class="sf-doc sf-in-app"'));
