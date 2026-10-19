@@ -38,6 +38,7 @@ import '../../../../modules/dashboard/domain/location_settings.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../handlers/map_location_handler.dart';
 import '../../../components/map/map_attribution_policy.dart';
+import '../../../components/map/map_ndvi_load_progress_overlay.dart';
 import '../../../components/map/widgets/map_canvas.dart';
 import '../../../components/map/widgets/map_layers.dart';
 import '../../../../modules/clima/presentation/providers/radar_providers.dart';
@@ -528,6 +529,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
             onCenterOnUser: centerOnUser,
           ),
           const MapGpsOverlaysHost(),
+          const MapNdviLoadProgressOverlay(),
           MapBottomSheetOverlayHost(
             setSheetState: setSheetState,
             onLocationRequested: centerOnUser,
