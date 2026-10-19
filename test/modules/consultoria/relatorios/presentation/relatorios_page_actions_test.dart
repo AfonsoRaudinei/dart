@@ -603,6 +603,60 @@ void main() {
     expect(find.text('Produtor B · 1'), findsNothing);
   });
 
+  testWidgets(
+    'Marketing exibe seletor de produtor só com ocorrências (sem cases)',
+    (tester) async {
+      final occurrenceRepository = FakeOccurrenceRepository()
+        ..seed([
+          Occurrence(
+            id: 'occ-a',
+            type: 'Baixa',
+            description: 'Produtor A',
+            category: 'daninhas',
+            status: 'confirmed',
+            clientId: 'cli-a',
+            createdAt: DateTime.utc(2026, 6, 4, 12),
+          ),
+          Occurrence(
+            id: 'occ-b',
+            type: 'Alta',
+            description: 'Produtor B',
+            category: 'pragas',
+            status: 'confirmed',
+            clientId: 'cli-b',
+            createdAt: DateTime.utc(2026, 6, 5, 12),
+          ),
+        ]);
+
+      await _pumpScreen(
+        tester,
+        relatorioRepository: FakeRelatorioRepository(),
+        occurrenceRepository: occurrenceRepository,
+        marketingCases: const [],
+      );
+
+      await _selectSegment(tester, 'Marketing');
+
+      expect(
+        find.text('Selecione um produtor para ver os relatórios deste cliente.'),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
+      expect(find.text('Lista de Ocorrências'), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.keyboard_arrow_down_rounded).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Produtor A · 1').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Relatórios do produtor'), findsOneWidget);
+      expect(find.text('Lista de Ocorrências'), findsOneWidget);
+      expect(find.text('1 ocorrência(s)'), findsOneWidget);
+      expect(find.text('Ervas Daninhas'), findsOneWidget);
+      expect(find.text('Insetos'), findsNothing);
+    },
+  );
+
   testWidgets('Marketing lista marketing case não gerado (rascunho)', (
     tester,
   ) async {
