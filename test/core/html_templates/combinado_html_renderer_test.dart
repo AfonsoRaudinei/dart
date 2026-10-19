@@ -127,6 +127,26 @@ void main() {
     );
     expect(chaptersHtml, isNot(contains('<header class="sf-letterhead"')));
     expect(chaptersHtml, isNot(contains('<footer class="sf-footer"')));
+    expect(html, contains('class="sf-toc"'));
+    expect(html, contains('href="#capitulo-1"'));
+    expect(html, contains('id="capitulo-1"'));
+    expect(html, contains('id="capitulo-2"'));
+  });
+
+  test('combinado com um capítulo não exibe sumário', () async {
+    final html = await CombinadoHtmlRenderer.render(
+      clienteNome: 'Cliente Teste',
+      chapters: [
+        CombinadoHtmlChapter(
+          kind: 'visita',
+          occurredAt: newer,
+          title: 'Única visita',
+          fragmentHtml: '<p>Miolo</p>',
+        ),
+      ],
+    );
+    expect(html, isNot(contains('class="sf-toc"')));
+    expect(html, contains('id="capitulo-1"'));
   });
 
   test('sortChronologically usa data crescente e desempate por tipo', () {

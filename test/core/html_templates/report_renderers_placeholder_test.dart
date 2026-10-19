@@ -300,7 +300,8 @@ void main() {
       );
       expect(html, contains('SoloForte'));
       expect(html, contains('localizacao-inline'));
-      expect(html, isNot(contains('class="sf-map-link"')));
+      expect(html, contains('class="sf-map-link"'));
+      expect(html, contains('Ponto registrado no mapa'));
       expect(html, isNot(contains('localizacao-block')));
       expect(html, isNot(contains('footer-meta')));
       expect(html, isNot(contains('ID: OCC-BRAN')));
@@ -978,7 +979,14 @@ void main() {
       });
 
       expect(photoIndices(html), [0, 1, 2, 3]);
-      expect(html, isNot(contains(RegExp(r'data-sf-photo(?!=)'))));
+      final withoutScripts = html.replaceAll(
+        RegExp(r'<script[\s\S]*?</script>'),
+        '',
+      );
+      expect(
+        withoutScripts,
+        isNot(contains(RegExp(r'data-sf-photo(?!=)'))),
+      );
       expect(
         html,
         contains('<img data-sf-photo="0" src="https://example.com/capa.jpg"'),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -609,7 +611,63 @@ void main() {
     expect('class="sf-letterhead"'.allMatches(viewer.htmlContent).length, 1);
     expect(viewer.htmlContent, contains('data-kind="visita"'));
     expect(viewer.htmlContent, contains('data-kind="ocorrencia"'));
+    expect(viewer.jsonData?['packVersion'], 1);
+    expect(viewer.jsonData?['capitulos'], isA<List>());
+    final capitulos = viewer.jsonData!['capitulos'] as List;
+    expect(capitulos.first['anchorId'], 'capitulo-1');
   });
+
+  testWidgets(
+    'Consolidados seleciona ocorrência que chega após visita no async',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final relatorioRepository = FakeRelatorioRepository();
+      relatorioRepository.seed([
+        makeRelatorio(
+          id: 'rel-async-occ',
+          farmName: 'Fazenda Async',
+          status: RelatorioStatus.publicado,
+        ),
+      ]);
+      final delayedOccurrence = Occurrence(
+        id: 'occ-async',
+        type: 'Baixa',
+        description: 'Chegou depois',
+        category: 'daninhas',
+        status: 'confirmed',
+        clientId: 'cli-test-1',
+        createdAt: DateTime.utc(2026, 6, 5, 12),
+      );
+      final occurrencesCompleter = Completer<List<Occurrence>>();
+
+      await _pumpScreen(
+        tester,
+        relatorioRepository: relatorioRepository,
+        occurrenceRepository: FakeOccurrenceRepository(),
+        pumpSettle: false,
+        extraOverrides: [
+          occurrencesListProvider.overrideWith(
+            (ref) => occurrencesCompleter.future,
+          ),
+        ],
+      );
+
+      await tester.tap(find.text('Consolidados').first);
+      await _pumpActionFrame(tester);
+      expect(find.text('1 selecionado(s)'), findsOneWidget);
+      expect(find.text('Ervas Daninhas'), findsNothing);
+
+      occurrencesCompleter.complete([delayedOccurrence]);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ervas Daninhas'), findsOneWidget);
+      expect(find.text('2 selecionado(s)'), findsOneWidget);
+    },
+  );
 
   testWidgets('ocorrências exige seleção de produtor com múltiplos clientes', (
     tester,
@@ -891,6 +949,8 @@ Future<void> _pumpScreen(
   List<MarketingCase>? marketingCases,
   UserPlan? planoOverride,
   UserProfile? profileOverride,
+  List<Override> extraOverrides = const [],
+  bool pumpSettle = true,
 }) async {
   final overrides = <Override>[
     htmlReportViewerBodyBuilderProvider.overrideWithValue(
@@ -914,6 +974,7 @@ Future<void> _pumpScreen(
       (ref) => ref.watch(marketingCaseReportsListImplProvider),
     ),
     quickPhotoListProvider.overrideWith((ref) async => const []),
+    ...extraOverrides,
   ];
   if (planoOverride != null) {
     overrides.add(
@@ -939,7 +1000,11 @@ Future<void> _pumpScreen(
       child: const MaterialApp(home: Scaffold(body: RelatoriosScreen())),
     ),
   );
-  await tester.pumpAndSettle();
+  if (pumpSettle) {
+    await tester.pumpAndSettle();
+  } else {
+    await _pumpActionFrame(tester);
+  }
 }
 
 Finder _verticalScrollable() {
