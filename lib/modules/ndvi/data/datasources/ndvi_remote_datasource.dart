@@ -27,11 +27,14 @@ class NdviRemoteFetchResult {
 class NdviRemoteDatasource {
   final SupabaseClient _client;
   final NdviImageFileStore _fileStore;
+  final Future<FunctionResponse> Function(Map<String, dynamic> body)? _invoke;
 
   NdviRemoteDatasource(
     this._client, {
     NdviImageFileStore fileStore = const NdviImageFileStore(),
-  }) : _fileStore = fileStore;
+    Future<FunctionResponse> Function(Map<String, dynamic> body)? invoke,
+  }) : _fileStore = fileStore,
+       _invoke = invoke;
 
   Future<NdviRemoteFetchResult?> fetchNdvi({
     required String fieldId,
@@ -46,7 +49,21 @@ class NdviRemoteDatasource {
     if (geometryJson != null) body['geometry'] = geometryJson;
     if (date != null) body['date'] = date;
 
-    final response = await _client.functions.invoke('ndvi-fetch', body: body);
+    final FunctionResponse response;
+    try {
+      response = _invoke != null
+          ? await _invoke(body)
+          : await _client.functions.invoke('ndvi-fetch', body: body);
+    } on FunctionException catch (error) {
+      if (error.status != 404) rethrow;
+      final reason = _degradedReasonFromBody(error.details);
+      AppLogger.debug(
+        'ndvi-fetch 404 area_id=$fieldId date=${date ?? 'latest'}'
+        '${reason == null ? '' : ' reason=$reason'}',
+        tag: 'NDVI.Remote',
+      );
+      return NdviRemoteFetchResult(degradedReason: reason);
+    }
 
     if (response.status == 404) {
       final reason = _degradedReasonFromBody(response.data);

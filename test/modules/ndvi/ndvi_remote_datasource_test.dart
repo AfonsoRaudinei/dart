@@ -105,6 +105,43 @@ void main() {
     expect(model.ndviMean, 0.55);
   });
 
+  test('FunctionException 404 vira motivo sem lançar', () async {
+    final local = NdviRemoteDatasource(
+      SupabaseClient('https://example.supabase.co', 'anon-key'),
+      invoke: (_) async {
+        throw const FunctionException(
+          status: 404,
+          details: {'sentinel_degraded_reason': 'cdse_process_failed'},
+        );
+      },
+    );
+
+    final result = await local.fetchNdvi(
+      fieldId: 'talhao-01',
+      bbox: const [-48.4, -10.4, -48.2, -10.2],
+    );
+
+    expect(result?.image, isNull);
+    expect(result?.degradedReason, 'cdse_process_failed');
+  });
+
+  test('FunctionException diferente de 404 continua exceção', () async {
+    final local = NdviRemoteDatasource(
+      SupabaseClient('https://example.supabase.co', 'anon-key'),
+      invoke: (_) async {
+        throw const FunctionException(status: 500, details: 'boom');
+      },
+    );
+
+    expect(
+      () => local.fetchNdvi(
+        fieldId: 'talhao-01',
+        bbox: const [-48.4, -10.4, -48.2, -10.2],
+      ),
+      throwsA(isA<FunctionException>()),
+    );
+  });
+
   test('modelFromFunctionData normaliza planet legado para planet_preview', () async {
     final model = await datasource.modelFromFunctionData(
       fieldId: 'talhao-01',

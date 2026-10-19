@@ -56,4 +56,26 @@ void main() {
     expect(summary!.source, 'planet_preview');
     expect(summary.isColormap, isFalse);
   });
+
+  test('getLatest ignora registro unavailable sem PNG', () async {
+    final repo = FakeNdviRepository();
+    await repo.save(
+      NdviImage(
+        id: 'img-missing',
+        fieldId: 'field-3',
+        imageDate: DateTime(2026, 10, 18),
+        ndviMin: 0,
+        ndviMax: 0,
+        ndviMean: 0,
+        source: 'unavailable',
+        fetchedAt: DateTime(2026, 10, 18),
+        syncStatus: 0,
+        sentinelDegradedReason: 'cdse_process_failed',
+      ),
+    );
+
+    final summary = await NdviLatestLookupAdapter(repo).getLatest('field-3');
+
+    expect(summary, isNull);
+  });
 }

@@ -52,6 +52,7 @@ final ndviEnsureCurrentDateProvider = FutureProvider.family
       final safeIndex = index.clamp(0, images.length - 1);
       final current = images[safeIndex];
       if (ndviImageHasRenderableData(current)) return;
+      if (normalizeNdviSource(current.source) == 'unavailable') return;
 
       await ref
           .read(ndviRepositoryProvider)

@@ -74,6 +74,10 @@ class NdviRepositoryImpl implements INdviRepository {
   ) async {
     final cached = await _local.getByFieldIdAndDate(fieldId, imageDate);
     if (cached != null &&
+        normalizeNdviSource(cached.source) == 'unavailable') {
+      return cached.toEntity();
+    }
+    if (cached != null &&
         ndviModelHasRenderableData(cached) &&
         ndviIsColormapSource(cached.source)) {
       return cached.toEntity();
