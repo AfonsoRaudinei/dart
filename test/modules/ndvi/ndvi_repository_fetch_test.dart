@@ -624,6 +624,56 @@ void main() {
     expect(remote.fetchCount, 1);
   });
 
+  test('getByFieldId: 404 com motivo grava registro sem PNG', () async {
+    const fieldId = 'F1';
+    lookup.nextReturn = const FieldSummary(
+      id: fieldId,
+      name: 'Teste',
+      farmId: 'FAZ1',
+      bbox: [-50.0, -20.0, -49.0, -19.0],
+    );
+    remote.nextResult = const NdviRemoteFetchResult(
+      degradedReason: 'cdse_process_failed',
+    );
+
+    final result = await repository.getByFieldId(fieldId);
+
+    expect(result, hasLength(1));
+    expect(result.single.localPath, isNull);
+    expect(result.single.source, 'unavailable');
+    expect(result.single.sentinelDegradedReason, 'cdse_process_failed');
+    expect(remote.fetchCount, 1);
+  });
+
+  test('ensureImageForDate não refaz fetch de registro unavailable', () async {
+    const fieldId = 'F1';
+    lookup.nextReturn = const FieldSummary(
+      id: fieldId,
+      name: 'Teste',
+      farmId: 'FAZ1',
+      bbox: [-50.0, -20.0, -49.0, -19.0],
+    );
+    local.seed(
+      const NdviImageModel(
+        id: 'F1_2026-10-18',
+        fieldId: fieldId,
+        imageDate: '2026-10-18',
+        ndviMin: 0,
+        ndviMax: 0,
+        ndviMean: 0,
+        source: 'unavailable',
+        fetchedAt: '2026-10-18T00:00:00.000',
+        syncStatus: 0,
+        sentinelDegradedReason: 'cdse_process_failed',
+      ),
+    );
+
+    final image = await repository.ensureImageForDate(fieldId, '2026-10-18');
+
+    expect(image?.source, 'unavailable');
+    expect(remote.fetchCount, 0);
+  });
+
   test('getByFieldId: retorno remoto null degrada para lista vazia', () async {
     const fieldId = 'F1';
     lookup.nextReturn = const FieldSummary(

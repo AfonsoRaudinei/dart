@@ -12,7 +12,7 @@ class NdviLatestLookupAdapter implements INdviLatestLookup {
   @override
   Future<NdviLatestSummary?> getLatest(String fieldId) async {
     final image = await _repository.getLatestByFieldId(fieldId);
-    if (image == null) return null;
+    if (image == null || !ndviImageHasRenderableData(image)) return null;
 
     return NdviLatestSummary(
       imageDate: image.imageDate,
