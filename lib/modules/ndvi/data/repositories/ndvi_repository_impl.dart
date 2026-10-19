@@ -108,7 +108,17 @@ class NdviRepositoryImpl implements INdviRepository {
       geometry: summary.geometry,
       date: imageDate,
     );
-    if (result?.image == null) return cached?.toEntity();
+    if (result?.image == null) {
+      final reason = result?.degradedReason?.trim();
+      if (reason == null || reason.isEmpty) return cached?.toEntity();
+      final failure = _unavailableImage(
+        fieldId: fieldId,
+        degradedReason: reason,
+        dateKey: imageDate,
+      );
+      await _local.save(failure);
+      return failure;
+    }
 
     final image = result!.image!.toEntity();
     await _local.save(image);
@@ -130,6 +140,10 @@ class NdviRepositoryImpl implements INdviRepository {
 
     final latest = _firstRenderable(images);
     if (ndviIsColormapSource(latest.source)) return images;
+    if (!ndviImageHasRenderableData(latest) &&
+        latest.sentinelDegradedReason != null) {
+      return images;
+    }
 
     final dateKey = ndviImageDateKey(latest.imageDate);
     final image = await _fetchSentinelForDate(
@@ -246,6 +260,17 @@ class NdviRepositoryImpl implements INdviRepository {
     );
     if (result == null) return const [];
 
+    if (result.image == null) {
+      final reason = result.degradedReason?.trim();
+      if (reason == null || reason.isEmpty) return const [];
+      await _local.save(
+        _unavailableImage(fieldId: fieldId, degradedReason: reason),
+      );
+      await _cachePolicy.markSynced(fieldId, ndviOriginFingerprint(summary));
+      final stored = await _local.getAll(fieldId);
+      return stored.map((model) => model.toEntity()).toList();
+    }
+
     final source = result.image?.source ?? 'auto';
     if (result.image != null) {
       await _local.save(result.image!.toEntity());
@@ -270,6 +295,26 @@ class NdviRepositoryImpl implements INdviRepository {
         summary,
         all.map((model) => model.toEntity()).toList(),
       ),
+    );
+  }
+
+  NdviImage _unavailableImage({
+    required String fieldId,
+    required String degradedReason,
+    String? dateKey,
+  }) {
+    final key = dateKey ?? ndviImageDateKey(DateTime.now());
+    return NdviImage(
+      id: '${fieldId}_$key',
+      fieldId: fieldId,
+      imageDate: DateTime.parse(key),
+      ndviMin: 0,
+      ndviMax: 0,
+      ndviMean: 0,
+      source: 'unavailable',
+      fetchedAt: DateTime.now(),
+      syncStatus: 0,
+      sentinelDegradedReason: degradedReason,
     );
   }
 

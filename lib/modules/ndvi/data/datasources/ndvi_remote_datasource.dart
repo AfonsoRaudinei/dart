@@ -14,10 +14,14 @@ class NdviRemoteFetchResult {
   const NdviRemoteFetchResult({
     this.image,
     this.availableDates = const [],
+    this.degradedReason,
   });
 
   final NdviImageModel? image;
   final List<String> availableDates;
+
+  /// Motivo da edge quando não há PNG (HTTP 404). Não é exceção.
+  final String? degradedReason;
 }
 
 class NdviRemoteDatasource {
@@ -45,11 +49,13 @@ class NdviRemoteDatasource {
     final response = await _client.functions.invoke('ndvi-fetch', body: body);
 
     if (response.status == 404) {
+      final reason = _degradedReasonFromBody(response.data);
       AppLogger.debug(
-        'ndvi-fetch sem imagens para area_id=$fieldId date=${date ?? 'latest'}',
+        'ndvi-fetch sem imagens para area_id=$fieldId date=${date ?? 'latest'}'
+        '${reason == null ? '' : ' reason=$reason'}',
         tag: 'NDVI.Remote',
       );
-      return null;
+      return NdviRemoteFetchResult(degradedReason: reason);
     }
 
     if (response.status != 200) {
@@ -79,6 +85,14 @@ class NdviRemoteDatasource {
 
   Future<void> deletePngsForField(String fieldId) =>
       _fileStore.deletePngsForField(fieldId);
+
+  String? _degradedReasonFromBody(Object? data) {
+    if (data is! Map) return null;
+    final raw = data['sentinel_degraded_reason'];
+    if (raw is! String) return null;
+    final reason = raw.trim();
+    return reason.isEmpty ? null : reason;
+  }
 
   Future<NdviImageModel> modelFromFunctionData({
     required Map<String, dynamic> data,

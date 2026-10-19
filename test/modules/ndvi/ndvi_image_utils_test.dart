@@ -17,6 +17,7 @@ void main() {
     expect(ndviSupportsGreenMask('sentinel'), isTrue);
     expect(ndviSupportsGreenMask('planet_preview'), isFalse);
     expect(ndviSupportsGreenMask('planet'), isFalse);
+    expect(ndviSupportsGreenMask('unavailable'), isFalse);
   });
 
   test('preview Planet expoe disclaimer', () {
@@ -29,6 +30,17 @@ void main() {
       contains('Sentinel'),
     );
     expect(ndviPreviewDisclaimer('sentinel'), isNull);
+  });
+
+  test('falha sem PNG mostra o motivo degradado', () {
+    expect(
+      ndviPreviewDisclaimer(
+        'unavailable',
+        sentinelDegradedReason: 'cdse_process_failed',
+      ),
+      'Processamento NDVI falhou nesta data.',
+    );
+    expect(ndviSourceLabel('unavailable'), 'NDVI indisponivel');
   });
 
   test('preview Planet usa motivo degradado quando disponivel', () {
