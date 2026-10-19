@@ -152,6 +152,15 @@ class _MarketingCasesReportsSectionState
     }
 
     final occurrencesAsync = ref.watch(occurrencesListProvider);
+    if (occurrencesAsync.isLoading && !occurrencesAsync.hasValue) {
+      return const _SectionLoading(title: 'Marketing');
+    }
+    if (occurrencesAsync.hasError && !occurrencesAsync.hasValue) {
+      return _SectionError(
+        title: 'Marketing',
+        onRetry: () => ref.invalidate(occurrencesListProvider),
+      );
+    }
     final allOccurrences = occurrencesAsync.valueOrNull ?? const <Occurrence>[];
 
     return casesAsync.when(
@@ -195,14 +204,14 @@ class _MarketingCasesReportsSectionState
               title: showClientHub ? 'Relatórios do produtor' : 'Marketing',
               count: showClientHub ? totalHubItems : filtered.length,
             ),
+            _relatoriosProducerSelectorBlock(
+              context: context,
+              producerIds: producerIds,
+              itemCounts: producerCounts,
+              effectiveClientId: effectiveClientId,
+              onSelected: widget.onProducerSelected,
+            ),
             if (visible.isNotEmpty) ...[
-              _relatoriosProducerSelectorBlock(
-                context: context,
-                producerIds: producerIds,
-                itemCounts: producerCounts,
-                effectiveClientId: effectiveClientId,
-                onSelected: widget.onProducerSelected,
-              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
                 child: _MarketingCaseStatusFilterBar(
@@ -230,15 +239,28 @@ class _MarketingCasesReportsSectionState
                 message:
                     'Selecione um produtor para ver os relatórios deste cliente.',
               )
-            else if (showClientHub)
-              ..._buildProducerReportHub(
-                context: context,
-                ref: ref,
-                dateFormat: dateFormat,
-                effectiveClientId: effectiveClientId!,
-                occurrences: clientOccurrences,
-                marketingItems: filtered,
-              )
+            else if (showClientHub && effectiveClientId != null) ...[
+              if (clientOccurrences.isEmpty &&
+                  filtered.isEmpty &&
+                  byProducer.isNotEmpty)
+                _PremiumEmptyState(
+                  message: 'Nenhuma publicação neste filtro.',
+                  ctaLabel: 'Mostrar todas',
+                  onCta: () {
+                    _selectFilter(_MarketingCaseFilter.all);
+                    _selectStatusFilter(_MarketingCaseStatusFilter.all);
+                  },
+                )
+              else
+                ..._buildProducerReportHub(
+                  context: context,
+                  ref: ref,
+                  dateFormat: dateFormat,
+                  effectiveClientId: effectiveClientId,
+                  occurrences: clientOccurrences,
+                  marketingItems: filtered,
+                ),
+            ]
             else if (filtered.isEmpty)
               _PremiumEmptyState(
                 message: 'Nenhuma publicação neste filtro.',
@@ -307,7 +329,7 @@ Widget _marketingReportCard(
       icon: _relatoriosMarketingTipoIcon(item.tipo),
       accent: tipoColor,
     ),
-    eyebrow: item.tipoLabel,
+    eyebrow: _relatoriosMarketingTipoSectionTitle(item.tipo),
     title: item.produtorFazenda,
     subtitle: _marketingStatusLabel(item.statusValue),
     date: dateFormat.format(item.criadoEm.toLocal()),
