@@ -432,6 +432,20 @@ Future<String> _buildOccurrenceReportHtml(
   );
 }
 
+List<_CombinedReportEvent> _sortCombinedReportEvents(
+  List<_CombinedReportEvent> events,
+) {
+  final sorted = [...events];
+  sorted.sort((a, b) {
+    final byDate = a.occurredAt.compareTo(b.occurredAt);
+    if (byDate != 0) return byDate;
+    return CombinadoHtmlRenderer.kindRank(
+      a.kind,
+    ).compareTo(CombinadoHtmlRenderer.kindRank(b.kind));
+  });
+  return sorted;
+}
+
 Future<_GeneratedReportPayload> _buildCombinedReportPayload(
   WidgetRef ref, {
   required String clientId,
@@ -443,8 +457,9 @@ Future<_GeneratedReportPayload> _buildCombinedReportPayload(
     fallbackConsultantRole: 'Consultoria',
   );
   final clienteNome = await _resolveClienteNomeForId(ref, clientId);
+  final sortedEvents = _sortCombinedReportEvents(selected);
   final chapters = <CombinadoHtmlChapter>[];
-  for (final event in selected) {
+  for (final event in sortedEvents) {
     chapters.add(
       CombinadoHtmlChapter(
         kind: event.kind,
@@ -462,33 +477,57 @@ Future<_GeneratedReportPayload> _buildCombinedReportPayload(
     consultantName: branding.consultantName,
     consultantRole: branding.consultantRole,
   );
-  final sorted = CombinadoHtmlRenderer.sortChronologically(chapters);
+  final emitidoEm = DateTime.now().toUtc();
+  final periodoDatas = sortedEvents.map((event) => event.occurredAt).toList();
+  final periodoInicio = periodoDatas.isEmpty ? null : periodoDatas.first;
+  final periodoFim = periodoDatas.isEmpty ? null : periodoDatas.last;
   return _GeneratedReportPayload(
     title: 'Relatório combinado — $clienteNome',
     fileBaseName: 'relatorio_combinado_$clientId',
     html: html,
     json: {
       'tipo': 'relatorio_combinado',
+      'packVersion': 1,
       'clientId': clientId,
       'clienteNome': clienteNome,
+      'emitidoEm': emitidoEm.toIso8601String(),
+      'periodo': {
+        if (periodoInicio != null) 'inicio': periodoInicio.toIso8601String(),
+        if (periodoFim != null) 'fim': periodoFim.toIso8601String(),
+      },
       'capitulos': [
-        for (final chapter in sorted)
+        for (var i = 0; i < sortedEvents.length; i++)
           {
-            'kind': chapter.kind,
-            'title': chapter.title,
-            'occurredAt': chapter.occurredAt.toIso8601String(),
+            'key': sortedEvents[i].key,
+            'anchorId': CombinadoHtmlRenderer.chapterAnchorId(i + 1),
+            'kind': sortedEvents[i].kind,
+            'kindLabel': CombinadoHtmlRenderer.kindLabel(sortedEvents[i].kind),
+            'title': sortedEvents[i].title,
+            'subtitle': sortedEvents[i].subtitle,
+            'occurredAt': sortedEvents[i].occurredAt.toIso8601String(),
           },
       ],
     },
     csv: ConsultoriaReportExportData.toCsv([
-      ['kind', 'titulo', 'occurred_at'],
-      ...sorted.map(
-        (chapter) => [
-          chapter.kind,
-          chapter.title,
-          chapter.occurredAt.toIso8601String(),
+      [
+        'anchor_id',
+        'key',
+        'kind',
+        'kind_label',
+        'titulo',
+        'subtitulo',
+        'occurred_at',
+      ],
+      for (var i = 0; i < sortedEvents.length; i++)
+        [
+          CombinadoHtmlRenderer.chapterAnchorId(i + 1),
+          sortedEvents[i].key,
+          sortedEvents[i].kind,
+          CombinadoHtmlRenderer.kindLabel(sortedEvents[i].kind),
+          sortedEvents[i].title,
+          sortedEvents[i].subtitle,
+          sortedEvents[i].occurredAt.toIso8601String(),
         ],
-      ),
     ]),
   );
 }
