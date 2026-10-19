@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
@@ -22,6 +24,8 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
     this.ndviCaption,
     this.ndviBadge,
     this.onNdviImageTap,
+    this.showFieldNameOnMap = false,
+    this.ndviLoading = false,
   });
 
   final List<LatLng> vertices;
@@ -42,6 +46,12 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
   final String? ndviBadge;
   final VoidCallback? onNdviImageTap;
 
+  /// Nome no canto superior esquerdo do mapa (libera a barra inferior).
+  final bool showFieldNameOnMap;
+
+  /// Fetch NDVI em andamento — overlay com barra estilo iOS.
+  final bool ndviLoading;
+
   @override
   Widget build(BuildContext context) {
     final ndviImage = _ndviImageProvider;
@@ -57,24 +67,31 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
           InkWell(
             onTap: onTap,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+              padding: EdgeInsets.fromLTRB(
+                14,
+                showFieldNameOnMap && actions.isNotEmpty ? 8 : 12,
+                12,
+                showFieldNameOnMap && actions.isNotEmpty ? 8 : 12,
+              ),
               child: Row(
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          nome,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
+                        if (!showFieldNameOnMap)
+                          Text(
+                            nome,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
                           ),
-                        ),
                         if (subtitle != null && subtitle!.isNotEmpty) ...[
+                          if (!showFieldNameOnMap) const SizedBox(height: 3),
                           const SizedBox(height: 3),
                           Text(
                             subtitle!,
@@ -189,7 +206,15 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
               ),
             ),
           ),
-          if (showNdvi && openHistory != null)
+          if (showFieldNameOnMap && nome.trim().isNotEmpty)
+            Positioned(
+              top: 8,
+              left: 8,
+              right: 72,
+              child: _MapFieldTitleChip(label: nome),
+            ),
+          if (ndviLoading) const Positioned.fill(child: _NdviPremiumLoadingOverlay()),
+          if (showNdvi && openHistory != null && !ndviLoading)
             Positioned(
               right: 8,
               bottom: 8,
@@ -271,6 +296,107 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MapFieldTitleChip extends StatelessWidget {
+  const _MapFieldTitleChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.52),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Indicador de fetch NDVI — barra fina + spinner Cupertino.
+class _NdviPremiumLoadingOverlay extends StatelessWidget {
+  const _NdviPremiumLoadingOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    const accent = Color(0xFF0A84FF);
+    return ColoredBox(
+      color: Colors.black.withValues(alpha: 0.28),
+      child: Center(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: const Color(0xFF1C1C1E).withValues(alpha: 0.72),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.12),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 18,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CupertinoActivityIndicator(radius: 12),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Carregando NDVI',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: 200,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: const LinearProgressIndicator(
+                          minHeight: 3,
+                          backgroundColor: Color(0xFF3A3A3C),
+                          valueColor: AlwaysStoppedAnimation<Color>(accent),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

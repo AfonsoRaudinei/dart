@@ -129,6 +129,7 @@ class FarmLinkedFieldList extends ConsumerWidget {
               subtitle: farmLinkedFieldSubtitle(field, areaUnit),
               onTap: () => _openField(context, field),
               actions: _fieldActions(context, ref, field),
+              showFieldNameOnMap: true,
             ),
       ],
     );
@@ -290,22 +291,10 @@ class _FarmTalhaoNdviCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final latestAsync = ref.watch(talhaoCardNdviLatestProvider(field.id));
     return latestAsync.when(
-      loading: () => Stack(
-        children: [
-          _preview(
-            showNdvi: true,
-            onNdviImageTap: onNdviImageTap,
-          ),
-          const Positioned(
-            top: 8,
-            right: 8,
-            child: SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ),
-        ],
+      loading: () => _preview(
+        showNdvi: true,
+        ndviLoading: true,
+        onNdviImageTap: onNdviImageTap,
       ),
       error: (_, _) => _preview(
         showNdvi: true,
@@ -325,6 +314,7 @@ class _FarmTalhaoNdviCard extends ConsumerWidget {
 
   Widget _preview({
     bool showNdvi = false,
+    bool ndviLoading = false,
     bool ndviIsColormap = false,
     String? ndviLocalPath,
     String? ndviImageUrl,
@@ -340,6 +330,8 @@ class _FarmTalhaoNdviCard extends ConsumerWidget {
       onTap: onOpenField,
       actions: actions,
       showNdvi: showNdvi,
+      showFieldNameOnMap: true,
+      ndviLoading: ndviLoading,
       ndviIsColormap: ndviIsColormap,
       ndviLocalPath: ndviLocalPath,
       ndviImageUrl: ndviImageUrl,
