@@ -11,6 +11,9 @@ class MarketingCaseReportSnapshot {
   final double lng;
   final String? nomeVendedor;
 
+  /// Cliente consultoria vinculado ao case (filtro Relatórios por produtor).
+  final String? clientId;
+
   const MarketingCaseReportSnapshot({
     required this.id,
     required this.tipo,
@@ -21,6 +24,7 @@ class MarketingCaseReportSnapshot {
     required this.lat,
     required this.lng,
     this.nomeVendedor,
+    this.clientId,
   });
 }
 

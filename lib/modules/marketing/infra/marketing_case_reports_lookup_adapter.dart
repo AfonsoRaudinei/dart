@@ -69,6 +69,7 @@ MarketingCaseReportSnapshot _toSnapshot(MarketingCase item) {
     lat: item.lat,
     lng: item.lng,
     nomeVendedor: item.nomeVendedor,
+    clientId: item.clientId,
   );
 }
 

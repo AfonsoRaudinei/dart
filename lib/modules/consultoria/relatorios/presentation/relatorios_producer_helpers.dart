@@ -148,3 +148,54 @@ Map<String, int> _producerCountsFromIds(Iterable<String?> clientIds) {
   }
   return counts;
 }
+
+/// Produtor efetivo na aba Relatórios: escolha explícita, rota `clienteId` ou único.
+String? resolveRelatoriosProducerClientId({
+  required String? selectedClientId,
+  required String? routeClientId,
+  required List<String> producerIds,
+}) {
+  if (selectedClientId != null && producerIds.contains(selectedClientId)) {
+    return selectedClientId;
+  }
+  final route = routeClientId?.trim();
+  if (route != null && route.isNotEmpty && producerIds.contains(route)) {
+    return route;
+  }
+  if (producerIds.length == 1) return producerIds.first;
+  return null;
+}
+
+Widget _relatoriosProducerSelectorBlock({
+  required BuildContext context,
+  required List<String> producerIds,
+  required Map<String, int> itemCounts,
+  required String? effectiveClientId,
+  required ValueChanged<String> onSelected,
+  String label = 'Produtor',
+}) {
+  if (producerIds.length <= 1) return const SizedBox.shrink();
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: context.premiumTextSecondary,
+          ),
+        ),
+      ),
+      _RelatoriosProducerSelector(
+        producerIds: producerIds,
+        itemCounts: itemCounts,
+        selectedClientId: effectiveClientId,
+        onSelected: onSelected,
+      ),
+      const SizedBox(height: 12),
+    ],
+  );
+}
