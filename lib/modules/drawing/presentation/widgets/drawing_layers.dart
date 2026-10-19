@@ -147,10 +147,9 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
           final isSelected =
               feature.id == selectedId || selectedIds.contains(feature.id);
           final style = isSelected ? FieldStyle.selected : feature.style;
-          final hideNdviFill =
-              ndviCover &&
-              ndviOverlayId != null &&
-              feature.id == ndviOverlayId;
+          final ndviActiveForField =
+              ndviOverlayId != null && feature.id == ndviOverlayId;
+          final hideNdviFill = ndviCover && ndviActiveForField;
 
           for (var index = 0; index < parts.length; index++) {
             final rings = parts[index];
@@ -176,7 +175,9 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
                 pattern: style.isDashed
                     ? StrokePattern.dashed(segments: const [10, 5])
                     : const StrokePattern.solid(),
-                label: label != null && label.isEmpty ? null : label,
+                label: ndviActiveForField
+                    ? null
+                    : (label != null && label.isEmpty ? null : label),
               ),
             );
           }

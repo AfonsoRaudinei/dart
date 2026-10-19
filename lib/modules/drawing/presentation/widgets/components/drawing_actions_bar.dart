@@ -20,6 +20,7 @@ class DrawingActionsBar extends StatelessWidget {
   final DrawingFeature selectedFeature;
   final VoidCallback? onEditGeometry;
   final VoidCallback? onEditMetadata;
+  final VoidCallback? onShowNdviMap;
   final VoidCallback? onUnion;
   final VoidCallback? onDifference;
   final VoidCallback? onIntersection;
@@ -46,6 +47,7 @@ class DrawingActionsBar extends StatelessWidget {
     this.actionsMode = DrawingFeatureActionsMode.compact,
     this.onEditGeometry,
     this.onEditMetadata,
+    this.onShowNdviMap,
     this.onUnion,
     this.onDifference,
     this.onIntersection,
@@ -153,6 +155,18 @@ class DrawingActionsBar extends StatelessWidget {
               onEditMetadata?.call();
             },
           ),
+          if (onShowNdviMap != null) ...[
+            const SizedBox(height: 12),
+            _ActionButton(
+              icon: Icons.grass_rounded,
+              label: 'Ver mapa NDVI',
+              description: 'Colormap no talhão (continua ao fechar o sheet)',
+              onTap: () {
+                HapticFeedback.lightImpact();
+                onShowNdviMap!.call();
+              },
+            ),
+          ],
           if (actionsMode == DrawingFeatureActionsMode.full) ...[
           const SizedBox(height: 16),
           const Divider(height: 1),

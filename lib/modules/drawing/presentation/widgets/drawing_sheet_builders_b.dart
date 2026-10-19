@@ -23,6 +23,14 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       selectedFeature: feature,
       actionsMode: widget.controller.featureActionsMode,
       onEditGeometry: widget.controller.startEditMode,
+      onShowNdviMap: feature.id.isEmpty
+          ? null
+          : () {
+              ref.read(mapNdviOverlayFieldIdProvider.notifier).state =
+                  feature.id;
+              ref.invalidate(mapNdviOverlaySummaryProvider);
+              widget.onCollapseWhileEditing?.call();
+            },
       onEditMetadata: () => _rebuild(() => _isEditingMetadata = true),
       onUnion: widget.controller.startUnionMode,
       onDifference: widget.controller.startDifferenceMode,

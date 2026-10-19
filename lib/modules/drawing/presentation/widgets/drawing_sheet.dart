@@ -10,6 +10,7 @@ import '../../domain/models/gps_walk_session.dart';
 import '../../domain/drawing_state.dart';
 import '../../domain/drawing_feature_actions_mode.dart';
 import '../../domain/repositories/i_clients_repository.dart';
+import 'package:soloforte_app/core/state/map_ndvi_overlay.dart';
 import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:soloforte_app/core/session/session_models.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
