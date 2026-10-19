@@ -41,6 +41,7 @@ import 'core/utils/app_logger.dart';
 import 'core/contracts/i_agenda_ai_recommendation_context_lookup_provider.dart';
 import 'core/contracts/i_agenda_ai_visit_writer_provider.dart';
 import 'core/contracts/i_ndvi_field_presenter_provider.dart';
+import 'core/contracts/i_ndvi_field_refresh_provider.dart';
 import 'core/contracts/i_ndvi_latest_lookup_provider.dart';
 import 'app/adapters/agenda_ai_recommendation_context_adapter.dart';
 import 'modules/consultoria/clients/data/clients_repository.dart';
@@ -61,6 +62,7 @@ import 'modules/agenda/infra/agenda_session_bridge_adapter.dart';
 import 'modules/agenda/infra/agenda_domain_adapters.dart';
 import 'modules/agenda/infra/agenda_ai_visit_writer_adapter.dart';
 import 'modules/ndvi/infra/ndvi_field_presenter_adapter.dart';
+import 'modules/ndvi/infra/ndvi_field_refresh_adapter.dart';
 import 'modules/ndvi/infra/ndvi_latest_lookup_adapter.dart';
 import 'modules/ndvi/presentation/providers/ndvi_providers.dart';
 import 'app/sync_registration.dart';
@@ -178,6 +180,9 @@ Future<void> main() async {
               ),
               ndviFieldPresenterProvider.overrideWithValue(
                 const NdviFieldPresenterAdapter(),
+              ),
+              ndviFieldRefreshProvider.overrideWith(
+                (ref) => NdviFieldRefreshAdapter(ref),
               ),
               ndviLatestLookupProvider.overrideWith((ref) {
                 return NdviLatestLookupAdapter(ref.watch(ndviRepositoryProvider));
