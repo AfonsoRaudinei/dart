@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/contracts/i_ndvi_field_refresh_provider.dart';
 import 'package:soloforte_app/core/state/map_ndvi_overlay.dart';
 import 'package:soloforte_app/modules/drawing/presentation/providers/drawing_provider.dart';
@@ -27,11 +28,15 @@ class MapNdviLoadProgressOverlay extends ConsumerWidget {
 
     final fieldName = _fieldName(ref, fieldId);
     final isLoading = summaryAsync.isLoading || summaryAsync.isRefreshing;
+    final hasError = summaryAsync.hasError;
+    final padding = MediaQuery.paddingOf(context);
+    final bottomInset =
+        padding.bottom + kFabSafeArea + 12 + kMapActionColumnButtonSize;
 
     return Positioned(
-      top: MediaQuery.paddingOf(context).top + 56,
       left: 16,
-      right: 16,
+      right: 16 + kMapActionColumnRightInset + kMapActionColumnButtonSize,
+      bottom: bottomInset,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
         child: BackdropFilter(
@@ -66,6 +71,8 @@ class MapNdviLoadProgressOverlay extends ConsumerWidget {
                         Text(
                           isLoading
                               ? 'Baixando mapa NDVI…'
+                              : hasError
+                              ? 'Não foi possível carregar o NDVI. Tente novamente.'
                               : 'NDVI ainda não disponível para este talhão.',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.78),
@@ -93,7 +100,7 @@ class MapNdviLoadProgressOverlay extends ConsumerWidget {
                       padding: EdgeInsets.only(left: 8, top: 2),
                       child: CupertinoActivityIndicator(radius: 11),
                     )
-                  else
+                  else if (hasError || summary == null)
                     IconButton(
                       tooltip: 'Tentar novamente',
                       onPressed: () async {
