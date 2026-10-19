@@ -10,6 +10,7 @@ import 'package:soloforte_app/modules/ndvi/domain/ndvi_image_utils.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_providers.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_date_nav_provider.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_display_mode_provider.dart';
+import 'package:soloforte_app/modules/ndvi/presentation/ndvi_refresh.dart';
 
 class NdviTalhaoSheet extends ConsumerWidget {
   final String fieldId;
@@ -47,10 +48,14 @@ class NdviTalhaoSheet extends ConsumerWidget {
                   child: Center(child: CircularProgressIndicator()),
                 ),
                 error: (e, _) => _ErrorState(
-                  onRetry: () => ref.invalidate(ndviImagesProvider(fieldId)),
+                  onRetry: () => refreshNdviForField(ref, fieldId),
                 ),
                 data: (images) {
-                  if (images.isEmpty) return const _EmptyState();
+                  if (images.isEmpty) {
+                    return _EmptyState(
+                      onRefresh: () => refreshNdviForField(ref, fieldId),
+                    );
+                  }
 
                   final index = ref.watch(ndviDateIndexProvider(fieldId));
                   final safeIndex = index.clamp(0, images.length - 1);
@@ -102,12 +107,7 @@ class NdviTalhaoSheet extends ConsumerWidget {
                                 color: titleColor,
                                 size: 20,
                               ),
-                              onPressed: () async {
-                                await ref
-                                    .read(ndviRepositoryProvider)
-                                    .deleteByFieldId(fieldId);
-                                ref.invalidate(ndviImagesProvider(fieldId));
-                              },
+                              onPressed: () => refreshNdviForField(ref, fieldId),
                             ),
                           ],
                         ),
@@ -201,6 +201,20 @@ class NdviTalhaoSheet extends ConsumerWidget {
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                           ),
+                          if (normalizeNdviSource(current.source) ==
+                                  'unavailable' ||
+                              !ndviImageHasRenderableData(current)) ...[
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton.icon(
+                                onPressed: () =>
+                                    refreshNdviForField(ref, fieldId),
+                                icon: const Icon(Icons.refresh_rounded, size: 18),
+                                label: const Text('Atualizar NDVI'),
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 12),
                         ],
 
@@ -435,22 +449,34 @@ class _ErrorState extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  const _EmptyState({required this.onRefresh});
+
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
     return SizedBox(
-      height: 200,
-      child: Center(
-        child: Text(
-          'Nenhuma imagem disponível para este talhão',
-          style: TextStyle(
-            color: isIos
-                ? SoloForteSheetSkinIos.subtitleColor
-                : Colors.grey,
+      height: 220,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Nenhuma imagem disponível para este talhão',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isIos
+                  ? SoloForteSheetSkinIos.subtitleColor
+                  : Colors.grey,
+            ),
           ),
-        ),
+          const SizedBox(height: 12),
+          FilledButton.tonalIcon(
+            onPressed: onRefresh,
+            icon: const Icon(Icons.refresh_rounded, size: 20),
+            label: const Text('Atualizar NDVI'),
+          ),
+        ],
       ),
     );
   }
