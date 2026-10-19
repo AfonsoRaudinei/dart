@@ -20,5 +20,6 @@ abstract interface class IMarketingCaseReportsLookup {
     String? reportLogoPath,
     String? consultantName,
     String? consultantRole,
+    bool asFragment = false,
   });
 }

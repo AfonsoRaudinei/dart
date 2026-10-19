@@ -185,6 +185,7 @@ class MarketingCaseReportsLookupAdapter implements IMarketingCaseReportsLookup {
     String? reportLogoPath,
     String? consultantName,
     String? consultantRole,
+    bool asFragment = false,
   }) async {
     final cases = _ref.read(marketingCasesProvider).valueOrNull ?? [];
     final item = cases.firstWhere(
@@ -207,7 +208,10 @@ class MarketingCaseReportsLookupAdapter implements IMarketingCaseReportsLookup {
       'nome_vendedor': resolvedConsultant,
       'cargo_consultor': resolvedRole,
     };
-    final html = await MarketingHtmlRenderer.render(data);
+    final html = await MarketingHtmlRenderer.render(
+      data,
+      asFragment: asFragment,
+    );
 
     return MarketingCaseReportExportBundle(
       title: 'Marketing ${item.produtorFazenda}',
