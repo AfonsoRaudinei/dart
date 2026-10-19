@@ -211,7 +211,8 @@ void main() {
     expect(find.text('Relatórios Consolidados'), findsOneWidget);
     expect(find.text('Resumo da Propriedade'), findsOneWidget);
     expect(find.text('Histórico de Visitas'), findsOneWidget);
-    expect(find.text('Linha do tempo'), findsOneWidget);
+    expect(find.textContaining('Combinar relatórios'), findsOneWidget);
+    expect(find.text('Relatório combinado'), findsOneWidget);
     expect(find.text('Gerado sob demanda'), findsWidgets);
     expect(find.text('Lista de Ocorrências'), findsNothing);
 
@@ -353,7 +354,7 @@ void main() {
 
       expect(find.text('Resumo da Propriedade'), findsOneWidget);
       expect(find.text('1 propriedade(s), 0 talhão(ões)'), findsOneWidget);
-      expect(find.text('Disponível'), findsNWidgets(2));
+      expect(find.text('Disponível'), findsNWidgets(3));
       expect(find.text('Vazio'), findsNothing);
     },
   );
@@ -534,7 +535,7 @@ void main() {
 
     expect(
       find.text(
-        'Selecione um produtor para consolidar visitas e exportar relatórios.',
+        'Selecione um produtor para consolidar visitas e combinar relatórios.',
       ),
       findsOneWidget,
     );
@@ -547,8 +548,67 @@ void main() {
 
     expect(find.text('Resumo da Propriedade'), findsOneWidget);
     expect(find.text('1 visita(s)'), findsOneWidget);
-    expect(find.text('Disponível'), findsNWidgets(2));
+    expect(find.text('Disponível'), findsNWidgets(3));
     expect(find.text('Fazenda B'), findsNothing);
+  });
+
+  testWidgets('Consolidados combina visita e ocorrência e desfaz seleção', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final relatorioRepository = FakeRelatorioRepository();
+    relatorioRepository.seed([
+      makeRelatorio(
+        id: 'rel-combo',
+        farmName: 'Fazenda Combo',
+        status: RelatorioStatus.publicado,
+      ),
+    ]);
+    final occurrenceRepository = FakeOccurrenceRepository()
+      ..seed([
+        Occurrence(
+          id: 'occ-combo',
+          type: 'Baixa',
+          description: 'Combo occ',
+          category: 'daninhas',
+          status: 'confirmed',
+          clientId: 'cli-test-1',
+          createdAt: DateTime.utc(2026, 6, 4, 12),
+        ),
+      ]);
+
+    await _pumpScreen(
+      tester,
+      relatorioRepository: relatorioRepository,
+      occurrenceRepository: occurrenceRepository,
+    );
+
+    await _selectSegment(tester, 'Consolidados');
+    expect(find.textContaining('Combinar relatórios'), findsOneWidget);
+    expect(find.text('Fazenda Combo'), findsWidgets);
+    expect(find.text('Ervas Daninhas'), findsOneWidget);
+    expect(find.text('2 selecionado(s)'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('ocorrencia:occ-combo')));
+    await tester.pumpAndSettle();
+    expect(find.text('1 selecionado(s)'), findsOneWidget);
+
+    await tester.tap(find.text('Desfazer'));
+    await tester.pumpAndSettle();
+    expect(find.text('2 selecionado(s)'), findsOneWidget);
+
+    await _openReportCardByTitle(tester, 'Relatório combinado');
+    expect(find.text('Pré-visualização HTML'), findsOneWidget);
+    final viewer = tester.widget<HtmlReportViewer>(
+      find.byType(HtmlReportViewer),
+    );
+    expect('class="sf-letterhead"'.allMatches(viewer.htmlContent).length, 1);
+    expect(viewer.htmlContent, contains('data-kind="visita"'));
+    expect(viewer.htmlContent, contains('data-kind="ocorrencia"'));
   });
 
   testWidgets('ocorrências exige seleção de produtor com múltiplos clientes', (
@@ -882,9 +942,15 @@ Future<void> _pumpScreen(
   await tester.pumpAndSettle();
 }
 
+Finder _verticalScrollable() {
+  return find.byWidgetPredicate(
+    (widget) => widget is Scrollable && widget.axis == Axis.vertical,
+  );
+}
+
 Future<void> _openReportCardByTitle(WidgetTester tester, String title) async {
   final target = find.text(title);
-  final scrollable = find.byType(Scrollable);
+  final scrollable = _verticalScrollable();
   if (scrollable.evaluate().isNotEmpty) {
     await tester.scrollUntilVisible(
       target.first,
