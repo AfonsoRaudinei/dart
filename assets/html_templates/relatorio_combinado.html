@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SoloForte — Relatório combinado</title>
+<style>
+{{sf_base_css}}
+</style>
+</head>
+<body>
+<div class="sf-doc">
+
+  <header class="sf-letterhead">
+    <div class="sf-letterhead-row">
+      <span class="sf-doc-type">Relatório combinado</span>
+    </div>
+    <h1 class="sf-title">{{cliente_nome}}</h1>
+    <!-- {{#if contexto_linha}} -->
+    <p class="sf-subtitle">{{contexto_linha}}</p>
+    <!-- {{/if}} -->
+  </header>
+
+  <main>
+    {{capitulos_html}}
+  </main>
+
+  <!-- {{#if consultant_nome}} -->
+  <div class="sf-signature">
+    <div class="sf-signature-line"></div>
+    <div class="sf-signature-name">{{consultant_nome}}</div>
+    <!-- {{#if consultant_role}} -->
+    <div class="sf-signature-role">{{consultant_role}}</div>
+    <!-- {{/if}} -->
+    <div class="sf-signature-date">Emitido em {{emitido_em}}</div>
+  </div>
+  <!-- {{/if}} -->
+
+  <footer class="sf-footer">
+    {{report_footer_signature}}
+  </footer>
+
+</div>
+</body>
+</html>
