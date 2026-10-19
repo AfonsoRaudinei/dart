@@ -951,7 +951,8 @@ void main() {
       expect(html, isNot(contains('>Cliente</span>')));
       expect(html, isNot(contains('>Fazenda</span>')));
       expect(html, isNot(contains('>Talhão</span>')));
-      expect(html, contains('>Categoria</span>'));
+      expect(html, isNot(contains('>Categoria</span>')));
+      expect(html, contains('class="sf-title">Doença</h1>'));
     },
   );
 
