@@ -14,6 +14,7 @@ import '../../../../core/contracts/i_field_lookup_provider.dart';
 import '../../../../core/contracts/i_occurrence_access_reader_provider.dart';
 import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 import '../../../../core/router/app_routes.dart';
+import '../../../../core/design/sf_icons.dart';
 import '../../../../core/html_templates/html_report_viewer.dart';
 import '../../../../core/html_templates/ocorrencia_html_renderer.dart';
 import '../../../../core/html_templates/propriedade_html_renderer.dart';
@@ -58,6 +59,7 @@ part 'relatorios_marketing_reports.dart';
 part 'relatorios_consolidated_reports.dart';
 part 'relatorios_shared_widgets.dart';
 part 'relatorios_visit_photos_section.dart';
+part 'relatorios_report_visuals.dart';
 
 /// Testes injetam corpo fake via override; produção permanece `null` (WebView).
 final htmlReportViewerBodyBuilderProvider = Provider<WidgetBuilder?>(
@@ -536,6 +538,10 @@ class _OccurrenciasSection extends ConsumerWidget {
               ),
               if (exportEnabled) ...[
                 _GeneratedReportCard(
+                  leading: _relatoriosReportIconBadge(
+                    icon: SFIcons.assignment,
+                    accent: const Color(0xFF2C5564),
+                  ),
                   eyebrow: 'Exportar lista',
                   title: 'Lista de Ocorrências',
                   subtitle: '${scoped.length} ocorrência(s)',
@@ -696,17 +702,18 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
 
   Widget? _occurrenceCardLeading(Occurrence occurrence) {
     if (allPhotoPaths(occurrence).isEmpty) return null;
-    final category = OccurrenceCategory.fromString(occurrence.category);
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: OccurrenceCoverThumbnail(
         occurrence: occurrence,
         width: 60,
         height: 80,
-        fallback: Container(
-          width: 60,
-          height: 80,
-          color: category.markerColor.withValues(alpha: 0.12),
+        fallback: Center(
+          child: _relatoriosReportIconBadge(
+            icon: _relatoriosOccurrenceCategoryIcon(occurrence.category),
+            accent: _relatoriosOccurrenceCategoryColor(occurrence.category),
+            size: 44,
+          ),
         ),
       ),
     );

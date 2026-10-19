@@ -36,6 +36,7 @@ class _GeneratedReportCard extends ConsumerStatefulWidget {
   final HtmlReportViewerActions? viewerActions;
   final String? statusLabel;
   final Color? statusColor;
+  final Widget? leading;
 
   const _GeneratedReportCard({
     required this.eyebrow,
@@ -47,6 +48,7 @@ class _GeneratedReportCard extends ConsumerStatefulWidget {
     this.viewerActions,
     this.statusLabel,
     this.statusColor,
+    this.leading,
   });
 
   @override
@@ -90,6 +92,7 @@ class _GeneratedReportCardState extends ConsumerState<_GeneratedReportCard> {
   @override
   Widget build(BuildContext context) {
     return _AsyncDataCard(
+      leading: widget.leading,
       eyebrow: widget.eyebrow,
       title: widget.title,
       subtitle: widget.enabled

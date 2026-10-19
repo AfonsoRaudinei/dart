@@ -201,7 +201,9 @@ void main() {
     expect(find.text('Exportar lista'), findsOneWidget);
 
     await _selectSegment(tester, 'Marketing');
-    expect(find.text('Marketing'), findsWidgets);
+    expect(find.text('Relatórios do produtor'), findsOneWidget);
+    expect(find.text('Ocorrências'), findsWidgets);
+    expect(find.text('Resultado'), findsWidgets);
     expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
     expect(find.text('Relatórios Consolidados'), findsNothing);
 
@@ -538,7 +540,7 @@ void main() {
     );
     expect(find.text('Vazio'), findsNothing);
 
-    await tester.tap(find.text('Selecione um produtor'));
+    await tester.tap(find.byIcon(Icons.keyboard_arrow_down_rounded).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Produtor A · 1').last);
     await tester.pumpAndSettle();
@@ -586,7 +588,7 @@ void main() {
     expect(find.text('Lista de Ocorrências'), findsNothing);
     expect(find.text('Exportar lista'), findsNothing);
 
-    await tester.tap(find.text('Selecione um produtor').first);
+    await tester.tap(find.byIcon(Icons.keyboard_arrow_down_rounded).first);
     await tester.pumpAndSettle();
     expect(find.text('Produtor A · 1'), findsOneWidget);
     expect(find.text('Produtor B · 1'), findsOneWidget);
@@ -740,6 +742,8 @@ void main() {
       );
 
       await _selectSegment(tester, 'Marketing');
+      await tester.tap(find.text('Não gerados'));
+      await tester.pumpAndSettle();
       await _openReportCardByTitle(tester, 'Draft no limite');
       await _tapViewerToolbar(tester, 'Publicar');
       expect(find.text('Publicar case?'), findsOneWidget);
@@ -826,6 +830,14 @@ Future<void> _pumpScreen(
 
 Future<void> _openReportCardByTitle(WidgetTester tester, String title) async {
   final target = find.text(title);
+  final scrollable = find.byType(Scrollable);
+  if (scrollable.evaluate().isNotEmpty) {
+    await tester.scrollUntilVisible(
+      target.first,
+      500,
+      scrollable: scrollable.first,
+    );
+  }
   await tester.ensureVisible(target.first);
   await tester.tap(target.first);
   await tester.pumpAndSettle();
@@ -977,9 +989,11 @@ MarketingCase _marketingCase({
   String tipo = 'resultado',
   String produtorFazenda = 'Produtor Teste - Fazenda Marketing',
   String status = 'published',
+  String? clientId = 'cli-test-1',
 }) {
   return MarketingCase.fromJson({
     'id': id,
+    'client_id': clientId,
     'tipo': tipo,
     'visibilidade': 'ouro',
     'lat': -10.1,
