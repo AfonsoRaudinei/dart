@@ -149,11 +149,17 @@ class RelatoriosScreen extends ConsumerStatefulWidget {
 class _RelatoriosScreenState extends ConsumerState<RelatoriosScreen> {
   static final _dateFormat = DateFormat('dd/MM/yyyy', 'pt_BR');
   _RelatoriosSegment _segment = _RelatoriosSegment.gerados;
+  String? _selectedProducerClientId;
 
   void _selectSegment(_RelatoriosSegment value) {
     if (_segment == value) return;
     HapticFeedback.selectionClick();
     setState(() => _segment = value);
+  }
+
+  void _selectProducer(String clientId) {
+    if (_selectedProducerClientId == clientId) return;
+    setState(() => _selectedProducerClientId = clientId);
   }
 
   @override
@@ -193,14 +199,26 @@ class _RelatoriosScreenState extends ConsumerState<RelatoriosScreen> {
   Widget _buildSegmentBody() {
     switch (_segment) {
       case _RelatoriosSegment.visitas:
-        return _RelatoriosSection(dateFormat: _dateFormat);
+        return _RelatoriosSection(
+          dateFormat: _dateFormat,
+          selectedProducerClientId: _selectedProducerClientId,
+          onProducerSelected: _selectProducer,
+        );
       case _RelatoriosSegment.ocorrencias:
-        return _OccurrenciasSection(dateFormat: _dateFormat);
+        return _OccurrenciasSection(
+          dateFormat: _dateFormat,
+          selectedProducerClientId: _selectedProducerClientId,
+          onProducerSelected: _selectProducer,
+        );
       case _RelatoriosSegment.gerados:
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
           children: [
-            _MarketingCasesReportsSection(dateFormat: _dateFormat),
+            _MarketingCasesReportsSection(
+              dateFormat: _dateFormat,
+              selectedProducerClientId: _selectedProducerClientId,
+              onProducerSelected: _selectProducer,
+            ),
             const SizedBox(height: kFabSafeArea),
           ],
         );
@@ -208,7 +226,11 @@ class _RelatoriosScreenState extends ConsumerState<RelatoriosScreen> {
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
           children: [
-            _ConsolidatedReportsSection(dateFormat: _dateFormat),
+            _ConsolidatedReportsSection(
+              dateFormat: _dateFormat,
+              selectedProducerClientId: _selectedProducerClientId,
+              onProducerSelected: _selectProducer,
+            ),
             const SizedBox(height: kFabSafeArea),
           ],
         );
@@ -224,7 +246,14 @@ class _RelatoriosScreenState extends ConsumerState<RelatoriosScreen> {
 
 class _RelatoriosSection extends ConsumerWidget {
   final DateFormat dateFormat;
-  const _RelatoriosSection({required this.dateFormat});
+  final String? selectedProducerClientId;
+  final ValueChanged<String> onProducerSelected;
+
+  const _RelatoriosSection({
+    required this.dateFormat,
+    required this.selectedProducerClientId,
+    required this.onProducerSelected,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -232,11 +261,24 @@ class _RelatoriosSection extends ConsumerWidget {
 
     return relatoriosAsync.when(
       data: (list) {
-        final clienteId = _relatoriosRouteClienteId(context);
-        final visible = clienteId == null || clienteId.isEmpty
+        final producerCounts =
+            _producerCountsFromIds(list.map((r) => r.clientId));
+        final producerIds = producerCounts.keys.toList()..sort();
+        final effectiveClientId = resolveRelatoriosProducerClientId(
+          selectedClientId: selectedProducerClientId,
+          routeClientId: _relatoriosRouteClienteId(context),
+          producerIds: producerIds,
+        );
+        final visible = producerIds.isEmpty
             ? list
-            : list.where((relatorio) => relatorio.clientId == clienteId).toList();
-        if (visible.isEmpty) {
+            : effectiveClientId == null && producerIds.length > 1
+            ? const <RelatorioTecnico>[]
+            : list
+                .where(
+                  (relatorio) => relatorio.clientId == effectiveClientId,
+                )
+                .toList();
+        if (list.isEmpty) {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
@@ -251,24 +293,43 @@ class _RelatoriosSection extends ConsumerWidget {
             ],
           );
         }
-        return ListView.builder(
+        final needsProducerPick =
+            producerIds.length > 1 && effectiveClientId == null;
+        return ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-          itemCount: visible.length + 2,
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return _InsetGroupHeader(
-                title: 'Relatórios de Visita',
-                count: visible.length,
-              );
-            }
-            if (index == visible.length + 1) {
-              return const SizedBox(height: kFabSafeArea);
-            }
-            return _RelatorioCard(
-              relatorio: visible[index - 1],
-              dateFormat: dateFormat,
-            );
-          },
+          children: [
+            _InsetGroupHeader(
+              title: 'Relatórios de Visita',
+              count: visible.length,
+            ),
+            _relatoriosProducerSelectorBlock(
+              context: context,
+              producerIds: producerIds,
+              itemCounts: producerCounts,
+              effectiveClientId: effectiveClientId,
+              onSelected: onProducerSelected,
+            ),
+            if (needsProducerPick)
+              _PremiumEmptyState(
+                message:
+                    'Selecione um produtor para ver os relatórios de visita deste cliente.',
+              )
+            else if (visible.isEmpty)
+              _PremiumEmptyState(
+                message:
+                    'Nenhum relatório de visita para este produtor. Finalize uma visita no mapa.',
+                ctaLabel: 'Abrir mapa',
+                onCta: () => context.go(AppRoutes.map),
+              )
+            else
+              ...visible.map(
+                (relatorio) => _RelatorioCard(
+                  relatorio: relatorio,
+                  dateFormat: dateFormat,
+                ),
+              ),
+            const SizedBox(height: kFabSafeArea),
+          ],
         );
       },
       loading: () => const Padding(
@@ -417,73 +478,62 @@ class _RelatorioCardState extends ConsumerState<_RelatorioCard> {
 // SEÇÃO — Ocorrências Registradas
 // ══════════════════════════════════════════════════════════════════════════════
 
-class _OccurrenciasSection extends ConsumerStatefulWidget {
+class _OccurrenciasSection extends ConsumerWidget {
   final DateFormat dateFormat;
-  const _OccurrenciasSection({required this.dateFormat});
+  final String? selectedProducerClientId;
+  final ValueChanged<String> onProducerSelected;
+
+  const _OccurrenciasSection({
+    required this.dateFormat,
+    required this.selectedProducerClientId,
+    required this.onProducerSelected,
+  });
 
   @override
-  ConsumerState<_OccurrenciasSection> createState() =>
-      _OccurrenciasSectionState();
-}
-
-class _OccurrenciasSectionState extends ConsumerState<_OccurrenciasSection> {
-  String? _selectedClientId;
-
-  void _selectProducer(String clientId) {
-    if (_selectedClientId == clientId) return;
-    setState(() => _selectedClientId = clientId);
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final occAsync = ref.watch(occurrencesListProvider);
 
     return occAsync.when(
       data: (list) {
-        final nowLabel = widget.dateFormat.format(DateTime.now());
+        final nowLabel = dateFormat.format(DateTime.now());
         final producerCounts =
             _producerCountsFromIds(list.map((o) => o.clientId));
         final producerIds = producerCounts.keys.toList()..sort();
-        final routeClientId = _relatoriosRouteClienteId(context);
-        final effectiveClientId = _selectedClientId ??
-            (routeClientId != null && routeClientId.isNotEmpty
-                ? routeClientId
-                : (producerIds.length == 1 ? producerIds.first : null));
-        final scoped = effectiveClientId == null
+        final effectiveClientId = resolveRelatoriosProducerClientId(
+          selectedClientId: selectedProducerClientId,
+          routeClientId: _relatoriosRouteClienteId(context),
+          producerIds: producerIds,
+        );
+        final scoped = producerIds.isEmpty
+            ? list
+            : effectiveClientId == null
             ? const <Occurrence>[]
             : list
                 .where((occurrence) => occurrence.clientId == effectiveClientId)
                 .toList();
         final exportEnabled = effectiveClientId != null && scoped.isNotEmpty;
+        final needsProducerPick =
+            producerIds.length > 1 && effectiveClientId == null;
+        final displayList = _sortOccurrencesByCreatedAt(
+          needsProducerPick ? const <Occurrence>[] : scoped,
+        );
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
             _InsetGroupHeader(
               title: 'Ocorrências Registradas',
-              count: list.length,
+              count: effectiveClientId != null ? scoped.length : list.length,
             ),
             if (list.isNotEmpty && producerIds.isNotEmpty) ...[
-              if (producerIds.length > 1) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
-                  child: Text(
-                    'Produtor (exportação)',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: context.premiumTextSecondary,
-                    ),
-                  ),
-                ),
-                _RelatoriosProducerSelector(
-                  producerIds: producerIds,
-                  itemCounts: producerCounts,
-                  selectedClientId: effectiveClientId,
-                  onSelected: _selectProducer,
-                ),
-                const SizedBox(height: 12),
-              ],
+              _relatoriosProducerSelectorBlock(
+                context: context,
+                producerIds: producerIds,
+                itemCounts: producerCounts,
+                effectiveClientId: effectiveClientId,
+                onSelected: onProducerSelected,
+                label: 'Produtor (exportação)',
+              ),
               if (exportEnabled) ...[
                 _GeneratedReportCard(
                   eyebrow: 'Exportar lista',
@@ -507,11 +557,22 @@ class _OccurrenciasSectionState extends ConsumerState<_OccurrenciasSection> {
                 ctaLabel: 'Abrir mapa',
                 onCta: () => context.go(AppRoutes.map),
               )
+            else if (needsProducerPick)
+              _PremiumEmptyState(
+                message:
+                    'Selecione um produtor para ver as ocorrências deste cliente.',
+              )
+            else if (displayList.isEmpty)
+              _PremiumEmptyState(
+                message: 'Nenhuma ocorrência para este produtor.',
+                ctaLabel: 'Abrir mapa',
+                onCta: () => context.go(AppRoutes.map),
+              )
             else
-              ...list.map(
+              ...displayList.map(
                 (occurrence) => _OccurrenciaCard(
                   occurrence: occurrence,
-                  dateFormat: widget.dateFormat,
+                  dateFormat: dateFormat,
                 ),
               ),
             const SizedBox(height: kFabSafeArea),

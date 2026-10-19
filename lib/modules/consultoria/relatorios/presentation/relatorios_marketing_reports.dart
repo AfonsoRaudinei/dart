@@ -2,8 +2,14 @@ part of 'relatorios_page.dart';
 
 class _MarketingCasesReportsSection extends ConsumerStatefulWidget {
   final DateFormat dateFormat;
+  final String? selectedProducerClientId;
+  final ValueChanged<String> onProducerSelected;
 
-  const _MarketingCasesReportsSection({required this.dateFormat});
+  const _MarketingCasesReportsSection({
+    required this.dateFormat,
+    required this.selectedProducerClientId,
+    required this.onProducerSelected,
+  });
 
   @override
   ConsumerState<_MarketingCasesReportsSection> createState() =>
@@ -148,7 +154,24 @@ class _MarketingCasesReportsSectionState
 
     return casesAsync.when(
       data: (visible) {
-        final statusFiltered = _applyStatusFilter(visible);
+        final producerCounts =
+            _producerCountsFromIds(visible.map((c) => c.clientId));
+        final producerIds = producerCounts.keys.toList()..sort();
+        final effectiveClientId = resolveRelatoriosProducerClientId(
+          selectedClientId: widget.selectedProducerClientId,
+          routeClientId: _relatoriosRouteClienteId(context),
+          producerIds: producerIds,
+        );
+        final needsProducerPick =
+            producerIds.length > 1 && effectiveClientId == null;
+        final byProducer = producerIds.isEmpty
+            ? visible
+            : needsProducerPick
+            ? const <MarketingCaseReportSnapshot>[]
+            : visible
+                .where((item) => item.clientId == effectiveClientId)
+                .toList();
+        final statusFiltered = _applyStatusFilter(byProducer);
         final filtered = _applyTypeFilter(statusFiltered);
         final grouped = _groupByFarm(filtered);
         return Column(
@@ -159,6 +182,13 @@ class _MarketingCasesReportsSectionState
               count: filtered.length,
             ),
             if (visible.isNotEmpty) ...[
+              _relatoriosProducerSelectorBlock(
+                context: context,
+                producerIds: producerIds,
+                itemCounts: producerCounts,
+                effectiveClientId: effectiveClientId,
+                onSelected: widget.onProducerSelected,
+              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
                 child: _MarketingCaseStatusFilterBar(
@@ -180,6 +210,11 @@ class _MarketingCasesReportsSectionState
                     'Nenhuma publicação ainda. Crie um case de marketing no mapa (toque longo).',
                 ctaLabel: 'Abrir mapa',
                 onCta: () => context.go(AppRoutes.map),
+              )
+            else if (needsProducerPick)
+              _PremiumEmptyState(
+                message:
+                    'Selecione um produtor para ver as publicações deste cliente.',
               )
             else if (filtered.isEmpty)
               _PremiumEmptyState(

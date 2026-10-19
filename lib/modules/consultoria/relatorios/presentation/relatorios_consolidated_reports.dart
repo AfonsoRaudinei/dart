@@ -1,27 +1,19 @@
 part of 'relatorios_page.dart';
 
 /// Aba Consolidados — Resumo + Histórico por produtor (clientId único).
-class _ConsolidatedReportsSection extends ConsumerStatefulWidget {
+class _ConsolidatedReportsSection extends ConsumerWidget {
   final DateFormat dateFormat;
+  final String? selectedProducerClientId;
+  final ValueChanged<String> onProducerSelected;
 
-  const _ConsolidatedReportsSection({required this.dateFormat});
-
-  @override
-  ConsumerState<_ConsolidatedReportsSection> createState() =>
-      _ConsolidatedReportsSectionState();
-}
-
-class _ConsolidatedReportsSectionState
-    extends ConsumerState<_ConsolidatedReportsSection> {
-  String? _selectedClientId;
-
-  void _selectProducer(String clientId) {
-    if (_selectedClientId == clientId) return;
-    setState(() => _selectedClientId = clientId);
-  }
+  const _ConsolidatedReportsSection({
+    required this.dateFormat,
+    required this.selectedProducerClientId,
+    required this.onProducerSelected,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final relatoriosAsync = ref.watch(_relatoriosTecnicosListProvider);
 
     if (relatoriosAsync.isLoading) {
@@ -36,13 +28,18 @@ class _ConsolidatedReportsSectionState
 
     final relatorios =
         relatoriosAsync.valueOrNull ?? const <RelatorioTecnico>[];
-    final nowLabel = widget.dateFormat.format(DateTime.now());
+    final nowLabel = dateFormat.format(DateTime.now());
     final producerCounts =
         _producerCountsFromIds(relatorios.map((r) => r.clientId));
     final producerIds = producerCounts.keys.toList()..sort();
-    final effectiveClientId = _selectedClientId ??
-        (producerIds.length == 1 ? producerIds.first : null);
-    final scoped = effectiveClientId == null
+    final effectiveClientId = resolveRelatoriosProducerClientId(
+      selectedClientId: selectedProducerClientId,
+      routeClientId: _relatoriosRouteClienteId(context),
+      producerIds: producerIds,
+    );
+    final scoped = producerIds.isEmpty
+        ? relatorios
+        : effectiveClientId == null
         ? const <RelatorioTecnico>[]
         : relatorios
             .where((report) => report.clientId == effectiveClientId)
@@ -64,26 +61,13 @@ class _ConsolidatedReportsSectionState
             onCta: () => context.go(AppRoutes.map),
           )
         else ...[
-          if (producerIds.length > 1) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
-              child: Text(
-                'Produtor',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: context.premiumTextSecondary,
-                ),
-              ),
-            ),
-            _RelatoriosProducerSelector(
-              producerIds: producerIds,
-              itemCounts: producerCounts,
-              selectedClientId: effectiveClientId,
-              onSelected: _selectProducer,
-            ),
-            const SizedBox(height: 8),
-          ],
+          _relatoriosProducerSelectorBlock(
+            context: context,
+            producerIds: producerIds,
+            itemCounts: producerCounts,
+            effectiveClientId: effectiveClientId,
+            onSelected: onProducerSelected,
+          ),
           if (!exportsEnabled)
             _PremiumEmptyState(
               message: producerIds.length > 1
@@ -124,7 +108,7 @@ class _ConsolidatedReportsSectionState
                     const SizedBox(height: 8),
                     _VisitHistoryTimeline(
                       relatorios: scoped,
-                      dateFormat: widget.dateFormat,
+                      dateFormat: dateFormat,
                     ),
                   ],
                 );
