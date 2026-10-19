@@ -125,6 +125,13 @@ class _CombinedReportsComposerState
       return;
     }
     final keys = widget.events.map((e) => e.key).toSet();
+    final oldKeys = oldWidget.events.map((e) => e.key).toSet();
+    final wasSelectingAllOld =
+        oldKeys.isNotEmpty && oldKeys.difference(_selected).isEmpty;
+    if (wasSelectingAllOld && _undoStack.isEmpty) {
+      _selected = keys;
+      return;
+    }
     _selected = _selected.intersection(keys);
     if (_selected.isEmpty && _undoStack.isEmpty) {
       _selected = keys;
