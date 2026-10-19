@@ -20,6 +20,55 @@ enum _MarketingCaseFilter { all, resultado, antesDepois, avaliacao }
 
 enum _MarketingCaseStatusFilter { all, published, draft }
 
+HtmlReportViewerActions _marketingReportViewerActions(
+  ProviderContainer container,
+  MarketingCaseReportSnapshot item,
+) {
+  final lookup = container.read(marketingCaseReportsLookupProvider);
+  final lat = item.lat;
+  final lng = item.lng;
+  final hasLocation =
+      lat.isFinite && lng.isFinite && !(lat == 0 && lng == 0);
+  final isDraft = item.statusValue.toLowerCase() == 'draft';
+
+  return HtmlReportViewerActions(
+    onEdit: (viewerContext) async {
+      Navigator.of(viewerContext).pop();
+      await lookup.showEditSheet(viewerContext, item.id);
+    },
+    onViewLocation: hasLocation
+        ? (viewerContext) async {
+            Navigator.of(viewerContext).pop();
+            viewerContext.go(
+              '${AppRoutes.map}?modo=foco&lat=${lat.toStringAsFixed(6)}'
+              '&lng=${lng.toStringAsFixed(6)}',
+            );
+          }
+        : null,
+    onPublish: isDraft
+        ? (viewerContext) async {
+            final published =
+                await lookup.publishDraftCase(viewerContext, item.id);
+            if (published && viewerContext.mounted) {
+              ScaffoldMessenger.of(viewerContext).showSnackBar(
+                const SnackBar(content: Text('Case publicado com sucesso!')),
+              );
+            }
+            return published;
+          }
+        : null,
+    publishDialogTitle: 'Publicar case?',
+    publishDialogMessage: 'O case será publicado no mapa conforme seu plano.',
+    onDelete: (viewerContext) async {
+      await lookup.deleteCase(item.id);
+      return true;
+    },
+    deleteDialogTitle: 'Excluir publicação?',
+    deleteDialogMessage:
+        'A publicação será removida da lista e marcada para sincronização.',
+  );
+}
+
 class _MarketingCasesReportsSectionState
     extends ConsumerState<_MarketingCasesReportsSection> {
   // Marketing card share API (BUG-007): showPackShare: false
@@ -83,56 +132,6 @@ class _MarketingCasesReportsSectionState
     return {for (final key in keys) key: map[key]!};
   }
 
-  HtmlReportViewerActions _marketingViewerActions(
-    ProviderContainer container,
-    MarketingCaseReportSnapshot item,
-  ) {
-    final lookup = container.read(marketingCaseReportsLookupProvider);
-    final lat = item.lat;
-    final lng = item.lng;
-    final hasLocation =
-        lat.isFinite && lng.isFinite && !(lat == 0 && lng == 0);
-    final isDraft = item.statusValue.toLowerCase() == 'draft';
-
-    return HtmlReportViewerActions(
-      onEdit: (viewerContext) async {
-        Navigator.of(viewerContext).pop();
-        await lookup.showEditSheet(viewerContext, item.id);
-      },
-      onViewLocation: hasLocation
-          ? (viewerContext) async {
-              Navigator.of(viewerContext).pop();
-              viewerContext.go(
-                '${AppRoutes.map}?modo=foco&lat=${lat.toStringAsFixed(6)}'
-                '&lng=${lng.toStringAsFixed(6)}',
-              );
-            }
-          : null,
-      onPublish: isDraft
-          ? (viewerContext) async {
-              final published =
-                  await lookup.publishDraftCase(viewerContext, item.id);
-              if (published && viewerContext.mounted) {
-                ScaffoldMessenger.of(viewerContext).showSnackBar(
-                  const SnackBar(content: Text('Case publicado com sucesso!')),
-                );
-              }
-              return published;
-            }
-          : null,
-      publishDialogTitle: 'Publicar case?',
-      publishDialogMessage:
-          'O case será publicado no mapa conforme seu plano.',
-      onDelete: (viewerContext) async {
-        await lookup.deleteCase(item.id);
-        return true;
-      },
-      deleteDialogTitle: 'Excluir publicação?',
-      deleteDialogMessage:
-          'A publicação será removida da lista e marcada para sincronização.',
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final dateFormat = widget.dateFormat;
@@ -152,10 +151,15 @@ class _MarketingCasesReportsSectionState
       );
     }
 
+    final occurrencesAsync = ref.watch(occurrencesListProvider);
+    final allOccurrences = occurrencesAsync.valueOrNull ?? const <Occurrence>[];
+
     return casesAsync.when(
       data: (visible) {
-        final producerCounts =
-            _producerCountsFromIds(visible.map((c) => c.clientId));
+        final producerCounts = _producerCountsFromIds([
+          ...visible.map((c) => c.clientId),
+          ...allOccurrences.map((o) => o.clientId),
+        ]);
         final producerIds = producerCounts.keys.toList()..sort();
         final effectiveClientId = resolveRelatoriosProducerClientId(
           selectedClientId: widget.selectedProducerClientId,
@@ -174,12 +178,22 @@ class _MarketingCasesReportsSectionState
         final statusFiltered = _applyStatusFilter(byProducer);
         final filtered = _applyTypeFilter(statusFiltered);
         final grouped = _groupByFarm(filtered);
+        final clientOccurrences = effectiveClientId == null
+            ? const <Occurrence>[]
+            : _sortOccurrencesByCreatedAt(
+                allOccurrences
+                    .where((o) => o.clientId == effectiveClientId)
+                    .toList(),
+              );
+        final showClientHub =
+            !needsProducerPick && effectiveClientId != null;
+        final totalHubItems = clientOccurrences.length + filtered.length;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _InsetGroupHeader(
-              title: 'Marketing',
-              count: filtered.length,
+              title: showClientHub ? 'Relatórios do produtor' : 'Marketing',
+              count: showClientHub ? totalHubItems : filtered.length,
             ),
             if (visible.isNotEmpty) ...[
               _relatoriosProducerSelectorBlock(
@@ -204,7 +218,7 @@ class _MarketingCasesReportsSectionState
                 ),
               ),
             ],
-            if (visible.isEmpty)
+            if (visible.isEmpty && allOccurrences.isEmpty)
               _PremiumEmptyState(
                 message:
                     'Nenhuma publicação ainda. Crie um case de marketing no mapa (toque longo).',
@@ -214,7 +228,16 @@ class _MarketingCasesReportsSectionState
             else if (needsProducerPick)
               _PremiumEmptyState(
                 message:
-                    'Selecione um produtor para ver as publicações deste cliente.',
+                    'Selecione um produtor para ver os relatórios deste cliente.',
+              )
+            else if (showClientHub)
+              ..._buildProducerReportHub(
+                context: context,
+                ref: ref,
+                dateFormat: dateFormat,
+                effectiveClientId: effectiveClientId!,
+                occurrences: clientOccurrences,
+                marketingItems: filtered,
               )
             else if (filtered.isEmpty)
               _PremiumEmptyState(
@@ -243,20 +266,11 @@ class _MarketingCasesReportsSectionState
                       ),
                     ),
                   ...items.map(
-                    (item) => _GeneratedReportCard(
-                      eyebrow: 'Marketing',
-                      title: item.produtorFazenda,
-                      subtitle:
-                          '${item.tipoLabel} • ${_marketingStatusLabel(item.statusValue)}',
-                      date: dateFormat.format(item.criadoEm.toLocal()),
-                      enabled: true,
-                      statusLabel: _marketingStatusLabel(item.statusValue),
-                      statusColor: _marketingStatusColor(item.statusValue),
-                      buildPayload: () => _buildMarketingPayload(ref, item),
-                      viewerActions: _marketingViewerActions(
-                        ProviderScope.containerOf(context, listen: false),
-                        item,
-                      ),
+                    (item) => _marketingReportCard(
+                      context,
+                      ref,
+                      dateFormat,
+                      item,
                     ),
                   ),
                 ];
@@ -279,6 +293,111 @@ class _MarketingCasesReportsSectionState
       },
     );
   }
+}
+
+Widget _marketingReportCard(
+  BuildContext context,
+  WidgetRef ref,
+  DateFormat dateFormat,
+  MarketingCaseReportSnapshot item,
+) {
+  final tipoColor = _relatoriosMarketingTipoColor(item.tipo);
+  return _GeneratedReportCard(
+    leading: _relatoriosReportIconBadge(
+      icon: _relatoriosMarketingTipoIcon(item.tipo),
+      accent: tipoColor,
+    ),
+    eyebrow: item.tipoLabel,
+    title: item.produtorFazenda,
+    subtitle: _marketingStatusLabel(item.statusValue),
+    date: dateFormat.format(item.criadoEm.toLocal()),
+    enabled: true,
+    statusLabel: _marketingStatusLabel(item.statusValue),
+    statusColor: _marketingStatusColor(item.statusValue),
+    buildPayload: () => _buildMarketingPayload(ref, item),
+    viewerActions: _marketingReportViewerActions(
+      ProviderScope.containerOf(context, listen: false),
+      item,
+    ),
+  );
+}
+
+List<Widget> _buildProducerReportHub({
+  required BuildContext context,
+  required WidgetRef ref,
+  required DateFormat dateFormat,
+  required String effectiveClientId,
+  required List<Occurrence> occurrences,
+  required List<MarketingCaseReportSnapshot> marketingItems,
+}) {
+  final widgets = <Widget>[];
+  final nowLabel = dateFormat.format(DateTime.now());
+
+  if (occurrences.isEmpty && marketingItems.isEmpty) {
+    widgets.add(
+      const _PremiumEmptyState(
+        message: 'Nenhum relatório para este produtor ainda.',
+      ),
+    );
+    return widgets;
+  }
+
+  if (occurrences.isNotEmpty) {
+    widgets.add(
+      _RelatoriosSectionLabel(
+        icon: SFIcons.assignment,
+        iconColor: const Color(0xFF2C5564),
+        title: 'Ocorrências',
+        count: occurrences.length,
+      ),
+    );
+    widgets.add(
+      _GeneratedReportCard(
+        leading: _relatoriosReportIconBadge(
+          icon: SFIcons.assignment,
+          accent: const Color(0xFF2C5564),
+        ),
+        eyebrow: 'Exportar lista',
+        title: 'Lista de Ocorrências',
+        subtitle: '${occurrences.length} ocorrência(s)',
+        date: nowLabel,
+        enabled: true,
+        buildPayload: () => _buildOccurrenceListPayload(
+          ref,
+          occurrences,
+          effectiveClientId,
+        ),
+      ),
+    );
+    widgets.addAll(
+      occurrences.map(
+        (occurrence) => _OccurrenciaCard(
+          occurrence: occurrence,
+          dateFormat: dateFormat,
+        ),
+      ),
+    );
+  }
+
+  const tipos = ['resultado', 'antes_depois', 'avaliacao'];
+  for (final tipo in tipos) {
+    final items = marketingItems.where((item) => item.tipo == tipo).toList();
+    if (items.isEmpty) continue;
+    final color = _relatoriosMarketingTipoColor(tipo);
+    widgets.add(
+      _RelatoriosSectionLabel(
+        icon: _relatoriosMarketingTipoIcon(tipo),
+        iconColor: color,
+        title: _relatoriosMarketingTipoSectionTitle(tipo),
+        count: items.length,
+      ),
+    );
+    widgets.addAll(
+      items.map((item) => _marketingReportCard(context, ref, dateFormat, item)),
+    );
+  }
+
+  return widgets;
 }
 
 String _marketingStatusLabel(String statusValue) {
@@ -326,12 +445,23 @@ class _MarketingCaseStatusFilterBar extends StatelessWidget {
       spacing: 8,
       runSpacing: 6,
       children: [
-        _statusChip(context, 'Todas', _MarketingCaseStatusFilter.all),
-        _statusChip(context, 'Marketing', _MarketingCaseStatusFilter.published),
+        _statusChip(
+          context,
+          'Todas',
+          _MarketingCaseStatusFilter.all,
+          SFIcons.layers,
+        ),
+        _statusChip(
+          context,
+          'Marketing',
+          _MarketingCaseStatusFilter.published,
+          SFIcons.campaign,
+        ),
         _statusChip(
           context,
           'Não gerados',
           _MarketingCaseStatusFilter.draft,
+          SFIcons.edit,
         ),
       ],
     );
@@ -341,6 +471,7 @@ class _MarketingCaseStatusFilterBar extends StatelessWidget {
     BuildContext context,
     String label,
     _MarketingCaseStatusFilter value,
+    IconData icon,
   ) {
     final isSelected = selected == value;
     return GestureDetector(
@@ -358,13 +489,24 @@ class _MarketingCaseStatusFilterBar extends StatelessWidget {
                 : const Color(0xFFD1D1D6),
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: isSelected ? Colors.white : context.premiumTextPrimary,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : context.premiumTextSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.white : context.premiumTextPrimary,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -386,10 +528,30 @@ class _MarketingCaseFilterBar extends StatelessWidget {
       spacing: 8,
       runSpacing: 6,
       children: [
-        _filterChip(context, 'Todas', _MarketingCaseFilter.all),
-        _filterChip(context, 'Resultado', _MarketingCaseFilter.resultado),
-        _filterChip(context, 'Antes/Depois', _MarketingCaseFilter.antesDepois),
-        _filterChip(context, 'Avaliação', _MarketingCaseFilter.avaliacao),
+        _filterChip(
+          context,
+          'Todas',
+          _MarketingCaseFilter.all,
+          SFIcons.layers,
+        ),
+        _filterChip(
+          context,
+          'Resultado',
+          _MarketingCaseFilter.resultado,
+          SFIcons.trendingUp,
+        ),
+        _filterChip(
+          context,
+          'Lado a lado',
+          _MarketingCaseFilter.antesDepois,
+          SFIcons.compareArrows,
+        ),
+        _filterChip(
+          context,
+          'Avaliação',
+          _MarketingCaseFilter.avaliacao,
+          SFIcons.starOutline,
+        ),
       ],
     );
   }
@@ -398,6 +560,7 @@ class _MarketingCaseFilterBar extends StatelessWidget {
     BuildContext context,
     String label,
     _MarketingCaseFilter value,
+    IconData icon,
   ) {
     final isSelected = selected == value;
     return GestureDetector(
@@ -415,13 +578,24 @@ class _MarketingCaseFilterBar extends StatelessWidget {
                 : const Color(0xFFD1D1D6),
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: isSelected ? Colors.white : context.premiumTextPrimary,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : context.premiumTextSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.white : context.premiumTextPrimary,
+              ),
+            ),
+          ],
         ),
       ),
     );

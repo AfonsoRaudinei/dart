@@ -82,6 +82,10 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _GeneratedReportCard(
+                      leading: _relatoriosReportIconBadge(
+                        icon: SFIcons.business,
+                        accent: const Color(0xFF2C5564),
+                      ),
                       eyebrow: 'Gerado sob demanda',
                       title: 'Resumo da Propriedade',
                       subtitle: _propertySubtitle(scoped),
@@ -94,6 +98,10 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
                       ),
                     ),
                     _GeneratedReportCard(
+                      leading: _relatoriosReportIconBadge(
+                        icon: SFIcons.calendar,
+                        accent: PremiumTokens.brandGreen,
+                      ),
                       eyebrow: 'Gerado sob demanda',
                       title: 'Histórico de Visitas',
                       subtitle: '${scoped.length} visita(s)',
