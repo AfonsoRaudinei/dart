@@ -552,6 +552,50 @@ body.sf-export-gallery-open { overflow: hidden; }
   color: var(--sf-text-secondary);
 }
 
+/* ═══ Sumário (relatório combinado) ═══ */
+.sf-toc {
+  margin: var(--sf-space-5) 0 var(--sf-space-6);
+  padding: var(--sf-space-4) var(--sf-space-5);
+  border: 0.5px solid var(--sf-hairline);
+  border-radius: var(--sf-radius-md);
+  background: var(--sf-surface-muted);
+}
+
+.sf-toc-heading {
+  margin: 0 0 var(--sf-space-3);
+  font-family: var(--sf-font-title);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--sf-text);
+}
+
+.sf-toc-list {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.sf-toc-item {
+  margin: var(--sf-space-2) 0;
+}
+
+.sf-toc-link {
+  color: var(--sf-text);
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.sf-toc-link:hover {
+  text-decoration: underline;
+}
+
+.sf-toc-kind,
+.sf-toc-date {
+  color: var(--sf-text-secondary);
+  font-size: 12px;
+}
+
 /* ═══ Capítulos de relatório combinado ═══ */
 .sf-chapter {
   margin-bottom: var(--sf-space-6);

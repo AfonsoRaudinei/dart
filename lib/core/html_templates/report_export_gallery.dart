@@ -3,7 +3,9 @@
 /// No app, [ReportPhotoLinks.prepareInAppHtml] remove o lightbox CSS e usa
 /// `sfphoto://` + visualizador nativo — este script não roda com `sf-in-app`.
 abstract final class ReportExportGallery {
-  static final _hasPhotos = RegExp(r'<img\b[^>]*\bdata-sf-photo=');
+  static final _hasPhotos = RegExp(
+    r'<img\b[^>]*\bdata-sf-photo(?:\s*=|(?=\s|>))',
+  );
 
   static String inject(String html) {
     if (!_hasPhotos.hasMatch(html)) return html;
