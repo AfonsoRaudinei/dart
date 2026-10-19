@@ -54,8 +54,9 @@ Future<ReportBrandingContext> resolveReportBrandingContext(
 
 Future<String> buildRelatorioVisitHtml(
   WidgetRef ref,
-  RelatorioTecnico relatorio,
-) async {
+  RelatorioTecnico relatorio, {
+  bool asFragment = false,
+}) async {
   final clienteNome = await _resolveClienteNome(ref, relatorio);
   final publicacoesTitulos = await _resolvePublicacoesTitulos(ref, relatorio);
   final branding = await resolveReportBrandingContext(
@@ -72,6 +73,7 @@ Future<String> buildRelatorioVisitHtml(
     reportBrandName: branding.brandName,
     reportLogoPath: branding.logoPath,
     consultantRole: branding.consultantRole,
+    asFragment: asFragment,
   );
 }
 
