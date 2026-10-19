@@ -2,6 +2,9 @@
 
 > **Guia passo a passo** para configurar o banco de dados Supabase do SoloForte Dart
 > diretamente pelo Dashboard, sem precisar abrir arquivos do repositório.
+>
+> **Especificação completa de tabelas, colunas e RLS:**
+> [docs/SUPABASE_RELATORIO_COMPLETO.md](SUPABASE_RELATORIO_COMPLETO.md)
 
 ---
 

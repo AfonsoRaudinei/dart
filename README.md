@@ -21,7 +21,8 @@ Aplicativo mobile Flutter para **consultoria agrícola de campo** — map-first,
 Para configurar o banco de dados e executar os scripts SQL na ordem correta,
 consulte o guia detalhado:
 
-**→ [docs/SUPABASE_MANUAL.md](docs/SUPABASE_MANUAL.md)**
+**→ [docs/SUPABASE_MANUAL.md](docs/SUPABASE_MANUAL.md)** — passo a passo no SQL Editor  
+**→ [docs/SUPABASE_RELATORIO_COMPLETO.md](docs/SUPABASE_RELATORIO_COMPLETO.md)** — especificação das 8 tabelas + RLS + RPC
 
 O manual cobre: criação de tabelas, RLS, função de exclusão de conta,
 tabela de feedback, configuração do Auth, anon key e comando `flutter run`.
