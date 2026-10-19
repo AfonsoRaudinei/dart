@@ -56,20 +56,31 @@ class CombinadoHtmlRenderer {
     final consultant = consultantName?.trim() ?? '';
     final role = consultantRole?.trim() ?? '';
 
+    final tocHtml = _buildTocHtml(sorted);
     final capitulosHtml = sorted.isEmpty
         ? '<p class="sf-muted">Nenhum relatório selecionado para combinar.</p>'
-        : sorted.map(_renderChapter).join('\n');
+        : sorted
+              .asMap()
+              .entries
+              .map((entry) => _renderChapter(entry.value, entry.key + 1))
+              .join('\n');
 
     tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
       ...branding,
       'cliente_nome': RelatorioHtmlRenderer.escapeHtml(clienteNome),
       'contexto_linha': contextoLinha,
+      'toc_html': tocHtml,
       'capitulos_html': capitulosHtml,
       'consultant_nome': RelatorioHtmlRenderer.escapeHtml(consultant),
       'consultant_role': RelatorioHtmlRenderer.escapeHtml(role),
       'emitido_em': RelatorioHtmlRenderer.formatDate(DateTime.now()),
     });
 
+    tpl = RelatorioHtmlRenderer.resolveIfBlock(
+      tpl,
+      'toc_html',
+      include: tocHtml.isNotEmpty,
+    );
     tpl = RelatorioHtmlRenderer.resolveIfBlock(
       tpl,
       'contexto_linha',
@@ -136,6 +147,34 @@ class CombinadoHtmlRenderer {
     }
   }
 
+  /// Âncora estável no HTML combinado (`#capitulo-N`).
+  static String chapterAnchorId(int index) => 'capitulo-$index';
+
+  static String _buildTocHtml(List<CombinadoHtmlChapter> sorted) {
+    if (sorted.length < 2) return '';
+    final items = <String>[];
+    for (var i = 0; i < sorted.length; i++) {
+      final chapter = sorted[i];
+      final anchor = chapterAnchorId(i + 1);
+      final kind = RelatorioHtmlRenderer.escapeHtml(kindLabel(chapter.kind));
+      final date = RelatorioHtmlRenderer.formatDate(chapter.occurredAt);
+      final title = RelatorioHtmlRenderer.escapeHtml(chapter.title);
+      items.add(
+        '<li class="sf-toc-item"><a class="sf-toc-link" href="#$anchor">'
+        '<span class="sf-toc-kind">$kind</span> '
+        '<span class="sf-toc-date">$date</span> — '
+        '<span class="sf-toc-title">$title</span></a></li>',
+      );
+    }
+    return '''
+<nav class="sf-toc" aria-label="Sumário">
+  <h2 class="sf-toc-heading">Sumário</h2>
+  <ol class="sf-toc-list">
+    ${items.join('\n    ')}
+  </ol>
+</nav>''';
+  }
+
   static String marketingKindFromTipo(String tipo) {
     switch (tipo) {
       case 'antes_depois':
@@ -148,7 +187,8 @@ class CombinadoHtmlRenderer {
     }
   }
 
-  static String _renderChapter(CombinadoHtmlChapter chapter) {
+  static String _renderChapter(CombinadoHtmlChapter chapter, int index) {
+    final anchor = chapterAnchorId(index);
     final kind = RelatorioHtmlRenderer.escapeHtml(kindLabel(chapter.kind));
     final date = RelatorioHtmlRenderer.formatDate(chapter.occurredAt);
     final title = RelatorioHtmlRenderer.escapeHtml(chapter.title);
@@ -157,7 +197,7 @@ class CombinadoHtmlRenderer {
     );
     final kindAttr = RelatorioHtmlRenderer.escapeHtml(chapter.kind);
     return '''
-<article class="sf-chapter" data-kind="$kindAttr" data-occurred-at="$iso">
+<article id="$anchor" class="sf-chapter" data-kind="$kindAttr" data-occurred-at="$iso">
   <header class="sf-chapter-head">
     <p class="sf-chapter-kicker">$kind · $date</p>
     <h2 class="sf-chapter-title">$title</h2>
