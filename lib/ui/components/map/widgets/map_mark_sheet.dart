@@ -7,7 +7,6 @@ import '../../../../core/contracts/i_active_visit_context_lookup.dart';
 import '../../../../core/design/sf_icons.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
-import '../../../../modules/consultoria/occurrences/domain/occurrence.dart';
 import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_close_coordinator.dart';
 import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_form_guard.dart';
 import '../../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
@@ -20,9 +19,9 @@ import '../../../screens/map/handlers/novo_case_modal_launcher.dart';
 import '../map_occurrence_post_create.dart';
 
 /// O que marcar no ponto do mapa. A escolha fica no topo da mesma ficha.
-enum MapMarkKind { resultado, antesDepois, avaliacao, areaVisitada, ocorrencia }
+enum MapMarkKind { resultado, antesDepois, avaliacao, ocorrencia }
 
-/// Uma ficha: cinco opções no topo, campos da opção escolhida embaixo.
+/// Uma ficha: quatro opções no topo, campos da opção escolhida embaixo.
 class MapMarkSheet extends ConsumerStatefulWidget {
   final LatLng position;
   final ActiveVisitContext? visitContext;
@@ -67,8 +66,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
     HapticFeedback.selectionClick();
     setState(() {
       _kind = kind;
-      _occurrenceGuard =
-          kind == MapMarkKind.ocorrencia || kind == MapMarkKind.areaVisitada
+      _occurrenceGuard = kind == MapMarkKind.ocorrencia
           ? OccurrenceFormGuard()
           : null;
     });
@@ -150,17 +148,10 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
           key: ValueKey(kind),
           child: _caseForm(kind, lat, lng),
         );
-      case MapMarkKind.areaVisitada:
       case MapMarkKind.ocorrencia:
         return KeyedSubtree(
           key: ValueKey(kind),
-          child: _occurrenceForm(
-            lat: lat,
-            lng: lng,
-            initialCategory: kind == MapMarkKind.areaVisitada
-                ? kOccurrenceAreaVisitadaCategory
-                : null,
-          ),
+          child: _occurrenceForm(lat: lat, lng: lng),
         );
     }
   }
@@ -170,7 +161,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
       MapMarkKind.resultado => CaseTipo.resultado,
       MapMarkKind.antesDepois => CaseTipo.antesDepois,
       MapMarkKind.avaliacao => CaseTipo.avaliacao,
-      MapMarkKind.areaVisitada || MapMarkKind.ocorrencia => CaseTipo.resultado,
+      MapMarkKind.ocorrencia => CaseTipo.resultado,
     };
     Future<void> publicar(MarketingCase newCase) async {
       await NovoCaseModalLauncher.submitCaseFromMap(
@@ -209,18 +200,13 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
     return sheet;
   }
 
-  Widget _occurrenceForm({
-    required double lat,
-    required double lng,
-    required String? initialCategory,
-  }) {
+  Widget _occurrenceForm({required double lat, required double lng}) {
     final guard = _occurrenceGuard ?? OccurrenceFormGuard();
     return OccurrenceCreationSheet(
       latitude: lat,
       longitude: lng,
       formGuard: guard,
       compactHeader: true,
-      initialCategoryValue: initialCategory,
       liftStickyActionsForKeyboard: false,
       onCancel: () async {
         final canClose = await OccurrenceCloseCoordinator.confirmDiscardIfDirty(
@@ -277,7 +263,6 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
       MapMarkKind.resultado => 'Resultado',
       MapMarkKind.antesDepois => 'Antes/Depois',
       MapMarkKind.avaliacao => 'Avaliação',
-      MapMarkKind.areaVisitada => 'Área Visitada',
       MapMarkKind.ocorrencia => 'Ocorrência',
     };
   }
@@ -287,7 +272,6 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
       MapMarkKind.resultado => SFIcons.barChart,
       MapMarkKind.antesDepois => SFIcons.compareArrows,
       MapMarkKind.avaliacao => SFIcons.science,
-      MapMarkKind.areaVisitada => SFIcons.pinFill,
       MapMarkKind.ocorrencia => SFIcons.warning,
     };
   }
