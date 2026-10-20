@@ -4,14 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:soloforte_app/core/contracts/i_radar_overlay_controller_provider.dart';
 import 'package:soloforte_app/core/domain/map_models.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/core/services/connectivity_service.dart';
 import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
-import 'package:soloforte_app/modules/clima/infra/radar_overlay_controller_adapter.dart';
-import 'package:soloforte_app/modules/clima/presentation/providers/radar_providers.dart';
 import 'package:soloforte_app/ui/components/map/map_layer_preferences_section.dart';
 import 'package:soloforte_app/ui/components/map/map_layers_sheet.dart';
 
@@ -139,42 +136,11 @@ void main() {
       expect(container.read(showMarkersProvider), isFalse);
     });
 
-    testWidgets('ativa chuva e troca para satélite quando estava em mapa', (
+    testWidgets('não exibe toggle de chuva/radar no sheet de camadas', (
       tester,
     ) async {
-      SharedPreferences.setMockInitialValues({});
-      final preferencesService = PreferencesService(
-        await SharedPreferences.getInstance(),
-      );
+      await _pumpLayersSheet(tester);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            preferencesServiceProvider.overrideWithValue(preferencesService),
-            radarOverlayControllerProvider.overrideWith((ref) {
-              return RadarOverlayControllerAdapter(ref);
-            }),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: SizedBox(
-                height: 800,
-                child: LayersSheet(onClose: () {}),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(LayersSheet)),
-      );
-      container.read(activeLayerProvider.notifier).setLayer(LayerType.standard);
-      await tester.pump();
-
-      expect(container.read(activeLayerProvider), LayerType.standard);
-      expect(container.read(climaRadarEnabledProvider), isFalse);
       expect(find.text('Chuva'), findsNothing);
       expect(find.text('Pinos'), findsNothing);
     });
@@ -222,9 +188,6 @@ Future<void> _pumpLayersSheet(
         connectivityServiceProvider.overrideWithValue(
           const _FakeConnectivityService(initialValue: true),
         ),
-        radarOverlayControllerProvider.overrideWith((ref) {
-          return RadarOverlayControllerAdapter(ref);
-        }),
       ],
       child: MaterialApp(
         home: Scaffold(

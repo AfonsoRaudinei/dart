@@ -13,7 +13,6 @@ import 'package:soloforte_app/core/providers/connectivity_provider.dart';
 import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:soloforte_app/core/session/session_models.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
-import 'package:soloforte_app/modules/clima/presentation/providers/radar_providers.dart';
 import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
 import 'package:soloforte_app/modules/settings/data/settings_repository.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/settings_providers.dart';
@@ -83,9 +82,6 @@ Future<void> _pumpOverlay(
         preferencesServiceProvider.overrideWithValue(preferencesService),
         settingsRepositoryProvider.overrideWithValue(settingsRepository),
         isOnlineProvider.overrideWith((ref) => Stream.value(true)),
-        climaRadarEnabledProvider.overrideWith(
-          () => _PresetClimaRadarEnabled(false),
-        ),
         visitRepositoryProvider.overrideWithValue(_NoActiveVisitRepository()),
         agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
         sessionControllerProvider.overrideWith(_PublicSessionController.new),
@@ -113,15 +109,6 @@ Future<void> _pumpOverlay(
     ),
   );
   await tester.pumpAndSettle();
-}
-
-class _PresetClimaRadarEnabled extends ClimaRadarEnabled {
-  _PresetClimaRadarEnabled(this.initial);
-
-  final bool initial;
-
-  @override
-  bool build() => initial;
 }
 
 class _NoActiveVisitRepository implements VisitRepository {
