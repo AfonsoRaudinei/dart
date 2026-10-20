@@ -59,8 +59,8 @@ class MapMarkSheet extends ConsumerStatefulWidget {
 }
 
 class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
-  MapMarkKind? _kind;
-  OccurrenceFormGuard? _occurrenceGuard;
+  MapMarkKind _kind = MapMarkKind.ocorrencia;
+  OccurrenceFormGuard? _occurrenceGuard = OccurrenceFormGuard();
 
   void _select(MapMarkKind kind) {
     HapticFeedback.selectionClick();
@@ -119,25 +119,6 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
 
   Widget _body() {
     final kind = _kind;
-    if (kind == null) {
-      final isIos = soloForteSheetIsIos(context);
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Text(
-            'Escolha o que marcar neste ponto.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: isIos
-                  ? SoloForteSheetSkinIos.subtitleColor
-                  : const Color(0xFF8E8E93),
-            ),
-          ),
-        ),
-      );
-    }
-
     final lat = widget.position.latitude;
     final lng = widget.position.longitude;
     switch (kind) {
