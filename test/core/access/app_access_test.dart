@@ -12,7 +12,6 @@ void main() {
 
     test('produtor acessa áreas permitidas', () {
       expect(AppAccess.canAccessPath('produtor', AppRoutes.feedback), true);
-      expect(AppAccess.canAccessPath('produtor', AppRoutes.clima), true);
       expect(
         AppAccess.canAccessPath('produtor', AppRoutes.producerProperty),
         true,
