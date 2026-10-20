@@ -27,7 +27,6 @@ class AppRoutes {
   static const String settingsEditProfile = '/settings/profile/edit';
   static const String agenda = '/agenda';
   static const String feedback = '/feedback';
-  static const String clima = '/clima';
   static const String carteira = '/carteira';
   static const String reports = '/consultoria/relatorios';
   static const String clients = '/consultoria/clientes';
@@ -90,7 +89,6 @@ class AppRoutes {
     settings,
     agenda,
     feedback,
-    clima,
     carteira,
     reports,
     clients,

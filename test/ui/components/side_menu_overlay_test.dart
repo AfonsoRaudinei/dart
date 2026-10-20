@@ -23,7 +23,7 @@ void main() {
       await _pumpSideMenu(tester, profile: _profile(role: 'produtor'));
 
       expect(find.text('Feedback'), findsOneWidget);
-      expect(find.text('Clima'), findsOneWidget);
+      expect(find.text('Clima'), findsNothing);
       expect(find.text('Configurações'), findsOneWidget);
       expect(find.text('Minha propriedade'), findsOneWidget);
       expect(find.text('Meu Plano'), findsOneWidget);
