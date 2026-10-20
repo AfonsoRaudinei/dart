@@ -13,6 +13,8 @@ import 'package:soloforte_app/modules/ndvi/data/repositories/i_ndvi_repository.d
 import 'package:soloforte_app/modules/ndvi/data/repositories/ndvi_repository_impl.dart';
 import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
 import 'package:soloforte_app/modules/ndvi/infra/chained_field_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_ndvi_field_refresh.dart';
+import 'package:soloforte_app/core/contracts/i_ndvi_field_refresh_provider.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_providers.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/widgets/ndvi_talhao_sheet.dart';
 
@@ -34,6 +36,17 @@ class _EmptyDrawingLookup implements IFieldLookup {
 
   @override
   Future<List<FieldSummary>> listAll() async => const [];
+}
+
+class _RecordingFieldRefresh implements INdviFieldRefresh {
+  _RecordingFieldRefresh(this._repository);
+
+  final _RecordingRepository _repository;
+
+  @override
+  Future<void> clearCacheAndReload(String fieldId) async {
+    await _repository.deleteByFieldId(fieldId);
+  }
 }
 
 class _RecordingRepository implements INdviRepository {
@@ -162,6 +175,9 @@ void main() {
       ProviderScope(
         overrides: [
           ndviRepositoryProvider.overrideWithValue(recordingRepo),
+          ndviFieldRefreshProvider.overrideWithValue(
+            _RecordingFieldRefresh(recordingRepo),
+          ),
           ndviImagesProvider(fieldId).overrideWith((ref) => images),
           ndviEnsureCurrentDateProvider(fieldId).overrideWith((ref) async {}),
         ],
@@ -193,6 +209,7 @@ void main() {
     expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
     await tester.tap(find.byIcon(Icons.refresh_rounded));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
     expect(recordingRepo.deletedFieldId, fieldId);
   });
 }

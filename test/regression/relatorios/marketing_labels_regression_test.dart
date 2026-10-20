@@ -14,9 +14,10 @@ void main() {
       expect(source.contains("return 'Marketing';"), isTrue);
       expect(source.contains("return 'Não gerado';"), isTrue);
       expect(
-        source.contains(
-          "_statusChip(context, 'Marketing', _MarketingCaseStatusFilter.published)",
-        ),
+        RegExp(
+          r"_statusChip\(\s*context,\s*'Marketing',\s*"
+          r"_MarketingCaseStatusFilter\.published,",
+        ).hasMatch(source),
         isTrue,
       );
       expect(
