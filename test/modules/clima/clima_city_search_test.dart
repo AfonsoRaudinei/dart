@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
-import 'package:soloforte_app/modules/clima/data/datasources/ibge_localidades_datasource.dart';
+import 'package:soloforte_app/core/services/geocoding/ibge_localidades_datasource.dart';
 import 'package:soloforte_app/modules/clima/presentation/providers/clima_providers.dart';
 
 Future<ProviderContainer> _containerWithPrefs([
