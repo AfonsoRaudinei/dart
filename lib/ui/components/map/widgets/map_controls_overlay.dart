@@ -431,7 +431,7 @@ class _MapToolsFab extends StatelessWidget {
               ],
             ),
             child: Icon(
-              SFIcons.layers,
+              SFIcons.edit,
               color: isActive ? activeColor : Colors.grey.shade600,
               size: 22,
             ),
@@ -520,8 +520,7 @@ class _BasemapToggleButtonState extends ConsumerState<_BasemapToggleButton> {
 
   @override
   Widget build(BuildContext context) {
-    final isSatellite =
-        ref.watch(activeLayerProvider) == LayerType.satellite;
+    final isSatellite = ref.watch(activeLayerProvider) == LayerType.satellite;
     final label = isSatellite ? 'Satélite' : 'Mapa';
 
     return Row(
@@ -535,9 +534,7 @@ class _BasemapToggleButtonState extends ConsumerState<_BasemapToggleButton> {
           child: _MapRoundToggleButton(
             buttonKey: const Key('map_control_basemap_toggle_btn'),
             icon: isSatellite ? SFIcons.satellite : SFIcons.mapOutlined,
-            iconColor: isSatellite
-                ? widget.activeColor
-                : Colors.grey.shade600,
+            iconColor: isSatellite ? widget.activeColor : Colors.grey.shade600,
             isOn: isSatellite,
             showSlash: false,
             onTap: () {
