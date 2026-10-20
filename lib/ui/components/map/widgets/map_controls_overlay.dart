@@ -14,8 +14,6 @@ import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/domain/map_models.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/providers/connectivity_provider.dart';
-import '../../../../modules/clima/presentation/providers/radar_providers.dart';
-import '../../../../core/contracts/i_radar_overlay_controller_provider.dart';
 import '../../../../core/utils/area_display_format.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_bottom_toolbar_overlay.dart';
@@ -160,7 +158,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Indicador unificado: offline / online / clima no mapa
+              // Indicador de conectividade no mapa
               const _MapStatusIndicator(),
               if (widget.drawingState != DrawingState.editing) ...[
                 const SizedBox(width: 6),
@@ -557,7 +555,7 @@ class _BasemapToggleButtonState extends ConsumerState<_BasemapToggleButton> {
   }
 }
 
-/// Botão circular do topo direito (Chuva / basemap / localização).
+/// Botão circular do topo direito (conectividade / basemap / localização).
 /// Diferencia da coluna direita, que permanece quadrado com r=12.
 class _MapRoundToggleButton extends StatelessWidget {
   const _MapRoundToggleButton({
@@ -665,12 +663,10 @@ class _IconOffSlashPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-/// Indicador unificado do mapa:
-/// offline = wifi_off vermelho (sem slash) · online = drop cinza + slash ·
-/// radar on = drop azul. Long-press exibe rótulo.
+/// Indicador de conectividade no mapa (somente leitura). Long-press exibe rótulo.
 class _MapStatusIndicator extends ConsumerStatefulWidget {
   static const Color _offlineColor = Color(0xFFFF3B30);
-  static const Color _climaActiveColor = Color(0xFF1428A0);
+  static const Color _onlineColor = Color(0xFF34C759);
 
   const _MapStatusIndicator();
 
@@ -697,36 +693,24 @@ class _MapStatusIndicatorState extends ConsumerState<_MapStatusIndicator> {
     });
   }
 
-  String _statusLabel({required bool isOnline, required bool isRadarEnabled}) {
+  String _statusLabel({required bool isOnline}) {
     if (!isOnline) return 'Sem internet';
-    if (isRadarEnabled) return 'Online · chuva no mapa';
     return 'Online';
   }
 
   @override
   Widget build(BuildContext context) {
     final isOnline = ref.watch(isOnlineProvider).asData?.value ?? false;
-    final isRadarEnabled = ref.watch(climaRadarEnabledProvider);
-    final label = _statusLabel(
-      isOnline: isOnline,
-      isRadarEnabled: isRadarEnabled,
-    );
+    final label = _statusLabel(isOnline: isOnline);
 
     final IconData icon;
     final Color iconColor;
-    final bool showSlash;
     if (!isOnline) {
       icon = Icons.wifi_off_rounded;
       iconColor = _MapStatusIndicator._offlineColor;
-      showSlash = false;
-    } else if (isRadarEnabled) {
-      icon = Icons.water_drop_rounded;
-      iconColor = _MapStatusIndicator._climaActiveColor;
-      showSlash = false;
     } else {
-      icon = Icons.water_drop_rounded;
-      iconColor = Colors.grey.shade600;
-      showSlash = true;
+      icon = Icons.wifi_rounded;
+      iconColor = _MapStatusIndicator._onlineColor;
     }
 
     return Row(
@@ -735,20 +719,13 @@ class _MapStatusIndicatorState extends ConsumerState<_MapStatusIndicator> {
         _MapButtonLabel(text: label, isVisible: _showLabel),
         const SizedBox(width: 6),
         Semantics(
-          button: true,
           label: label,
           child: _MapRoundToggleButton(
             buttonKey: const Key('map_status_indicator'),
             icon: icon,
             iconColor: iconColor,
-            isOn: isOnline && isRadarEnabled,
-            showSlash: showSlash,
-            onTap: () {
-              final enabling = !ref.read(climaRadarEnabledProvider);
-              ref
-                  .read(radarOverlayControllerProvider)
-                  .setEnabled(enabling, preferSatelliteLayer: enabling);
-            },
+            isOn: isOnline,
+            showSlash: false,
             onLongPress: _showTemporaryLabel,
           ),
         ),
