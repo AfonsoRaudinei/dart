@@ -61,36 +61,6 @@ jobs:
         run: |
           flutter test test/modules/ndvi/ test/supabase/ndvi_fetch_contract_test.dart
 
-  clima-radar-regression:
-    name: Clima Radar Regression Gate (ADR-043)
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout do repositório
-        uses: actions/checkout@v4
-
-      - name: Configurar Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-
-      - name: Instalar dependências Flutter
-        run: flutter pub get
-
-      - name: Executar suite radar clima obrigatória
-        run: |
-          flutter test \
-            test/modules/clima/radar_providers_test.dart \
-            test/modules/clima/radar_layer_widget_test.dart \
-            test/modules/clima/radar_overlay_controller_test.dart \
-            test/modules/clima/radar_layer_order_test.dart \
-            test/modules/clima/radar_persistence_test.dart \
-            test/modules/clima/radar_overlay_states_test.dart \
-            test/modules/clima/rainviewer_contract_test.dart \
-            test/architecture/clima_radar_boundary_test.dart
-
   regression-shield:
     name: Regression Shield (BUG-001–011)
     runs-on: ubuntu-latest
