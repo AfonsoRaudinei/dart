@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../../core/design/sf_icons.dart';
 import '../../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../../core/ui/sheets/soloforte_sheet.dart';
 
 /// Widget responsável por exibir e gerenciar a seleção de ferramentas de desenho.
 ///
 /// Responsabilidade: seleção de ferramenta de desenho
-/// (Polígono, Livre, Pivô, KML, GPS Caminhar).
+/// (Polígono, Livre, Pivô, KML, GPS Caminhar, Área Visitada).
 ///
 /// Ferramentas disponíveis:
 /// - Polígono (desenho livre)
@@ -15,6 +16,7 @@ import '../../../../../core/ui/sheets/soloforte_sheet.dart';
 /// - Pivô (círculo de irrigação)
 /// - Importar (KML/KMZ)
 /// - GPS (caminhar)
+/// - Área Visitada (ação: arma pin no mapa)
 ///
 /// ⚠️ Este widget é STATELESS e não gerencia estado próprio.
 /// O estado visual de seleção é gerenciado pelo parent.
@@ -81,6 +83,16 @@ class DrawingToolSelector extends StatelessWidget {
         label: 'GPS (caminhar)',
         isSelected: selectedToolKey == 'gps',
         onTap: () => onToolSelected('gps'),
+        isIos: isIos,
+        backgroundColor: _sheetSurface,
+        borderColor: _sheetBorder,
+        accentColor: _accentGreen,
+      ),
+      _ToolButton(
+        icon: SFIcons.pinFill,
+        label: 'Área Visitada',
+        isSelected: false, // Action, not a selected DrawingTool state
+        onTap: () => onToolSelected('area_visitada'),
         isIos: isIos,
         backgroundColor: _sheetSurface,
         borderColor: _sheetBorder,
@@ -155,8 +167,10 @@ class _ToolButton extends StatelessWidget {
             HapticFeedback.lightImpact();
             onTap();
           },
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 2,
+          ),
           leading: Container(
             width: 34,
             height: 34,
@@ -204,8 +218,10 @@ class _ToolButton extends StatelessWidget {
             HapticFeedback.lightImpact();
             onTap();
           },
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 4,
+          ),
           leading: Icon(icon, color: accentColor, size: 22),
           title: Text(
             label,
