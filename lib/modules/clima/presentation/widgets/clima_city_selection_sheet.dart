@@ -6,8 +6,8 @@ import 'package:soloforte_app/core/ui/sheets/sheet_keyboard_inset.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/core/ui/sheets/widgets/sheet_input_field.dart';
-import 'package:soloforte_app/modules/clima/data/datasources/ibge_localidades_datasource.dart';
-import 'package:soloforte_app/modules/clima/data/services/city_geocoder.dart';
+import 'package:soloforte_app/core/services/geocoding/city_geocoder.dart';
+import 'package:soloforte_app/core/services/geocoding/ibge_localidades_datasource.dart';
 import 'package:soloforte_app/modules/clima/presentation/providers/clima_providers.dart';
 
 /// Abre o seletor IBGE de UF + município.

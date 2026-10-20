@@ -7,7 +7,7 @@ import '../../domain/entities/clima_atual.dart';
 import '../../domain/entities/previsao_horaria.dart';
 import '../../domain/entities/previsao_diaria.dart';
 import '../../domain/entities/alerta_meteorologico.dart';
-import '../services/reverse_geocoder.dart';
+import 'package:soloforte_app/core/services/geocoding/reverse_geocoder.dart';
 import '../datasources/i_clima_remote_datasource.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 

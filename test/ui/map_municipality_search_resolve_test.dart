@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:soloforte_app/modules/clima/data/datasources/ibge_localidades_datasource.dart';
+import 'package:soloforte_app/core/services/geocoding/ibge_localidades_datasource.dart';
 import 'package:soloforte_app/ui/components/map/map_municipality_search_sheet.dart';
 
 void main() {

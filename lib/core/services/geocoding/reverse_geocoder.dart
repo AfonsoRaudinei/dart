@@ -12,8 +12,6 @@ import 'package:soloforte_app/core/utils/app_logger.dart';
 ///   chamadas redundantes quando o GPS oscila poucos metros.
 /// - Timeout curto e fallback gracioso para `"Local atual"`. Nunca lança.
 /// - Localização forçada em pt-BR para evitar nomes em inglês no iOS.
-///
-/// Pertence ao bounded context `clima/`. Não é exposto fora dele.
 class ReverseGeocoder {
   ReverseGeocoder._();
 
