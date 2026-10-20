@@ -14,8 +14,9 @@ void main() {
     late String creationSheetSource;
 
     setUp(() {
-      mapBottomSheetSource =
-          File('lib/ui/components/map/map_bottom_sheet.dart').readAsStringSync();
+      mapBottomSheetSource = File(
+        'lib/ui/components/map/map_bottom_sheet.dart',
+      ).readAsStringSync();
       uiHelpersSource = File(
         'lib/modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet_ui_helpers.dart',
       ).readAsStringSync();
@@ -34,7 +35,10 @@ void main() {
       expect(mapBottomSheetSource, contains('_resolveInitialDetent'));
       expect(mapBottomSheetSource, contains('SheetDetent.expanded'));
       expect(mapBottomSheetSource, contains('isCreatingOccurrence'));
-      expect(mapBottomSheetSource, isNot(contains('final initialHeight = 350.0')));
+      expect(
+        mapBottomSheetSource,
+        isNot(contains('final initialHeight = 350.0')),
+      );
     });
 
     test('P0: dismiss passa pelo OccurrenceCloseCoordinator', () {
@@ -48,14 +52,16 @@ void main() {
       );
     });
 
-    test('P0: foto usa picker compartilhado com inversão vegetal (sem sheet duplicado)',
-        () {
-      expect(uiHelpersSource, contains('resolveSoloFortePhotoPath'));
-      expect(uiHelpersSource, contains('OccurrencePhotoOriginToolbar'));
-      expect(uiHelpersSource, isNot(contains('OccurrencePhotoSourceSheet')));
-      expect(uiHelpersSource, isNot(contains('Adicionar foto')));
-      expect(uiHelpersSource, isNot(contains('_picker.pickImage')));
-    });
+    test(
+      'P0: foto usa picker compartilhado com inversão vegetal (sem sheet duplicado)',
+      () {
+        expect(uiHelpersSource, contains('resolveSoloFortePhotoPath'));
+        expect(uiHelpersSource, contains('OccurrencePhotoOriginToolbar'));
+        expect(uiHelpersSource, isNot(contains('OccurrencePhotoSourceSheet')));
+        expect(uiHelpersSource, isNot(contains('Adicionar foto')));
+        expect(uiHelpersSource, isNot(contains('_picker.pickImage')));
+      },
+    );
 
     test('P1: showContent relaxado na criação de ocorrência', () {
       expect(mapBottomSheetSource, contains('_shouldShowSheetContent'));
@@ -87,8 +93,9 @@ void main() {
     test(
       'P0: ações rápidas saem do FAB e vão para long press (sheet de publicação)',
       () {
-        final privateMapSource =
-            File('lib/ui/screens/private_map_screen.dart').readAsStringSync();
+        final privateMapSource = File(
+          'lib/ui/screens/private_map_screen.dart',
+        ).readAsStringSync();
         final controlsOverlaySource = File(
           'lib/ui/components/map/widgets/map_controls_overlay.dart',
         ).readAsStringSync();
@@ -116,9 +123,7 @@ void main() {
       final watchPin = hostSource.indexOf(
         'ref.watch(pendingOccurrenceLocationProvider)',
       );
-      final earlyReturn = hostSource.indexOf(
-        'return const SizedBox.shrink();',
-      );
+      final earlyReturn = hostSource.indexOf('return const SizedBox.shrink();');
 
       expect(watchPin, greaterThan(-1));
       expect(earlyReturn, greaterThan(-1));
@@ -139,21 +144,26 @@ void main() {
     // Travam por contrato o que antes só era verificável em QA físico.
 
     test('QA-1: long press abre a ficha única no ponto, sem armar modo', () {
-      final privateMapSource =
-          File('lib/ui/screens/private_map_screen.dart').readAsStringSync();
+      final privateMapSource = File(
+        'lib/ui/screens/private_map_screen.dart',
+      ).readAsStringSync();
       final markSheetSource = File(
         'lib/ui/components/map/widgets/map_mark_sheet.dart',
       ).readAsStringSync();
 
       expect(privateMapSource, contains('_openMapMarkSheet(latLng)'));
       expect(privateMapSource, contains('position: latLng'));
-        expect(markSheetSource, contains('_MarkKindToggleBar'));
-        expect(markSheetSource, contains('_MarkScrollEdgeFade'));
-        expect(markSheetSource, contains('MapMarkKind.resultado'));
+      expect(markSheetSource, contains('_MarkKindToggleBar'));
+      expect(markSheetSource, contains('_MarkScrollEdgeFade'));
+      expect(markSheetSource, contains('MapMarkKind.resultado'));
       expect(markSheetSource, contains('MapMarkKind.antesDepois'));
       expect(markSheetSource, contains('MapMarkKind.avaliacao'));
-      expect(markSheetSource, contains('MapMarkKind.areaVisitada'));
+      expect(markSheetSource, isNot(contains('MapMarkKind.areaVisitada')));
       expect(markSheetSource, contains('MapMarkKind.ocorrencia'));
+      final drawingSelectorSource = File(
+        'lib/modules/drawing/presentation/widgets/components/drawing_tool_selector.dart',
+      ).readAsStringSync();
+      expect(drawingSelectorSource, contains("label: 'Área Visitada'"));
       expect(markSheetSource, contains('latitude: lat'));
       expect(markSheetSource, contains('lng: lng'));
       expect(privateMapSource, isNot(contains('_armMarketingMode')));
@@ -170,7 +180,10 @@ void main() {
           'lib/ui/components/map/map_bottom_sheet.dart',
         ).readAsStringSync();
 
-        expect(drawingSheetSource, contains('savedFeature: savedFeatures.first'));
+        expect(
+          drawingSheetSource,
+          contains('savedFeature: savedFeatures.first'),
+        );
         expect(
           drawingSheetSource,
           contains('typedef DrawingSheetSavedCallback'),
@@ -187,17 +200,23 @@ void main() {
     );
 
     test('QA-2: tap no mapa continua abrindo ocorrência via ArmedMode', () {
-      final privateMapSource =
-          File('lib/ui/screens/private_map_screen.dart').readAsStringSync();
+      final privateMapSource = File(
+        'lib/ui/screens/private_map_screen.dart',
+      ).readAsStringSync();
 
       expect(privateMapSource, contains('ArmedMode.occurrences'));
-      expect(orchestratorSource, contains('armedMode == ArmedMode.occurrences'));
+      expect(
+        orchestratorSource,
+        contains('armedMode == ArmedMode.occurrences'),
+      );
     });
 
     test('QA-3: fechar o sheet limpa pin e guard (sem estado residual)', () {
       expect(
         performanceHostsSource,
-        contains('ref.read(pendingOccurrenceLocationProvider.notifier).state = null'),
+        contains(
+          'ref.read(pendingOccurrenceLocationProvider.notifier).state = null',
+        ),
       );
       expect(
         performanceHostsSource,
