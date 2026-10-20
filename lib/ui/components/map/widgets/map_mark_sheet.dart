@@ -63,6 +63,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
   OccurrenceFormGuard? _occurrenceGuard = OccurrenceFormGuard();
 
   void _select(MapMarkKind kind) {
+    if (kind == _kind) return;
     HapticFeedback.selectionClick();
     setState(() {
       _kind = kind;
