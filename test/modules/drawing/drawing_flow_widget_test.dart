@@ -95,6 +95,7 @@ void main() {
       expect(find.text('Livre'), findsOneWidget);
       expect(find.text('Pivô'), findsOneWidget);
       expect(find.text('Importar (KML)'), findsOneWidget);
+      expect(find.text('Área Visitada'), findsOneWidget);
 
       controller.dispose();
     });
@@ -203,8 +204,7 @@ void main() {
                         builder: (sheetContext) => SingleChildScrollView(
                           child: DrawingSheet(
                             controller: controller,
-                            onClose: () =>
-                                Navigator.of(sheetContext).pop(),
+                            onClose: () => Navigator.of(sheetContext).pop(),
                           ),
                         ),
                       ).then((_) {
@@ -593,8 +593,7 @@ void main() {
                         builder: (sheetContext) => SingleChildScrollView(
                           child: DrawingSheet(
                             controller: controller,
-                            onClose: () =>
-                                Navigator.of(sheetContext).pop(),
+                            onClose: () => Navigator.of(sheetContext).pop(),
                           ),
                         ),
                       );
