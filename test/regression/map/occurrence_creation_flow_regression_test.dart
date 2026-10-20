@@ -171,6 +171,25 @@ void main() {
     });
 
     test(
+      'QA-1c: MapMarkSheet abre com Ocorrência selecionada (formulário imediato)',
+      () {
+        final markSheetSource = File(
+          'lib/ui/components/map/widgets/map_mark_sheet.dart',
+        ).readAsStringSync();
+
+        expect(
+          markSheetSource,
+          contains('MapMarkKind _kind = MapMarkKind.ocorrencia'),
+        );
+        expect(
+          markSheetSource,
+          contains('OccurrenceFormGuard? _occurrenceGuard = OccurrenceFormGuard()'),
+        );
+        expect(markSheetSource, isNot(contains('MapMarkKind? _kind;')));
+      },
+    );
+
+    test(
       'QA-1b: save de talhão entrega feature ao onSaved antes de limpar seleção',
       () {
         final drawingSheetSource = File(
