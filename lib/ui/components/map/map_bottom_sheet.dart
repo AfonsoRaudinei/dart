@@ -49,10 +49,10 @@ class MapBottomSheet extends ConsumerStatefulWidget {
   final VoidCallback onLocationRequested;
   final VoidCallback onClose;
   final MapSheetState state; // 🛡 REFATORAÇÃO: Estado explícito do pai
-  final Function(MapSheetState)
-  onStateChange; // 🛡 REFATORAÇÃO: Callback de mudança
+  final Function(MapSheetState) onStateChange;
   final LatLng? creationLocation;
   final ValueChanged<DrawingFeature>? onFocusDrawingFeature;
+  final VoidCallback? onAreaVisitada;
 
   const MapBottomSheet({
     super.key,
@@ -63,6 +63,7 @@ class MapBottomSheet extends ConsumerStatefulWidget {
     required this.onStateChange,
     this.creationLocation,
     this.onFocusDrawingFeature,
+    this.onAreaVisitada,
   });
 
   @override
@@ -71,7 +72,6 @@ class MapBottomSheet extends ConsumerStatefulWidget {
 
 class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     with SingleTickerProviderStateMixin {
-  // 🛡 APENAS ESTADOS EFÉMEROS DE UI (animação e drag)
   SheetDetent _currentDetent = SheetDetent.medium;
 
   late AnimationController _heightController;
@@ -525,13 +525,12 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   }
 
   Widget _buildDraw() {
-    // Drawing é offline-first e está em produção: não bloquear revisão/salvamento
-    // por kill-switch remoto de feature flag.
     return DrawingSheet(
       controller: widget.drawingController,
       scrollController: _scrollController,
       onFocusFeature: widget.onFocusDrawingFeature,
       onGpsMeasureStarted: _closeDrawingSheetChrome,
+      onAreaVisitada: widget.onAreaVisitada,
       onSaved: _onDrawingSaved,
       onClose: _closeDrawingSheetChrome,
       onCollapseWhileEditing: _collapseDrawingSheetWhileEditing,

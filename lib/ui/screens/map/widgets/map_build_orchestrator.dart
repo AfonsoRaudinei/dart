@@ -81,6 +81,8 @@ class MapBuildOrchestrator extends ConsumerWidget {
   final MapController mapController;
   final void Function(MapSheetState? state, String reason) setSheetState;
   final void Function(double lat, double lng) openOccurrenceSheet;
+  final void Function(double lat, double lng) dropAreaVisitadaPin;
+  final VoidCallback onAreaVisitada;
   final void Function(TapPosition tapPos, LatLng latLng) handleMapLongPress;
   final Future<void> Function() finishDrawing;
   final void Function() toggleDrawMode;
@@ -101,6 +103,8 @@ class MapBuildOrchestrator extends ConsumerWidget {
     required this.mapController,
     required this.setSheetState,
     required this.openOccurrenceSheet,
+    required this.dropAreaVisitadaPin,
+    required this.onAreaVisitada,
     required this.handleMapLongPress,
     required this.finishDrawing,
     required this.toggleDrawMode,
@@ -211,6 +215,12 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   ref.read(armedModeProvider.notifier).state = ArmedMode.none;
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                   openOccurrenceSheet(point.latitude, point.longitude);
+                  return;
+                }
+                if (armedMode == ArmedMode.areaVisitada) {
+                  ref.read(armedModeProvider.notifier).state = ArmedMode.none;
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  dropAreaVisitadaPin(point.latitude, point.longitude);
                   return;
                 }
 
@@ -331,6 +341,12 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   openOccurrenceSheet(point.latitude, point.longitude);
                   return;
                 }
+                if (armedMode == ArmedMode.areaVisitada) {
+                  ref.read(armedModeProvider.notifier).state = ArmedMode.none;
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  dropAreaVisitadaPin(point.latitude, point.longitude);
+                  return;
+                }
 
                 handleMapLongPress(tapPos, point);
               },
@@ -385,10 +401,12 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   onFeatureTap: (feature) {
                     final drawCtrl = ref.read(drawingControllerProvider);
                     if (drawCtrl.suppressesMapContextTaps) return;
-                    ref.read(drawingControllerProvider).selectFeature(
-                      feature,
-                      actionsMode: DrawingFeatureActionsMode.compact,
-                    );
+                    ref
+                        .read(drawingControllerProvider)
+                        .selectFeature(
+                          feature,
+                          actionsMode: DrawingFeatureActionsMode.compact,
+                        );
                     HapticFeedback.selectionClick();
                   },
                   onDrawingComplete: finishDrawing,
@@ -508,6 +526,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
             onLocationRequested: centerOnUser,
             onFocusDrawingFeature: (feature) =>
                 focusDrawingFeatureOnMap(mapController, feature),
+            onAreaVisitada: onAreaVisitada,
           ),
           const ArmedModeBanner(),
           DrawingVertexHandleOverlay(
@@ -587,7 +606,8 @@ class _MapControlsHost extends ConsumerWidget {
           useSafeArea: true,
           maxHeightFraction: 0.52,
           builder: (sheetContext) => LayersSheet(
-            onClose: () => Navigator.of(sheetContext, rootNavigator: false).pop(),
+            onClose: () =>
+                Navigator.of(sheetContext, rootNavigator: false).pop(),
             onDownloadOfflineArea: downloadOfflineArea,
           ),
         );
