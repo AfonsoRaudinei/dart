@@ -15,7 +15,6 @@ import '../../../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/occurrence.dart';
 import '../controllers/occurrence_controller.dart';
 import 'occurrence_creation_sheet.dart';
-import 'occurrence_detail_pin_actions.dart';
 import 'occurrence_detail_pin_correction.dart';
 import 'occurrence_detail_photo_section.dart';
 
@@ -543,15 +542,6 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                   ),
                 ),
               ),
-              if (hasMapPin) ...[
-                const SizedBox(height: 12),
-                OccurrenceDetailPinActions(
-                  occurrence: occurrence,
-                  categoryColor: categoryColor,
-                  isIos: isIos,
-                  onViewOnMap: () => _goToMapPin(context),
-                ),
-              ],
               if (allowPinCorrection &&
                   occurrencePinCorrectionEligible(occurrence)) ...[
                 const SizedBox(height: 12),
