@@ -121,8 +121,10 @@ void main() {
         .toList();
     expect(kinds, ['ocorrencia', 'visita']);
 
+    final chapterArticleStart = html.indexOf(' class="sf-chapter"');
+    expect(chapterArticleStart, greaterThan(-1));
     final chaptersHtml = html.substring(
-      html.indexOf('<article class="sf-chapter"'),
+      html.lastIndexOf('<article', chapterArticleStart),
       html.lastIndexOf('</article>') + '</article>'.length,
     );
     expect(chaptersHtml, isNot(contains('<header class="sf-letterhead"')));

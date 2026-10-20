@@ -239,7 +239,7 @@ class _MarketingCasesReportsSectionState
                 message:
                     'Selecione um produtor para ver os relatórios deste cliente.',
               )
-            else if (showClientHub && effectiveClientId != null) ...[
+            else if (showClientHub) ...[
               if (clientOccurrences.isEmpty &&
                   filtered.isEmpty &&
                   byProducer.isNotEmpty)
