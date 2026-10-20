@@ -47,6 +47,7 @@ class DrawingSheet extends ConsumerStatefulWidget {
   final ScrollController? scrollController;
   final ValueChanged<DrawingFeature>? onFocusFeature;
   final VoidCallback? onGpsMeasureStarted;
+  final VoidCallback? onAreaVisitada;
   final DrawingSheetSavedCallback? onSaved;
   final VoidCallback? onClose;
 
@@ -59,6 +60,7 @@ class DrawingSheet extends ConsumerStatefulWidget {
     this.scrollController,
     this.onFocusFeature,
     this.onGpsMeasureStarted,
+    this.onAreaVisitada,
     this.onSaved,
     this.onClose,
     this.onCollapseWhileEditing,
@@ -230,6 +232,12 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       setState(() {
         _selectedToolKey = null; // No visual toggle for import, it changes mode
       });
+      return;
+    }
+
+    if (key == 'area_visitada') {
+      widget.onAreaVisitada?.call();
+      _requestClose(DrawingCloseIntent.dismissSheet);
       return;
     }
 
@@ -415,8 +423,9 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
             );
 
             return Column(
-              mainAxisSize:
-                  hasBoundedHeight ? MainAxisSize.max : MainAxisSize.min,
+              mainAxisSize: hasBoundedHeight
+                  ? MainAxisSize.max
+                  : MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // 4. Cabeçalho Fixo (Fonte Única)
@@ -428,7 +437,10 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                 ),
 
                 // Conteúdo Dinâmico
-                if (hasBoundedHeight) Flexible(child: scrollArea) else scrollArea,
+                if (hasBoundedHeight)
+                  Flexible(child: scrollArea)
+                else
+                  scrollArea,
                 ListenableBuilder(
                   listenable: widget.controller,
                   builder: (context, _) {
