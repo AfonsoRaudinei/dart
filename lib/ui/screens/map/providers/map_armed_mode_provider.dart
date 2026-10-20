@@ -5,8 +5,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// Nota: o radar de chuva NÃO usa ArmedMode — overlay persistente via
-// climaRadarEnabledProvider + IRadarOverlayController (ADR-043).
+// Nota: overlays persistentes do mapa não usam ArmedMode.
 enum ArmedMode { none, occurrences }
 
 final armedModeProvider = StateProvider<ArmedMode>(

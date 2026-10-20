@@ -41,10 +41,6 @@ import '../../../components/map/map_attribution_policy.dart';
 import '../../../components/map/map_ndvi_load_progress_overlay.dart';
 import '../../../components/map/widgets/map_canvas.dart';
 import '../../../components/map/widgets/map_layers.dart';
-import '../../../../modules/clima/presentation/providers/radar_providers.dart';
-import '../../../../modules/clima/presentation/widgets/clima_radar_player_overlay.dart';
-import '../../../../modules/clima/presentation/widgets/clima_radar_zoom_guard.dart';
-import '../../../../modules/clima/presentation/widgets/radar_layer_widget.dart';
 import '../../../components/map/widgets/map_markers.dart';
 import '../../../components/map/widgets/map_controls_overlay.dart';
 import '../../../components/map/widgets/map_offline_widgets.dart';
@@ -148,15 +144,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
             (freehandInteraction.$2 == DrawingState.armed ||
                 freehandInteraction.$2 == DrawingState.drawing ||
                 freehandInteraction.$3));
-    final polygonSketchMode = ref.watch(
-      drawingControllerProvider.select(
-        (c) =>
-            c.currentTool == DrawingTool.polygon &&
-            (c.currentState == DrawingState.drawing ||
-                c.currentState == DrawingState.armed) &&
-            c.currentPoints.isNotEmpty,
-      ),
-    );
     final suppressMapMarkerTaps =
         ref.watch(
           drawingControllerProvider.select((c) => c.suppressesMapContextTaps),
@@ -184,7 +171,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
       child: Stack(
         children: [
           const MapGeofenceLifecycleHost(),
-          ClimaRadarZoomGuard(mapController: mapController),
           MapInitialViewportListener(
             applyInitialViewport: applyInitialViewport,
           ),
@@ -414,12 +400,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   mapController: mapController,
                 ),
 
-                // ADR-043 — Radar acima de talhões/desenho, abaixo de markers
-                IgnorePointer(
-                  ignoring: polygonSketchMode,
-                  child: const ClimaRadarTileLayerWidget(),
-                ),
-
                 // 🔒 MARKERS ISOLADOS: Não rebuildam por GPS/zoom/pan
                 AbsorbPointer(
                   absorbing: suppressMapMarkerTaps,
@@ -477,27 +457,20 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 // 🎯 ÚNICA LAYER QUE REBUILDA: Localização GPS
                 const IsolatedUserLocationLayer(),
 
-                Consumer(
-                  builder: (context, ref, _) {
-                    final radarOn = ref.watch(climaRadarEnabledProvider);
-                    return RichAttributionWidget(
-                      attributions: [
-                        TextSourceAttribution(tileConfig.attribution),
-                        if (radarOn)
-                          const TextSourceAttribution('Radar © RainViewer'),
-                      ],
-                      showFlutterMapAttribution: false,
-                      alignment: AttributionAlignment.bottomLeft,
-                      // Sem auto-expand: o popup preto parecia "sombra" no mapa.
-                      // Atribuição continua acessível pelo botão info.
-                      popupInitialDisplayDuration:
-                          kMapAttributionPopupInitialDuration,
-                      popupBorderRadius: BorderRadius.circular(8),
-                      popupBackgroundColor: Colors.black.withValues(
-                        alpha: 0.72,
-                      ),
-                    );
-                  },
+                RichAttributionWidget(
+                  attributions: [
+                    TextSourceAttribution(tileConfig.attribution),
+                  ],
+                  showFlutterMapAttribution: false,
+                  alignment: AttributionAlignment.bottomLeft,
+                  // Sem auto-expand: o popup preto parecia "sombra" no mapa.
+                  // Atribuição continua acessível pelo botão info.
+                  popupInitialDisplayDuration:
+                      kMapAttributionPopupInitialDuration,
+                  popupBorderRadius: BorderRadius.circular(8),
+                  popupBackgroundColor: Colors.black.withValues(
+                    alpha: 0.72,
+                  ),
                 ),
               ],
             ),
@@ -537,7 +510,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 focusDrawingFeatureOnMap(mapController, feature),
           ),
           const ArmedModeBanner(),
-          const ClimaRadarPlayerOverlay(),
           DrawingVertexHandleOverlay(
             controller: ref.read(drawingControllerProvider),
             mapController: mapController,

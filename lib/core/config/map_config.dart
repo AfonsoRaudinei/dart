@@ -331,54 +331,6 @@ class MapConfig {
   static const String mapTilerAttribution =
       '© MapTiler © OpenStreetMap contributors';
 
-  // ═══════════════════════════════════════════════════════════
-  // RAINVIEWER — Radar de Precipitação (ADR-028)
-  // ═══════════════════════════════════════════════════════════
-
-  /// URL do manifesto JSON da RainViewer (lista de timestamps disponíveis).
-  /// Retorna: radar.past[].{time, path}
-  /// Sem autenticação — gratuito para tiles básicos.
-  static const String rainViewerApiUrl =
-      'https://api.rainviewer.com/public/weather-maps.json';
-
-  /// Base dos tiles de radar RainViewer.
-  /// Template completo: '$rainViewerTileBase{path}/512/{z}/{x}/{y}/2/1_0.png'
-  /// {path} = valor de radar.past.last.path do manifesto JSON.
-  static const String rainViewerTileBase = 'https://tilecache.rainviewer.com';
-
-  /// Esquema de cores default do radar RainViewer:
-  /// 2 = Universal Blue (suave, profissional)
-  /// 6 = NEXRAD Level III (meteorológico clássico: verde -> amarelo -> vermelho -> roxo)
-  static const int rainViewerDefaultColorScheme = 2;
-
-  /// Opções de renderização de tiles RainViewer:
-  /// {smooth}_{snow}: '1_0' = suavizado (1) sem esquema de neve (0) - ideal para clima tropical/Brasil.
-  static const String rainViewerDefaultTileOptions = '1_0';
-
-  /// URL template da máscara de cobertura de radar RainViewer (preto = sem cobertura, transparente = com cobertura).
-  static const String rainViewerCoverageMaskTemplate =
-      'https://tilecache.rainviewer.com/v2/coverage/0/512/{z}/{x}/{y}/0/0_0.png';
-
-  /// Opacidade do overlay de radar (0.0–1.0).
-  /// 0.75 = eco de chuva nítido sobre o satélite, mantendo o mapa base legível.
-  static const double radarOverlayOpacity = 0.75;
-
-  /// Tamanho nativo dos tiles RainViewer (API aceita 256 ou 512).
-  static const double rainViewerTileSize = 512;
-
-  /// Compensa grade 512px no FlutterMap (-((512/256) - 1)).
-  static const double rainViewerZoomOffset = -1;
-
-  /// Zoom máximo nativo RainViewer para tiles 512px (limite da API pública).
-  static const int rainViewerMaxNativeZoom = 7;
-
-  /// Zoom máximo visual do overlay; acima do nativo o FlutterMap faz overzoom.
-  static const double rainViewerMaxZoom = satelliteMaxZoom;
-
-  /// Intervalo entre frames da animação do radar RainViewer.
-  static const Duration rainViewerAnimationFrameInterval = Duration(
-    milliseconds: 700,
-  );
 }
 
 /// Enum para facilitar seleção de estilos
