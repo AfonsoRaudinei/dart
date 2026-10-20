@@ -3,20 +3,20 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:geocoding/geocoding.dart';
 
-import 'package:soloforte_app/modules/clima/presentation/providers/clima_providers.dart';
+import 'package:soloforte_app/core/services/geocoding/lat_lon.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 
-/// Forward geocoding: município + UF → coordenadas para previsão climática.
+/// Forward geocoding: município + UF → coordenadas.
 class CityGeocoder {
   CityGeocoder._();
 
   static final CityGeocoder instance = CityGeocoder._();
 
   static const Duration _timeout = Duration(seconds: 6);
-  final Map<String, ClimaLatLon> _cache = {};
+  final Map<String, GeocodingLatLon> _cache = {};
 
   /// Resolve `"Município, UF, Brasil"` para lat/lon. Retorna null se falhar.
-  Future<ClimaLatLon?> resolve({
+  Future<GeocodingLatLon?> resolve({
     required String municipio,
     required String uf,
   }) async {
