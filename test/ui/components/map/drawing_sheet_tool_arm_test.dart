@@ -96,4 +96,64 @@ void main() {
     expect(controller.currentState, DrawingState.armed);
     expect(controller.currentTool, DrawingTool.polygon);
   });
+
+  testWidgets('tap Área Visitada chama callback e fecha sem armar desenho', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1179, 2556);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final controller = DrawingController(repository: _MockDrawingRepository());
+    addTearDown(controller.dispose);
+    var areaVisitadaArmed = false;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Builder(
+            builder: (context) {
+              return Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      showSoloForteSheet<void>(
+                        context: context,
+                        showDragHandle: true,
+                        useSafeArea: true,
+                        maxHeightFraction: 0.78,
+                        builder: (_) => DrawingSheet(
+                          controller: controller,
+                          onAreaVisitada: () => areaVisitadaArmed = true,
+                          onClose: () => Navigator.of(context).pop(),
+                          onSaved: (_) => Navigator.of(context).pop(),
+                        ),
+                      );
+                    },
+                    child: const Text('Abrir Desenho'),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Abrir Desenho'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Área Visitada'), findsOneWidget);
+    expect(controller.currentState, DrawingState.idle);
+
+    await tester.ensureVisible(find.text('Área Visitada'));
+    await tester.tap(find.text('Área Visitada'));
+    await tester.pumpAndSettle();
+
+    expect(areaVisitadaArmed, isTrue);
+    expect(find.text('Área Visitada'), findsNothing);
+    expect(controller.currentState, DrawingState.idle);
+    expect(controller.currentTool, DrawingTool.none);
+  });
 }

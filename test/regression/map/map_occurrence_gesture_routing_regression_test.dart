@@ -50,43 +50,82 @@ void main() {
           tapBlock.indexOf('findSketchVertexIndexNear'),
           lessThan(contextTapGuard),
         );
+        expect(tapBlock.indexOf('applyEditMapTap'), lessThan(contextTapGuard));
+      },
+    );
+
+    test(
+      'onLongPress com ArmedMode.occurrences abre ocorrência, não marketing',
+      () {
+        final longPressBlock = orchestratorSource.substring(
+          orchestratorSource.indexOf('onLongPress: (tapPos, point)'),
+          orchestratorSource.indexOf('onPositionChanged: (pos, hasGesture)'),
+        );
+
+        expect(longPressBlock, contains('ArmedMode.occurrences'));
         expect(
-          tapBlock.indexOf('applyEditMapTap'),
-          lessThan(contextTapGuard),
+          longPressBlock.indexOf('openOccurrenceSheet(point.latitude'),
+          lessThan(longPressBlock.indexOf('handleMapLongPress(tapPos, point)')),
         );
       },
     );
 
-    test('onLongPress com ArmedMode.occurrences abre ocorrência, não marketing', () {
-      final longPressBlock = orchestratorSource.substring(
+    test(
+      '_armOccurrenceMode cancela desenho armado para liberar tap no mapa',
+      () {
+        expect(privateMapSource, contains('void _armOccurrenceMode()'));
+        expect(privateMapSource, contains('drawCtrl.cancelOperation()'));
+        expect(privateMapSource, contains('ArmedMode.occurrences'));
+      },
+    );
+
+    test('onTap com ArmedMode.areaVisitada solta o pin sem abrir ficha', () {
+      final tapBlock = orchestratorSource.substring(
+        orchestratorSource.indexOf('onTap: (tapPos, point)'),
         orchestratorSource.indexOf('onLongPress: (tapPos, point)'),
-        orchestratorSource.indexOf('onPositionChanged: (pos, hasGesture)'),
       );
 
-      expect(longPressBlock, contains('ArmedMode.occurrences'));
-      expect(
-        longPressBlock.indexOf('openOccurrenceSheet(point.latitude'),
-        lessThan(longPressBlock.indexOf('handleMapLongPress(tapPos, point)')),
-      );
+      expect(tapBlock, contains('ArmedMode.areaVisitada'));
+      expect(tapBlock, contains('dropAreaVisitadaPin(point.latitude'));
+      expect(tapBlock, isNot(contains('MapMarkSheet')));
     });
 
-    test('_armOccurrenceMode cancela desenho armado para liberar tap no mapa', () {
-      expect(privateMapSource, contains('void _armOccurrenceMode()'));
-      expect(privateMapSource, contains('drawCtrl.cancelOperation()'));
-      expect(privateMapSource, contains('ArmedMode.occurrences'));
+    test(
+      'onLongPress com ArmedMode.areaVisitada solta o pin, não abre mark sheet',
+      () {
+        final longPressBlock = orchestratorSource.substring(
+          orchestratorSource.indexOf('onLongPress: (tapPos, point)'),
+          orchestratorSource.indexOf('onPositionChanged: (pos, hasGesture)'),
+        );
+
+        expect(longPressBlock, contains('ArmedMode.areaVisitada'));
+        expect(
+          longPressBlock.indexOf('dropAreaVisitadaPin(point.latitude'),
+          lessThan(longPressBlock.indexOf('handleMapLongPress(tapPos, point)')),
+        );
+      },
+    );
+
+    test('_armAreaVisitadaMode e _dropAreaVisitadaPin vivem no host', () {
+      expect(privateMapSource, contains('void _armAreaVisitadaMode()'));
+      expect(privateMapSource, contains('_dropAreaVisitadaPin'));
+      expect(privateMapSource, contains('ArmedMode.areaVisitada'));
+      expect(privateMapSource, contains('kOccurrenceAreaVisitadaCategory'));
+      expect(privateMapSource, contains('Local marcado com sucesso'));
     });
 
     test('provider de contexto armado existe (substituto de MapContext)', () {
       expect(
-        File('lib/ui/screens/map/providers/map_armed_mode_provider.dart')
-            .existsSync(),
+        File(
+          'lib/ui/screens/map/providers/map_armed_mode_provider.dart',
+        ).existsSync(),
         isTrue,
       );
       expect(
         File(
           'lib/ui/screens/map/providers/map_armed_mode_provider.dart',
         ).readAsStringSync(),
-        contains('enum ArmedMode'),
+        contains('enum ArmedMode { none, occurrences, areaVisitada }'),
       );
     });
 
