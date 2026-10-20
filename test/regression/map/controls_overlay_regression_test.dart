@@ -19,7 +19,6 @@ import 'package:soloforte_app/modules/settings/presentation/providers/settings_p
 import 'package:soloforte_app/modules/visitas/data/repositories/visit_repository.dart';
 import 'package:soloforte_app/modules/visitas/domain/models/visit_session.dart';
 import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_controller.dart';
-import 'package:soloforte_app/modules/clima/presentation/providers/radar_providers.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/modules/map/presentation/widgets/visit_active_card.dart';
@@ -322,9 +321,6 @@ void main() {
           preferencesServiceProvider.overrideWithValue(preferencesService),
           settingsRepositoryProvider.overrideWithValue(settingsRepository),
           isOnlineProvider.overrideWith((ref) => Stream.value(true)),
-          climaRadarEnabledProvider.overrideWith(
-            () => _PresetClimaRadarEnabled(false),
-          ),
           visitRepositoryProvider.overrideWithValue(_NoActiveVisitRepository()),
           agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
           sessionControllerProvider.overrideWith(_PublicSessionController.new),
@@ -449,44 +445,28 @@ void main() {
       );
     });
 
-    testWidgets('radar off + online: slash presente no indicador de chuva', (
-      tester,
-    ) async {
-      await _pumpMapControlsOverlay(tester, isOnline: true, radarEnabled: false);
+    testWidgets('online: indicador de conectividade com wifi', (tester) async {
+      await _pumpMapControlsOverlay(tester, isOnline: true);
 
-      final rain = find.byKey(const Key('map_status_indicator'));
-      expect(rain, findsOneWidget);
+      final status = find.byKey(const Key('map_status_indicator'));
+      expect(status, findsOneWidget);
       expect(
-        find.descendant(of: rain, matching: find.byType(CustomPaint)),
+        find.descendant(
+          of: status,
+          matching: find.byIcon(Icons.wifi_rounded),
+        ),
         findsOneWidget,
       );
     });
 
-    testWidgets('radar on: slash ausente no indicador de chuva', (tester) async {
-      await _pumpMapControlsOverlay(tester, isOnline: true, radarEnabled: true);
+    testWidgets('offline: indicador com wifi_off', (tester) async {
+      await _pumpMapControlsOverlay(tester, isOnline: false);
 
-      final rain = find.byKey(const Key('map_status_indicator'));
-      expect(rain, findsOneWidget);
-      expect(
-        find.descendant(of: rain, matching: find.byType(CustomPaint)),
-        findsNothing,
-      );
-    });
-
-    testWidgets('offline: indicador existe sem slash (wifi_off já comunica)', (
-      tester,
-    ) async {
-      await _pumpMapControlsOverlay(tester, isOnline: false, radarEnabled: false);
-
-      final rain = find.byKey(const Key('map_status_indicator'));
-      expect(rain, findsOneWidget);
-      expect(
-        find.descendant(of: rain, matching: find.byType(CustomPaint)),
-        findsNothing,
-      );
+      final status = find.byKey(const Key('map_status_indicator'));
+      expect(status, findsOneWidget);
       expect(
         find.descendant(
-          of: rain,
+          of: status,
           matching: find.byIcon(Icons.wifi_off_rounded),
         ),
         findsOneWidget,
@@ -634,7 +614,6 @@ void _setViewport(WidgetTester tester, EdgeInsets safePadding) {
 Future<void> _pumpMapControlsOverlay(
   WidgetTester tester, {
   bool isOnline = true,
-  bool radarEnabled = false,
   bool isDrawMode = false,
   bool showCheckInAction = true,
   DrawingState drawingState = DrawingState.idle,
@@ -657,9 +636,6 @@ Future<void> _pumpMapControlsOverlay(
         preferencesServiceProvider.overrideWithValue(preferencesService),
         settingsRepositoryProvider.overrideWithValue(settingsRepository),
         isOnlineProvider.overrideWith((ref) => Stream.value(isOnline)),
-        climaRadarEnabledProvider.overrideWith(
-          () => _PresetClimaRadarEnabled(radarEnabled),
-        ),
         visitRepositoryProvider.overrideWithValue(_NoActiveVisitRepository()),
         agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
         sessionControllerProvider.overrideWith(_PublicSessionController.new),
@@ -711,9 +687,6 @@ Future<void> _pumpOverlayWithFabHarness(
         preferencesServiceProvider.overrideWithValue(preferencesService),
         settingsRepositoryProvider.overrideWithValue(settingsRepository),
         isOnlineProvider.overrideWith((ref) => Stream.value(true)),
-        climaRadarEnabledProvider.overrideWith(
-          () => _PresetClimaRadarEnabled(false),
-        ),
         visitRepositoryProvider.overrideWithValue(_NoActiveVisitRepository()),
         agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
         sessionControllerProvider.overrideWith(_PublicSessionController.new),
@@ -784,13 +757,4 @@ class _NoopAgendaBridge implements IAgendaSessionBridge {
 class _PublicSessionController extends SessionController {
   @override
   SessionState build() => const SessionPublic();
-}
-
-class _PresetClimaRadarEnabled extends ClimaRadarEnabled {
-  _PresetClimaRadarEnabled(this.initial);
-
-  final bool initial;
-
-  @override
-  bool build() => initial;
 }
