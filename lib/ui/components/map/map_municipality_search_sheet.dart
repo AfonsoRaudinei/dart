@@ -8,8 +8,8 @@ import '../../../core/ui/sheets/sheet_keyboard_inset.dart';
 import '../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../core/ui/sheets/widgets/sheet_input_field.dart';
-import '../../../modules/clima/data/datasources/ibge_localidades_datasource.dart';
-import '../../../modules/clima/data/services/city_geocoder.dart';
+import '../../../core/services/geocoding/city_geocoder.dart';
+import '../../../core/services/geocoding/ibge_localidades_datasource.dart';
 
 /// Escolhe o município a geocodificar após busca (testável).
 IbgeMunicipio? resolveMapMunicipalityForSearch({

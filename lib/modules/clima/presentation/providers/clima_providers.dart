@@ -7,6 +7,7 @@ import 'package:soloforte_app/core/config/clima_config.dart';
 import 'package:soloforte_app/core/contracts/i_user_location_lookup_provider.dart';
 import 'package:soloforte_app/core/permissions/location_permission_gate.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
+import 'package:soloforte_app/core/services/geocoding/lat_lon.dart';
 
 import 'package:soloforte_app/modules/clima/data/datasources/clima_local_datasource.dart';
 import 'package:soloforte_app/modules/clima/data/datasources/google_weather_remote_datasource.dart';
@@ -56,7 +57,7 @@ Future<T> _loadClimaData<T>(Future<T> Function() load) async {
 
 // ─── Coordenada tipada ────────────────────────────────────────────────────────
 
-typedef ClimaLatLon = ({double lat, double lon});
+typedef ClimaLatLon = GeocodingLatLon;
 typedef ClimaSelectedCity = ({String nome, double lat, double lon});
 
 /// Brasília como fallback quando GPS não está disponível.
