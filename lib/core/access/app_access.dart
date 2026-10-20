@@ -42,7 +42,6 @@ class AppAccess {
 
   static const Set<String> _producerAllowedExactRoutes = {
     AppRoutes.feedback,
-    AppRoutes.clima,
     AppRoutes.producerProperty,
     AppRoutes.reports,
     AppRoutes.settings,

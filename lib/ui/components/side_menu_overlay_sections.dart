@@ -42,12 +42,6 @@ class _SideMenuContent extends StatelessWidget {
                     route: AppRoutes.feedback,
                   ),
                   _MenuItem(
-                    icon: Icons.wb_sunny_outlined,
-                    label: 'Clima',
-                    subtitle: 'Previsão para o campo',
-                    route: AppRoutes.clima,
-                  ),
-                  _MenuItem(
                     icon: Icons.account_balance_wallet_outlined,
                     label: 'Carteira',
                     subtitle: 'Acompanhamento de mercado',
@@ -79,12 +73,6 @@ class _SideMenuContent extends StatelessWidget {
                     label: 'Feedback',
                     subtitle: 'Envie sua opinião',
                     route: AppRoutes.feedback,
-                  ),
-                  _MenuItem(
-                    icon: Icons.wb_sunny_outlined,
-                    label: 'Clima',
-                    subtitle: 'Previsão para o campo',
-                    route: AppRoutes.clima,
                   ),
                   _MenuItem(
                     icon: Icons.settings_outlined,

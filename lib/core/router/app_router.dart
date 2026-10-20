@@ -35,7 +35,6 @@ import '../../../modules/consultoria/clients/presentation/screens/farm_detail_sc
 import '../../../modules/consultoria/clients/presentation/screens/field_detail_screen.dart';
 import '../../../modules/feedback/presentation/screens/feedback_screen.dart';
 import '../../../modules/produtor/presentation/screens/producer_property_screen.dart';
-import '../../modules/clima/presentation/screens/clima_screen.dart';
 // ADR-012 — Módulo planos/
 import '../../../modules/planos/presentation/screens/planos_screen.dart';
 import '../../../modules/planos/presentation/screens/pagamento_screen.dart';
@@ -259,10 +258,6 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: AppRoutes.feedback,
             builder: (_, __) => const FeedbackScreen(),
-          ),
-          GoRoute(
-            path: AppRoutes.clima,
-            builder: (_, __) => const ClimaScreen(),
           ),
           GoRoute(
             path: AppRoutes.producerProperty,
