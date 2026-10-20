@@ -186,6 +186,7 @@ void main() {
           contains('OccurrenceFormGuard? _occurrenceGuard = OccurrenceFormGuard()'),
         );
         expect(markSheetSource, isNot(contains('MapMarkKind? _kind;')));
+        expect(markSheetSource, contains('if (kind == _kind)'));
       },
     );
 
