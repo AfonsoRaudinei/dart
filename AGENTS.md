@@ -22,7 +22,7 @@
 | CI gate | `./tool/arch_check.sh` → Exit 0 |
 | Coverage mínimo CI | 36.46% |
 
-**Bounded contexts ativos:** `core` · `ui` · `map` · `drawing` · `agenda` · `agenda_ai` · `operacao` · `consultoria` · `visitas` · `settings` · `auth` · `planos` · `produtor` · `carteira` · `ndvi` · `marketing` · `feedback` · `dashboard` · `public` · `clima`
+**Bounded contexts ativos:** `core` · `ui` · `map` · `drawing` · `agenda` · `agenda_ai` · `operacao` · `consultoria` · `visitas` · `settings` · `auth` · `planos` · `produtor` · `carteira` · `ndvi` · `marketing` · `feedback` · `dashboard` · `public`
 
 -----
 
@@ -156,13 +156,12 @@ Comunicação cross-module **APENAS** via `lib/core/contracts/`:
 | `IAgendaObservable` | — | agenda | map |
 | `IOpportunityLookup` | — | carteira | map |
 | `IMarketingCaseReportsLookup` | 050 | marketing | consultoria/relatorios |
-| `IUserLocationLookup` | — | settings/clima | clima |
+| `IUserLocationLookup` | — | settings/dashboard | (sem consumidor ativo no app — contrato legado) |
 | `IOccurrenceRead` | — | consultoria | map |
 | `IDrawingFieldWriter` | 038 | drawing | consultoria (via adapter) |
 | `IProducerInviteWriter` | 039 | produtor | auth/settings |
 | `IProducerPropertyGateway` | 040 | consultoria | produtor |
 | `IOccurrenceAccessReader` | 041 | produtor | map |
-| `IRadarOverlayController` | 043 | clima | ui/map |
 
 **Dependências proibidas (diretas):**
 
@@ -319,7 +318,6 @@ lib/
 | 040 | IProducerPropertyGateway |
 | 041 | IOccurrenceAccessReader |
 | 042 | NDVI ChainedFieldLookup + cache + fetch lazy |
-| 043 | IRadarOverlayController (radar RainViewer) |
 | 044 | Whitelist oficial de StateNotifier/ChangeNotifier legados |
 | 045 | Contratos NDVI e visita ativa |
 | 046 | Contratos Agenda AI |
