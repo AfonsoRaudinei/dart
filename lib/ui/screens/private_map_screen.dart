@@ -32,6 +32,7 @@ import '../components/map/map_municipality_search_sheet.dart';
 import '../components/map/map_offline_download_sheet.dart';
 import '../components/map/map_sheet_state.dart';
 import '../components/map/widgets/map_mark_sheet.dart';
+import '../theme/premium/design_tokens.dart';
 import 'map/utils/map_camera_snapshot_throttle.dart';
 import 'map/utils/map_empty_area_hit_test.dart';
 import 'map/utils/map_long_press_prefs.dart';
@@ -579,6 +580,38 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // Feedback visual: ArmedModeBanner (glass) — sem snackbar duplicado.
   }
 
+  void _armAreaVisitadaMode() {
+    final drawCtrl = ref.read(drawingControllerProvider);
+    if (drawCtrl.currentState == DrawingState.drawing ||
+        drawCtrl.currentState == DrawingState.armed) {
+      drawCtrl.cancelOperation();
+    }
+    ref.read(armedModeProvider.notifier).state = ArmedMode.areaVisitada;
+    HapticFeedback.lightImpact();
+  }
+
+  Future<void> _dropAreaVisitadaPin(double lat, double lng) async {
+    if (!mounted) return;
+    await ref
+        .read(occurrenceControllerProvider)
+        .createOccurrence(
+          type: 'Média',
+          description: '',
+          clientId: null,
+          lat: lat,
+          long: lng,
+          category: occ.kOccurrenceAreaVisitadaCategory,
+          status: 'draft',
+        );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Local marcado com sucesso'),
+        backgroundColor: PremiumTokens.brandGreen,
+      ),
+    );
+  }
+
   Future<void> _openCoordinateSearch() async {
     final value = await showMapCoordinateSearchSheet(context);
     if (!mounted || value == null || value.isEmpty) return;
@@ -905,6 +938,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           mapController: _mapController,
           setSheetState: _setSheetState,
           openOccurrenceSheet: _openOccurrenceSheet,
+          dropAreaVisitadaPin: _dropAreaVisitadaPin,
+          onAreaVisitada: _armAreaVisitadaMode,
           handleMapLongPress: _handleMapLongPress,
           finishDrawing: _finishDrawing,
           toggleDrawMode: _toggleDrawMode,

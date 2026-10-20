@@ -9,7 +9,7 @@ import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../providers/map_armed_mode_provider.dart';
 
-/// Banner glass para [ArmedMode.occurrences].
+/// Banner glass para [ArmedMode.occurrences] e [ArmedMode.areaVisitada].
 /// Posicionado no topo; ignora ponteiro (IgnorePointer).
 class ArmedModeBanner extends ConsumerWidget {
   const ArmedModeBanner({super.key});
@@ -17,9 +17,14 @@ class ArmedModeBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final armedMode = ref.watch(armedModeProvider);
-    if (armedMode != ArmedMode.occurrences) return const SizedBox.shrink();
+    if (armedMode != ArmedMode.occurrences &&
+        armedMode != ArmedMode.areaVisitada) {
+      return const SizedBox.shrink();
+    }
 
-    const label = 'Toque no mapa para marcar o ponto';
+    final label = armedMode == ArmedMode.areaVisitada
+        ? 'Toque no mapa para marcar o ponto visitado'
+        : 'Toque no mapa para marcar o ponto';
     const accent = Color(0xFFFF9F0A);
 
     return Positioned(

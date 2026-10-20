@@ -133,11 +133,13 @@ class MapBottomSheetOverlayHost extends ConsumerWidget {
     required this.setSheetState,
     required this.onLocationRequested,
     required this.onFocusDrawingFeature,
+    this.onAreaVisitada,
   });
 
   final void Function(MapSheetState? state, String reason) setSheetState;
   final VoidCallback onLocationRequested;
   final void Function(DrawingFeature feature) onFocusDrawingFeature;
+  final VoidCallback? onAreaVisitada;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -169,6 +171,7 @@ class MapBottomSheetOverlayHost extends ConsumerWidget {
         creationLocation: creationLocation,
         onLocationRequested: onLocationRequested,
         onFocusDrawingFeature: onFocusDrawingFeature,
+        onAreaVisitada: onAreaVisitada,
       ),
     );
   }
