@@ -69,7 +69,19 @@ void _expectEditorialShell(String html, String reason) {
       reason: '$reason: $once repetido',
     );
   }
+  expect(
+    html,
+    contains('<p class="sf-product">Bioestimulante X</p>'),
+    reason: '$reason: produto em destaque no timbre',
+  );
+  expect(
+    RegExp('João Silva - Fazenda Boa Vista').allMatches(html).length,
+    1,
+    reason: '$reason: produtor repetido',
+  );
   for (final duplicateRow in [
+    '>Produtor</span>',
+    '>Produto</span>',
     '>Situação</span>',
     '>Divulgação</span>',
     '>Responsável comercial</span>',
@@ -120,7 +132,7 @@ void main() {
 
     _expectEditorialShell(html, 'resultado');
     expect(html, contains('Case de resultado'));
-    expect(html, contains('Bioestimulante X · Palmas, TO · 14/10/2026'));
+    expect(html, contains('Palmas, TO · 14/10/2026'));
     expect(html, contains('<p class="mk-figure-value">60,0</p>'));
     expect(html, contains('<p class="mk-figure-value">64,0</p>'));
     expect(html, contains('<p class="mk-figure-value">+4,0</p>'));
@@ -162,7 +174,7 @@ void main() {
 
       _expectEditorialShell(html, 'antes_depois');
       expect(html, contains('Case antes e depois'));
-      expect(html, contains('Bioestimulante X · Palmas, TO · 14/10/2026'));
+      expect(html, contains('Palmas, TO · 14/10/2026'));
       expect(html, contains('class="sf-figure-grid mk-compare"'));
       expect(html, contains('id="sf-mk-antes" class="sf-lb-toggle"'));
       expect(html, contains('id="sf-mk-depois" class="sf-lb-toggle"'));
@@ -229,7 +241,7 @@ void main() {
     expect(html, contains('Case de avaliação'));
     expect(
       html,
-      contains('Bioestimulante X · Talhão Norte · Palmas, TO · 14/10/2026'),
+      contains('Talhão Norte · Palmas, TO · 14/10/2026'),
     );
     expect(html, contains('Vigor na V6'));
     expect(html, contains('Média <strong>+20,0%</strong>'));
