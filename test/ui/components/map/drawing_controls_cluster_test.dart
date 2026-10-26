@@ -287,6 +287,22 @@ void main() {
     expect(find.text('km'), findsOneWidget);
     expect(find.text('m'), findsOneWidget);
   });
+
+  testWidgets('Cancelar no modo drawing dispara onCancelDrawing', (
+    tester,
+  ) async {
+    var cancelled = false;
+    await _pumpMapControlsOverlay(
+      tester,
+      drawingState: DrawingState.drawing,
+      isDrawMode: true,
+      onCancelDrawing: () => cancelled = true,
+    );
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.text('Cancelar'));
+    await tester.pump();
+    expect(cancelled, isTrue);
+  });
 }
 
 void _noop() {}
