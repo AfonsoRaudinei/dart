@@ -322,11 +322,11 @@ class MarketingHtmlRenderer {
     );
   }
 
-  /// Linha de contexto do timbre: `Produto · [extra ·] Município · data`.
+  /// Linha de contexto do timbre: `[extra ·] Município · data`.
+  /// O produto tem linha própria de destaque (`sf-product`) no timbre.
   static String _contexto(Map<String, dynamic> data, {String extra = ''}) {
     final dataCase = _parseDate(data['data_case'] as String?);
     return [
-          data['produto_utilizado'] as String?,
           extra,
           data['localizacao_texto'] as String?,
         ]
