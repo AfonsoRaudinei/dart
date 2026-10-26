@@ -51,17 +51,67 @@ class ReverseGeocoder {
       _cache[cacheKey] = label;
       return label;
     } on TimeoutException {
-      AppLogger.debug('timeout em ($latitude, $longitude)', tag: 'ReverseGeocoder');
+      AppLogger.debug(
+        'timeout em ($latitude, $longitude)',
+        tag: 'ReverseGeocoder',
+      );
       return _fallbackLabel;
     } catch (e) {
-      AppLogger.error('falha em ($latitude, $longitude)', tag: 'ReverseGeocoder', error: e);
+      AppLogger.error(
+        'falha em ($latitude, $longitude)',
+        tag: 'ReverseGeocoder',
+        error: e,
+      );
       return _fallbackLabel;
+    }
+  }
+
+  final Map<String, String?> _ufCache = <String, String?>{};
+
+  /// Resolve apenas a sigla da UF (ex.: "TO") para lat/lon.
+  /// Devolve `null` em erro/timeout/sem UF reconhecida — nunca lança.
+  Future<String?> resolveUf({
+    required double latitude,
+    required double longitude,
+  }) async {
+    final cacheKey = _buildCacheKey(latitude, longitude);
+    if (_ufCache.containsKey(cacheKey)) return _ufCache[cacheKey];
+    try {
+      await setLocaleIdentifier('pt_BR');
+      final placemarks = await placemarkFromCoordinates(
+        latitude,
+        longitude,
+      ).timeout(_timeout);
+      for (final p in placemarks) {
+        final uf = _pickUf(p);
+        if (uf != null) {
+          _ufCache[cacheKey] = uf;
+          return uf;
+        }
+      }
+      _ufCache[cacheKey] = null;
+      return null;
+    } on TimeoutException {
+      AppLogger.debug(
+        'timeout UF em ($latitude, $longitude)',
+        tag: 'ReverseGeocoder',
+      );
+      return null;
+    } catch (e) {
+      AppLogger.debug(
+        'falha UF em ($latitude, $longitude): $e',
+        tag: 'ReverseGeocoder',
+      );
+      return null;
     }
   }
 
   /// Limpa o cache. Útil em testes.
   @visibleForTesting
-  void clearCache() => _cache.clear();
+  void clearCache() {
+    _cache.clear();
+    _ufCache.clear();
+  }
 
   String _buildCacheKey(double lat, double lon) {
     final roundedLat = lat.toStringAsFixed(_cacheKeyPrecision);
