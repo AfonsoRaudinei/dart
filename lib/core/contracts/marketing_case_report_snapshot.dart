@@ -14,6 +14,11 @@ class MarketingCaseReportSnapshot {
   /// Cliente consultoria vinculado ao case (filtro Relatórios por produtor).
   final String? clientId;
 
+  /// Opcionais — o snapshot antigo continua válido sem eles.
+  final String? produtoUtilizado;
+  final String? localizacaoTexto;
+  final String? nomeTalhao;
+
   const MarketingCaseReportSnapshot({
     required this.id,
     required this.tipo,
@@ -25,6 +30,9 @@ class MarketingCaseReportSnapshot {
     required this.lng,
     this.nomeVendedor,
     this.clientId,
+    this.produtoUtilizado,
+    this.localizacaoTexto,
+    this.nomeTalhao,
   });
 }
 
