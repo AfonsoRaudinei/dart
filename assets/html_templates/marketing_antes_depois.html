@@ -111,15 +111,10 @@
     </section>
     <!-- {{/if}} -->
 
+    <!-- {{#if ficha_dados}} -->
     <section class="sf-section">
       <h2 class="sf-section-title"><span class="sf-section-num"></span>Ficha do case</h2>
       <div class="sf-sheet">
-        <!-- {{#if localizacao_texto}} -->
-        <div class="sf-row"><span class="sf-row-label">Município</span><span class="sf-row-value">{{localizacao_texto}}</span></div>
-        <!-- {{/if}} -->
-        <!-- {{#if data_case}} -->
-        <div class="sf-row"><span class="sf-row-label">Data do case</span><span class="sf-row-value">{{data_case_formatado}}</span></div>
-        <!-- {{/if}} -->
         <!-- {{#if ganho_produtividade_ficha}} -->
         <div class="sf-row"><span class="sf-row-label">Ganho de produtividade</span><span class="sf-row-value">{{ganho_produtividade}}</span></div>
         <!-- {{/if}} -->
@@ -131,6 +126,7 @@
         <!-- {{/if}} -->
       </div>
     </section>
+    <!-- {{/if}} -->
 
   </main>
 
