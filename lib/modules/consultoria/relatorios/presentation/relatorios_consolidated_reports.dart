@@ -86,13 +86,6 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
         allMarketing.isNotEmpty;
     final needsProducerPick =
         producerIds.length > 1 && effectiveClientId == null;
-    final combinedEvents = effectiveClientId == null
-        ? const <_CombinedReportEvent>[]
-        : _combinedEventsForProducer(
-            visits: scopedVisits,
-            occurrences: scopedOccurrences,
-            marketing: scopedMarketing,
-          );
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
@@ -155,16 +148,13 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
                 effectiveClientId,
               ),
             ),
-            if (combinedEvents.isEmpty)
-              const _PremiumEmptyState(
-                message: 'Nenhum relatório deste produtor para combinar.',
-              )
-            else
-              _CombinedReportsComposer(
-                clientId: effectiveClientId,
-                dateFormat: dateFormat,
-                events: combinedEvents,
-              ),
+            _CombinedEventsLoader(
+              clientId: effectiveClientId,
+              dateFormat: dateFormat,
+              visits: scopedVisits,
+              occurrences: scopedOccurrences,
+              marketing: scopedMarketing,
+            ),
           ],
         ],
         const SizedBox(height: kFabSafeArea),
