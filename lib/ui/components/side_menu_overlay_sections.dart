@@ -272,44 +272,83 @@ class _DailySummary extends StatelessWidget {
       ),
       child: const Row(
         children: [
-          _SummaryMetric(icon: Icons.calendar_today_outlined, label: 'Visitas'),
-          _SummaryMetric(icon: Icons.people_outline_rounded, label: 'Clientes'),
           _SummaryMetric(
+            buttonKey: Key('side_menu_summary_visitas'),
+            icon: Icons.calendar_today_outlined,
+            label: 'Visitas',
+            route: AppRoutes.agenda,
+          ),
+          _SummaryMetric(
+            buttonKey: Key('side_menu_summary_clientes'),
+            icon: Icons.people_outline_rounded,
+            label: 'Clientes',
+            route: AppRoutes.clients,
+          ),
+          _SummaryMetric(
+            buttonKey: Key('side_menu_summary_carteira'),
             icon: Icons.account_balance_wallet_outlined,
             label: 'Carteira',
+            route: AppRoutes.carteira,
           ),
-          _SummaryMetric(icon: Icons.analytics_outlined, label: 'Relatórios'),
+          _SummaryMetric(
+            buttonKey: Key('side_menu_summary_relatorios'),
+            icon: Icons.analytics_outlined,
+            label: 'Relatórios',
+            route: AppRoutes.reports,
+          ),
         ],
       ),
     );
   }
 }
 
-class _SummaryMetric extends StatelessWidget {
+class _SummaryMetric extends ConsumerWidget {
+  final Key buttonKey;
   final IconData icon;
   final String label;
+  final String route;
 
-  const _SummaryMetric({required this.icon, required this.label});
+  const _SummaryMetric({
+    required this.buttonKey,
+    required this.icon,
+    required this.label,
+    required this.route,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Expanded(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 15, color: _menuAccent(context)),
-          const SizedBox(height: 2),
-          const Text(
-            '--',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+      child: Semantics(
+        button: true,
+        label: label,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            key: buttonKey,
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => _closeAndNavigate(context, ref, route),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 15, color: _menuAccent(context)),
+                const SizedBox(height: 2),
+                const Text(
+                  '--',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: _menuSecondaryText(context),
+                  ),
+                ),
+              ],
+            ),
           ),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 9, color: _menuSecondaryText(context)),
-          ),
-        ],
+        ),
       ),
     );
   }

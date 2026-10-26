@@ -52,6 +52,50 @@ void main() {
 
     for (final testCase in [
       (
+        key: const Key('side_menu_summary_visitas'),
+        expectedUri: AppRoutes.agenda,
+      ),
+      (
+        key: const Key('side_menu_summary_clientes'),
+        expectedUri: AppRoutes.clients,
+      ),
+      (
+        key: const Key('side_menu_summary_carteira'),
+        expectedUri: AppRoutes.carteira,
+      ),
+      (
+        key: const Key('side_menu_summary_relatorios'),
+        expectedUri: AppRoutes.reports,
+      ),
+    ]) {
+      testWidgets(
+        'resumo ${testCase.key} navega para ${testCase.expectedUri}',
+        (tester) async {
+          final router = await _pumpSideMenu(
+            tester,
+            profile: _profile(role: 'consultor'),
+            role: UserRole.consultor,
+          );
+          final action = find.byKey(testCase.key);
+
+          await tester.scrollUntilVisible(
+            action,
+            180,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.tap(action);
+          await tester.pumpAndSettle();
+
+          expect(
+            router.routerDelegate.currentConfiguration.uri.toString(),
+            testCase.expectedUri,
+          );
+        },
+      );
+    }
+
+    for (final testCase in [
+      (
         label: 'Nova Visita',
         expectedUri: '${AppRoutes.agenda}?novoEvento=true',
       ),
@@ -178,6 +222,8 @@ Future<GoRouter> _pumpSideMenu(
       GoRoute(path: AppRoutes.map, builder: (_, __) => const _MenuHost()),
       GoRoute(path: AppRoutes.agenda, builder: (_, __) => const _MenuHost()),
       GoRoute(path: AppRoutes.clientNew, builder: (_, __) => const _MenuHost()),
+      GoRoute(path: AppRoutes.clients, builder: (_, __) => const _MenuHost()),
+      GoRoute(path: AppRoutes.carteira, builder: (_, __) => const _MenuHost()),
       GoRoute(path: AppRoutes.reports, builder: (_, __) => const _MenuHost()),
     ],
   );
