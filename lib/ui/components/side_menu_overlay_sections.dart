@@ -206,29 +206,6 @@ class _QuickActionsGrid extends StatelessWidget {
             ],
           ),
         ),
-        SizedBox(height: 8),
-        SizedBox(
-          height: 84,
-          child: Row(
-            children: [
-              Expanded(
-                child: _QuickActionCard(
-                  icon: Icons.insert_chart_outlined_rounded,
-                  label: 'Ver Relatórios',
-                  route: AppRoutes.reports,
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: _QuickActionCard(
-                  icon: Icons.warning_amber_rounded,
-                  label: 'Nova Ocorrência',
-                  route: '${AppRoutes.map}?modo=ocorrencia',
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
