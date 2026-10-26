@@ -1748,6 +1748,7 @@ class DrawingController extends ChangeNotifier {
         _pivotCenter != null;
     if (!hasSketch && _stateMachine.currentState == DrawingState.drawing) {
       _stateMachine.cancel();
+      _errorMessage = null;
     }
   }
 

@@ -442,7 +442,7 @@ extension DrawingControllerSketch on DrawingController {
     _freehandStrokeActive = false;
 
     if (_freehandPoints.length < 3) {
-      _errorMessage = 'Traçado muito curto. Desenhe novamente.';
+      _errorMessage = 'Traçado muito curto.';
       _freehandPoints.clear();
       revertToIdleIfDrawingSketchEmpty();
       _notify();

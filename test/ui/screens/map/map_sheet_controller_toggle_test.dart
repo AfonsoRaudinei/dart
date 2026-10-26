@@ -84,4 +84,47 @@ void main() {
     expect(sheetState, isNull);
     expect(find.text('Desenho cancelado'), findsOneWidget);
   });
+
+  testWidgets('toggleDrawMode com armed abre sheet sem cancelar', (tester) async {
+    final controller = DrawingController(repository: _MockDrawingRepository());
+    addTearDown(controller.dispose);
+
+    controller.selectTool('freehand');
+    expect(controller.currentState, DrawingState.armed);
+
+    MapSheetState? sheetState;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          drawingControllerProvider.overrideWith((ref) => controller),
+        ],
+        child: MaterialApp(
+          home: Consumer(
+            builder: (context, ref, _) {
+              return Scaffold(
+                body: ElevatedButton(
+                  onPressed: () {
+                    MapSheetController.toggleDrawMode(
+                      context,
+                      ref,
+                      (s, _) => sheetState = s,
+                    );
+                  },
+                  child: const Text('toggle'),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('toggle'));
+    await tester.pump();
+
+    expect(controller.currentState, DrawingState.armed);
+    expect(sheetState?.type, MapSheetType.draw);
+    expect(find.text('Desenho cancelado'), findsNothing);
+  });
 }
