@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -31,8 +32,10 @@ import '../../quick_photo/presentation/providers/quick_photo_list_provider.dart'
 import '../../quick_photo/presentation/quick_photo_flow.dart';
 import '../infra/consultoria_report_export_data.dart';
 import '../infra/relatorio_visit_html_builder.dart';
+import '../models/relatorio_combinado.dart';
 import '../models/relatorio_status.dart';
 import '../models/relatorio_tecnico.dart';
+import '../providers/relatorio_combinado_providers.dart';
 import '../providers/relatorio_providers.dart' as tech;
 import '../use_cases/publish_relatorio_use_case.dart';
 import 'relatorios_occurrence_location_resolver.dart';
