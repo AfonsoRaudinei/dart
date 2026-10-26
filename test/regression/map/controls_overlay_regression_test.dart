@@ -9,7 +9,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_session_bridge.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_session_bridge_provider.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
-import 'package:soloforte_app/core/providers/connectivity_provider.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:soloforte_app/core/session/session_models.dart';
@@ -320,7 +319,6 @@ void main() {
         overrides: [
           preferencesServiceProvider.overrideWithValue(preferencesService),
           settingsRepositoryProvider.overrideWithValue(settingsRepository),
-          isOnlineProvider.overrideWith((ref) => Stream.value(true)),
           visitRepositoryProvider.overrideWithValue(_NoActiveVisitRepository()),
           agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
           sessionControllerProvider.overrideWith(_PublicSessionController.new),
@@ -426,52 +424,6 @@ void main() {
       expect(toolsSource.contains('BorderRadius.circular(12)'), isTrue);
     });
 
-    testWidgets('map_status_indicator existe e é círculo 48dp', (
-      tester,
-    ) async {
-      await _pumpMapControlsOverlay(tester);
-
-      expect(find.byKey(const Key('map_status_indicator')), findsOneWidget);
-      expect(find.byKey(const Key('map_control_pins')), findsNothing);
-
-      final container = tester.widget<Container>(
-        find.byKey(const Key('map_status_indicator')),
-      );
-      final decoration = container.decoration! as BoxDecoration;
-      expect(decoration.shape, BoxShape.circle);
-      expect(
-        tester.getSize(find.byKey(const Key('map_status_indicator'))),
-        const Size(kMapActionColumnButtonSize, kMapActionColumnButtonSize),
-      );
-    });
-
-    testWidgets('online: indicador de conectividade com wifi', (tester) async {
-      await _pumpMapControlsOverlay(tester, isOnline: true);
-
-      final status = find.byKey(const Key('map_status_indicator'));
-      expect(status, findsOneWidget);
-      expect(
-        find.descendant(
-          of: status,
-          matching: find.byIcon(Icons.wifi_rounded),
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('offline: indicador com wifi_off', (tester) async {
-      await _pumpMapControlsOverlay(tester, isOnline: false);
-
-      final status = find.byKey(const Key('map_status_indicator'));
-      expect(status, findsOneWidget);
-      expect(
-        find.descendant(
-          of: status,
-          matching: find.byIcon(Icons.wifi_off_rounded),
-        ),
-        findsOneWidget,
-      );
-    });
   });
 
   /// BUG-009 — Flash ao tocar ícones/abrir sheets (fix 868cbea).
@@ -613,7 +565,6 @@ void _setViewport(WidgetTester tester, EdgeInsets safePadding) {
 
 Future<void> _pumpMapControlsOverlay(
   WidgetTester tester, {
-  bool isOnline = true,
   bool isDrawMode = false,
   bool showCheckInAction = true,
   DrawingState drawingState = DrawingState.idle,
@@ -635,7 +586,6 @@ Future<void> _pumpMapControlsOverlay(
       overrides: [
         preferencesServiceProvider.overrideWithValue(preferencesService),
         settingsRepositoryProvider.overrideWithValue(settingsRepository),
-        isOnlineProvider.overrideWith((ref) => Stream.value(isOnline)),
         visitRepositoryProvider.overrideWithValue(_NoActiveVisitRepository()),
         agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
         sessionControllerProvider.overrideWith(_PublicSessionController.new),
@@ -686,7 +636,6 @@ Future<void> _pumpOverlayWithFabHarness(
       overrides: [
         preferencesServiceProvider.overrideWithValue(preferencesService),
         settingsRepositoryProvider.overrideWithValue(settingsRepository),
-        isOnlineProvider.overrideWith((ref) => Stream.value(true)),
         visitRepositoryProvider.overrideWithValue(_NoActiveVisitRepository()),
         agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
         sessionControllerProvider.overrideWith(_PublicSessionController.new),
