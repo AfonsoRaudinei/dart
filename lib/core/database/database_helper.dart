@@ -24,7 +24,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 45,
+      version: 46,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -200,6 +200,9 @@ class DatabaseHelper {
         case 45:
           await DatabaseMigrations.migrateToV45(db);
           break;
+        case 46:
+          await DatabaseMigrations.migrateToV46(db);
+          break;
       }
     }
   }
@@ -271,6 +274,7 @@ class DatabaseHelper {
       'publicacoes_tecnicas',
       'relatorios',
       'relatorios_v2',
+      'relatorios_combinados',
       'carteira_categorias',
       'carteira_cliente_categorias',
       'carteira_tipos_produto',
@@ -355,6 +359,7 @@ class DatabaseHelper {
       'publicacoes_tecnicas',
       'relatorios',
       'relatorios_v2',
+      'relatorios_combinados',
       'carteira_categorias',
       'carteira_cliente_categorias',
       'carteira_tipos_produto',
@@ -394,6 +399,7 @@ class DatabaseHelper {
       'publicacoes_tecnicas',
       'relatorios',
       'relatorios_v2',
+      'relatorios_combinados',
       'carteira_categorias',
       'carteira_cliente_categorias',
       'carteira_tipos_produto',
