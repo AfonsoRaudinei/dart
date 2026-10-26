@@ -379,6 +379,28 @@ void main() {
       controller.handlePivotTap(const LatLng(-15.7801, -47.9292));
       expect(controller.currentState, equals(DrawingState.drawing));
     });
+
+    test('freehand undo esvazia sketch e volta para idle', () {
+      controller.selectTool('freehand');
+      controller.beginFreehandStroke(const LatLng(-15.7801, -47.9292));
+      controller.extendFreehandStroke(const LatLng(-15.7802, -47.9293));
+      controller.extendFreehandStroke(const LatLng(-15.7803, -47.9291));
+      controller.endFreehandStroke();
+      expect(controller.freehandPointCount, greaterThanOrEqualTo(3));
+      expect(controller.currentState, DrawingState.drawing);
+
+      controller.undoDrawingPoint();
+      expect(controller.freehandPointCount, 0);
+      expect(controller.currentState, DrawingState.idle);
+    });
+
+    test('freehand traço curto volta para idle', () {
+      controller.selectTool('freehand');
+      controller.beginFreehandStroke(const LatLng(-15.7801, -47.9292));
+      controller.endFreehandStroke();
+      expect(controller.freehandPointCount, 0);
+      expect(controller.currentState, DrawingState.idle);
+    });
   });
 
   group('suppressesMapContextTaps — blindagem de gestos do mapa', () {

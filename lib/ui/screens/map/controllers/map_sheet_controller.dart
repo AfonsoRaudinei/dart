@@ -198,6 +198,20 @@ class MapSheetController {
       return;
     }
 
+    // Sheet fechado com barra de desenho ativa: lápis desliga (caso preso).
+    if (controller.currentState == DrawingState.drawing) {
+      controller.cancelOperation();
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Desenho cancelado'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
     // Abrir draw quando estiver fechado.
     setSheetState(
       const MapSheetState(type: MapSheetType.draw),
