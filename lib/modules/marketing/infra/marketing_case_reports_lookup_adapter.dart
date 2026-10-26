@@ -70,6 +70,9 @@ MarketingCaseReportSnapshot _toSnapshot(MarketingCase item) {
     lng: item.lng,
     nomeVendedor: item.nomeVendedor,
     clientId: item.clientId,
+    produtoUtilizado: item.produtoUtilizado,
+    localizacaoTexto: item.localizacaoTexto,
+    nomeTalhao: item.nomeTalhao,
   );
 }
 
