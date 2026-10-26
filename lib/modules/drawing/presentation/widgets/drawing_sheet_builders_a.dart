@@ -101,19 +101,14 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Column(
         children: [
-          DrawingToolSelector(
-            selectedToolKey: _selectedToolKey,
-            onToolSelected: _onToolSelected,
-          ),
-          const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: () => _openGroupMeasurementsNavigator(context),
             icon: Icon(
-              Icons.folder_open_outlined,
+              Icons.search,
               color: isIos ? SoloForteSheetSkinIos.ghostText : null,
             ),
             label: Text(
-              'Grupo > Medições',
+              'Buscar talhão', // TODO(copy): confirmar rótulo com produto
               style: TextStyle(
                 color: isIos ? SoloForteSheetSkinIos.ghostText : null,
               ),
@@ -131,6 +126,11 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
                     ),
                   )
                 : null,
+          ),
+          const SizedBox(height: 12),
+          DrawingToolSelector(
+            selectedToolKey: _selectedToolKey,
+            onToolSelected: _onToolSelected,
           ),
           if (pendingCount > 0) ...[
             const SizedBox(height: 16),
