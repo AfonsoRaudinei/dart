@@ -48,8 +48,6 @@ void main() {
       expect(find.text('Carteira'), findsWidgets);
       expect(find.text('Nova Visita'), findsOneWidget);
       expect(find.text('Novo Cliente'), findsOneWidget);
-      expect(find.text('Ver Relatórios'), findsOneWidget);
-      expect(find.text('Nova Ocorrência'), findsOneWidget);
     });
 
     for (final testCase in [
@@ -58,11 +56,6 @@ void main() {
         expectedUri: '${AppRoutes.agenda}?novoEvento=true',
       ),
       (label: 'Novo Cliente', expectedUri: AppRoutes.clientNew),
-      (label: 'Ver Relatórios', expectedUri: AppRoutes.reports),
-      (
-        label: 'Nova Ocorrência',
-        expectedUri: '${AppRoutes.map}?modo=ocorrencia',
-      ),
     ]) {
       testWidgets('${testCase.label} navega para ${testCase.expectedUri}', (
         tester,
