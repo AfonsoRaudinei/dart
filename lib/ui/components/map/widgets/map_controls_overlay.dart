@@ -13,7 +13,6 @@ import '../../../../modules/settings/presentation/providers/settings_providers.d
 import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/domain/map_models.dart';
 import '../../../../core/state/map_state.dart';
-import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../core/utils/area_display_format.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_bottom_toolbar_overlay.dart';
@@ -151,17 +150,14 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             ),
           ),
 
-        // 2. Botão de Localização + Indicador de Conectividade (canto superior direito)
+        // 2. Basemap + botão de localização (canto superior direito)
         Positioned(
           top: safeTop + 12, // Respeita safe area (Dynamic Island / notch)
           right: 12,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Indicador de conectividade no mapa
-              const _MapStatusIndicator(),
               if (widget.drawingState != DrawingState.editing) ...[
-                const SizedBox(width: 6),
                 _BasemapToggleButton(activeColor: activeColor),
                 const SizedBox(width: 6),
               ],
@@ -552,7 +548,7 @@ class _BasemapToggleButtonState extends ConsumerState<_BasemapToggleButton> {
   }
 }
 
-/// Botão circular do topo direito (conectividade / basemap / localização).
+/// Botão circular do topo direito (basemap / localização).
 /// Diferencia da coluna direita, que permanece quadrado com r=12.
 class _MapRoundToggleButton extends StatelessWidget {
   const _MapRoundToggleButton({
@@ -658,77 +654,6 @@ class _IconOffSlashPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-/// Indicador de conectividade no mapa (somente leitura). Long-press exibe rótulo.
-class _MapStatusIndicator extends ConsumerStatefulWidget {
-  static const Color _offlineColor = Color(0xFFFF3B30);
-  static const Color _onlineColor = Color(0xFF34C759);
-
-  const _MapStatusIndicator();
-
-  @override
-  ConsumerState<_MapStatusIndicator> createState() =>
-      _MapStatusIndicatorState();
-}
-
-class _MapStatusIndicatorState extends ConsumerState<_MapStatusIndicator> {
-  Timer? _labelTimer;
-  bool _showLabel = false;
-
-  @override
-  void dispose() {
-    _labelTimer?.cancel();
-    super.dispose();
-  }
-
-  void _showTemporaryLabel() {
-    _labelTimer?.cancel();
-    setState(() => _showLabel = true);
-    _labelTimer = Timer(const Duration(milliseconds: 1600), () {
-      if (mounted) setState(() => _showLabel = false);
-    });
-  }
-
-  String _statusLabel({required bool isOnline}) {
-    if (!isOnline) return 'Sem internet';
-    return 'Online';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isOnline = ref.watch(isOnlineProvider).asData?.value ?? false;
-    final label = _statusLabel(isOnline: isOnline);
-
-    final IconData icon;
-    final Color iconColor;
-    if (!isOnline) {
-      icon = Icons.wifi_off_rounded;
-      iconColor = _MapStatusIndicator._offlineColor;
-    } else {
-      icon = Icons.wifi_rounded;
-      iconColor = _MapStatusIndicator._onlineColor;
-    }
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _MapButtonLabel(text: label, isVisible: _showLabel),
-        const SizedBox(width: 6),
-        Semantics(
-          label: label,
-          child: _MapRoundToggleButton(
-            buttonKey: const Key('map_status_indicator'),
-            icon: icon,
-            iconColor: iconColor,
-            isOn: isOnline,
-            showSlash: false,
-            onLongPress: _showTemporaryLabel,
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 class _EditingContextPill extends StatelessWidget {
