@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 
 import '../../domain/drawing_state.dart';
 import '../providers/drawing_provider.dart';
@@ -18,6 +19,10 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
 
   final MapController mapController;
   final bool isMapReady;
+
+  /// Altura reservada para toolbar de desenho + chips de medição (safe area extra).
+  static const double _bottomChromeReserve =
+      kDrawingBottomToolbarHeight + 56;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -36,55 +41,99 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
     }
 
     return Positioned.fill(
-      child: Listener(
-        behavior: HitTestBehavior.translucent,
-        onPointerDown: (event) {
-          if (!isMapReady) return;
-          final point = _toLatLng(event.localPosition);
-          if (point == null) return;
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final size = Size(constraints.maxWidth, constraints.maxHeight);
+          final safeBottom = MediaQuery.paddingOf(context).bottom;
 
-          if (captureFreehand) {
-            controller.beginFreehandStroke(point);
-          }
-        },
-        onPointerMove: (event) {
-          if (!isMapReady) return;
-          final point = _toLatLng(event.localPosition);
-          if (point == null) return;
+          return Listener(
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: (event) {
+              if (!isMapReady) return;
+              if (_isMapChromePointer(
+                event.localPosition,
+                size,
+                safeBottom: safeBottom,
+              )) {
+                return;
+              }
+              final point = _toLatLng(event.localPosition);
+              if (point == null) return;
 
-          if (captureFreehand && controller.isFreehandStrokeActive) {
-            controller.extendFreehandStroke(point);
-          } else if (capturePivotRadius) {
-            controller.updatePivotEdge(point);
-          }
-        },
-        onPointerUp: (event) {
-          if (!isMapReady) return;
-          if (captureFreehand && controller.isFreehandStrokeActive) {
-            controller.endFreehandStroke();
-            return;
-          }
-          if (capturePivotRadius) {
-            final point = _toLatLng(event.localPosition);
-            if (point != null) {
-              controller.finalizePivotEdge(point);
-            }
-          }
-        },
-        onPointerCancel: (event) {
-          if (captureFreehand && controller.isFreehandStrokeActive) {
-            controller.endFreehandStroke();
-            return;
-          }
-          if (capturePivotRadius) {
-            final point = _toLatLng(event.localPosition);
-            if (point != null) {
-              controller.finalizePivotEdge(point);
-            }
-          }
+              if (captureFreehand) {
+                controller.beginFreehandStroke(point);
+              }
+            },
+            onPointerMove: (event) {
+              if (!isMapReady) return;
+              final point = _toLatLng(event.localPosition);
+              if (point == null) return;
+
+              if (captureFreehand && controller.isFreehandStrokeActive) {
+                controller.extendFreehandStroke(point);
+              } else if (capturePivotRadius) {
+                controller.updatePivotEdge(point);
+              }
+            },
+            onPointerUp: (event) {
+              if (!isMapReady) return;
+              if (captureFreehand && controller.isFreehandStrokeActive) {
+                controller.endFreehandStroke();
+                return;
+              }
+              if (capturePivotRadius) {
+                final point = _toLatLng(event.localPosition);
+                if (point != null) {
+                  controller.finalizePivotEdge(point);
+                }
+              }
+            },
+            onPointerCancel: (event) {
+              if (captureFreehand && controller.isFreehandStrokeActive) {
+                controller.endFreehandStroke();
+                return;
+              }
+              if (capturePivotRadius) {
+                final point = _toLatLng(event.localPosition);
+                if (point != null) {
+                  controller.finalizePivotEdge(point);
+                }
+              }
+            },
+          );
         },
       ),
     );
+  }
+
+  @visibleForTesting
+  static bool excludesMapChromePointer(
+    Offset local,
+    Size size, {
+    required double safeBottom,
+  }) =>
+      _isMapChromePointer(local, size, safeBottom: safeBottom);
+
+  /// Evita que toques na toolbar inferior ou na coluna direita iniciem freehand.
+  static bool _isMapChromePointer(
+    Offset local,
+    Size size, {
+    required double safeBottom,
+  }) {
+    final fromBottom = size.height - local.dy;
+    if (fromBottom <= safeBottom + _bottomChromeReserve &&
+        local.dx >= 16 &&
+        local.dx <= size.width - kDrawingBottomToolbarRightInset) {
+      return true;
+    }
+
+    final columnWidth =
+        kMapActionColumnRightInset + kMapActionColumnButtonSize + 8;
+    if (local.dx >= size.width - columnWidth) {
+      return true;
+    }
+
+    return false;
   }
 
   LatLng? _toLatLng(Offset localPosition) {
