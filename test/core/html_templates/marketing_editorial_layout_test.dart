@@ -30,10 +30,9 @@ Map<String, dynamic> _base(String tipo) => {
   'telefone_vendedor': '(63) 99999-0000',
 };
 
-List<int> _photoIndices(String html) => RegExp(r'data-sf-photo="(\d+)"')
-    .allMatches(html)
-    .map((match) => int.parse(match.group(1)!))
-    .toList();
+List<int> _photoIndices(String html) => RegExp(
+  r'data-sf-photo="(\d+)"',
+).allMatches(html).map((match) => int.parse(match.group(1)!)).toList();
 
 final _emoji = RegExp(r'[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]', unicode: true);
 
@@ -82,6 +81,8 @@ void _expectEditorialShell(String html, String reason) {
   for (final duplicateRow in [
     '>Produtor</span>',
     '>Produto</span>',
+    '>Município</span>',
+    '>Data do case</span>',
     '>Situação</span>',
     '>Divulgação</span>',
     '>Responsável comercial</span>',
@@ -190,30 +191,27 @@ void main() {
     },
   );
 
-  test(
-    'antes/depois legado não repete ganho na ficha do case',
-    () async {
-      final html = await MarketingHtmlRenderer.render({
-        ..._base('antes_depois'),
-        'ganho_produtividade': '+12%',
-      });
+  test('antes/depois legado não repete ganho na ficha do case', () async {
+    final html = await MarketingHtmlRenderer.render({
+      ..._base('antes_depois'),
+      'ganho_produtividade': '+12%',
+    });
 
-      expect(html, contains('class="mk-figures"'));
-      expect(RegExp(r'\+12%').allMatches(html).length, 1);
-      expect(html, isNot(contains('Ganho de produtividade')));
+    expect(html, contains('class="mk-figures"'));
+    expect(RegExp(r'\+12%').allMatches(html).length, 1);
+    expect(html, isNot(contains('Ganho de produtividade')));
 
-      final comParametros = await MarketingHtmlRenderer.render({
-        ..._base('antes_depois'),
-        'ganho_produtividade': '+12%',
-        'parametros_json': jsonEncode([
-          {'titulo': 'Altura', 'testemunha': 50, 'teste': 55},
-        ]),
-      });
-      expect(comParametros, isNot(contains('class="mk-figures"')));
-      expect(comParametros, contains('Ganho de produtividade'));
-      expect(RegExp(r'\+12%').allMatches(comParametros).length, 1);
-    },
-  );
+    final comParametros = await MarketingHtmlRenderer.render({
+      ..._base('antes_depois'),
+      'ganho_produtividade': '+12%',
+      'parametros_json': jsonEncode([
+        {'titulo': 'Altura', 'testemunha': 50, 'teste': 55},
+      ]),
+    });
+    expect(comParametros, isNot(contains('class="mk-figures"')));
+    expect(comParametros, contains('Ganho de produtividade'));
+    expect(RegExp(r'\+12%').allMatches(comParametros).length, 1);
+  });
 
   test('avaliacao renderiza blocos comparativos e conclusão', () async {
     final html = await MarketingHtmlRenderer.render({
@@ -239,10 +237,7 @@ void main() {
 
     _expectEditorialShell(html, 'avaliacao');
     expect(html, contains('Case de avaliação'));
-    expect(
-      html,
-      contains('Talhão Norte · Palmas, TO · 14/10/2026'),
-    );
+    expect(html, contains('Talhão Norte · Palmas, TO · 14/10/2026'));
     expect(html, contains('Vigor na V6'));
     expect(html, contains('Média <strong>+20,0%</strong>'));
     expect(html, contains('id="sf-mk-av-1-a" class="sf-lb-toggle"'));
@@ -286,5 +281,62 @@ void main() {
     expect(html, isNot(contains('<script>alert(1)</script>')));
     expect(html, contains('&lt;script&gt;'));
     expect(html, isNot(contains('<b>x</b>')));
+  });
+
+  group('município e UF', () {
+    test(
+      'completa UF pelas coordenadas quando o texto traz só a cidade',
+      () async {
+        double? lat;
+        final html = await MarketingHtmlRenderer.render(
+          {..._base('resultado'), 'localizacao_texto': 'Palmas'},
+          fetchRemoteBytes: _fetcher,
+          resolveUf: (la, lo) async {
+            lat = la;
+            return 'TO';
+          },
+        );
+
+        expect(lat, -10.184);
+        expect(html, contains('Palmas - TO · 14/10/2026'));
+        expect(RegExp('Palmas').allMatches(html).length, 1);
+      },
+    );
+
+    test('não consulta o geocoder quando a UF já está no texto', () async {
+      var chamadas = 0;
+      final html = await MarketingHtmlRenderer.render(
+        _base('resultado'),
+        fetchRemoteBytes: _fetcher,
+        resolveUf: (_, __) async {
+          chamadas++;
+          return 'PR';
+        },
+      );
+
+      expect(chamadas, 0);
+      expect(html, contains('Palmas, TO · 14/10/2026'));
+    });
+
+    test('sem UF resolvida mantém só a cidade', () async {
+      final html = await MarketingHtmlRenderer.render(
+        {..._base('resultado'), 'localizacao_texto': 'Palmas'},
+        fetchRemoteBytes: _fetcher,
+        resolveUf: (_, __) async => null,
+      );
+
+      expect(html, contains('Palmas · 14/10/2026'));
+    });
+
+    test('Ficha do case é omitida sem coordenadas e sem telefone', () async {
+      final html = await MarketingHtmlRenderer.render({
+        ..._base('resultado'),
+        'lat': null,
+        'lng': null,
+        'telefone_vendedor': '',
+      }, fetchRemoteBytes: _fetcher);
+
+      expect(html, isNot(contains('Ficha do case')));
+    });
   });
 }
