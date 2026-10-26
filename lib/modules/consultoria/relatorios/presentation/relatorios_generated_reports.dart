@@ -450,6 +450,7 @@ Future<_GeneratedReportPayload> _buildCombinedReportPayload(
   WidgetRef ref, {
   required String clientId,
   required List<_CombinedReportEvent> selected,
+  String? combinadoId,
 }) async {
   final branding = await _resolveReportBrandingContext(
     ref,
@@ -488,6 +489,7 @@ Future<_GeneratedReportPayload> _buildCombinedReportPayload(
     json: {
       'tipo': 'relatorio_combinado',
       'packVersion': 1,
+      if (combinadoId != null) 'combinadoId': combinadoId,
       'clientId': clientId,
       'clienteNome': clienteNome,
       'emitidoEm': emitidoEm.toIso8601String(),
