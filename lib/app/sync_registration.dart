@@ -8,6 +8,7 @@ import '../modules/agenda/data/services/agenda_sync_service.dart';
 import '../modules/agenda/data/repositories/agenda_repository.dart';
 import '../modules/produtor/data/producer_link_repository.dart';
 import '../modules/produtor/infra/occurrence_access_reader_adapter.dart';
+import '../modules/consultoria/relatorios/data/relatorio_combinado_sync_service.dart';
 import '../modules/consultoria/relatorios/data/relatorio_sync_service.dart';
 import '../modules/consultoria/relatorios/repositories/relatorio_repository_impl.dart';
 import '../modules/marketing/data/repositories/marketing_case_repository_impl.dart';
@@ -23,6 +24,7 @@ void registerSyncModules(SyncOrchestrator orchestrator) {
   orchestrator.registerModule(VisitSyncModule(supabase));
   orchestrator.registerModule(AgendaSyncModule(supabase));
   orchestrator.registerModule(RelatorioSyncModule(supabase));
+  orchestrator.registerModule(RelatorioCombinadoSyncModule(supabase));
   orchestrator.registerModule(MarketingSyncModule(supabase));
 }
 
@@ -108,6 +110,18 @@ class RelatorioSyncModule implements SyncModule {
     repository: RelatorioRepositoryImpl(),
     supabase: supabase,
   ).syncNow();
+}
+
+class RelatorioCombinadoSyncModule implements SyncModule {
+  final SupabaseClient supabase;
+  RelatorioCombinadoSyncModule(this.supabase);
+  @override
+  String get name => 'Relatórios combinados';
+  @override
+  int get syncTier => 1;
+  @override
+  Future<void> sync() =>
+      RelatorioCombinadoSyncService(supabase: supabase).syncNow();
 }
 
 class MarketingSyncModule implements SyncModule {
