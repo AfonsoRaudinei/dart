@@ -16,6 +16,9 @@
       <span class="sf-doc-type">Case antes e depois</span>
     </div>
     <h1 class="sf-title">{{produtor_fazenda}}</h1>
+    <!-- {{#if produto_utilizado}} -->
+    <p class="sf-product">{{produto_utilizado}}</p>
+    <!-- {{/if}} -->
     <!-- {{#if contexto_linha}} -->
     <p class="sf-subtitle">{{contexto_linha}}</p>
     <!-- {{/if}} -->
@@ -111,12 +114,6 @@
     <section class="sf-section">
       <h2 class="sf-section-title"><span class="sf-section-num"></span>Ficha do case</h2>
       <div class="sf-sheet">
-        <!-- {{#if produtor_fazenda}} -->
-        <div class="sf-row"><span class="sf-row-label">Produtor</span><span class="sf-row-value">{{produtor_fazenda}}</span></div>
-        <!-- {{/if}} -->
-        <!-- {{#if produto_utilizado}} -->
-        <div class="sf-row"><span class="sf-row-label">Produto</span><span class="sf-row-value">{{produto_utilizado}}</span></div>
-        <!-- {{/if}} -->
         <!-- {{#if localizacao_texto}} -->
         <div class="sf-row"><span class="sf-row-label">Município</span><span class="sf-row-value">{{localizacao_texto}}</span></div>
         <!-- {{/if}} -->
