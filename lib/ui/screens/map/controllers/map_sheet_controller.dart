@@ -198,12 +198,8 @@ class MapSheetController {
       return;
     }
 
-    // Sheet fechado com desenho/edição ativo: lápis desliga (não reabre menu preso).
-    final activeDrawContext =
-        controller.currentState == DrawingState.drawing ||
-        controller.currentState == DrawingState.editing ||
-        controller.currentState == DrawingState.armed;
-    if (activeDrawContext) {
+    // Sheet fechado com barra de desenho ativa: lápis desliga (caso preso).
+    if (controller.currentState == DrawingState.drawing) {
       controller.cancelOperation();
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).hideCurrentSnackBar();

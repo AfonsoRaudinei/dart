@@ -54,6 +54,7 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
                 event.localPosition,
                 size,
                 safeBottom: safeBottom,
+                drawingState: controller.currentState,
               )) {
                 return;
               }
@@ -111,25 +112,52 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
     Offset local,
     Size size, {
     required double safeBottom,
+    DrawingState drawingState = DrawingState.drawing,
   }) =>
-      _isMapChromePointer(local, size, safeBottom: safeBottom);
+      _isMapChromePointer(
+        local,
+        size,
+        safeBottom: safeBottom,
+        drawingState: drawingState,
+      );
 
   /// Evita que toques na toolbar inferior ou na coluna direita iniciem freehand.
   static bool _isMapChromePointer(
     Offset local,
     Size size, {
     required double safeBottom,
+    required DrawingState drawingState,
   }) {
     final fromBottom = size.height - local.dy;
-    if (fromBottom <= safeBottom + _bottomChromeReserve &&
-        local.dx >= 16 &&
-        local.dx <= size.width - kDrawingBottomToolbarRightInset) {
-      return true;
+    final showsBottomToolbar =
+        drawingState == DrawingState.drawing ||
+        drawingState == DrawingState.editing;
+
+    if (showsBottomToolbar) {
+      if (fromBottom <= safeBottom + _bottomChromeReserve &&
+          local.dx >= 16 &&
+          local.dx <= size.width - kDrawingBottomToolbarRightInset) {
+        return true;
+      }
     }
 
     final columnWidth =
         kMapActionColumnRightInset + kMapActionColumnButtonSize + 8;
-    if (local.dx >= size.width - columnWidth) {
+    if (local.dx < size.width - columnWidth) {
+      return false;
+    }
+
+    final drawModeColumn =
+        drawingState == DrawingState.drawing ||
+        drawingState == DrawingState.editing ||
+        drawingState == DrawingState.armed;
+    final columnStackHeight = drawModeColumn
+        ? kMapActionColumnButtonSize
+        : kMapActionColumnButtonSize +
+            kMapActionColumnSpacingAboveCheckIn +
+            kMapActionColumnButtonSize;
+    final columnBottom = safeBottom + kMapActionColumnBottomInset;
+    if (fromBottom <= columnBottom + columnStackHeight + 8) {
       return true;
     }
 
