@@ -17,6 +17,7 @@ import 'package:soloforte_app/modules/consultoria/occurrences/domain/occurrence.
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import 'package:soloforte_app/modules/consultoria/relatorios/models/relatorio_status.dart';
 import 'package:soloforte_app/modules/consultoria/relatorios/presentation/relatorios_page.dart';
+import 'package:soloforte_app/modules/consultoria/relatorios/providers/relatorio_combinado_providers.dart';
 import 'package:soloforte_app/modules/consultoria/relatorios/providers/relatorio_providers.dart';
 import 'package:soloforte_app/modules/consultoria/relatorios/providers/relatorio_repository_provider.dart'
     as publish_repo;
@@ -34,6 +35,7 @@ import 'package:soloforte_app/modules/settings/presentation/providers/settings_p
 import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
 
 import '../../helpers/consultoria_test_factories.dart';
+import '../../helpers/fake_relatorio_combinado_repository.dart';
 import '../../helpers/fake_relatorio_repository.dart';
 
 void main() {
@@ -214,7 +216,8 @@ void main() {
     expect(find.text('Resumo da Propriedade'), findsOneWidget);
     expect(find.text('Histórico de Visitas'), findsOneWidget);
     expect(find.textContaining('Combinar relatórios'), findsOneWidget);
-    expect(find.text('Relatório combinado'), findsOneWidget);
+    expect(find.text('Combinar'), findsOneWidget);
+    expect(find.text('Relatório combinado'), findsNothing);
     expect(find.text('Gerado sob demanda'), findsWidgets);
     expect(find.text('Lista de Ocorrências'), findsNothing);
 
@@ -356,7 +359,7 @@ void main() {
 
       expect(find.text('Resumo da Propriedade'), findsOneWidget);
       expect(find.text('1 propriedade(s), 0 talhão(ões)'), findsOneWidget);
-      expect(find.text('Disponível'), findsNWidgets(3));
+      expect(find.text('Disponível'), findsNWidgets(2));
       expect(find.text('Vazio'), findsNothing);
     },
   );
@@ -550,7 +553,7 @@ void main() {
 
     expect(find.text('Resumo da Propriedade'), findsOneWidget);
     expect(find.text('1 visita(s)'), findsOneWidget);
-    expect(find.text('Disponível'), findsNWidgets(3));
+    expect(find.text('Disponível'), findsNWidgets(2));
     expect(find.text('Fazenda B'), findsNothing);
   });
 
@@ -603,7 +606,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('2 selecionado(s)'), findsOneWidget);
 
-    await _openReportCardByTitle(tester, 'Relatório combinado');
+    await _tapCombinar(tester);
+    expect(find.text('Combinado salvo'), findsOneWidget);
+    await tester.pumpAndSettle();
+
+    await _openSavedCombined(tester);
     expect(find.text('Pré-visualização HTML'), findsOneWidget);
     final viewer = tester.widget<HtmlReportViewer>(
       find.byType(HtmlReportViewer),
@@ -615,6 +622,70 @@ void main() {
     expect(viewer.jsonData?['capitulos'], isA<List>());
     final capitulos = viewer.jsonData!['capitulos'] as List;
     expect(capitulos.first['anchorId'], 'capitulo-1');
+    expect(viewer.jsonData?['combinadoId'], isNotNull);
+  });
+
+  testWidgets('combinado salvo tira a ocorrência e mantém a fonte', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final relatorioRepository = FakeRelatorioRepository();
+    relatorioRepository.seed([
+      makeRelatorio(
+        id: 'rel-combo',
+        farmName: 'Fazenda Combo',
+        status: RelatorioStatus.publicado,
+      ),
+    ]);
+    final occurrenceRepository = FakeOccurrenceRepository()
+      ..seed([
+        Occurrence(
+          id: 'occ-combo',
+          type: 'Baixa',
+          description: 'Combo occ',
+          category: 'daninhas',
+          status: 'confirmed',
+          clientId: 'cli-test-1',
+          createdAt: DateTime.utc(2026, 6, 4, 12),
+        ),
+      ]);
+
+    await _pumpScreen(
+      tester,
+      relatorioRepository: relatorioRepository,
+      occurrenceRepository: occurrenceRepository,
+    );
+
+    await _selectSegment(tester, 'Consolidados');
+    await _tapCombinar(tester);
+    await tester.pumpAndSettle();
+    await _openSavedCombined(tester);
+
+    expect(find.byTooltip('Capítulos'), findsOneWidget);
+    await _tapViewerToolbar(tester, 'Capítulos');
+    await tester.pump(const Duration(milliseconds: 400));
+
+    await tester.tap(find.byKey(const ValueKey('tirar-ocorrencia:occ-combo')));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Sai só desta combinação.'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Tirar'));
+    await tester.pumpAndSettle();
+
+    final viewer = tester.widget<HtmlReportViewer>(
+      find.byType(HtmlReportViewer),
+    );
+    expect(viewer.htmlContent, isNot(contains('data-kind="ocorrencia"')));
+    expect(viewer.htmlContent, contains('data-kind="visita"'));
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('ocorrencia:occ-combo')), findsOneWidget);
+    expect(find.text('Ervas Daninhas'), findsOneWidget);
   });
 
   testWidgets(
@@ -973,6 +1044,9 @@ Future<void> _pumpScreen(
     marketingCaseReportsListProvider.overrideWith(
       (ref) => ref.watch(marketingCaseReportsListImplProvider),
     ),
+    relatorioCombinadoRepositoryProvider.overrideWithValue(
+      FakeRelatorioCombinadoRepository(),
+    ),
     quickPhotoListProvider.overrideWith((ref) async => const []),
     ...extraOverrides,
   ];
@@ -1011,6 +1085,33 @@ Finder _verticalScrollable() {
   return find.byWidgetPredicate(
     (widget) => widget is Scrollable && widget.axis == Axis.vertical,
   );
+}
+
+Future<void> _tapCombinar(WidgetTester tester) async {
+  final target = find.widgetWithText(FilledButton, 'Combinar');
+  final scrollable = _verticalScrollable();
+  if (scrollable.evaluate().isNotEmpty) {
+    await tester.scrollUntilVisible(target, 400, scrollable: scrollable.first);
+  }
+  await tester.ensureVisible(target);
+  await tester.tap(target);
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 50));
+}
+
+Future<void> _openSavedCombined(WidgetTester tester) async {
+  final target = find.textContaining('Combinado ·');
+  final scrollable = _verticalScrollable();
+  if (scrollable.evaluate().isNotEmpty) {
+    await tester.scrollUntilVisible(
+      target.first,
+      400,
+      scrollable: scrollable.first,
+    );
+  }
+  await tester.ensureVisible(target.first);
+  await tester.tap(target.first);
+  await tester.pumpAndSettle();
 }
 
 Future<void> _openReportCardByTitle(WidgetTester tester, String title) async {
