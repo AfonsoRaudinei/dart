@@ -24,6 +24,7 @@ class HtmlReportViewerActions {
     this.onViewLocation,
     this.onPublish,
     this.onConfirm,
+    this.onManageChapters,
     this.onDelete,
     this.publishDialogTitle = 'Publicar?',
     this.publishDialogMessage,
@@ -44,6 +45,9 @@ class HtmlReportViewerActions {
   final Future<bool> Function(BuildContext viewerContext)? onConfirm;
   final String confirmDialogTitle;
   final String? confirmDialogMessage;
+
+  /// `null` não desenha o botão. Agenda e os demais relatórios omitem.
+  final Future<void> Function(BuildContext viewerContext)? onManageChapters;
 
   final Future<bool> Function(BuildContext viewerContext)? onDelete;
   final String deleteDialogTitle;
@@ -297,6 +301,18 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
                   confirmActionLabel: 'Confirmar',
                 ),
           icon: const Icon(Icons.check_circle_outline),
+        ),
+      );
+    }
+
+    if (actions.onManageChapters != null) {
+      icons.add(
+        IconButton(
+          tooltip: 'Capítulos',
+          onPressed: _actionBusy
+              ? null
+              : () => _runVoidAction(actions.onManageChapters!),
+          icon: const Icon(Icons.playlist_remove_outlined),
         ),
       );
     }
