@@ -1,17 +1,23 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import '../services/geocoding/reverse_geocoder.dart';
+import '../utils/municipio_uf.dart';
 import 'relatorio_html_renderer.dart';
 
 class MarketingHtmlRenderer {
   /// Renderiza o HTML correto para o tipo do case.
   ///
   /// [data] = MarketingCase.toMap()/toJson() convertido pelo chamador.
+  /// [resolveUf] completa "Município" sem UF a partir de lat/lng do case
+  /// (padrão: geocodificação reversa nativa, tolerante a falha/offline).
   static Future<String> render(
-    Map<String, dynamic> data, {
+    Map<String, dynamic> rawData, {
     Future<Uint8List?> Function(String url)? fetchRemoteBytes,
+    Future<String?> Function(double lat, double lng)? resolveUf,
     bool asFragment = false,
   }) async {
+    final data = await _withMunicipioUf(rawData, resolveUf: resolveUf);
     switch (data['tipo'] as String? ?? 'resultado') {
       case 'resultado':
         return _renderResultado(
@@ -322,14 +328,30 @@ class MarketingHtmlRenderer {
     );
   }
 
+  static Future<Map<String, dynamic>> _withMunicipioUf(
+    Map<String, dynamic> data, {
+    Future<String?> Function(double lat, double lng)? resolveUf,
+  }) async {
+    final texto = (data['localizacao_texto'] as String?)?.trim() ?? '';
+    if (texto.isEmpty || MunicipioUf.hasUf(texto)) return data;
+    final lat = RelatorioHtmlRenderer.readCoordinate(data['lat']);
+    final lng = RelatorioHtmlRenderer.readCoordinate(data['lng']);
+    if (lat == null || lng == null) return data;
+    final resolver =
+        resolveUf ??
+        (double la, double ln) =>
+            ReverseGeocoder.instance.resolveUf(latitude: la, longitude: ln);
+    final uf = await resolver(lat, lng);
+    final completo = MunicipioUf.compose(texto, uf);
+    if (completo == texto) return data;
+    return {...data, 'localizacao_texto': completo};
+  }
+
   /// Linha de contexto do timbre: `[extra ·] Município · data`.
   /// O produto tem linha própria de destaque (`sf-product`) no timbre.
   static String _contexto(Map<String, dynamic> data, {String extra = ''}) {
     final dataCase = _parseDate(data['data_case'] as String?);
-    return [
-          extra,
-          data['localizacao_texto'] as String?,
-        ]
+    return [extra, data['localizacao_texto'] as String?]
         .map((value) => value?.trim() ?? '')
         .where((value) => value.isNotEmpty)
         .map(RelatorioHtmlRenderer.escapeHtml)
@@ -354,6 +376,9 @@ class MarketingHtmlRenderer {
       'localizacao_texto': hasText('localizacao_texto'),
       'data_case': data['data_case'] != null,
       'localizacao': data['lat'] != null && data['lng'] != null,
+      'ficha_dados':
+          (data['lat'] != null && data['lng'] != null) ||
+          hasText('telefone_vendedor'),
       'descricao': hasText('descricao'),
       'nome_vendedor': hasText('nome_vendedor'),
       'telefone_vendedor': hasText('telefone_vendedor'),
