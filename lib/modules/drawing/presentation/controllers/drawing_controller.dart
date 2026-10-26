@@ -1737,19 +1737,18 @@ class DrawingController extends ChangeNotifier {
         }
     }
 
+    revertToIdleIfDrawingSketchEmpty();
+    notifyListeners();
+  }
+
+  /// Sketch vazio em `drawing`: volta a [DrawingState.idle] (não `armed`).
+  void revertToIdleIfDrawingSketchEmpty() {
     final hasSketch = _currentPoints.isNotEmpty ||
         _freehandPoints.isNotEmpty ||
         _pivotCenter != null;
     if (!hasSketch && _stateMachine.currentState == DrawingState.drawing) {
-      final didRevert = _stateMachine.tryTransitionTo(DrawingState.armed);
-      if (!didRevert && kDebugMode) {
-        AppLogger.debug(
-          'undoDrawingPoint: falha ao regredir drawing → armed',
-          tag: 'DrawingController',
-        );
-      }
+      _stateMachine.cancel();
     }
-    notifyListeners();
   }
 
   // ─── Helpers de conversão geometria ↔ vértices ────────────────────────────────

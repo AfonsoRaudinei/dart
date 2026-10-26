@@ -444,9 +444,7 @@ extension DrawingControllerSketch on DrawingController {
     if (_freehandPoints.length < 3) {
       _errorMessage = 'Traçado muito curto. Desenhe novamente.';
       _freehandPoints.clear();
-      if (_stateMachine.currentState == DrawingState.drawing) {
-        _stateMachine.tryTransitionTo(DrawingState.armed);
-      }
+      revertToIdleIfDrawingSketchEmpty();
       _notify();
       return;
     }
