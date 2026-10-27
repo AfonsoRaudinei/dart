@@ -10,7 +10,8 @@ import '../../domain/models/gps_walk_session.dart';
 import '../../domain/drawing_state.dart';
 import '../../domain/drawing_feature_actions_mode.dart';
 import '../../domain/repositories/i_clients_repository.dart';
-import 'package:soloforte_app/core/state/map_ndvi_overlay.dart';
+import '../drawing_compact_selection_actions.dart';
+import '../providers/drawing_compact_ui_provider.dart';
 import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:soloforte_app/core/session/session_models.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
@@ -325,6 +326,12 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
         ).showSnackBar(SnackBar(content: Text(next.message)));
         ref.read(drawingExportProvider.notifier).reset();
       }
+    });
+
+    ref.listen<bool>(drawingCompactOpenMetadataProvider, (previous, next) {
+      if (next != true || !mounted) return;
+      ref.read(drawingCompactOpenMetadataProvider.notifier).state = false;
+      setState(() => _isEditingMetadata = true);
     });
 
     // NOTA ARQUITETURAL: O handle (pílula de drag) é renderizado pelo
