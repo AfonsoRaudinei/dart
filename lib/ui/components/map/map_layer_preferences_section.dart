@@ -3,10 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/config/cerrado_satellite_overlay.dart';
 import '../../../core/services/local_geotiff_service.dart';
 import '../../../core/state/map_state.dart';
-import '../../../core/state/map_ui_providers.dart';
 
 /// Ajustes de mapa que se fazem uma vez. A ficha do mapa não mostra mais isto.
 class MapLayerPreferencesSection extends ConsumerWidget {
@@ -16,16 +14,9 @@ class MapLayerPreferencesSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showPins = ref.watch(showMarkersProvider);
     final labels = ref.watch(mapSatelliteLabelsEnabledProvider);
-    final cerrado = ref.watch(cerradoSatelliteOverlayEnabledProvider);
     final borders = ref.watch(mapStateBoundariesEnabledProvider);
     final wms = ref.watch(externalWmsLayerProvider);
     final raster = ref.watch(externalRasterLayerProvider);
-    final camera = ref.watch(mapCameraSnapshotProvider);
-    final inCerrado = camera != null &&
-        CerradoSatelliteOverlay.isWithinBounds(
-          camera.center.latitude,
-          camera.center.longitude,
-        );
 
     return Column(
       children: [
@@ -54,22 +45,6 @@ class MapLayerPreferencesSection extends ConsumerWidget {
           onChanged: (enabled) {
             HapticFeedback.selectionClick();
             ref.read(mapSatelliteLabelsEnabledProvider.notifier).setEnabled(enabled);
-          },
-        ),
-        SwitchListTile(
-          title: const Text('Satélite Cerrado (INPE)'),
-          subtitle: Text(
-            inCerrado
-                ? 'Mosaico INPE (${CerradoSatelliteOverlay.acquisitionLabel}).'
-                : 'Disponível no bioma Cerrado. Imagens INPE '
-                    '${CerradoSatelliteOverlay.acquisitionLabel}.',
-          ),
-          value: cerrado,
-          onChanged: (enabled) {
-            HapticFeedback.selectionClick();
-            ref
-                .read(cerradoSatelliteOverlayEnabledProvider.notifier)
-                .setEnabled(enabled);
           },
         ),
         SwitchListTile(
