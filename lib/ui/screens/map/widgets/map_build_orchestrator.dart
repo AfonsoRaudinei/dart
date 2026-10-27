@@ -49,6 +49,7 @@ import '../../../components/map/widgets/draggable_pin_layer.dart';
 import '../../../components/map/widgets/pin_position_correction_overlay.dart';
 import '../../map/providers/pin_position_correction_provider.dart';
 import '../../../components/map/widgets/map_long_press_hint.dart';
+import '../../../components/map/map_talhao_selection_toolbar.dart';
 import '../../../components/map/widgets/map_state_boundaries_layer.dart';
 import '../../../components/map/widgets/map_locality_context_chip.dart';
 import '../../../components/map/map_layers_sheet.dart';
@@ -299,12 +300,14 @@ class MapBuildOrchestrator extends ConsumerWidget {
                       );
                     }
                     HapticFeedback.selectionClick();
-                    // 🔧 FIX-DRAW-SYNC: Reutilizar MapBottomSheet existente
-                    setSheetState(
-                      const MapSheetState(type: MapSheetType.draw),
-                      'Feature tap: editing existing drawing',
-                    );
                     return;
+                  }
+                  if (drawCtrl.selectedFeature != null &&
+                      drawCtrl.featureActionsMode ==
+                          DrawingFeatureActionsMode.compact &&
+                      !drawCtrl.isMultiSelectEnabled) {
+                    drawCtrl.selectFeature(null);
+                    HapticFeedback.lightImpact();
                   }
                 }
 
@@ -539,6 +542,16 @@ class MapBuildOrchestrator extends ConsumerWidget {
           DraggablePinLayer(mapController: mapController),
           const PinPositionCorrectionOverlay(),
           MapLongPressHint(visible: showLongPressHint),
+          MapTalhaoSelectionToolbar(
+            mapController: mapController,
+            setSheetState: setSheetState,
+            onCollapseDrawSheet: () {
+              final sheet = ref.read(mapSheetStateProvider);
+              if (sheet?.type == MapSheetType.draw) {
+                setSheetState(null, 'compact toolbar: collapse draw sheet');
+              }
+            },
+          ),
         ],
       ),
     );
