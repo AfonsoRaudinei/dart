@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/ui/components/map/map_talhao_selection_toolbar.dart';
 
@@ -96,7 +97,28 @@ void main() {
         toolbarHeight: 52,
       );
 
-      expect(offset.dx, 400 - 200 - 8);
+      expect(
+        offset.dx,
+        400 - 200 - 8 - kMapActionColumnRightInset - kMapActionColumnButtonSize,
+      );
+    });
+
+    test('borda inferior: reserva FAB + bottomInset', () {
+      const viewport = Size(400, 800);
+      const toolbarHeight = 52.0;
+      const bottomInset = 34.0;
+
+      final offset = clampMapToolbarOffset(
+        screenPoint: const Offset(200, 790),
+        viewportSize: viewport,
+        toolbarWidth: 200,
+        toolbarHeight: toolbarHeight,
+        bottomInset: bottomInset,
+      );
+
+      final maxTop =
+          800 - bottomInset - kFabSafeArea - toolbarHeight - 8;
+      expect(offset.dy, maxTop);
     });
 
     test('borda superior: clamp vertical com topInset', () {
