@@ -10,7 +10,13 @@ import '../../../../core/state/map_ui_providers.dart';
 
 /// Chip discreto com o município próximo ao centro do mapa (divisas UF ativas).
 class MapLocalityContextChip extends ConsumerStatefulWidget {
-  const MapLocalityContextChip({super.key});
+  const MapLocalityContextChip({
+    super.key,
+    this.extraTopBelowSafeArea = 52,
+  });
+
+  /// Distância abaixo do safe area — abaixo dos toggles topo-direita, sem colidir com cards.
+  final double extraTopBelowSafeArea;
 
   @override
   ConsumerState<MapLocalityContextChip> createState() =>
@@ -22,6 +28,7 @@ class _MapLocalityContextChipState extends ConsumerState<MapLocalityContextChip>
   static const double _minCenterDeltaDegrees = 0.002;
 
   Timer? _timer;
+  int _lookupGen = 0;
   String _label = '…';
   double? _lastScheduledLat;
   double? _lastScheduledLon;
@@ -49,12 +56,13 @@ class _MapLocalityContextChipState extends ConsumerState<MapLocalityContextChip>
     if (key == _resolvedKey) return;
 
     _timer?.cancel();
+    final scheduledGen = ++_lookupGen;
     _timer = Timer(_debounce, () async {
       final label = await ReverseGeocoder.instance.resolveCityLabel(
         latitude: latitude,
         longitude: longitude,
       );
-      if (!mounted) return;
+      if (!mounted || scheduledGen != _lookupGen) return;
       setState(() {
         _label = label;
         _resolvedKey = key;
@@ -78,48 +86,51 @@ class _MapLocalityContextChipState extends ConsumerState<MapLocalityContextChip>
       _scheduleLookup(camera.center.latitude, camera.center.longitude);
     }
 
-    final top = MediaQuery.paddingOf(context).top + 8;
+    final top =
+        MediaQuery.paddingOf(context).top + widget.extraTopBelowSafeArea;
     final semanticsLabel = 'Município próximo: $_label';
 
     return Positioned(
       top: top,
-      left: 12,
-      right: 168,
-      child: Semantics(
-        label: semanticsLabel,
-        child: Material(
-          type: MaterialType.transparency,
-          child: Container(
-            key: const Key('map_locality_context_chip'),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.45),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  SFIcons.pinFill,
-                  size: 14,
-                  color: Colors.white.withValues(alpha: 0.92),
+      left: 48,
+      right: 48,
+      child: IgnorePointer(
+        child: Center(
+          child: Semantics(
+            label: semanticsLabel,
+            child: Material(
+              type: MaterialType.transparency,
+              child: Container(
+                key: const Key('map_locality_context_chip'),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
                 ),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    _label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      SFIcons.pinFill,
+                      size: 14,
                       color: Colors.white.withValues(alpha: 0.92),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      height: 1.2,
                     ),
-                  ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.92),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        height: 1.2,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
