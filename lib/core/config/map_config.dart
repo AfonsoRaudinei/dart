@@ -216,7 +216,7 @@ class MapConfig {
   /// Malhas oficiais UF (IBGE) — GeoJSON simplificado.
   static const String ibgeStateBoundariesUrl =
       'https://servicodados.ibge.gov.br/api/v3/malhas/estados'
-      '?formato=application/vnd.geo+json&qualidade=minima';
+      '?formato=application/vnd.geo+json&qualidade=intermediaria';
 
   /// URL da camada que o mapa está mostrando, incluindo rótulos de satélite.
   /// O cache offline usa essa mesma URL como chave — senão o download
