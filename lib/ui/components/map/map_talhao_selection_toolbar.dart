@@ -7,6 +7,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/constants/layout_constants.dart';
 import '../../../core/state/map_ui_providers.dart';
 import '../../../modules/drawing/domain/drawing_feature_actions_mode.dart';
 import '../../../modules/drawing/domain/drawing_state.dart';
@@ -252,14 +253,23 @@ Offset clampMapToolbarOffset({
   var top = screenPoint.dy - toolbarHeight - anchorGap;
 
   final minLeft = edgeMargin;
+  final rightColumnReserve =
+      kMapActionColumnRightInset + kMapActionColumnButtonSize;
   final maxLeft = math.max(
     edgeMargin,
-    viewportSize.width - toolbarWidth - edgeMargin,
+    viewportSize.width -
+        toolbarWidth -
+        edgeMargin -
+        rightColumnReserve,
   );
   final minTop = topInset + edgeMargin;
   final maxTop = math.max(
     minTop,
-    viewportSize.height - bottomInset - toolbarHeight - edgeMargin,
+    viewportSize.height -
+        bottomInset -
+        kFabSafeArea -
+        toolbarHeight -
+        edgeMargin,
   );
 
   left = left.clamp(minLeft, maxLeft);
