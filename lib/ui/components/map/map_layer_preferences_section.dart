@@ -76,8 +76,8 @@ class MapLayerPreferencesSection extends ConsumerWidget {
           title: const Text('Divisas estaduais'),
           subtitle: Text(
             borders
-                ? 'Exibe limites oficiais das UFs (IBGE) sobre o mapa.'
-                : 'Oculta as fronteiras estaduais.',
+                ? 'Limites das UFs (IBGE) e município do centro do mapa.'
+                : 'Oculta as fronteiras estaduais e o município no mapa.',
           ),
           value: borders,
           onChanged: (enabled) {
