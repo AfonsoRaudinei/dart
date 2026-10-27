@@ -114,6 +114,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       }
       // Sincronizar pré-seleção inicial
       _syncPreSelectedContext(ref.read(drawingClientProvider));
+      _drainCompactOpenMetadataIfNeeded();
     });
 
     // Suggest logical name
@@ -125,6 +126,13 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     _nomeController.dispose();
     _descricaoController.dispose();
     super.dispose();
+  }
+
+  void _drainCompactOpenMetadataIfNeeded() {
+    if (!mounted) return;
+    if (!ref.read(drawingCompactOpenMetadataProvider)) return;
+    ref.read(drawingCompactOpenMetadataProvider.notifier).state = false;
+    setState(() => _isEditingMetadata = true);
   }
 
   /// Aplica pré-seleção de cliente/fazenda proveniente do fluxo Map-First.
@@ -329,9 +337,10 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     });
 
     ref.listen<bool>(drawingCompactOpenMetadataProvider, (previous, next) {
-      if (next != true || !mounted) return;
-      ref.read(drawingCompactOpenMetadataProvider.notifier).state = false;
-      setState(() => _isEditingMetadata = true);
+      if (!next) return;
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _drainCompactOpenMetadataIfNeeded(),
+      );
     });
 
     // NOTA ARQUITETURAL: O handle (pílula de drag) é renderizado pelo
