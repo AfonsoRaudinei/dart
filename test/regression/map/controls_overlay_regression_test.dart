@@ -96,6 +96,10 @@ void main() {
           findsNothing,
         );
         expect(
+          find.byKey(const Key('map_control_cerrado_inpe_toggle_btn')),
+          findsOneWidget,
+        );
+        expect(
           find.byKey(const Key('map_control_basemap_toggle_btn')),
           findsOneWidget,
         );
@@ -103,10 +107,19 @@ void main() {
         expect(find.byKey(const Key('map_control_actions_btn')), findsNothing);
         expect(find.byKey(const Key('map_control_check_in')), findsOneWidget);
 
+        final inpeLeft = tester
+            .getTopLeft(
+              find.byKey(const Key('map_control_cerrado_inpe_toggle_btn')),
+            )
+            .dx;
+        final basemapLeft = tester
+            .getTopLeft(find.byKey(const Key('map_control_basemap_toggle_btn')))
+            .dx;
         final basemapTop =
             tester.getTopLeft(find.byKey(const Key('map_control_basemap_toggle_btn'))).dy;
         final layersTop =
             tester.getTopLeft(find.byKey(const Key('map_control_layers_btn'))).dy;
+        expect(inpeLeft, lessThan(basemapLeft));
         expect(basemapTop, lessThan(layersTop));
       },
     );
@@ -166,6 +179,10 @@ void main() {
 
       expect(
         find.byKey(const Key('map_control_basemap_toggle_btn')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const Key('map_control_cerrado_inpe_toggle_btn')),
         findsNothing,
       );
     });
@@ -406,6 +423,7 @@ void main() {
       expect(overlay.contains('class _MapRoundToggleButton'), isTrue);
       expect(overlay.contains('class _IconOffSlash'), isTrue);
       expect(overlay.contains('BoxShape.circle'), isTrue);
+      expect(overlay.contains('class _CerradoInpeToggleButton'), isTrue);
       expect(overlay.contains('class _BasemapToggleButton'), isTrue);
       expect(overlay.contains('_MapRoundToggleButton('), isTrue);
       expect(location.contains('_MapRoundToggleButton('), isTrue);
