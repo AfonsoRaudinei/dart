@@ -47,8 +47,10 @@ class MapStateBoundariesLayer extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final zoom =
-        ref.watch(mapCameraSnapshotProvider)?.zoom ?? _defaultZoom;
+    final zoom = ref.watch(
+          mapCameraSnapshotProvider.select((s) => s?.zoom),
+        ) ??
+        _defaultZoom;
     final stroke = strokeWidthForZoom(zoom);
     final haloStroke = stroke + 2.0;
     final fill = stateBoundarySubtleFillColor();
