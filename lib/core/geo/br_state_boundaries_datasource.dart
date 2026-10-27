@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
@@ -45,16 +44,11 @@ List<Polygon> _geometryToPolygons(Map<String, dynamic> geometry) {
   final coordinates = geometry['coordinates'];
   if (type == null || coordinates is! List<dynamic>) return const [];
 
-  const borderColor = Color(0xCCFFFFFF);
-  const fillColor = Color(0x14FFFFFF);
-
+  // Estilo visual (traço/cores) é aplicado em [MapStateBoundariesLayer].
   return switch (type) {
     'Polygon' => [
       Polygon(
         points: _ringToLatLng(coordinates.first as List<dynamic>),
-        borderColor: borderColor,
-        borderStrokeWidth: 1.5,
-        color: fillColor,
       ),
     ],
     'MultiPolygon' => [
@@ -62,9 +56,6 @@ List<Polygon> _geometryToPolygons(Map<String, dynamic> geometry) {
         if (polygon is List<dynamic> && polygon.isNotEmpty)
           Polygon(
             points: _ringToLatLng(polygon.first as List<dynamic>),
-            borderColor: borderColor,
-            borderStrokeWidth: 1.5,
-            color: fillColor,
           ),
     ],
     _ => const [],
