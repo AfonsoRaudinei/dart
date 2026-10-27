@@ -158,6 +158,8 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (widget.drawingState != DrawingState.editing) ...[
+                _CerradoInpeToggleButton(activeColor: activeColor),
+                const SizedBox(width: 6),
                 _BasemapToggleButton(activeColor: activeColor),
                 const SizedBox(width: 6),
               ],
@@ -481,6 +483,77 @@ class _MapButtonLabel extends StatelessWidget {
               )
             : const SizedBox.shrink(),
       ),
+    );
+  }
+}
+
+/// Ativa/desativa overlay Satélite Cerrado (INPE) no topo direito.
+class _CerradoInpeToggleButton extends ConsumerStatefulWidget {
+  const _CerradoInpeToggleButton({required this.activeColor});
+
+  final Color activeColor;
+
+  @override
+  ConsumerState<_CerradoInpeToggleButton> createState() =>
+      _CerradoInpeToggleButtonState();
+}
+
+class _CerradoInpeToggleButtonState
+    extends ConsumerState<_CerradoInpeToggleButton> {
+  Timer? _labelTimer;
+  bool _showLabel = false;
+
+  @override
+  void dispose() {
+    _labelTimer?.cancel();
+    super.dispose();
+  }
+
+  void _showTemporaryLabel() {
+    _labelTimer?.cancel();
+    setState(() => _showLabel = true);
+    _labelTimer = Timer(const Duration(milliseconds: 1600), () {
+      if (mounted) setState(() => _showLabel = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isOn = ref.watch(cerradoSatelliteOverlayEnabledProvider);
+    const label = 'INPE';
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _MapButtonLabel(text: label, isVisible: _showLabel),
+        const SizedBox(width: 6),
+        Semantics(
+          button: true,
+          label: 'Satélite Cerrado (INPE)',
+          child: _MapRoundToggleButton(
+            buttonKey: const Key('map_control_cerrado_inpe_toggle_btn'),
+            icon: isOn ? SFIcons.layersFill : SFIcons.layers,
+            iconColor: isOn ? widget.activeColor : Colors.grey.shade600,
+            isOn: isOn,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              final next = !isOn;
+              ref
+                  .read(cerradoSatelliteOverlayEnabledProvider.notifier)
+                  .setEnabled(next);
+              if (next) {
+                final currentLayer = ref.read(activeLayerProvider);
+                if (currentLayer != LayerType.satellite) {
+                  ref
+                      .read(activeLayerProvider.notifier)
+                      .setLayer(LayerType.satellite);
+                }
+              }
+            },
+            onLongPress: _showTemporaryLabel,
+          ),
+        ),
+      ],
     );
   }
 }
