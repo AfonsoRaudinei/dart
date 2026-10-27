@@ -65,3 +65,16 @@ CREATE POLICY "feedback_insert_own" ON public.feedback
 CREATE POLICY "feedback_select_own" ON public.feedback
   FOR SELECT TO authenticated
   USING (user_id = auth.uid());
+
+-- Dashboard GitHub Pages (chave anon, sem login):
+-- view sem user_id, security_invoker=false para o SELECT anon não ser
+-- filtrado pelo RLS da tabela. Mensagens ficam visíveis no painel público;
+-- UUID do usuário não.
+CREATE OR REPLACE VIEW public.feedback_dashboard AS
+SELECT id, type, module, impact, message, created_at
+FROM public.feedback;
+
+ALTER VIEW public.feedback_dashboard SET (security_invoker = false);
+
+GRANT SELECT ON public.feedback_dashboard TO anon, authenticated;
+REVOKE INSERT, UPDATE, DELETE ON public.feedback_dashboard FROM anon, authenticated;
