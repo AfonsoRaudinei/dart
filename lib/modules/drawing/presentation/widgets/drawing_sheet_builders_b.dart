@@ -1,5 +1,7 @@
 part of 'drawing_sheet.dart';
 
+// Handlers NDVI/metadata/geometria compartilhados: drawing_compact_selection_actions.dart
+
 extension _DrawingSheetBuildersB on _DrawingSheetState {
   Widget _buildSelectedMode(BuildContext context) {
     final feature = widget.controller.selectedFeature!;
@@ -26,10 +28,11 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       onShowNdviMap: feature.id.isEmpty
           ? null
           : () {
-              ref.read(mapNdviOverlayFieldIdProvider.notifier).state =
-                  feature.id;
-              ref.invalidate(mapNdviOverlaySummaryProvider);
-              widget.onCollapseWhileEditing?.call();
+              DrawingCompactSelectionActions.showNdviMap(
+                ref,
+                feature,
+                onCollapseWhileEditing: widget.onCollapseWhileEditing,
+              );
             },
       onEditMetadata: () => _rebuild(() => _isEditingMetadata = true),
       onUnion: widget.controller.startUnionMode,
