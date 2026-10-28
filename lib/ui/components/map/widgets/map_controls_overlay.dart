@@ -51,6 +51,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final LatLng currentCenter;
   final double currentZoom;
   final DrawingState drawingState;
+  final bool holeCutActive;
   final VoidCallback onFinishDrawing;
   final VoidCallback onCancelDrawing;
   final VoidCallback onSaveEdit;
@@ -80,6 +81,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     required this.currentZoom,
     required this.onTabSelected,
     required this.drawingState,
+    this.holeCutActive = false,
     required this.onFinishDrawing,
     required this.onCancelDrawing,
     required this.onSaveEdit,
@@ -102,10 +104,19 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
 class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
   bool _showMeasurementDetails = false;
 
+  bool get _holeCutArmed =>
+      widget.holeCutActive && widget.drawingState == DrawingState.armed;
+
+  bool get _showsBottomDrawingToolbar =>
+      widget.drawingState == DrawingState.drawing ||
+      widget.drawingState == DrawingState.editing ||
+      _holeCutArmed;
+
   bool get _hidesCheckInForDrawing =>
       widget.isDrawMode ||
       widget.drawingState == DrawingState.drawing ||
-      widget.drawingState == DrawingState.editing;
+      widget.drawingState == DrawingState.editing ||
+      _holeCutArmed;
 
   @override
   Widget build(BuildContext context) {
@@ -174,8 +185,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
         ),
         if ((widget.measurementAreaHa > 0 ||
                 widget.measurementPerimeterKm > 0) &&
-            widget.drawingState != DrawingState.drawing &&
-            widget.drawingState != DrawingState.editing)
+            !_showsBottomDrawingToolbar)
           Positioned(
             top: safeTop + 56,
             left: 12,
@@ -247,8 +257,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
         // 4. Drawing / editing actions — mesmo chrome inferior (toolbar + medição).
         // Redo não entra na toolbar (paridade com desenho / modelo Imagem 4).
         // DrawingController.redoEdit() permanece no domínio para uso futuro.
-        if (widget.drawingState == DrawingState.drawing ||
-            widget.drawingState == DrawingState.editing)
+        if (_showsBottomDrawingToolbar)
           DrawingBottomToolbarOverlay(
             onConfirm: widget.drawingState == DrawingState.editing
                 ? widget.onSaveEdit
