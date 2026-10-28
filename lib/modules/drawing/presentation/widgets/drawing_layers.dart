@@ -46,6 +46,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
   bool? _lastFreehandActive;
   DrawingTool? _lastTool;
   Set<int>? _lastIntersectingIndices;
+  bool _lastHoleCut = false;
   AreaDisplayUnit? _lastAreaUnit;
   TalhaoMapLabelPrefs? _lastLabelPrefs;
   String? _lastNdviOverlayId;
@@ -77,6 +78,8 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
         final intersectingIndices =
             widget.controller.intersectingSegmentIndices;
         final currentState = widget.controller.currentState;
+        final holeCutActive = widget.controller.isCuttingHole;
+        final holeCutFeatureId = widget.controller.holeCutFeatureId;
         final sketchVerticesOwnedByEditLayer =
             currentTool == DrawingTool.polygon &&
             (currentState == DrawingState.drawing ||
@@ -94,6 +97,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
             !_samePoints(_lastCurrentPoints, currentPoints) ||
             _lastIntersectingIndices != intersectingIndices ||
             _lastTool != currentTool ||
+            _lastHoleCut != holeCutActive ||
             !_samePoints(_lastFreehandTrail, freehandTrail) ||
             _lastPivotCenter != pivotCenter ||
             _lastPivotEdge != pivotEdge ||
@@ -127,6 +131,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
         _lastPivotEdge = pivotEdge;
         _lastFreehandActive = isFreehandStrokeActive;
         _lastTool = currentTool;
+        _lastHoleCut = holeCutActive;
         _lastIntersectingIndices = Set.from(intersectingIndices);
         _lastAreaUnit = areaUnit;
         _lastLabelPrefs = labelPrefs;
@@ -136,9 +141,17 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
         final polygons = <Polygon>[];
         final polylines = <Polyline>[];
         final markers = <Marker>[];
+        final holeCutPreview = holeCutActive
+            ? widget.controller.holeCutPreviewGeometry
+            : null;
 
         for (final feature in features) {
-          final geometry = feature.geometry;
+          final geometry =
+              holeCutActive &&
+                  feature.id == holeCutFeatureId &&
+                  holeCutPreview != null
+              ? holeCutPreview
+              : feature.geometry;
           final parts = geometry is DrawingPolygon
               ? [geometry.coordinates]
               : geometry is DrawingMultiPolygon
