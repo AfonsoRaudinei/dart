@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
 import 'package:soloforte_app/core/contracts/i_ndvi_field_presenter_provider.dart';
-import 'package:soloforte_app/core/contracts/i_ndvi_field_refresh_provider.dart';
 import 'package:soloforte_app/core/contracts/i_ndvi_latest_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/ndvi_latest_summary.dart';
 import 'package:soloforte_app/core/domain/cultura_tipo.dart';
@@ -150,18 +149,13 @@ class FarmLinkedFieldList extends ConsumerWidget {
   ) {
     final showNdvi = ref.read(talhaoCardNdviEnabledProvider(field.id));
     final actions = <Widget>[
-      TalhaoCardNdviModeIconButton(fieldId: field.id),
-      if (showNdvi)
-        IconButton(
-          tooltip: 'Atualizar NDVI',
-          icon: const Icon(Icons.refresh_rounded, size: 20),
-          onPressed: () async {
-            await ref
-                .read(ndviFieldRefreshProvider)
-                .clearCacheAndReload(field.id);
-            ref.invalidate(talhaoCardNdviLatestProvider(field.id));
-          },
-        ),
+      TalhaoCardNdviModeIconButton(
+        fieldId: field.id,
+        fieldName: field.name,
+        areaHa: field.areaHa,
+        onAfterSheetClosed: () =>
+            ref.invalidate(talhaoCardNdviLatestProvider(field.id)),
+      ),
       IconButton(
         tooltip: 'Abrir no mapa',
         icon: const Icon(Icons.open_in_full, size: 20),
@@ -170,23 +164,13 @@ class FarmLinkedFieldList extends ConsumerWidget {
     ];
 
     if (field.isDrawing) {
-      actions.addAll([
-        IconButton(
-          tooltip: 'Dados do talhão',
-          icon: const Icon(Icons.edit_outlined, size: 20),
-          onPressed: () => _openField(context, field),
-        ),
-        IconButton(
-          tooltip: 'Geometria e união',
-          icon: const Icon(Icons.more_horiz, size: 20),
-          onPressed: () => _openActions(context, field),
-        ),
+      actions.add(
         IconButton(
           tooltip: 'Excluir talhão',
           icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
           onPressed: () => _confirmDeleteDrawing(context, ref, field),
         ),
-      ]);
+      );
     }
 
     return actions;
@@ -208,21 +192,6 @@ class FarmLinkedFieldList extends ConsumerWidget {
     }
 
     context.go(AppRoutes.fieldDetail(clientId, farmId, field.id));
-  }
-
-  Future<void> _openActions(
-    BuildContext context,
-    FarmLinkedFieldSummary field,
-  ) async {
-    context.go(
-      talhaoMapUri(
-        modo: 'desenho',
-        clientId: clientId,
-        farmId: farmId,
-        drawingId: field.id,
-        ferramentasCompleto: true,
-      ),
-    );
   }
 
   Future<void> _confirmDeleteDrawing(
