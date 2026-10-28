@@ -1,14 +1,16 @@
-import 'dart:ui';
-
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/state/map_ndvi_overlay.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
+import 'package:soloforte_app/modules/drawing/presentation/drawing_compact_selection_actions.dart';
 import 'package:soloforte_app/ui/components/map/map_talhao_selection_toolbar.dart';
 
-DrawingFeature _squareFeature() {
+DrawingFeature _squareFeature({String id = 'f1'}) {
   final now = DateTime(2026);
   return DrawingFeature(
-    id: 'f1',
+    id: id,
     geometry: DrawingPolygon(
       coordinates: const [
         [
@@ -143,6 +145,56 @@ void main() {
 
       expect(offset.dx, greaterThanOrEqualTo(8));
       expect(offset.dy, greaterThanOrEqualTo(8));
+    });
+  });
+
+  group('estimateMapTalhaoToolbarWidth', () {
+    test('retorna largura para 4 chips quando feature tem id', () {
+      final feature = _squareFeature();
+      expect(estimateMapTalhaoToolbarWidth(feature), 4 * 76.0 + 3);
+    });
+
+    test('retorna largura para 2 chips quando feature tem id vazio', () {
+      final feature = _squareFeature(id: '');
+      expect(estimateMapTalhaoToolbarWidth(feature), 2 * 76.0 + 1);
+    });
+  });
+
+  group('DrawingCompactSelectionActions P&B e NDVI', () {
+    testWidgets('showMonochromeMap alterna modo P&B e showNdviMap desativa P&B', (
+      tester,
+    ) async {
+      final feature = _squareFeature();
+      late WidgetRef capturedRef;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: Consumer(
+            builder: (context, ref, _) {
+              capturedRef = ref;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      expect(capturedRef.read(mapNdviOverlayFieldIdProvider), isNull);
+      expect(capturedRef.read(mapNdviMonochromeEnabledProvider), isFalse);
+
+      DrawingCompactSelectionActions.showMonochromeMap(capturedRef, feature);
+      expect(capturedRef.read(mapNdviOverlayFieldIdProvider), 'f1');
+      expect(capturedRef.read(mapNdviMonochromeEnabledProvider), isTrue);
+
+      DrawingCompactSelectionActions.showMonochromeMap(capturedRef, feature);
+      expect(capturedRef.read(mapNdviOverlayFieldIdProvider), 'f1');
+      expect(capturedRef.read(mapNdviMonochromeEnabledProvider), isFalse);
+
+      DrawingCompactSelectionActions.showMonochromeMap(capturedRef, feature);
+      expect(capturedRef.read(mapNdviMonochromeEnabledProvider), isTrue);
+
+      DrawingCompactSelectionActions.showNdviMap(capturedRef, feature);
+      expect(capturedRef.read(mapNdviOverlayFieldIdProvider), 'f1');
+      expect(capturedRef.read(mapNdviMonochromeEnabledProvider), isFalse);
     });
   });
 }
