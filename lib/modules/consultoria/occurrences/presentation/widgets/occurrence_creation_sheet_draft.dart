@@ -45,6 +45,9 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
           (key, value) => MapEntry(key, List<String>.from(value)),
         ),
       );
+    _photoCaptions
+      ..clear()
+      ..addAll(Map<String, String>.from(draft.photoCaptions));
 
     for (final entry in draft.notas.entries) {
       _notaCtrl(entry.key).text = entry.value;
@@ -96,6 +99,7 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
       fotos: _fotos.map(
         (key, value) => MapEntry(key, List<String>.from(value)),
       ),
+      photoCaptions: Map<String, String>.from(_photoCaptions),
       notas: _notasCtrls.map((key, ctrl) => MapEntry(key, ctrl.text)),
     );
 

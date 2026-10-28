@@ -26,5 +26,17 @@ void main() {
       );
       expect(draft.isEffectivelyEmpty, isFalse);
     });
+
+    test('copyWith preserva legendas de foto', () {
+      const draft = OccurrenceFormDraft(
+        fotos: {
+          'doenca': ['media/a.jpg'],
+        },
+        photoCaptions: {'media/a.jpg': 'Mancha na folha'},
+      );
+      final copied = draft.copyWith(urgency: 'Alta');
+      expect(copied.photoCaptions, {'media/a.jpg': 'Mancha na folha'});
+      expect(copied.urgency, 'Alta');
+    });
   });
 }

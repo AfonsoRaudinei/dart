@@ -89,16 +89,20 @@ class _OccurrenceCoverThumbnailState extends State<OccurrenceCoverThumbnail> {
 
 class OccurrencePhotoGallery extends StatefulWidget {
   final List<String> paths;
+  final Map<String, String> captions;
   final double thumbnailSize;
   final bool readOnly;
   final void Function(int index)? onRemove;
+  final void Function(int index, String caption)? onCaptionChanged;
 
   const OccurrencePhotoGallery({
     super.key,
     required this.paths,
+    this.captions = const {},
     this.thumbnailSize = 56,
     this.readOnly = true,
     this.onRemove,
+    this.onCaptionChanged,
   });
 
   @override
@@ -155,30 +159,48 @@ class _OccurrencePhotoGalleryState extends State<OccurrencePhotoGallery> {
           final storedPath = widget.paths[index];
           final resolved =
               index < _resolvedPaths.length ? _resolvedPaths[index] : null;
+          final caption = widget.captions[storedPath] ?? '';
           return _PhotoThumbnail(
             storedPath: storedPath,
             resolvedPath: resolved,
             size: widget.thumbnailSize,
             readOnly: widget.readOnly,
+            hasCaption: caption.trim().isNotEmpty,
             onRemove: widget.onRemove == null
                 ? null
                 : () => widget.onRemove!(index),
             onTap: resolved == null
                 ? null
-                : () => _openPreview(context, resolved),
+                : () => _openPreview(
+                      context,
+                      index: index,
+                      resolvedPath: resolved,
+                      caption: caption,
+                    ),
           );
         },
       ),
     );
   }
 
-  void _openPreview(BuildContext context, String resolvedPath) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
+  Future<void> _openPreview(
+    BuildContext context, {
+    required int index,
+    required String resolvedPath,
+    required String caption,
+  }) async {
+    final updated = await Navigator.of(context).push<String>(
+      MaterialPageRoute<String>(
         fullscreenDialog: true,
-        builder: (_) => _PhotoPreviewScreen(path: resolvedPath),
+        builder: (_) => _PhotoPreviewScreen(
+          path: resolvedPath,
+          caption: caption,
+          readOnly: widget.readOnly || widget.onCaptionChanged == null,
+        ),
       ),
     );
+    if (!context.mounted || updated == null) return;
+    widget.onCaptionChanged?.call(index, updated);
   }
 }
 
@@ -312,6 +334,7 @@ class _PhotoThumbnail extends StatelessWidget {
   final String? resolvedPath;
   final double size;
   final bool readOnly;
+  final bool hasCaption;
   final VoidCallback? onRemove;
   final VoidCallback? onTap;
 
@@ -320,6 +343,7 @@ class _PhotoThumbnail extends StatelessWidget {
     required this.resolvedPath,
     required this.size,
     required this.readOnly,
+    this.hasCaption = false,
     this.onRemove,
     this.onTap,
   });
@@ -349,6 +373,23 @@ class _PhotoThumbnail extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           image,
+          if (hasCaption)
+            Positioned(
+              left: 2,
+              bottom: 2,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: Colors.black87,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Icon(
+                  Icons.short_text_rounded,
+                  size: 10,
+                  color: Colors.white,
+                ),
+              ),
+            ),
           if (!readOnly && onRemove != null)
             Positioned(
               top: 2,
@@ -392,36 +433,69 @@ class _PhotoThumbnail extends StatelessWidget {
   }
 }
 
-class _PhotoPreviewScreen extends StatelessWidget {
+class _PhotoPreviewScreen extends StatefulWidget {
   final String path;
+  final String caption;
+  final bool readOnly;
 
-  const _PhotoPreviewScreen({required this.path});
+  const _PhotoPreviewScreen({
+    required this.path,
+    required this.caption,
+    required this.readOnly,
+  });
 
-  void _close(BuildContext context) {
-    Navigator.of(context).pop();
+  @override
+  State<_PhotoPreviewScreen> createState() => _PhotoPreviewScreenState();
+}
+
+class _PhotoPreviewScreenState extends State<_PhotoPreviewScreen> {
+  late final TextEditingController _captionCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _captionCtrl = TextEditingController(text: widget.caption);
+  }
+
+  @override
+  void dispose() {
+    _captionCtrl.dispose();
+    super.dispose();
+  }
+
+  void _close() {
+    Navigator.of(context).pop(widget.readOnly ? null : _captionCtrl.text);
   }
 
   @override
   Widget build(BuildContext context) {
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     return PopScope(
-      canPop: true,
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _close();
+      },
       child: Scaffold(
         backgroundColor: Colors.black,
         body: SafeArea(
           child: Stack(
             children: [
               Positioned.fill(
-                child: Center(
-                  child: InteractiveViewer(
-                    minScale: 0.5,
-                    maxScale: 4,
-                    child: Image.file(
-                      File(path),
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.broken_image_outlined,
-                        color: Colors.white54,
-                        size: 64,
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: widget.readOnly ? 72 : 128),
+                  child: Center(
+                    child: InteractiveViewer(
+                      minScale: 0.5,
+                      maxScale: 4,
+                      child: Image.file(
+                        File(widget.path),
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.broken_image_outlined,
+                          color: Colors.white54,
+                          size: 64,
+                        ),
                       ),
                     ),
                   ),
@@ -436,7 +510,7 @@ class _PhotoPreviewScreen extends StatelessWidget {
                     foregroundColor: Colors.white,
                   ),
                   tooltip: 'Fechar',
-                  onPressed: () => _close(context),
+                  onPressed: _close,
                   icon: const Icon(Icons.close_rounded),
                 ),
               ),
@@ -444,13 +518,55 @@ class _PhotoPreviewScreen extends StatelessWidget {
                 top: 8,
                 right: 8,
                 child: TextButton(
-                  onPressed: () => _close(context),
+                  onPressed: _close,
                   style: TextButton.styleFrom(foregroundColor: Colors.white),
                   child: const Text(
                     'Fechar',
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
+              ),
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 16 + keyboard,
+                child: widget.readOnly
+                    ? (_captionCtrl.text.trim().isEmpty
+                        ? const SizedBox.shrink()
+                        : Text(
+                            _captionCtrl.text.trim(),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              height: 1.3,
+                            ),
+                          ))
+                    : TextField(
+                        key: const Key('occurrence_photo_caption_field'),
+                        controller: _captionCtrl,
+                        maxLines: 2,
+                        maxLength: kOccurrencePhotoCaptionMaxLength,
+                        style: const TextStyle(color: Colors.white),
+                        cursorColor: Colors.white,
+                        decoration: InputDecoration(
+                          labelText: 'Legenda (opcional)',
+                          hintText: 'Ex.: Folha com mancha na nervura',
+                          counterStyle: const TextStyle(color: Colors.white54),
+                          labelStyle: const TextStyle(color: Colors.white70),
+                          hintStyle: const TextStyle(color: Colors.white38),
+                          filled: true,
+                          fillColor: Colors.white12,
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Colors.white24),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Colors.white70),
+                          ),
+                        ),
+                      ),
               ),
             ],
           ),
