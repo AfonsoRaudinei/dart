@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/domain/drawing_utils.dart';
+import 'package:soloforte_app/modules/drawing/domain/services/geometry_service.dart';
 
 /// ✅ TESTES UNITÁRIOS - DrawingUtils
 /// 
@@ -84,6 +85,79 @@ void main() {
         DrawingPolygon(coordinates: multiPolygon.coordinates[0]),
       );
       expect(result, greaterThan(singleArea));
+    });
+
+    test('polígono com furo interno tem área menor que o anel externo', () {
+      const outer = [
+        [-47.93, -15.78],
+        [-47.92, -15.78],
+        [-47.92, -15.77],
+        [-47.93, -15.77],
+        [-47.93, -15.78],
+      ];
+      const hole = [
+        [-47.927, -15.777],
+        [-47.923, -15.777],
+        [-47.923, -15.773],
+        [-47.927, -15.773],
+        [-47.927, -15.777],
+      ];
+      final outerOnly = DrawingPolygon(coordinates: [outer]);
+      final withHole = DrawingPolygon(coordinates: [outer, hole]);
+
+      final outerArea = DrawingUtils.calculateGeometryArea(outerOnly);
+      final netArea = DrawingUtils.calculateGeometryArea(withHole);
+
+      expect(netArea, greaterThan(0));
+      expect(netArea, lessThan(outerArea));
+      expect(GeometryService.calculateArea(withHole), closeTo(netArea, 1e-9));
+    });
+
+    test('tryAddHole acrescenta o anel interno', () {
+      final base = DrawingPolygon(coordinates: const [
+        [
+          [-47.93, -15.78],
+          [-47.92, -15.78],
+          [-47.92, -15.77],
+          [-47.93, -15.77],
+          [-47.93, -15.78],
+        ],
+      ]);
+      final hole = DrawingPolygon(coordinates: const [
+        [
+          [-47.927, -15.777],
+          [-47.923, -15.777],
+          [-47.923, -15.773],
+          [-47.927, -15.773],
+          [-47.927, -15.777],
+        ],
+      ]);
+
+      final result = DrawingUtils.tryAddHole(base, hole);
+      expect(result, isA<DrawingPolygon>());
+      expect((result as DrawingPolygon).coordinates, hasLength(2));
+    });
+
+    test('tryAddHole retorna null quando um vértice fica fora', () {
+      final base = DrawingPolygon(coordinates: const [
+        [
+          [-47.93, -15.78],
+          [-47.92, -15.78],
+          [-47.92, -15.77],
+          [-47.93, -15.77],
+          [-47.93, -15.78],
+        ],
+      ]);
+      final hole = DrawingPolygon(coordinates: const [
+        [
+          [-47.927, -15.777],
+          [-47.923, -15.777],
+          [-47.90, -15.775],
+          [-47.927, -15.777],
+        ],
+      ]);
+
+      expect(DrawingUtils.tryAddHole(base, hole), isNull);
     });
   });
 
