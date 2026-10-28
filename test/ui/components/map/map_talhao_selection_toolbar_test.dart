@@ -146,17 +146,33 @@ void main() {
       expect(offset.dx, greaterThanOrEqualTo(8));
       expect(offset.dy, greaterThanOrEqualTo(8));
     });
+
+    test('viewport 360dp com 4 chips (275px) não invade coluna direita', () {
+      final offset = clampMapToolbarOffset(
+        screenPoint: const Offset(350, 200),
+        viewportSize: const Size(360, 800),
+        toolbarWidth: 275,
+        toolbarHeight: 52,
+      );
+
+      expect(
+        offset.dx + 275,
+        lessThanOrEqualTo(
+          360 - kMapActionColumnRightInset - kMapActionColumnButtonSize,
+        ),
+      );
+    });
   });
 
   group('estimateMapTalhaoToolbarWidth', () {
     test('retorna largura para 4 chips quando feature tem id', () {
       final feature = _squareFeature();
-      expect(estimateMapTalhaoToolbarWidth(feature), 4 * 76.0 + 3);
+      expect(estimateMapTalhaoToolbarWidth(feature), 275.0);
     });
 
     test('retorna largura para 2 chips quando feature tem id vazio', () {
       final feature = _squareFeature(id: '');
-      expect(estimateMapTalhaoToolbarWidth(feature), 2 * 76.0 + 1);
+      expect(estimateMapTalhaoToolbarWidth(feature), 137.0);
     });
   });
 
