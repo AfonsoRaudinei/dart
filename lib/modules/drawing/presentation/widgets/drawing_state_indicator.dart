@@ -21,11 +21,13 @@ import '../../domain/drawing_state.dart';
 class DrawingStateIndicator extends StatelessWidget {
   final DrawingState state;
   final DrawingTool tool;
+  final String? message;
 
   const DrawingStateIndicator({
     super.key,
     required this.state,
     required this.tool,
+    this.message,
   });
 
   @override
@@ -56,7 +58,7 @@ class DrawingStateIndicator extends StatelessWidget {
           Icon(_iconForState(state, tool), size: 18, color: Colors.white),
           const SizedBox(width: 10),
           Text(
-            _messageForState(state),
+            message ?? _messageForState(state),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 14,
@@ -165,12 +167,14 @@ class DrawingStateOverlay extends StatelessWidget {
   final DrawingState state;
   final DrawingTool tool;
   final Widget child;
+  final String? message;
 
   const DrawingStateOverlay({
     super.key,
     required this.state,
     required this.tool,
     required this.child,
+    this.message,
   });
 
   @override
@@ -184,7 +188,11 @@ class DrawingStateOverlay extends StatelessWidget {
           left: 0,
           right: 0,
           child: Center(
-            child: DrawingStateIndicator(state: state, tool: tool),
+            child: DrawingStateIndicator(
+              state: state,
+              tool: tool,
+              message: message,
+            ),
           ),
         ),
       ],
