@@ -22,9 +22,13 @@ String formatLinkedFieldAreaHa(double areaHa) {
 
 String farmLinkedFieldSubtitle(
   FarmLinkedFieldSummary field,
-  AreaDisplayUnit unit,
-) {
-  final parts = <String>[formatAreaFromHectares(field.areaHa, unit)];
+  AreaDisplayUnit unit, {
+  bool includeArea = true,
+}) {
+  final parts = <String>[];
+  if (includeArea) {
+    parts.add(formatAreaFromHectares(field.areaHa, unit));
+  }
 
   if (field.crop != null && field.crop!.trim().isNotEmpty) {
     parts.add(CulturaTipo.displayLabel(field.crop));
@@ -126,7 +130,11 @@ class FarmLinkedFieldList extends ConsumerWidget {
               vertices: field.vertices,
               nome: field.name,
               areaHa: field.areaHa,
-              subtitle: farmLinkedFieldSubtitle(field, areaUnit),
+              subtitle: farmLinkedFieldSubtitle(
+                field,
+                areaUnit,
+                includeArea: false,
+              ),
               onTap: () => _openField(context, field),
               actions: _fieldActions(context, ref, field),
               showFieldNameOnMap: true,
@@ -326,7 +334,11 @@ class _FarmTalhaoNdviCard extends ConsumerWidget {
       vertices: field.vertices,
       nome: field.name,
       areaHa: field.areaHa,
-      subtitle: farmLinkedFieldSubtitle(field, areaUnit),
+      subtitle: farmLinkedFieldSubtitle(
+        field,
+        areaUnit,
+        includeArea: false,
+      ),
       onTap: onOpenField,
       actions: actions,
       showNdvi: showNdvi,
