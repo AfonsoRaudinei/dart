@@ -30,6 +30,47 @@ void main() {
       expect(parseFotosCategoriasJson('{}'), isEmpty);
       expect(parseFotosCategoriasJson('not-json'), isEmpty);
     });
+
+    test('ignora chave reservada _captions', () {
+      const raw =
+          '{"daninhas":["media/a.jpg"],"_captions":{"media/a.jpg":"Broto novos"}}';
+      expect(parseFotosCategoriasJson(raw), ['media/a.jpg']);
+    });
+  });
+
+  group('parseFotosCategoriasByCategory', () {
+    test('não hidrata _captions como categoria', () {
+      const raw =
+          '{"daninhas":["media/a.jpg"],"_captions":{"media/a.jpg":"Broto"}}';
+      expect(parseFotosCategoriasByCategory(raw), {
+        'daninhas': ['media/a.jpg'],
+      });
+    });
+  });
+
+  group('parseFotosCaptions', () {
+    test('lê legendas keyed por path', () {
+      const raw =
+          '{"daninhas":["media/a.jpg"],"_captions":{"media/a.jpg":"Broto novos"}}';
+      expect(parseFotosCaptions(raw), {'media/a.jpg': 'Broto novos'});
+      expect(captionForPath(raw, 'media/a.jpg'), 'Broto novos');
+      expect(captionForPath(raw, 'media/missing.jpg'), isNull);
+    });
+
+    test('retorna vazio no JSON legado só com lists', () {
+      const raw = '{"daninhas":["media/a.jpg"]}';
+      expect(parseFotosCaptions(raw), isEmpty);
+    });
+
+    test('recorta legenda acima do teto', () {
+      final long = 'x' * 200;
+      final raw =
+          '{"daninhas":["media/a.jpg"],"_captions":{"media/a.jpg":"$long"}}';
+      expect(
+        parseFotosCaptions(raw)['media/a.jpg']?.length,
+        kOccurrencePhotoCaptionMaxLength,
+      );
+    });
   });
 
   group('allPhotoPaths', () {
@@ -71,6 +112,51 @@ void main() {
       );
       expect(encoded, contains('media/img_old.jpg'));
       expect(encoded, contains('media/new.jpg'));
+    });
+
+    test('reescreve chaves de _captions junto com os paths', () {
+      const raw =
+          '{"daninhas":["/var/mobile/media/img_old.jpg"],"_captions":{"/var/mobile/media/img_old.jpg":"Broto novos"}}';
+      final encoded = encodeFotosCategoriasJson(
+        raw,
+        (path) => path.contains('img_old.jpg') ? 'media/img_old.jpg' : path,
+      );
+      expect(encoded, isNotNull);
+      final decoded = parseFotosCaptions(encoded);
+      expect(decoded, {'media/img_old.jpg': 'Broto novos'});
+      expect(parseFotosCategoriasJson(encoded), ['media/img_old.jpg']);
+    });
+  });
+
+  group('encodeFotosCategoriasWithCaptions', () {
+    test('omite _captions quando não há legendas', () {
+      final encoded = encodeFotosCategoriasWithCaptions(
+        {
+          'daninhas': ['media/a.jpg'],
+        },
+        const {},
+      );
+      expect(encoded, '{"daninhas":["media/a.jpg"]}');
+    });
+
+    test('inclui só legendas de paths conhecidos', () {
+      final encoded = encodeFotosCategoriasWithCaptions(
+        {
+          'daninhas': ['media/a.jpg'],
+        },
+        {
+          'media/a.jpg': '  Broto novos  ',
+          'media/orphaned.jpg': 'ignorada',
+        },
+      );
+      expect(parseFotosCaptions(encoded), {'media/a.jpg': 'Broto novos'});
+    });
+
+    test('retorna null sem fotos', () {
+      expect(
+        encodeFotosCategoriasWithCaptions(const {}, {'a': 'b'}),
+        isNull,
+      );
     });
   });
 }
