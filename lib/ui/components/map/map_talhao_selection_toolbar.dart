@@ -132,6 +132,20 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
                           );
                         },
                       ),
+                      _divider,
+                      _ToolbarChip(
+                        key: const Key('map_talhao_toolbar_bw'),
+                        icon: Icons.filter_b_and_w_outlined,
+                        label: 'P&B',
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          DrawingCompactSelectionActions.showMonochromeMap(
+                            ref,
+                            feature,
+                            onCollapseWhileEditing: onCollapseDrawSheet,
+                          );
+                        },
+                      ),
                     ],
                   ],
                 ),
@@ -162,11 +176,15 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
     return controller.selectedFeature != null;
   }
 
-  static double _estimateToolbarWidth(DrawingFeature feature) {
-    const chipWidth = 76.0;
-    final chips = feature.id.isNotEmpty ? 3 : 2;
-    return chips * chipWidth + (chips - 1);
-  }
+  static double _estimateToolbarWidth(DrawingFeature feature) =>
+      estimateMapTalhaoToolbarWidth(feature);
+}
+
+@visibleForTesting
+double estimateMapTalhaoToolbarWidth(DrawingFeature feature) {
+  const chipWidth = 76.0;
+  final chips = feature.id.isNotEmpty ? 4 : 2;
+  return chips * chipWidth + (chips - 1);
 }
 
 class _ToolbarChip extends StatelessWidget {
