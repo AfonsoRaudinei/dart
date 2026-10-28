@@ -84,7 +84,8 @@ class DrawingUtils {
   }
 
   /// Ponto da aresta [a]–[b] mais perto de [tap] em pixels de tela.
-  static ({LatLng point, double distancePx, double t}) closestPointOnSegmentPixels(
+  static ({LatLng point, double distancePx, double t})
+  closestPointOnSegmentPixels(
     MapCamera camera,
     LatLng tap,
     LatLng a,
@@ -139,27 +140,33 @@ class DrawingUtils {
     return GeodesicUtils.calculateAreaHectares(points);
   }
 
-  /// ⚡ Calculates the total area of any geometry type in hectares.
+  /// Área em hectares do anel externo menos a soma dos anéis internos.
   ///
-  /// Handles both [DrawingPolygon] and [DrawingMultiPolygon].
-  /// For MultiPolygon, sums the area of all constituent polygons.
+  /// Cada anel já vem em valor absoluto de [GeodesicUtils]. O resultado
+  /// nunca fica negativo. [DrawingMultiPolygon] soma cada parte já descontada.
   ///
   /// Returns 0.0 if geometry is invalid or has no coordinates.
   static double calculateGeometryArea(DrawingGeometry geometry) {
-    double area = 0.0;
-
     if (geometry is DrawingPolygon) {
-      if (geometry.coordinates.isNotEmpty) {
-        area = calculateAreaHa(geometry.coordinates.first);
-      }
-    } else if (geometry is DrawingMultiPolygon) {
-      for (var poly in geometry.coordinates) {
-        if (poly.isNotEmpty) {
-          area += calculateAreaHa(poly.first);
-        }
-      }
+      return _areaWithHoles(geometry.coordinates);
     }
+    if (geometry is DrawingMultiPolygon) {
+      var area = 0.0;
+      for (final poly in geometry.coordinates) {
+        area += _areaWithHoles(poly);
+      }
+      return area;
+    }
+    return 0.0;
+  }
 
+  static double _areaWithHoles(List<List<List<double>>> rings) {
+    if (rings.isEmpty) return 0.0;
+    var area = calculateAreaHa(rings.first);
+    for (var i = 1; i < rings.length; i++) {
+      area -= calculateAreaHa(rings[i]);
+    }
+    if (area < 0) return 0.0;
     return area;
   }
 
@@ -328,6 +335,108 @@ class DrawingUtils {
     newCoords.add(holeRing);
 
     return DrawingPolygon(coordinates: newCoords);
+  }
+
+  /// Acrescenta o anel externo de [hole] como furo de [base].
+  ///
+  /// Retorna null se o anel é curto ou não está fechado, se algum vértice
+  /// cai fora do anel externo, ou se cai dentro de um furo que já existe.
+  /// Polígono simples usa [cutGeometry]. MultiPolygon devolve o furo só
+  /// na parte que o contém.
+  static DrawingGeometry? tryAddHole(
+    DrawingGeometry base,
+    DrawingGeometry hole,
+  ) {
+    final holeRing = _primaryRing(hole);
+    if (holeRing == null || holeRing.length < 4 || !_isClosedRing(holeRing)) {
+      return null;
+    }
+
+    if (base is DrawingPolygon) {
+      if (!_holeFits(base.coordinates, holeRing)) return null;
+      final cut = cutGeometry(
+        base,
+        hole is DrawingPolygon ? hole : DrawingPolygon(coordinates: [holeRing]),
+      );
+      if (cut is! DrawingPolygon ||
+          cut.coordinates.length != base.coordinates.length + 1) {
+        return null;
+      }
+      return cut;
+    }
+
+    if (base is DrawingMultiPolygon) {
+      final parts = base.coordinates;
+      var match = -1;
+      for (var i = 0; i < parts.length; i++) {
+        if (_holeFits(parts[i], holeRing)) {
+          match = i;
+          break;
+        }
+      }
+      if (match < 0) return null;
+      final updated = <List<List<List<double>>>>[];
+      for (var i = 0; i < parts.length; i++) {
+        if (i == match) {
+          updated.add([...parts[i], holeRing]);
+        } else {
+          updated.add(parts[i]);
+        }
+      }
+      return DrawingMultiPolygon(coordinates: updated);
+    }
+
+    return null;
+  }
+
+  static List<List<double>>? _primaryRing(DrawingGeometry geometry) {
+    if (geometry is DrawingPolygon) {
+      if (geometry.coordinates.isEmpty) return null;
+      return geometry.coordinates.first;
+    }
+    if (geometry is DrawingMultiPolygon) {
+      if (geometry.coordinates.isEmpty || geometry.coordinates.first.isEmpty) {
+        return null;
+      }
+      return geometry.coordinates.first.first;
+    }
+    return null;
+  }
+
+  static bool _isClosedRing(List<List<double>> ring) {
+    if (ring.length < 4) return false;
+    return _sameCoord(ring.first, ring.last);
+  }
+
+  static bool _sameCoord(List<double> a, List<double> b) {
+    return (a[0] - b[0]).abs() <= 1e-9 && (a[1] - b[1]).abs() <= 1e-9;
+  }
+
+  /// Vértice do furo precisa estar dentro do anel externo e fora dos furos.
+  static bool _holeFits(
+    List<List<List<double>>> polygonRings,
+    List<List<double>> holeRing,
+  ) {
+    if (polygonRings.isEmpty) return false;
+    final outer = polygonRings.first;
+    if (outer.length < 4) return false;
+
+    final closing =
+        holeRing.length > 1 && _sameCoord(holeRing.first, holeRing.last);
+    final count = closing ? holeRing.length - 1 : holeRing.length;
+    if (count < 3) return false;
+
+    for (var v = 0; v < count; v++) {
+      final vertex = holeRing[v];
+      if (!_isPointInPolygon(vertex, outer)) return false;
+      for (var h = 1; h < polygonRings.length; h++) {
+        final existing = polygonRings[h];
+        if (existing.length >= 4 && _isPointInPolygon(vertex, existing)) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   /// Retorna azimute geodésico aproximado (graus 0..360) entre dois pontos.
