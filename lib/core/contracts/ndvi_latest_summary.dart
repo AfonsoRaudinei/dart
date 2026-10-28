@@ -10,6 +10,7 @@ class NdviLatestSummary {
     required this.isColormap,
     this.localPath,
     this.imageUrl,
+    this.greenMaskLocalPath,
   });
 
   final DateTime imageDate;
@@ -30,4 +31,7 @@ class NdviLatestSummary {
 
   /// URL remota da última imagem. ADR-045.
   final String? imageUrl;
+
+  /// Arquivo local da máscara verde P&B processada, quando disponível. ADR-045.
+  final String? greenMaskLocalPath;
 }
