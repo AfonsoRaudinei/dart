@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'relatorio_html_renderer.dart';
 
 class VisitaHtmlRenderer {
@@ -236,14 +238,23 @@ class VisitaHtmlRenderer {
         if (_hasLocation(ocorrencia)) 'Ponto registrado no mapa',
       ];
       final fotos = await _resolveOcorrenciaFotos(ocorrencia);
+      final captions = _photoCaptionsFrom(ocorrencia);
       final descricao = _stringOrNull(ocorrencia['descricao'])?.trim() ?? '';
       final recomendacao =
           _stringOrNull(ocorrencia['recomendacoes'])?.trim() ?? '';
+      String altFor(String path) {
+        final caption = captions[path]?.trim();
+        if (caption != null && caption.isNotEmpty) {
+          return RelatorioHtmlRenderer.escapeHtml(caption);
+        }
+        return 'Foto da ocorrência';
+      }
+
       final thumbHtml = fotos.isEmpty
           ? ''
-          : '<img data-sf-photo class="sf-thumb" src="${fotos.first}" alt="Foto da ocorrência" loading="lazy">';
+          : '<img data-sf-photo class="sf-thumb" src="${fotos.first.src}" alt="${altFor(fotos.first.path)}" loading="lazy">';
       final stripHtml = fotos.length > 1
-          ? '<div class="sf-thumb-strip">${fotos.skip(1).map((src) => '<img data-sf-photo class="sf-thumb" src="$src" alt="Foto da ocorrência" loading="lazy">').join()}</div>'
+          ? '<div class="sf-thumb-strip">${fotos.skip(1).map((foto) => '<img data-sf-photo class="sf-thumb" src="${foto.src}" alt="${altFor(foto.path)}" loading="lazy">').join()}</div>'
           : '';
 
       sb.write('''
@@ -309,16 +320,39 @@ class VisitaHtmlRenderer {
         _double(ocorrencia['lng']) != null;
   }
 
-  static Future<List<String>> _resolveOcorrenciaFotos(
+  static Future<List<({String path, String src})>> _resolveOcorrenciaFotos(
     Map<String, dynamic> ocorrencia,
   ) async {
-    final items = <String>[];
+    final items = <({String path, String src})>[];
     for (final path in _resolveFotoPaths(ocorrencia)) {
       final fotoB64 = await RelatorioHtmlRenderer.photoPathToBase64(path);
       if (fotoB64 == null) continue;
-      items.add(fotoB64);
+      items.add((path: path, src: fotoB64));
     }
     return items;
+  }
+
+  static Map<String, String> _photoCaptionsFrom(
+    Map<String, dynamic> ocorrencia,
+  ) {
+    final raw = ocorrencia['fotosCategoriasJson'] as String?;
+    if (raw == null || raw.isEmpty || raw == '{}') return const {};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return const {};
+      final rawCaptions = decoded['_captions'];
+      if (rawCaptions is! Map) return const {};
+      final captions = <String, String>{};
+      for (final entry in rawCaptions.entries) {
+        final path = entry.key.toString();
+        final caption = entry.value.toString().trim();
+        if (path.isEmpty || caption.isEmpty) continue;
+        captions[path] = caption;
+      }
+      return captions;
+    } catch (_) {
+      return const {};
+    }
   }
 
   static List<String> _resolveFotoPaths(Map<String, dynamic> ocorrencia) {

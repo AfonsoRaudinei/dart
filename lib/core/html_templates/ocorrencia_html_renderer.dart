@@ -38,6 +38,13 @@ class OcorrenciaHtmlRenderer {
     final dataRegistro = RelatorioHtmlRenderer.formatDate(createdAt);
     final consultantNome = consultantName?.trim() ?? '';
     final heroSrc = data['foto_base64'] as String? ?? '';
+    final photoCaptions = _photoCaptionsFromJson(
+      data['fotos_categorias_json'] as String?,
+    );
+    final coverCaption = _coverCaption(
+      photoPath: data['photo_path'] as String?,
+      captions: photoCaptions,
+    );
     final contextoLinha =
         [data['cliente_nome'], data['fazenda_nome'], data['talhao_nome']]
             .map((value) => (value as String?)?.trim() ?? '')
@@ -70,7 +77,9 @@ class OcorrenciaHtmlRenderer {
       ),
       'emitido_em': RelatorioHtmlRenderer.formatDate(DateTime.now()),
       'foto_hero_legenda': [
-        'Foto 1',
+        coverCaption != null
+            ? RelatorioHtmlRenderer.escapeHtml(coverCaption)
+            : 'Foto 1',
         categoriaLabel,
         if (dataRegistro.isNotEmpty) dataRegistro,
       ].join(' · '),
@@ -99,6 +108,7 @@ class OcorrenciaHtmlRenderer {
     final galeria = await _renderGaleria(
       data['fotos_categorias_json'] as String?,
       firstNumber: heroSrc.isNotEmpty ? 2 : 1,
+      captions: photoCaptions,
     );
     final notas = _renderNotas(data['notas_categorias_json'] as String?);
     final metricas = _renderMetricas(data['metricas_json'] as String?);
@@ -403,6 +413,7 @@ class OcorrenciaHtmlRenderer {
   static Future<String> _renderGaleria(
     String? fotosJson, {
     required int firstNumber,
+    Map<String, String> captions = const {},
   }) async {
     if (fotosJson == null || fotosJson == '{}') return '';
     final map = _decodeMap(fotosJson);
@@ -411,13 +422,16 @@ class OcorrenciaHtmlRenderer {
     final sb = StringBuffer();
     var fotoIndex = 0;
     for (final entry in map.entries) {
+      if (entry.key == '_captions') continue;
       final fotos = _asStringList(entry.value);
       if (fotos.isEmpty) continue;
 
-      final imagens = <String>[];
+      final imagens = <({String path, String src})>[];
       for (final path in fotos) {
         final base64 = await RelatorioHtmlRenderer.photoPathToBase64(path);
-        if (base64 != null && base64.isNotEmpty) imagens.add(base64);
+        if (base64 != null && base64.isNotEmpty) {
+          imagens.add((path: path, src: base64));
+        }
       }
       if (imagens.isEmpty) continue;
 
@@ -432,19 +446,55 @@ class OcorrenciaHtmlRenderer {
       for (final image in imagens) {
         fotoIndex++;
         final numero = firstNumber + fotoIndex - 1;
+        final userCaption = captions[image.path]?.trim();
+        final label = (userCaption != null && userCaption.isNotEmpty)
+            ? RelatorioHtmlRenderer.escapeHtml(userCaption)
+            : 'Foto $numero';
         sb.write('''
           <figure class="sf-figure">
             <input type="checkbox" id="sf-foto-$fotoIndex" class="sf-lb-toggle" hidden>
             <label for="sf-foto-$fotoIndex" class="galeria-foto">
-              <img data-sf-photo src="$image" alt="Foto $numero" loading="lazy">
+              <img data-sf-photo src="${image.src}" alt="$label" loading="lazy">
             </label>
-            <figcaption>Foto $numero</figcaption>
+            <figcaption>$label</figcaption>
           </figure>
         ''');
       }
       sb.write('</div>');
     }
     return sb.toString();
+  }
+
+  static Map<String, String> _photoCaptionsFromJson(String? raw) {
+    if (raw == null || raw.isEmpty || raw == '{}') return const {};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return const {};
+      final rawCaptions = decoded['_captions'];
+      if (rawCaptions is! Map) return const {};
+      final captions = <String, String>{};
+      for (final entry in rawCaptions.entries) {
+        final path = entry.key.toString();
+        final caption = entry.value.toString().trim();
+        if (path.isEmpty || caption.isEmpty) continue;
+        captions[path] = caption;
+      }
+      return captions;
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  static String? _coverCaption({
+    required String? photoPath,
+    required Map<String, String> captions,
+  }) {
+    if (captions.isEmpty) return null;
+    if (photoPath != null && photoPath.isNotEmpty) {
+      final cover = captions[photoPath]?.trim();
+      if (cover != null && cover.isNotEmpty) return cover;
+    }
+    return null;
   }
 
   static String _section(String title, String body) {
