@@ -91,6 +91,7 @@ class DrawingMapMetrics {
     required this.measurePerimeterKm,
     required this.measureAzimuthDeg,
     required this.gpsAccuracyM,
+    required this.holeCutActive,
   });
 
   final DrawingState state;
@@ -102,6 +103,7 @@ class DrawingMapMetrics {
   final double measurePerimeterKm;
   final double? measureAzimuthDeg;
   final double? gpsAccuracyM;
+  final bool holeCutActive;
 }
 
 final drawingMapMetricsProvider = Provider<DrawingMapMetrics>((ref) {
@@ -117,6 +119,7 @@ final drawingMapMetricsProvider = Provider<DrawingMapMetrics>((ref) {
         c.reviewPerimeterKm,
         c.liveAzimuthDegrees,
         c.gpsLastAccuracyM,
+        c.isCuttingHole,
       ),
     ),
   );
@@ -131,5 +134,6 @@ final drawingMapMetricsProvider = Provider<DrawingMapMetrics>((ref) {
     measurePerimeterKm: controller.reviewPerimeterKm,
     measureAzimuthDeg: controller.liveAzimuthDegrees,
     gpsAccuracyM: controller.gpsLastAccuracyM,
+    holeCutActive: controller.isCuttingHole,
   );
 });
