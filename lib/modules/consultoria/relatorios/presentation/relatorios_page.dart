@@ -671,14 +671,30 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
     try {
       final html = await _buildHtml(ref, occurrence);
       if (!context.mounted) return;
+      final clientName = await _occurrenceClienteNome(ref, occurrence.clientId);
+      final location = await resolveOccurrenceLocationNames(
+        clientId: occurrence.clientId,
+        lat: occurrence.lat,
+        lng: occurrence.long,
+        visitSessionId: occurrence.visitSessionId,
+        farmLookup: _tryReadContract(() => ref.read(iFarmLookupProvider)),
+        fieldLookup: _tryReadContract(() => ref.read(iFieldLookupProvider)),
+        visitSessionLookup: _tryReadContract(
+          () => ref.read(visitSessionLookupProvider),
+        ),
+      );
+      final exportBaseName = ConsultoriaReportExportData.occurrenceFileBaseName(
+        occurrence,
+        clientName: clientName,
+        farmName: location.fazenda,
+      );
+      if (!context.mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => HtmlReportViewer(
             title: 'Ocorrência ${RelatorioHtmlRenderer.shortId(occurrence.id)}',
             htmlContent: html,
-            fileBaseName: ConsultoriaReportExportData.occurrenceFileBaseName(
-              occurrence,
-            ),
+            fileBaseName: exportBaseName,
             jsonData: ConsultoriaReportExportData.occurrenceJson(occurrence),
             csvData: ConsultoriaReportExportData.occurrenceCsv(occurrence),
             bodyBuilder: bodyBuilder,
