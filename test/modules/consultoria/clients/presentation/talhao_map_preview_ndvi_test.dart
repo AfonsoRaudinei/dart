@@ -54,6 +54,33 @@ void main() {
     expect(talhaoCardNdviBadge(sentinel), isNull);
   });
 
+  test('buildTalhaoMapPreviewTitleChipLabel separa nome e area com traco', () {
+    expect(
+      buildTalhaoMapPreviewTitleChipLabel('Talhão Novo', 58.681),
+      'Talhão Novo - 58.68 ha',
+    );
+    expect(buildTalhaoMapPreviewTitleChipLabel('  ', 12.5), '12.50 ha');
+  });
+
+  testWidgets('showFieldNameOnMap exibe nome e area no chip do mapa', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        const TalhaoMapPreviewWidget(
+          vertices: [],
+          nome: 'Talhão Novo',
+          areaHa: 58.681,
+          showFieldNameOnMap: true,
+          actions: [SizedBox(width: 24, height: 24)],
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Talhão Novo - 58.68 ha'), findsOneWidget);
+  });
+
   testWidgets('sentinel monta o overlay recortado ao polígono', (tester) async {
     await tester.pumpWidget(
       _host(
