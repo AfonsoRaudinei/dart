@@ -48,6 +48,7 @@ import 'map/widgets/map_build_orchestrator.dart';
 import 'map/handlers/map_location_handler.dart';
 import 'map/controllers/map_viewport_controller.dart';
 import 'map/controllers/map_sheet_controller.dart';
+import 'map/handlers/drawing_focus_sheet_policy.dart';
 import 'map/handlers/map_first_query_handler.dart';
 
 // ADR-032 F1: _isMapReady migrado → mapReadyStateProvider (autoDispose).
@@ -277,10 +278,18 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       controller.startUnionMode();
     }
 
-    _setSheetState(
-      const MapSheetState(type: MapSheetType.draw),
-      union ? 'query_param_modo_uniao_drawing' : 'query_param_focus_drawing',
-    );
+    if (shouldOpenDrawSheetOnDrawingFocus(
+      edit: edit,
+      union: union,
+      ferramentasCompleto: ferramentasCompleto,
+    )) {
+      _setSheetState(
+        const MapSheetState(type: MapSheetType.draw),
+        union ? 'query_param_modo_uniao_drawing' : 'query_param_focus_drawing',
+      );
+    } else {
+      _setSheetState(null, 'query_param_focus_drawing_compact');
+    }
   }
 
   void _focusCoordinateFromQuery(LatLng point, {int attempt = 0}) {
