@@ -16,6 +16,7 @@ class FieldNdviOverlayLayer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final fieldId = ref.watch(mapNdviOverlayFieldIdProvider);
+    final monochrome = ref.watch(mapNdviMonochromeEnabledProvider);
     final summary = ref.watch(mapNdviOverlaySummaryProvider).asData?.value;
     if (fieldId == null || !mapNdviSummaryCoversField(summary)) {
       return const SizedBox.shrink();
@@ -23,7 +24,9 @@ class FieldNdviOverlayLayer extends ConsumerWidget {
 
     final controller = ref.watch(drawingControllerProvider);
     final vertices = _verticesFor(controller.features, fieldId);
-    final image = _imageProvider(summary!);
+    final hasProcessedGreenMask =
+        monochrome && _hasExistingGreenMask(summary!);
+    final image = _imageProvider(summary!, monochrome: monochrome);
     if (vertices.length < 3 || image == null) {
       return const SizedBox.shrink();
     }
@@ -32,10 +35,28 @@ class FieldNdviOverlayLayer extends ConsumerWidget {
       key: const Key('map-ndvi-overlay'),
       imageProvider: image,
       vertices: vertices,
+      applyMonochromeFilter: monochrome && !hasProcessedGreenMask,
     );
   }
 
-  ImageProvider<Object>? _imageProvider(NdviLatestSummary summary) {
+  bool _hasExistingGreenMask(NdviLatestSummary summary) {
+    final maskPath = summary.greenMaskLocalPath;
+    return maskPath != null &&
+        maskPath.isNotEmpty &&
+        File(maskPath).existsSync();
+  }
+
+  ImageProvider<Object>? _imageProvider(
+    NdviLatestSummary summary, {
+    required bool monochrome,
+  }) {
+    if (monochrome) {
+      final maskPath = summary.greenMaskLocalPath;
+      if (maskPath != null && maskPath.isNotEmpty) {
+        final maskFile = File(maskPath);
+        if (maskFile.existsSync()) return FileImage(maskFile);
+      }
+    }
     final path = summary.localPath;
     if (path != null && path.isNotEmpty) {
       final file = File(path);
@@ -75,10 +96,19 @@ class _ClippedFieldNdviOverlay extends StatelessWidget {
     super.key,
     required this.imageProvider,
     required this.vertices,
+    this.applyMonochromeFilter = false,
   });
 
   final ImageProvider<Object> imageProvider;
   final List<LatLng> vertices;
+  final bool applyMonochromeFilter;
+
+  static const ColorFilter _monochromeColorFilter = ColorFilter.matrix(<double>[
+    0.299, 0.587, 0.114, 0, 0,
+    0.299, 0.587, 0.114, 0, 0,
+    0.299, 0.587, 0.114, 0, 0,
+    0,     0,     0,     1, 0,
+  ]);
 
   @override
   Widget build(BuildContext context) {
@@ -90,6 +120,18 @@ class _ClippedFieldNdviOverlay extends StatelessWidget {
       for (final vertex in vertices) camera.getOffsetFromOrigin(vertex),
     ];
 
+    Widget imageWidget = Image(
+      image: imageProvider,
+      fit: BoxFit.fill,
+      gaplessPlayback: true,
+    );
+    if (applyMonochromeFilter) {
+      imageWidget = ColorFiltered(
+        colorFilter: _monochromeColorFilter,
+        child: imageWidget,
+      );
+    }
+
     return ClipPath(
       clipper: _FieldNdviClipper(polygon),
       child: Stack(
@@ -97,11 +139,7 @@ class _ClippedFieldNdviOverlay extends StatelessWidget {
         children: [
           Positioned.fromRect(
             rect: Rect.fromPoints(northWest, southEast),
-            child: Image(
-              image: imageProvider,
-              fit: BoxFit.fill,
-              gaplessPlayback: true,
-            ),
+            child: imageWidget,
           ),
         ],
       ),
