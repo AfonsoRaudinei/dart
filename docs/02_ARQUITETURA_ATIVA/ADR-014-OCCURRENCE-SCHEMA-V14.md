@@ -123,3 +123,25 @@ com a mesma interface — apenas a entidade `Occurrence` é expandida.
 - `docs/arquitetura-persistencia.md`
 - `docs/ADR-008-RIVERPOD-NORMALIZATION.md`
 - `docs/bounded_contexts.md`
+
+---
+
+## Adendo — legendas de foto (`_captions`)
+
+**Data:** 2026-10-28  
+**Status:** ACEITO  
+**Escopo:** evolução do JSON, sem nova coluna / sem schema v47.
+
+`fotos_categorias_json` continua `TEXT`/`jsonb` com listas de paths por categoria.
+Legendas opcionais vivem na chave reservada `_captions` (mapa path → texto, teto 120 caracteres):
+
+```json
+{
+  "daninhas": ["media/img_aaa.jpg"],
+  "_captions": {
+    "media/img_aaa.jpg": "Broto novos na linha"
+  }
+}
+```
+
+Parsers que só leem valores `List` ignoram `_captions`. Sem ALTER TABLE, sem migration remota, sem mudança de `IOccurrenceRead` (o blob JSON já atravessa o contrato). Relatórios usam a legenda em `alt`/`figcaption`; se vazia, fallback `Foto N`.
