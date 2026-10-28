@@ -42,6 +42,7 @@ class MapFirstQueryHandler {
         .state = showNdvi && drawingId != null && drawingId.isNotEmpty
         ? drawingId
         : null;
+    ref.read(mapNdviMonochromeEnabledProvider.notifier).state = false;
 
     if ((modo == 'desenho' || modo == 'editar' || modo == 'uniao') &&
         clienteId != null) {
