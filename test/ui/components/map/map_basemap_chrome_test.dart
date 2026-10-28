@@ -95,7 +95,7 @@ Future<void> _pumpOverlay(
             onTabSelected: (_, _) {},
             isDrawMode: false,
             showCheckInAction: false,
-            currentCenter: LatLng(-10.2, -48.3),
+            currentCenter: const LatLng(-10.2, -48.3),
             currentZoom: 13,
             drawingState: DrawingState.idle,
             onFinishDrawing: () {},
