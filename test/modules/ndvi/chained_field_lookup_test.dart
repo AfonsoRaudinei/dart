@@ -88,7 +88,7 @@ void main() {
     );
     final primary = _StubLookup(
       listByFarmIdResult: [
-        FieldSummary(
+        const FieldSummary(
           id: 'F1',
           name: 'Drawing',
           farmId: 'FAZ1',
