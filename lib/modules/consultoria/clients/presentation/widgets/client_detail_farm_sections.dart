@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
+import 'package:soloforte_app/core/contracts/i_ndvi_field_presenter_provider.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/core/utils/area_display_format.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
@@ -11,6 +12,7 @@ import '../../domain/client.dart';
 import '../farm_map_download.dart';
 import '../providers/clients_providers.dart';
 import '../providers/field_providers.dart';
+import '../providers/talhao_card_ndvi_provider.dart';
 import '../widgets/client_detail_sub_widgets.dart';
 import '../widgets/farm_linked_field_list.dart';
 import '../widgets/link_drawing_to_farm_sheet.dart';
@@ -225,52 +227,83 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
               )
             else
               ...fields.map((field) {
+                final showNdvi = ref.watch(
+                  talhaoCardNdviEnabledProvider(field.id),
+                );
+                final actions = <Widget>[
+                  TalhaoCardNdviModeIconButton(
+                    fieldId: field.id,
+                    fieldName: field.name,
+                    areaHa: field.areaHa,
+                    onAfterSheetClosed: () =>
+                        ref.invalidate(talhaoCardNdviLatestProvider(field.id)),
+                  ),
+                  IconButton(
+                    tooltip: 'Vincular à fazenda',
+                    icon: const Icon(
+                      Icons.link,
+                      size: 20,
+                      color: PremiumTokens.brandGreen,
+                    ),
+                    onPressed: () => _linkDrawingToFarm(context, ref, field),
+                  ),
+                  IconButton(
+                    tooltip: 'Abrir no mapa',
+                    icon: const Icon(Icons.open_in_full, size: 20),
+                    onPressed: () => context.go(
+                      _mapViewUri(
+                        field,
+                        ndvi: ref.read(talhaoCardNdviEnabledProvider(field.id)),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Excluir talhão',
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 20,
+                      color: Colors.red,
+                    ),
+                    onPressed: () =>
+                        _confirmDeleteDrawing(context, ref, field),
+                  ),
+                ];
+
+                void onOpenField() => showTalhaoDadosSheet(
+                      context,
+                      clientId: client.id,
+                      farmId: field.farmId,
+                      fieldId: field.id,
+                      initialName: field.name,
+                      initialCultura: field.crop,
+                      initialMaterial: field.material,
+                      initialSafra: field.harvest,
+                    );
+
+                if (showNdvi) {
+                  return _DrawingTalhaoNdviCard(
+                    field: field,
+                    onOpenField: onOpenField,
+                    actions: actions,
+                    onNdviImageTap: () async {
+                      await ref.read(ndviFieldPresenterProvider).showTalhaoSheet(
+                            context,
+                            fieldId: field.id,
+                            fieldName: field.name,
+                            areaHa: field.areaHa,
+                          );
+                      ref.invalidate(talhaoCardNdviLatestProvider(field.id));
+                    },
+                  );
+                }
+
                 return TalhaoMapPreviewWidget(
                   vertices: field.vertices,
                   nome: field.name,
                   areaHa: field.areaHa,
                   subtitle: 'Sem fazenda vinculada',
-                  onTap: () => showTalhaoDadosSheet(
-                    context,
-                    clientId: client.id,
-                    farmId: field.farmId,
-                    fieldId: field.id,
-                    initialName: field.name,
-                    initialCultura: field.crop,
-                    initialMaterial: field.material,
-                    initialSafra: field.harvest,
-                  ),
-                  actions: [
-                    IconButton(
-                      tooltip: 'Vincular à fazenda',
-                      icon: const Icon(
-                        Icons.link,
-                        size: 20,
-                        color: PremiumTokens.brandGreen,
-                      ),
-                      onPressed: () => _linkDrawingToFarm(context, ref, field),
-                    ),
-                    IconButton(
-                      tooltip: 'Abrir no mapa',
-                      icon: const Icon(Icons.open_in_full, size: 20),
-                      onPressed: () => context.go(_mapViewUri(field)),
-                    ),
-                    IconButton(
-                      tooltip: 'Ações do talhão',
-                      icon: const Icon(Icons.edit_outlined, size: 20),
-                      onPressed: () => _openActions(context, field, fields),
-                    ),
-                    IconButton(
-                      tooltip: 'Excluir talhão',
-                      icon: const Icon(
-                        Icons.delete_outline,
-                        size: 20,
-                        color: Colors.red,
-                      ),
-                      onPressed: () =>
-                          _confirmDeleteDrawing(context, ref, field),
-                    ),
-                  ],
+                  onTap: onOpenField,
+                  actions: actions,
                 );
               }),
           ],
@@ -281,22 +314,6 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
         child: Center(child: CircularProgressIndicator()),
       ),
       error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-
-  Future<void> _openActions(
-    BuildContext context,
-    ClientDrawingFieldSummary field,
-    List<ClientDrawingFieldSummary> allFields,
-  ) async {
-    context.go(
-      talhaoMapUri(
-        modo: 'desenho',
-        clientId: client.id,
-        farmId: field.farmId,
-        drawingId: field.id,
-        ferramentasCompleto: true,
-      ),
     );
   }
 
@@ -372,12 +389,76 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
     ).showSnackBar(const SnackBar(content: Text('Talhão excluído.')));
   }
 
-  String _mapViewUri(ClientDrawingFieldSummary field) {
+  String _mapViewUri(ClientDrawingFieldSummary field, {bool ndvi = false}) {
     return talhaoMapUri(
       modo: 'desenho',
       clientId: client.id,
       farmId: field.farmId,
       drawingId: field.id,
+      ndvi: ndvi,
+    );
+  }
+}
+
+class _DrawingTalhaoNdviCard extends ConsumerWidget {
+  const _DrawingTalhaoNdviCard({
+    required this.field,
+    required this.onOpenField,
+    required this.actions,
+    required this.onNdviImageTap,
+  });
+
+  final ClientDrawingFieldSummary field;
+  final VoidCallback onOpenField;
+  final List<Widget> actions;
+  final VoidCallback onNdviImageTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final latestAsync = ref.watch(talhaoCardNdviLatestProvider(field.id));
+    return latestAsync.when(
+      loading: () => _preview(
+        ndviLoading: true,
+        onNdviImageTap: onNdviImageTap,
+      ),
+      error: (_, _) => _preview(
+        onNdviImageTap: onNdviImageTap,
+      ),
+      data: (summary) => _preview(
+        ndviIsColormap: summary?.isColormap ?? false,
+        ndviLocalPath: summary?.localPath,
+        ndviImageUrl: summary?.imageUrl,
+        ndviCaption: summary == null ? null : talhaoCardNdviCaption(summary),
+        ndviBadge: summary == null ? null : talhaoCardNdviBadge(summary),
+        onNdviImageTap: onNdviImageTap,
+      ),
+    );
+  }
+
+  Widget _preview({
+    bool ndviLoading = false,
+    bool ndviIsColormap = false,
+    String? ndviLocalPath,
+    String? ndviImageUrl,
+    String? ndviCaption,
+    String? ndviBadge,
+    VoidCallback? onNdviImageTap,
+  }) {
+    return TalhaoMapPreviewWidget(
+      vertices: field.vertices,
+      nome: field.name,
+      areaHa: field.areaHa,
+      subtitle: 'Sem fazenda vinculada',
+      onTap: onOpenField,
+      actions: actions,
+      showNdvi: true,
+      ndviLoading: ndviLoading,
+      ndviIsColormap: ndviIsColormap,
+      ndviLocalPath: ndviLocalPath,
+      ndviImageUrl: ndviImageUrl,
+      ndviCaption: ndviCaption,
+      ndviBadge: ndviBadge,
+      onNdviImageTap: onNdviImageTap,
     );
   }
 }
