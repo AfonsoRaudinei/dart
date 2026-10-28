@@ -17,6 +17,22 @@ class DrawingCompactSelectionActions {
   }) {
     if (feature.id.isEmpty) return;
     ref.read(mapNdviOverlayFieldIdProvider.notifier).state = feature.id;
+    ref.read(mapNdviMonochromeEnabledProvider.notifier).state = false;
+    ref.invalidate(mapNdviOverlaySummaryProvider);
+    onCollapseWhileEditing?.call();
+  }
+
+  static void showMonochromeMap(
+    WidgetRef ref,
+    DrawingFeature feature, {
+    VoidCallback? onCollapseWhileEditing,
+  }) {
+    if (feature.id.isEmpty) return;
+    final currentField = ref.read(mapNdviOverlayFieldIdProvider);
+    final currentMono = ref.read(mapNdviMonochromeEnabledProvider);
+    final nextMono = !(currentField == feature.id && currentMono);
+    ref.read(mapNdviOverlayFieldIdProvider.notifier).state = feature.id;
+    ref.read(mapNdviMonochromeEnabledProvider.notifier).state = nextMono;
     ref.invalidate(mapNdviOverlaySummaryProvider);
     onCollapseWhileEditing?.call();
   }
