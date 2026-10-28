@@ -1,4 +1,5 @@
 import 'package:latlong2/latlong.dart';
+import '../drawing_utils.dart';
 import '../models/drawing_models.dart';
 import '../../../../core/utils/geodesic_utils.dart';
 
@@ -23,34 +24,13 @@ class GeometryService {
   // CÁLCULOS GEOMÉTRICOS
   // ===========================================================================
 
-  /// Calcula a área de uma geometria em hectares.
+  /// Calcula a área de uma geometria em hectares, descontando furos.
   ///
-  /// Usa cálculos geodésicos via [GeodesicUtils] para precisão em coordenadas geográficas.
-  ///
+  /// Delega a [DrawingUtils.calculateGeometryArea].
   /// Retorna 0 para geometrias inválidas ou vazias.
   static double calculateArea(DrawingGeometry? geometry) {
     if (geometry == null) return 0.0;
-
-    if (geometry is DrawingPolygon) {
-      if (geometry.coordinates.isEmpty) return 0.0;
-      // Área do anel externo
-      final outerRing = geometry.coordinates.first;
-      final points = GeodesicUtils.fromCoordinates(outerRing);
-      return GeodesicUtils.calculateAreaHectares(points);
-    } else if (geometry is DrawingMultiPolygon) {
-      // Soma das áreas de todos os polígonos
-      double totalArea = 0.0;
-      for (final polyCoords in geometry.coordinates) {
-        if (polyCoords.isNotEmpty) {
-          final outerRing = polyCoords.first;
-          final points = GeodesicUtils.fromCoordinates(outerRing);
-          totalArea += GeodesicUtils.calculateAreaHectares(points);
-        }
-      }
-      return totalArea;
-    }
-
-    return 0.0;
+    return DrawingUtils.calculateGeometryArea(geometry);
   }
 
   /// Calcula o perímetro de uma geometria em quilômetros.
