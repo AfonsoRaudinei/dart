@@ -16,6 +16,10 @@ import '../../../modules/drawing/presentation/drawing_compact_selection_actions.
 import '../../../modules/drawing/presentation/providers/drawing_provider.dart';
 import 'map_sheet_state.dart';
 
+/// Geometria, Dados, Recortar e, quando há id, NDVI + P&B.
+int talhaoSelectionToolbarChipCount({required bool showNdvi}) =>
+    showNdvi ? 5 : 3;
+
 /// Toolbar contextual (ícone + label curto) ancorada na feature selecionada
 /// no fluxo compact — espírito Apple Maps.
 class MapTalhaoSelectionToolbar extends ConsumerWidget {
@@ -85,9 +89,7 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: const Color(0xF2FFFFFF),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: Colors.black.withValues(alpha: 0.08),
-                ),
+                border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
               ),
               child: SizedBox(
                 height: toolbarHeight,
@@ -110,7 +112,9 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
                       label: 'Dados',
                       onTap: () {
                         HapticFeedback.lightImpact();
-                        DrawingCompactSelectionActions.requestMetadataSheet(ref);
+                        DrawingCompactSelectionActions.requestMetadataSheet(
+                          ref,
+                        );
                         setSheetState(
                           const MapSheetState(type: MapSheetType.draw),
                           'compact toolbar: edit metadata',
@@ -147,6 +151,16 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
                         },
                       ),
                     ],
+                    _divider,
+                    _ToolbarChip(
+                      key: const Key('map_talhao_toolbar_cut_hole'),
+                      icon: Icons.content_cut,
+                      label: 'Recortar',
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        DrawingCompactSelectionActions.startHoleCut(controller);
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -160,9 +174,7 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
   static const Widget _divider = SizedBox(
     width: 1,
     height: 28,
-    child: DecoratedBox(
-      decoration: BoxDecoration(color: Color(0x1A000000)),
-    ),
+    child: DecoratedBox(decoration: BoxDecoration(color: Color(0x1A000000))),
   );
 
   static bool _shouldShow(DrawingController controller, bool sheetIsDraw) {
@@ -183,7 +195,9 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
 @visibleForTesting
 double estimateMapTalhaoToolbarWidth(DrawingFeature feature) {
   const chipWidth = 68.0;
-  final chips = feature.id.isNotEmpty ? 4 : 2;
+  final chips = talhaoSelectionToolbarChipCount(
+    showNdvi: feature.id.isNotEmpty,
+  );
   return chips * chipWidth + (chips - 1);
 }
 
@@ -275,10 +289,7 @@ Offset clampMapToolbarOffset({
       kMapActionColumnRightInset + kMapActionColumnButtonSize;
   final maxLeft = math.max(
     edgeMargin,
-    viewportSize.width -
-        toolbarWidth -
-        edgeMargin -
-        rightColumnReserve,
+    viewportSize.width - toolbarWidth - edgeMargin - rightColumnReserve,
   );
   final minTop = topInset + edgeMargin;
   final maxTop = math.max(
