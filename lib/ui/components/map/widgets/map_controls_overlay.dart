@@ -11,7 +11,11 @@ import '../../../../modules/dashboard/domain/location_state.dart';
 import '../../../../modules/map/presentation/providers/map_location_mode_provider.dart';
 import '../../../../modules/settings/presentation/providers/settings_providers.dart';
 import '../../../../core/constants/layout_constants.dart';
+import '../../../../core/config/brazil_satellite_mosaic_overlay.dart';
+import '../../../../core/config/cerrado_satellite_overlay.dart';
+import '../../../../core/config/inpe_satellite_overlay_mode.dart';
 import '../../../../core/domain/map_models.dart';
+import '../../../../core/services/inpe_stac_acquisition_label_service.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/utils/area_display_format.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
@@ -496,7 +500,7 @@ class _MapButtonLabel extends StatelessWidget {
   }
 }
 
-/// Ativa/desativa overlay Satélite Cerrado (INPE) no topo direito.
+/// Cicla Off → INPE Cerrado → mosaico Brasil → Off no topo direito.
 class _CerradoInpeToggleButton extends ConsumerStatefulWidget {
   const _CerradoInpeToggleButton({required this.activeColor});
 
@@ -511,6 +515,20 @@ class _CerradoInpeToggleButtonState
     extends ConsumerState<_CerradoInpeToggleButton> {
   Timer? _labelTimer;
   bool _showLabel = false;
+  String _labelText = 'INPE';
+  final _stacLabels = InpeStacAcquisitionLabelService();
+  String? _cerradoDateLabel;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCerradoDateLabel();
+  }
+
+  Future<void> _loadCerradoDateLabel() async {
+    final label = await _stacLabels.cerradoAcquisitionLabel();
+    if (mounted) setState(() => _cerradoDateLabel = label);
+  }
 
   @override
   void dispose() {
@@ -518,27 +536,42 @@ class _CerradoInpeToggleButtonState
     super.dispose();
   }
 
-  void _showTemporaryLabel() {
+  void _showTemporaryLabel(String text) {
     _labelTimer?.cancel();
-    setState(() => _showLabel = true);
-    _labelTimer = Timer(const Duration(milliseconds: 1600), () {
+    setState(() {
+      _labelText = text;
+      _showLabel = true;
+    });
+    _labelTimer = Timer(const Duration(milliseconds: 2200), () {
       if (mounted) setState(() => _showLabel = false);
     });
   }
 
+  String _hintForMode(InpeSatelliteOverlayMode mode) {
+    switch (mode) {
+      case InpeSatelliteOverlayMode.off:
+        return 'Off';
+      case InpeSatelliteOverlayMode.cerradoInpe:
+        final dates = _cerradoDateLabel ?? CerradoSatelliteOverlay.acquisitionLabel;
+        return 'INPE · $dates';
+      case InpeSatelliteOverlayMode.brazilMosaic:
+        return 'Brasil · ${BrazilSatelliteMosaicOverlay.acquisitionLabel}';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isOn = ref.watch(cerradoSatelliteOverlayEnabledProvider);
-    const label = 'INPE';
+    final mode = ref.watch(inpeSatelliteOverlayModeCtrlProvider);
+    final isOn = mode.isActive;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _MapButtonLabel(text: label, isVisible: _showLabel),
+        _MapButtonLabel(text: _labelText, isVisible: _showLabel),
         const SizedBox(width: 6),
         Semantics(
           button: true,
-          label: 'Satélite Cerrado (INPE)',
+          label: mode.accessibilityLabel,
           child: _MapRoundToggleButton(
             buttonKey: const Key('map_control_cerrado_inpe_toggle_btn'),
             icon: isOn ? SFIcons.layersFill : SFIcons.layers,
@@ -546,11 +579,9 @@ class _CerradoInpeToggleButtonState
             isOn: isOn,
             onTap: () {
               HapticFeedback.selectionClick();
-              final next = !isOn;
-              ref
-                  .read(cerradoSatelliteOverlayEnabledProvider.notifier)
-                  .setEnabled(next);
-              if (next) {
+              ref.read(inpeSatelliteOverlayModeCtrlProvider.notifier).cycleMode();
+              final next = ref.read(inpeSatelliteOverlayModeCtrlProvider);
+              if (next != InpeSatelliteOverlayMode.off) {
                 final currentLayer = ref.read(activeLayerProvider);
                 if (currentLayer != LayerType.satellite) {
                   ref
@@ -558,8 +589,9 @@ class _CerradoInpeToggleButtonState
                       .setLayer(LayerType.satellite);
                 }
               }
+              _showTemporaryLabel(_hintForMode(next));
             },
-            onLongPress: _showTemporaryLabel,
+            onLongPress: () => _showTemporaryLabel(_hintForMode(mode)),
           ),
         ),
       ],

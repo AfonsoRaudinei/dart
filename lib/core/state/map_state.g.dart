@@ -23,7 +23,7 @@ final mapRepositoryProvider = Provider<MapRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef MapRepositoryRef = ProviderRef<MapRepository>;
-String _$activeLayerHash() => r'80c735e2a8737380e203615ab19b89c80bb434d7';
+String _$activeLayerHash() => r'16207542deeb7be5ef21ca1c4882f188957d83cc';
 
 /// See also [ActiveLayer].
 @ProviderFor(ActiveLayer)
@@ -38,7 +38,7 @@ final activeLayerProvider = NotifierProvider<ActiveLayer, LayerType>.internal(
 );
 
 typedef _$ActiveLayer = Notifier<LayerType>;
-String _$showMarkersHash() => r'c034ba9ac1b5bfd3b079f7bc8e5a015dcd3ec678';
+String _$showMarkersHash() => r'a4286abf0f77fdc7a8e8bf0f68afd5bc338efbdc';
 
 /// See also [ShowMarkers].
 @ProviderFor(ShowMarkers)
@@ -72,25 +72,29 @@ final mapSatelliteLabelsEnabledProvider =
     );
 
 typedef _$MapSatelliteLabelsEnabled = Notifier<bool>;
-String _$cerradoSatelliteOverlayEnabledHash() =>
-    r'ea9eef54a4ab3f97dbf136003bd130b8a5f82695';
+String _$inpeSatelliteOverlayModeCtrlHash() =>
+    r'0fad1e30c15e35e5f9899c964d2d8082edca6cc6';
 
-/// Overlay INPE Sentinel-2 Cerrado (nov/2023–ago/2024) sobre a base MapTiler.
+/// Ciclo Off → INPE Cerrado → mosaico Brasil 3M → Off (ícone único no mapa).
 ///
-/// Copied from [CerradoSatelliteOverlayEnabled].
-@ProviderFor(CerradoSatelliteOverlayEnabled)
-final cerradoSatelliteOverlayEnabledProvider =
-    NotifierProvider<CerradoSatelliteOverlayEnabled, bool>.internal(
-      CerradoSatelliteOverlayEnabled.new,
-      name: r'cerradoSatelliteOverlayEnabledProvider',
+/// Copied from [InpeSatelliteOverlayModeCtrl].
+@ProviderFor(InpeSatelliteOverlayModeCtrl)
+final inpeSatelliteOverlayModeCtrlProvider =
+    NotifierProvider<
+      InpeSatelliteOverlayModeCtrl,
+      inpe_overlay.InpeSatelliteOverlayMode
+    >.internal(
+      InpeSatelliteOverlayModeCtrl.new,
+      name: r'inpeSatelliteOverlayModeCtrlProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$cerradoSatelliteOverlayEnabledHash,
+          : _$inpeSatelliteOverlayModeCtrlHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
-typedef _$CerradoSatelliteOverlayEnabled = Notifier<bool>;
+typedef _$InpeSatelliteOverlayModeCtrl =
+    Notifier<inpe_overlay.InpeSatelliteOverlayMode>;
 String _$mapStateBoundariesEnabledHash() =>
     r'fbfa0e443724e0e47ea410b1ecd4e062014c15d4';
 
