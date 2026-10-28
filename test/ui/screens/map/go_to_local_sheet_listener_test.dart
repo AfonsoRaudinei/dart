@@ -7,7 +7,6 @@ import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
 import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
-import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
 import 'package:soloforte_app/modules/drawing/presentation/providers/drawing_provider.dart';
 import 'package:soloforte_app/ui/screens/map/widgets/go_to_local_sheet_listener.dart';
 
