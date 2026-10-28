@@ -40,6 +40,13 @@ DrawingFeature _squareFeature({String id = 'f1'}) {
 }
 
 void main() {
+  group('talhaoSelectionToolbarChipCount', () {
+    test('4 chips com NDVI e 3 sem', () {
+      expect(talhaoSelectionToolbarChipCount(showNdvi: true), 4);
+      expect(talhaoSelectionToolbarChipCount(showNdvi: false), 3);
+    });
+  });
+
   group('drawingFeatureAnchorLatLng', () {
     test('retorna centroide para polígono simples', () {
       final feature = _squareFeature();
