@@ -242,4 +242,24 @@ void main() {
 
     expect(host.ref.read(mapNdviOverlayFieldIdProvider), isNull);
   });
+
+  testWidgets('ndvi=1 reseta mapNdviMonochromeEnabledProvider para false', (
+    tester,
+  ) async {
+    final host = await pumpHandlerHost(tester);
+    host.ref.read(mapNdviMonochromeEnabledProvider.notifier).state = true;
+
+    handle(
+      ref: host.ref,
+      sheets: host.sheets,
+      focuses: host.focuses,
+      uri: Uri.parse(
+        '/map?modo=desenho&clienteId=c1&fazendaId=f1&drawingId=d1&ndvi=1',
+      ),
+    );
+    await tester.pump();
+
+    expect(host.ref.read(mapNdviOverlayFieldIdProvider), 'd1');
+    expect(host.ref.read(mapNdviMonochromeEnabledProvider), isFalse);
+  });
 }
