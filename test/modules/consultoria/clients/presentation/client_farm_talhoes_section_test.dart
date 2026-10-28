@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/contracts/i_ndvi_field_presenter.dart';
+import 'package:soloforte_app/core/contracts/i_ndvi_field_presenter_provider.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soloforte_app/core/contracts/i_ndvi_latest_lookup.dart';
@@ -66,7 +68,7 @@ void main() {
     ),
   ];
 
-  testWidgets('mostra preview de mapa e botão renomear quando há talhões', (
+  testWidgets('mostra preview de mapa e ações enxutas quando há talhões', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 1600);
@@ -96,14 +98,16 @@ void main() {
 
     expect(find.byType(TalhaoMapPreviewWidget), findsOneWidget);
     expect(find.byTooltip('Abrir no mapa'), findsOneWidget);
-    expect(find.byTooltip('Dados do talhão'), findsOneWidget);
-    expect(find.byTooltip('Geometria e união'), findsOneWidget);
+    expect(find.byTooltip('Ver NDVI no card'), findsOneWidget);
+    expect(find.byTooltip('Excluir talhão'), findsOneWidget);
+    expect(find.byTooltip('Dados do talhão'), findsNothing);
+    expect(find.byTooltip('Geometria e união'), findsNothing);
     expect(find.text('Talhão Norte'), findsOneWidget);
     expect(find.text('Área Total'), findsOneWidget);
     expect(find.byIcon(Icons.chevron_right), findsNothing);
   });
 
-  testWidgets('Geometria e união navega ao mapa com ferramentas completas', (
+  testWidgets('Abrir no mapa navega ao mapa com drawingId do talhão', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 1600);
@@ -145,15 +149,14 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    await tester.tap(find.byTooltip('Geometria e união'));
+    await tester.tap(find.byTooltip('Abrir no mapa'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('ferramentas=completo'), findsOneWidget);
     expect(find.textContaining('drawingId=drawing-1'), findsOneWidget);
     expect(find.textContaining('modo=desenho'), findsOneWidget);
   });
 
-  testWidgets('Geometria e união no segundo card usa o drawingId correto', (
+  testWidgets('Abrir no mapa no segundo card usa o drawingId correto', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 1600);
@@ -195,16 +198,16 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.byTooltip('Geometria e união'), findsNWidgets(2));
+    expect(find.byTooltip('Abrir no mapa'), findsNWidgets(2));
 
-    await tester.tap(find.byTooltip('Geometria e união').last);
+    await tester.tap(find.byTooltip('Abrir no mapa').last);
     await tester.pumpAndSettle();
 
     expect(find.textContaining('drawingId=drawing-2'), findsOneWidget);
-    expect(find.textContaining('ferramentas=completo'), findsOneWidget);
+    expect(find.textContaining('modo=desenho'), findsOneWidget);
   });
 
-  testWidgets('modo Mapa não consulta NDVI; toque em NDVI consulta', (
+  testWidgets('modo Mapa não consulta NDVI; toque em NDVI consulta e abre sheet', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 1600);
@@ -213,6 +216,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final counter = _NdviLookupCounter();
+    final fakePresenter = _FakeNdviFieldPresenter();
 
     await tester.pumpWidget(
       ProviderScope(
@@ -224,6 +228,7 @@ void main() {
           ndviLatestLookupProvider.overrideWithValue(
             _CountingNdviLookup(counter),
           ),
+          ndviFieldPresenterProvider.overrideWithValue(fakePresenter),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -238,6 +243,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(counter.value, 0);
+    expect(fakePresenter.shownFieldIds, isEmpty);
     expect(find.text('Mapa'), findsNothing);
     expect(find.text('NDVI'), findsNothing);
     expect(find.byTooltip('Ver NDVI no card'), findsWidgets);
@@ -247,6 +253,9 @@ void main() {
     await tester.pump();
 
     expect(counter.value, greaterThanOrEqualTo(1));
+    expect(fakePresenter.shownFieldIds, ['drawing-1']);
+    expect(fakePresenter.lastFieldName, 'Talhão Norte');
+    expect(fakePresenter.lastAreaHa, 12.5);
   });
 
   testWidgets('com várias fazendas inicia recolhido e expande no toque', (
@@ -327,5 +336,23 @@ class _CountingNdviLookup implements INdviLatestLookup {
       isColormap: true,
       localPath: '/tmp/soloforte-ndvi-card.png',
     );
+  }
+}
+
+class _FakeNdviFieldPresenter implements INdviFieldPresenter {
+  final List<String> shownFieldIds = [];
+  String? lastFieldName;
+  double? lastAreaHa;
+
+  @override
+  Future<void> showTalhaoSheet(
+    BuildContext context, {
+    required String fieldId,
+    required String fieldName,
+    double? areaHa,
+  }) async {
+    shownFieldIds.add(fieldId);
+    lastFieldName = fieldName;
+    lastAreaHa = areaHa;
   }
 }
