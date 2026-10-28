@@ -311,7 +311,7 @@ class _RelatoriosSection extends ConsumerWidget {
               onSelected: onProducerSelected,
             ),
             if (needsProducerPick)
-              _PremiumEmptyState(
+              const _PremiumEmptyState(
                 message:
                     'Selecione um produtor para ver os relatórios de visita deste cliente.',
               )
@@ -563,7 +563,7 @@ class _OccurrenciasSection extends ConsumerWidget {
                 onCta: () => context.go(AppRoutes.map),
               )
             else if (needsProducerPick)
-              _PremiumEmptyState(
+              const _PremiumEmptyState(
                 message:
                     'Selecione um produtor para ver as ocorrências deste cliente.',
               )
