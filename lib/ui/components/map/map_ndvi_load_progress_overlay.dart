@@ -119,6 +119,9 @@ class MapNdviLoadProgressOverlay extends ConsumerWidget {
                     onPressed: () {
                       ref.read(mapNdviOverlayFieldIdProvider.notifier).state =
                           null;
+                      ref
+                          .read(mapNdviMonochromeEnabledProvider.notifier)
+                          .state = false;
                     },
                     icon: Icon(
                       Icons.close_rounded,
