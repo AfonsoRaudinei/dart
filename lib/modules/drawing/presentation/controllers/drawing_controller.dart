@@ -10,7 +10,8 @@ import '../../domain/drawing_state.dart';
 import '../../domain/drawing_feature_actions_mode.dart';
 import '../../domain/drawing_history.dart';
 import '../../data/repositories/drawing_repository.dart';
-import '../../data/data_sources/drawing_sync_service.dart' show DrawingSyncResult;
+import '../../data/data_sources/drawing_sync_service.dart'
+    show DrawingSyncResult;
 // ─── Services puros (Sprint 1 — delegação de lógica de negócio) ───────────────
 import '../../domain/services/drawing_feature_crud_service.dart';
 import '../../domain/services/drawing_vertex_edit_service.dart';
@@ -268,6 +269,9 @@ class DrawingController extends ChangeNotifier {
 
   // Interaction state
   DrawingFeature? _selectedFeature;
+
+  /// Feature cujo anel interno está sendo desenhado. Não limpa a seleção.
+  String? _holeCutFeatureId;
   DrawingFeatureActionsMode _featureActionsMode =
       DrawingFeatureActionsMode.compact;
   bool _multiSelectEnabled = false;
@@ -293,11 +297,14 @@ class DrawingController extends ChangeNotifier {
   Timer? _notifyThrottleTimer;
   bool _isDraggingVertex = false; // RT-DRAW-DRAG
   int? _draggedVertexIndex;
+
   /// Vértice selecionado durante sketch de polígono (mid-draw).
   int? _selectedSketchVertexIndex;
   bool _isDraggingSketchVertex = false;
+
   /// Preview do arraste da gota. Não chama [notifyListeners].
   final VertexHandleDragPreview vertexDragPreview = VertexHandleDragPreview();
+
   /// Vértice selecionado durante edição de polígono (gota).
   int? _selectedEditRingIndex;
   int? _selectedEditPointIndex;
@@ -349,6 +356,11 @@ class DrawingController extends ChangeNotifier {
   DrawingState get currentState => _stateMachine.currentState;
   DrawingTool get currentTool => _stateMachine.currentTool;
   BooleanOperationType get booleanOperation => _stateMachine.booleanOperation;
+
+  /// Recorte interno do talhão selecionado (moita), sem abrir revisão.
+  bool get isCuttingHole => _holeCutFeatureId != null;
+
+  String? get holeCutFeatureId => _holeCutFeatureId;
 
   /// Bloqueia taps contextuais do mapa (talhões, pins, sheets) enquanto o
   /// usuário está desenhando, revisando, editando ou em fluxos exclusivos.
@@ -432,6 +444,27 @@ class DrawingController extends ChangeNotifier {
     return _manualSketch;
   }
 
+  DrawingFeature? get _holeCutFeature {
+    final id = _holeCutFeatureId;
+    if (id == null) return null;
+    final selected = _selectedFeature;
+    if (selected != null && selected.id == id) return selected;
+    for (final feature in _features) {
+      if (feature.id == id) return feature;
+    }
+    return null;
+  }
+
+  /// Talhão em recorte: a base, ou a base com o furo quando [DrawingUtils.tryAddHole] aceita.
+  /// O sketch em [liveGeometry] continua sendo só o anel novo.
+  DrawingGeometry? get holeCutPreviewGeometry {
+    final feature = _holeCutFeature;
+    if (feature == null) return null;
+    final hole = buildSketchLiveGeometry();
+    if (hole == null) return feature.geometry;
+    return DrawingUtils.tryAddHole(feature.geometry, hole) ?? feature.geometry;
+  }
+
   void appendDrawingPoint(LatLng point) {
     switch (currentTool) {
       case DrawingTool.polygon:
@@ -484,7 +517,16 @@ class DrawingController extends ChangeNotifier {
 
   // Metrics Getters
   /// Retorna a área em hectares da geometria sendo desenhada.
+  ///
+  /// No recorte, usa o talhão com o furo (quando o anel já cabe) em vez da
+  /// área isolada do buraco.
   double get liveAreaHa {
+    if (isCuttingHole) {
+      final preview = holeCutPreviewGeometry;
+      if (preview != null) {
+        return DrawingUtils.calculateGeometryArea(preview);
+      }
+    }
     final g = liveGeometry;
     if (g == null) return 0.0;
     // ⚡ Usar método unificado
@@ -526,6 +568,12 @@ class DrawingController extends ChangeNotifier {
 
   /// Returns the text instruction for the tooltip
   String get instructionText {
+    if (isCuttingHole &&
+        _interactionMode == DrawingInteraction.normal &&
+        (_stateMachine.currentState == DrawingState.armed ||
+            _stateMachine.currentState == DrawingState.drawing)) {
+      return 'Desenhe o contorno da parte que sai da área';
+    }
     if (_stateMachine.currentState == DrawingState.drawing &&
         _intersectionWarningMessage != null) {
       return _intersectionWarningMessage!;
@@ -1039,8 +1087,7 @@ class DrawingController extends ChangeNotifier {
 
   void selectFeature(
     DrawingFeature? feature, {
-    DrawingFeatureActionsMode actionsMode =
-        DrawingFeatureActionsMode.compact,
+    DrawingFeatureActionsMode actionsMode = DrawingFeatureActionsMode.compact,
   }) {
     if (_multiSelectEnabled) {
       toggleFeatureSelection(feature);
@@ -1413,6 +1460,7 @@ class DrawingController extends ChangeNotifier {
       _intersectionWarningMessage = null;
       _reviewAreaHa = 0.0;
       _reviewPerimeterKm = 0.0;
+      _holeCutFeatureId = null;
       _selectedFeature = null;
 
       // 🔧 FIX-DRAW-REDSCREEN: startDrawing agora retorna bool, não lança
@@ -1447,6 +1495,7 @@ class DrawingController extends ChangeNotifier {
       _intersectionWarningMessage = null;
       _reviewAreaHa = 0.0;
       _reviewPerimeterKm = 0.0;
+      _holeCutFeatureId = null;
 
       if (kDebugMode) {
         AppLogger.debug('Modo desenho desativado', tag: 'DrawingController');
@@ -1460,6 +1509,19 @@ class DrawingController extends ChangeNotifier {
   // ===========================================================================
 
   void cancelOperation({bool notify = true}) {
+    if (isCuttingHole) {
+      _clearSketchState();
+      _manualSketch = null;
+      _intersectionWarningMessage = null;
+      _errorMessage = null;
+      _holeCutFeatureId = null;
+      _stateMachine.cancel();
+      if (_selectedFeature != null) {
+        _stateMachine.startSelected();
+      }
+      if (notify) notifyListeners();
+      return;
+    }
     exitDrawingContext(notify: notify);
   }
 
@@ -1496,6 +1558,7 @@ class DrawingController extends ChangeNotifier {
     _selectedFeature = null;
     _selectedFeatureIds.clear();
     _multiSelectEnabled = false;
+    _holeCutFeatureId = null;
     _editGeometry = null;
     _editGeometrySnapshotJson = null;
     _history.clear();
@@ -1741,14 +1804,19 @@ class DrawingController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Sketch vazio em `drawing`: volta a [DrawingState.idle] (não `armed`).
+  /// Sketch vazio em `drawing`: volta a [DrawingState.idle].
+  /// No recorte interno, rearma o polígono para o furo continuar armado.
   void revertToIdleIfDrawingSketchEmpty() {
-    final hasSketch = _currentPoints.isNotEmpty ||
+    final hasSketch =
+        _currentPoints.isNotEmpty ||
         _freehandPoints.isNotEmpty ||
         _pivotCenter != null;
     if (!hasSketch && _stateMachine.currentState == DrawingState.drawing) {
       _stateMachine.cancel();
       _errorMessage = null;
+      if (isCuttingHole) {
+        _stateMachine.startDrawing(DrawingTool.polygon);
+      }
     }
   }
 
@@ -1844,8 +1912,55 @@ class DrawingController extends ChangeNotifier {
   // DRAWING FLOW
   // ===========================================================================
 
-  /// Completa o desenho manual e entra em modo de revisão
+  /// Abre o recorte interno do talhão selecionado.
+  ///
+  /// Compõe transições já válidas: selected → idle → armed.
+  /// Não chama [selectTool] nem [exitDrawingContext] — os dois zeram a seleção.
+  void startHoleCut() {
+    if (_isDisposed) return;
+
+    final selected = _selectedFeature;
+    final geometry = selected?.geometry;
+    final canCut =
+        geometry is DrawingPolygon || geometry is DrawingMultiPolygon;
+    if (selected == null || !canCut) {
+      _errorMessage = 'Selecione um talhão para recortar';
+      notifyListeners();
+      return;
+    }
+
+    _holeCutFeatureId = selected.id;
+    _clearSketchState();
+    _manualSketch = null;
+    _intersectionWarningMessage = null;
+    _errorMessage = null;
+    _hasSelfIntersection = false;
+    _intersectingSegmentIndices = {};
+    _interactionMode = DrawingInteraction.normal;
+
+    if (_stateMachine.currentState == DrawingState.selected) {
+      _stateMachine.exitSelected();
+    } else if (_stateMachine.currentState != DrawingState.idle) {
+      _stateMachine.cancel();
+    }
+
+    final started = _stateMachine.startDrawing(DrawingTool.polygon);
+    if (!started) {
+      _holeCutFeatureId = null;
+      _errorMessage = 'Selecione um talhão para recortar';
+      notifyListeners();
+      return;
+    }
+    notifyListeners();
+  }
+
+  /// Completa o desenho manual e entra em modo de revisão.
+  /// No recorte, grava o furo no mesmo talhão e volta para selected.
   void completeDrawing() {
+    if (isCuttingHole) {
+      _confirmHoleCut();
+      return;
+    }
     final geometrySnapshot = liveGeometry;
     if (_stateMachine.currentState == DrawingState.drawing) {
       if (_closedRingCrosses()) {
@@ -1870,6 +1985,46 @@ class DrawingController extends ChangeNotifier {
         notifyListeners();
       }
     }
+  }
+
+  void _confirmHoleCut() {
+    if (_stateMachine.currentState != DrawingState.drawing) return;
+
+    final feature = _selectedFeature;
+    final hole = buildSketchLiveGeometry();
+    final ring = hole is DrawingPolygon && hole.coordinates.isNotEmpty
+        ? hole.coordinates.first
+        : const <List<double>>[];
+    DrawingGeometry? result;
+    if (feature != null &&
+        feature.id == _holeCutFeatureId &&
+        hole != null &&
+        ring.length >= 4) {
+      result = DrawingUtils.tryAddHole(feature.geometry, hole);
+    }
+
+    if (result == null || feature == null) {
+      _intersectionWarningMessage = 'O recorte precisa ficar dentro do talhão.';
+      _errorMessage = null;
+      notifyListeners();
+      return;
+    }
+
+    updateFeature(
+      feature.id,
+      newGeometry: result,
+      editorId: 'sistema',
+      editorType: AuthorType.sistema,
+    );
+    _holeCutFeatureId = null;
+    _clearSketchState();
+    _manualSketch = null;
+    _intersectionWarningMessage = null;
+    _stateMachine.cancel();
+    if (_selectedFeature != null) {
+      _stateMachine.startSelected();
+    }
+    notifyListeners();
   }
 
   /// Atualiza propriedades específicas de uma feature
