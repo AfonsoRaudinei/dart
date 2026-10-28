@@ -150,8 +150,45 @@ class ConsultoriaReportExportData {
     return toCsv(rows);
   }
 
-  static String occurrenceFileBaseName(Occurrence occurrence) {
-    return 'ocorrencia_${occurrence.id}';
+  static String occurrenceCategoryLabel(Occurrence occurrence) {
+    final category = occurrence.category;
+    if (category != null && category.trim().isNotEmpty) {
+      return OccurrenceCategory.fromString(category).label;
+    }
+    final asCategory = OccurrenceCategory.fromString(occurrence.type);
+    if (occurrence.type.contains('_') ||
+        asCategory != OccurrenceCategory.doenca ||
+        occurrence.type.toLowerCase() == 'doenca' ||
+        occurrence.type.toLowerCase() == 'doença') {
+      return asCategory.label;
+    }
+    switch (occurrence.type.toLowerCase()) {
+      case 'alta':
+        return 'Alta';
+      case 'baixa':
+        return 'Baixa';
+      case 'média':
+      case 'media':
+        return 'Média';
+      default:
+        final trimmed = occurrence.type.trim();
+        return trimmed.isEmpty ? 'Ocorrência' : trimmed;
+    }
+  }
+
+  /// Nome legível antes de [ReportExportService.safeFileBaseName] (produtor · fazenda · tipo).
+  static String occurrenceFileBaseName(
+    Occurrence occurrence, {
+    String? clientName,
+    String? farmName,
+  }) {
+    final parts = <String>[];
+    final client = clientName?.trim();
+    if (client != null && client.isNotEmpty) parts.add(client);
+    final farm = farmName?.trim();
+    if (farm != null && farm.isNotEmpty) parts.add(farm);
+    parts.add(occurrenceCategoryLabel(occurrence));
+    return parts.join(' ');
   }
 
   static Map<String, dynamic> occurrenceJson(Occurrence occurrence) {

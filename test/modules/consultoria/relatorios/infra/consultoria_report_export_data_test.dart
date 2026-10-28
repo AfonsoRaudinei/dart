@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/core/html_templates/report_export_service.dart';
+import 'package:soloforte_app/modules/consultoria/occurrences/domain/occurrence.dart';
 import 'package:soloforte_app/modules/consultoria/relatorios/infra/consultoria_report_export_data.dart';
 import 'package:soloforte_app/modules/consultoria/relatorios/models/relatorio_status.dart';
 import 'package:soloforte_app/modules/consultoria/relatorios/models/relatorio_tecnico.dart';
@@ -27,6 +29,28 @@ void main() {
     ]);
 
     expect(csv, contains('"texto, com ""aspas""\ne linha"'));
+  });
+
+  test('occurrenceFileBaseName monta produtor, fazenda e categoria', () {
+    final occurrence = _makeOccurrence(category: 'daninhas');
+    final base = ConsultoriaReportExportData.occurrenceFileBaseName(
+      occurrence,
+      clientName: 'Milton Arantes Neto',
+      farmName: 'Fazenda Modelo',
+    );
+    expect(base, 'Milton Arantes Neto Fazenda Modelo Ervas Daninhas');
+    expect(
+      ReportExportService.safeFileBaseName(base),
+      'milton_arantes_neto_fazenda_modelo_ervas_daninhas',
+    );
+  });
+
+  test('occurrenceFileBaseName usa categoria quando faltam nomes', () {
+    final occurrence = _makeOccurrence(category: 'ervas_daninhas');
+    expect(
+      ConsultoriaReportExportData.occurrenceFileBaseName(occurrence),
+      'Ervas Daninhas',
+    );
   });
 }
 
@@ -74,5 +98,17 @@ RelatorioTecnico _makeFullReport() {
         coletadoEm: now,
       ),
     ],
+  );
+}
+
+Occurrence _makeOccurrence({String? category}) {
+  final now = DateTime.utc(2026, 6, 3, 12);
+  return Occurrence(
+    id: 'occ-export-1',
+    type: 'Alta',
+    description: 'Broto novos',
+    category: category,
+    createdAt: now,
+    updatedAt: now,
   );
 }
