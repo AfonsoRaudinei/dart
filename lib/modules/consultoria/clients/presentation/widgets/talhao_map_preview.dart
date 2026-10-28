@@ -8,6 +8,19 @@ import 'package:latlong2/latlong.dart' hide Path;
 import 'package:soloforte_app/core/config/map_config.dart';
 import 'package:soloforte_app/core/domain/map_models.dart';
 
+/// Mesma regra de casas do card vinculado ([formatLinkedFieldAreaHa]).
+String formatTalhaoMapPreviewAreaHa(double areaHa) {
+  return areaHa.toStringAsFixed(areaHa >= 100 ? 1 : 2);
+}
+
+/// Rótulo do chip no mapa: `Nome - 12.50 ha`.
+String buildTalhaoMapPreviewTitleChipLabel(String nome, double areaHa) {
+  final name = nome.trim();
+  final area = '${formatTalhaoMapPreviewAreaHa(areaHa)} ha';
+  if (name.isEmpty) return area;
+  return '$name - $area';
+}
+
 class TalhaoMapPreviewWidget extends StatelessWidget {
   const TalhaoMapPreviewWidget({
     super.key,
@@ -211,7 +224,9 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
               top: 8,
               left: 8,
               right: 72,
-              child: _MapFieldTitleChip(label: nome),
+              child: _MapFieldTitleChip(
+                label: buildTalhaoMapPreviewTitleChipLabel(nome, areaHa),
+              ),
             ),
           if (ndviLoading) const Positioned.fill(child: _NdviPremiumLoadingOverlay()),
           if (showNdvi && openHistory != null && !ndviLoading)
