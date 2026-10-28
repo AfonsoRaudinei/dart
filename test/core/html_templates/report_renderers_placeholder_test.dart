@@ -389,6 +389,35 @@ void main() {
     expect(RegExp('Talhão 7').allMatches(html).length, 1);
   });
 
+  test('ocorrencia detalhada: legenda do usuário em figcaption e alt', () async {
+    await initializeDateFormatting('pt_BR');
+
+    final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+      'id': 'occ-caption',
+      'type': 'Alta',
+      'description': 'Broto novos',
+      'category': 'daninhas',
+      'created_at': now.toIso8601String(),
+      'foto_base64': 'https://example.com/capa.jpg',
+      'photo_path': 'https://example.com/capa.jpg',
+      'fotos_categorias_json': jsonEncode({
+        'daninhas': [
+          'https://example.com/capa.jpg',
+          'https://example.com/a.jpg',
+        ],
+        '_captions': {
+          'https://example.com/capa.jpg': 'Capa da infestação',
+          'https://example.com/a.jpg': 'Folha <mancha>',
+        },
+      }),
+    });
+
+    expect(html, contains('Capa da infestação · Ervas Daninhas · 03/06/2026'));
+    expect(html, contains('<figcaption>Folha &lt;mancha&gt;</figcaption>'));
+    expect(html, contains('alt="Folha &lt;mancha&gt;"'));
+    expect(html, isNot(contains('<figcaption>Foto 2</figcaption>')));
+  });
+
   final emoji = RegExp(
     r'[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]',
     unicode: true,
