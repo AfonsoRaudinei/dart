@@ -20,6 +20,7 @@ import 'package:soloforte_app/modules/settings/presentation/providers/user_profi
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/occurrence.dart';
+import '../../domain/occurrence_photo_paths.dart';
 import '../../../relatorio_visita/data/image_storage_service.dart';
 import '../coordinators/occurrence_form_guard.dart';
 import '../providers/occurrence_draft_provider.dart';
@@ -83,6 +84,7 @@ class _OccurrenceCreationSheetState
   final Set<String> _nutrientes = {};
   final Map<String, TextEditingController> _notasCtrls = {};
   final Map<String, List<String>> _fotos = {};
+  final Map<String, String> _photoCaptions = {};
   late final Future<List<ClientSummary>> _clientsFuture;
   ClientSummary? _selectedClient;
   String _urgency = 'Média';
@@ -175,7 +177,10 @@ class _OccurrenceCreationSheetState
 
     _metrics.addAll(_decodeNestedIntMap(occurrence.metricasJson));
     _nutrientes.addAll(_decodeStringSet(occurrence.nutrientesJson));
-    _fotos.addAll(_decodeStringListMap(occurrence.fotosCategoriasJson));
+    _fotos.addAll(
+      parseFotosCategoriasByCategory(occurrence.fotosCategoriasJson),
+    );
+    _photoCaptions.addAll(parseFotosCaptions(occurrence.fotosCategoriasJson));
     if (_fotos.isEmpty &&
         occurrence.photoPath != null &&
         occurrence.photoPath!.isNotEmpty) {
@@ -319,7 +324,24 @@ class _OccurrenceCreationSheetState
     });
   }
 
-  String? _encodeFotos() => _fotos.isEmpty ? null : jsonEncode(_fotos);
+  void _setPhotoCaption(String path, String caption) {
+    _patchForm(() {
+      final clipped = clipOccurrencePhotoCaption(caption);
+      if (clipped.isEmpty) {
+        _photoCaptions.remove(path);
+      } else {
+        _photoCaptions[path] = clipped;
+      }
+    });
+  }
+
+  void _dropCaptionIfOrphan(String path) {
+    final stillUsed = _fotos.values.any((list) => list.contains(path));
+    if (!stillUsed) _photoCaptions.remove(path);
+  }
+
+  String? _encodeFotos() =>
+      encodeFotosCategoriasWithCaptions(_fotos, _photoCaptions);
 
   EstadioData? _findEstadio(String? code) {
     if (code == null || code.isEmpty) return null;
@@ -368,22 +390,6 @@ class _OccurrenceCreationSheetState
       return decoded.map(
         (key, value) => MapEntry(key.toString(), value.toString()),
       );
-    } catch (_) {
-      return {};
-    }
-  }
-
-  Map<String, List<String>> _decodeStringListMap(String? raw) {
-    if (raw == null || raw.isEmpty) return {};
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is! Map) return {};
-      return decoded.map((key, value) {
-        final list = value is List
-            ? value.map((item) => item.toString()).toList()
-            : <String>[];
-        return MapEntry(key.toString(), list);
-      });
     } catch (_) {
       return {};
     }

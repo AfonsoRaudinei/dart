@@ -57,6 +57,7 @@ class OccurrenceDetailPhotoSection extends StatelessWidget {
             const SizedBox(height: 10),
             OccurrencePhotoGallery(
               paths: photoPaths,
+              captions: parseFotosCaptions(occurrence.fotosCategoriasJson),
               thumbnailSize: 72,
               readOnly: true,
             ),

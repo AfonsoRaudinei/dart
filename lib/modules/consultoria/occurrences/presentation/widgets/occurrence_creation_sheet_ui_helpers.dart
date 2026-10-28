@@ -172,7 +172,11 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
     for (final entry in _fotos.entries) {
       for (var i = 0; i < entry.value.length; i++) {
         if (cursor == flatIndex) {
-          _patchForm(() => entry.value.removeAt(i));
+          final path = entry.value[i];
+          _patchForm(() {
+            entry.value.removeAt(i);
+            _dropCaptionIfOrphan(path);
+          });
           return;
         }
         cursor++;
@@ -266,9 +270,15 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
             const SizedBox(height: 10),
             OccurrencePhotoGallery(
               paths: _flatFotoPaths(),
+              captions: Map<String, String>.from(_photoCaptions),
               thumbnailSize: 56,
               readOnly: false,
               onRemove: _removeFlatPhoto,
+              onCaptionChanged: (index, caption) {
+                final paths = _flatFotoPaths();
+                if (index < 0 || index >= paths.length) return;
+                _setPhotoCaption(paths[index], caption);
+              },
             ),
           ],
           const SizedBox(height: 12),
@@ -343,11 +353,22 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
                 padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
                 child: OccurrencePhotoGallery(
                   paths: List<String>.from(_fotos[cat.name]!),
+                  captions: Map<String, String>.from(_photoCaptions),
                   thumbnailSize: 72,
                   readOnly: false,
-                  onRemove: (index) => _patchForm(
-                    () => _fotos[cat.name]!.removeAt(index),
-                  ),
+                  onRemove: (index) => _patchForm(() {
+                    final list = _fotos[cat.name]!;
+                    if (index < 0 || index >= list.length) return;
+                    final path = list.removeAt(index);
+                    _dropCaptionIfOrphan(path);
+                  }),
+                  onCaptionChanged: (index, caption) {
+                    final list = _fotos[cat.name];
+                    if (list == null || index < 0 || index >= list.length) {
+                      return;
+                    }
+                    _setPhotoCaption(list[index], caption);
+                  },
                 ),
               ),
           ],

@@ -14,6 +14,7 @@ class OccurrenceFormDraft {
   final Map<String, Map<String, int>> metrics;
   final Set<String> nutrientes;
   final Map<String, List<String>> fotos;
+  final Map<String, String> photoCaptions;
   final Map<String, String> notas;
 
   const OccurrenceFormDraft({
@@ -29,6 +30,7 @@ class OccurrenceFormDraft {
     this.metrics = const {},
     this.nutrientes = const {},
     this.fotos = const {},
+    this.photoCaptions = const {},
     this.notas = const {},
   });
 
@@ -64,6 +66,7 @@ class OccurrenceFormDraft {
     Map<String, Map<String, int>>? metrics,
     Set<String>? nutrientes,
     Map<String, List<String>>? fotos,
+    Map<String, String>? photoCaptions,
     Map<String, String>? notas,
   }) {
     return OccurrenceFormDraft(
@@ -80,6 +83,7 @@ class OccurrenceFormDraft {
       metrics: metrics ?? this.metrics,
       nutrientes: nutrientes ?? this.nutrientes,
       fotos: fotos ?? this.fotos,
+      photoCaptions: photoCaptions ?? this.photoCaptions,
       notas: notas ?? this.notas,
     );
   }
