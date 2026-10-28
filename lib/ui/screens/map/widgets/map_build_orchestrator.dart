@@ -171,9 +171,16 @@ class MapBuildOrchestrator extends ConsumerWidget {
       MapLogger.logRenderTime(stopwatch.elapsedMilliseconds);
     });
 
+    final holeCutBanner =
+        drawingMetrics.holeCutActive &&
+            drawingMetrics.state == DrawingState.armed
+        ? 'Desenhe o recorte dentro do talhão'
+        : null;
+
     return DrawingStateOverlay(
       state: drawingMetrics.state,
       tool: drawingMetrics.tool,
+      message: holeCutBanner,
       child: Stack(
         children: [
           const MapGeofenceLifecycleHost(),
@@ -480,9 +487,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 const IsolatedUserLocationLayer(),
 
                 RichAttributionWidget(
-                  attributions: [
-                    TextSourceAttribution(tileConfig.attribution),
-                  ],
+                  attributions: [TextSourceAttribution(tileConfig.attribution)],
                   showFlutterMapAttribution: false,
                   alignment: AttributionAlignment.bottomLeft,
                   // Sem auto-expand: o popup preto parecia "sombra" no mapa.
@@ -490,9 +495,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   popupInitialDisplayDuration:
                       kMapAttributionPopupInitialDuration,
                   popupBorderRadius: BorderRadius.circular(8),
-                  popupBackgroundColor: Colors.black.withValues(
-                    alpha: 0.72,
-                  ),
+                  popupBackgroundColor: Colors.black.withValues(alpha: 0.72),
                 ),
               ],
             ),
@@ -663,13 +666,17 @@ class _MapControlsHost extends ConsumerWidget {
             )
           : null,
       drawingState: drawingMetrics.state,
+      holeCutActive: drawingMetrics.holeCutActive,
       onFinishDrawing: finishDrawing,
       onCancelDrawing: () {
+        final wasHoleCut = ref.read(drawingControllerProvider).isCuttingHole;
         ref.read(drawingControllerProvider).cancelOperation();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Desenho cancelado'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(
+              wasHoleCut ? 'Recorte cancelado' : 'Desenho cancelado',
+            ),
+            duration: const Duration(seconds: 2),
           ),
         );
       },
