@@ -235,7 +235,7 @@ class _MarketingCasesReportsSectionState
                 onCta: () => context.go(AppRoutes.map),
               )
             else if (needsProducerPick)
-              _PremiumEmptyState(
+              const _PremiumEmptyState(
                 message:
                     'Selecione um produtor para ver os relatórios deste cliente.',
               )
