@@ -8,6 +8,7 @@ import '../domain/map_models.dart';
 import '../domain/publicacao.dart';
 import '../data/map_repository.dart';
 import '../utils/app_logger.dart';
+import '../config/inpe_satellite_overlay_mode.dart' as inpe_overlay;
 
 part 'map_state.g.dart';
 
@@ -112,20 +113,37 @@ class MapSatelliteLabelsEnabled extends _$MapSatelliteLabelsEnabled {
   }
 }
 
-/// Overlay INPE Sentinel-2 Cerrado (nov/2023–ago/2024) sobre a base MapTiler.
+/// Ciclo Off → INPE Cerrado → mosaico Brasil 3M → Off (ícone único no mapa).
 @Riverpod(keepAlive: true)
-class CerradoSatelliteOverlayEnabled extends _$CerradoSatelliteOverlayEnabled {
-  static const _kKey = 'map_cerrado_satellite_overlay_v1';
+class InpeSatelliteOverlayModeCtrl extends _$InpeSatelliteOverlayModeCtrl {
+  static const _kKey = 'map_inpe_satellite_overlay_mode_v1';
+  static const _kLegacyBoolKey = 'map_cerrado_satellite_overlay_v1';
 
   @override
-  bool build() {
+  inpe_overlay.InpeSatelliteOverlayMode build() {
     final prefs = ref.read(preferencesServiceProvider);
-    return prefs.getBool(_kKey) ?? false;
+    final saved = prefs.getString(_kKey);
+    if (saved != null) {
+      return inpe_overlay.InpeSatelliteOverlayMode.fromPersisted(saved);
+    }
+    final legacyOn = prefs.getBool(_kLegacyBoolKey) ?? false;
+    return legacyOn
+        ? inpe_overlay.InpeSatelliteOverlayMode.cerradoInpe
+        : inpe_overlay.InpeSatelliteOverlayMode.off;
   }
 
-  void setEnabled(bool enabled) {
-    state = enabled;
-    ref.read(preferencesServiceProvider).setBool(_kKey, enabled);
+  void setMode(inpe_overlay.InpeSatelliteOverlayMode mode) {
+    state = mode;
+    final prefs = ref.read(preferencesServiceProvider);
+    prefs.setString(_kKey, mode.persisted);
+    prefs.setBool(
+      _kLegacyBoolKey,
+      mode == inpe_overlay.InpeSatelliteOverlayMode.cerradoInpe,
+    );
+  }
+
+  void cycleMode() {
+    setMode(state.cycle());
   }
 }
 
