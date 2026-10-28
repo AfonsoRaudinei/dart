@@ -8,6 +8,10 @@ import '../contracts/ndvi_latest_summary.dart';
 /// Talhão cujo raster NDVI deve cobrir o polígono no mapa. Sessão apenas.
 final mapNdviOverlayFieldIdProvider = StateProvider<String?>((ref) => null);
 
+/// Quando true, o overlay do talhão no mapa exibe o modo Preto e Branco
+/// (Máscara verde binária ou filtro monocromático de alto contraste).
+final mapNdviMonochromeEnabledProvider = StateProvider<bool>((ref) => false);
+
 /// Última imagem do talhão pedido pela rota `/map?ndvi=1`.
 final mapNdviOverlaySummaryProvider =
     FutureProvider<NdviLatestSummary?>((ref) async {
