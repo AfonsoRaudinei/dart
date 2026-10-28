@@ -182,7 +182,7 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
 
 @visibleForTesting
 double estimateMapTalhaoToolbarWidth(DrawingFeature feature) {
-  const chipWidth = 76.0;
+  const chipWidth = 68.0;
   final chips = feature.id.isNotEmpty ? 4 : 2;
   return chips * chipWidth + (chips - 1);
 }
@@ -206,7 +206,7 @@ class _ToolbarChip extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
