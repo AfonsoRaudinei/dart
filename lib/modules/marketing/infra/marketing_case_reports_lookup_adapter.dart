@@ -8,6 +8,8 @@ import '../../../core/html_templates/marketing_html_renderer.dart';
 import '../../../core/session/local_session_identity.dart';
 import '../../../core/session/user_role.dart';
 import '../../../core/ui/sheets/soloforte_sheet.dart';
+import '../../planos/domain/entities/user_plan.dart';
+import '../../planos/domain/enums/plano_tipo.dart';
 import '../../planos/presentation/providers/plano_providers.dart';
 import '../../settings/presentation/providers/user_profile_provider.dart';
 import '../domain/entities/marketing_case.dart';
@@ -16,7 +18,6 @@ import '../domain/marketing_case_visibility.dart';
 import '../presentation/providers/marketing_providers.dart';
 import '../presentation/widgets/draft_saved_sheet.dart';
 import '../presentation/widgets/edit_case_sheet.dart';
-import 'package:go_router/go_router.dart';
 
 /// Provider interno — registrado em `main.dart` como override de
 /// [marketingCaseReportsListProvider] em `core/contracts/`.
@@ -111,16 +112,12 @@ class MarketingCaseReportsLookupAdapter implements IMarketingCaseReportsLookup {
 
     final plano = _ref.read(planoAtivoProvider).valueOrNull;
     if (plano?.isAdmin != true) {
-      final casesPublicados = cases
-          .where(
-            (c) =>
-                c.status == MarketingCaseStatus.published &&
-                c.ativo &&
-                c.deletadoEm == null,
-          )
-          .length;
-      final limite = plano?.limiteCases ?? 3;
-      if (casesPublicados >= limite) {
+      final limite = plano?.limiteCases ?? PlanoTipo.bronze.limiteCases;
+      if (marketingPublishBlockedByPlan(
+        plano: plano ?? UserPlan.free(userId: ''),
+        cases: cases,
+        publishingCaseId: caseId,
+      )) {
         if (!context.mounted) return false;
         final planoLabel = plano?.plano.label;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -128,22 +125,19 @@ class MarketingCaseReportsLookupAdapter implements IMarketingCaseReportsLookup {
             content: Text(
               'Limite de $limite cases publicados'
               '${planoLabel != null ? ' no plano $planoLabel' : ''}. '
-              'Atualize o plano para publicar.',
+              'Mantenha como Não gerado ou exclua um case publicado.',
             ),
             duration: const Duration(seconds: 5),
           ),
         );
-        final verPlanos = await DraftSavedSheet.show(
+        await DraftSavedSheet.show(
           context,
           title: 'Limite de publicações atingido',
           message:
-              'Você já tem $limite case(s) publicado(s). Atualize o plano para '
-              'publicar este case no mapa ou mantenha como Não gerado em '
-              'Relatórios → Marketing.',
+              'Você já tem $limite case(s) publicado(s). '
+              'Mantenha este case como Não gerado em Relatórios → Marketing '
+              'ou exclua um case publicado para liberar espaço.',
         );
-        if (verPlanos == true && context.mounted) {
-          context.go('/planos');
-        }
         return false;
       }
     }

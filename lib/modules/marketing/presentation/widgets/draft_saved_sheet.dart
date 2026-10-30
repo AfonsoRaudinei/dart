@@ -2,22 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
-/// Bottom sheet exibido após salvar um rascunho sem plano ativo.
-/// Retorna [true] se o usuário quer ver os planos, [false] ou null para fechar.
+/// Bottom sheet exibido após salvar um rascunho ou atingir limite de publicações.
 class DraftSavedSheet extends StatelessWidget {
   const DraftSavedSheet({
     super.key,
     this.title = 'Case salvo com sucesso!',
     this.message =
-        'Seu case foi salvo como rascunho. Para publicá-lo no mapa e '
-        'compartilhar com outros usuários, ative um plano.',
+        'Seu case foi salvo como rascunho (Não gerado). '
+        'Para publicá-lo no mapa, libere espaço no limite do seu plano '
+        'ou mantenha em Relatórios → Marketing.',
   });
 
   final String title;
   final String message;
 
-  /// Exibe o sheet e retorna `true` se o usuário tocou em "Ver planos".
-  /// A navegação fica a cargo do chamador após o modal fechar.
   static Future<bool?> show(
     BuildContext context, {
     String? title,
@@ -30,8 +28,9 @@ class DraftSavedSheet extends StatelessWidget {
         title: title ?? 'Case salvo com sucesso!',
         message:
             message ??
-            'Seu case foi salvo como rascunho. Para publicá-lo no mapa e '
-                'compartilhar com outros usuários, ative um plano.',
+            'Seu case foi salvo como rascunho (Não gerado). '
+                'Para publicá-lo no mapa, libere espaço no limite do seu plano '
+                'ou mantenha em Relatórios → Marketing.',
       ),
     );
   }
@@ -39,7 +38,6 @@ class DraftSavedSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final bg = isIos
         ? Colors.transparent
         : SoloForteSheetTokens.sheetBackground;
@@ -48,11 +46,6 @@ class DraftSavedSheet extends StatelessWidget {
     final messageColor = isIos
         ? SoloForteSheetSkinIos.subtitleColor
         : Theme.of(context).textTheme.bodySmall?.color;
-    final ctaBg = isIos
-        ? SoloForteSheetSkinIos.ctaBackground
-        : const Color(0xFFF59E0B);
-    final ctaFg = isIos ? SoloForteSheetSkinIos.ctaText : Colors.black;
-    final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 12.0;
     final secondaryColor = isIos
         ? SoloForteSheetSkinIos.ghostText
         : Theme.of(context).textTheme.bodyLarge?.color;
@@ -80,8 +73,6 @@ class DraftSavedSheet extends StatelessWidget {
               ),
             ),
           ),
-
-          // Ícone
           Container(
             width: 64,
             height: 64,
@@ -95,10 +86,7 @@ class DraftSavedSheet extends StatelessWidget {
               color: Color(0xFF34C759),
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // Título
           Text(
             title,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -107,10 +95,7 @@ class DraftSavedSheet extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
-
           const SizedBox(height: 8),
-
-          // Mensagem
           Text(
             message,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -118,35 +103,7 @@ class DraftSavedSheet extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
-
           const SizedBox(height: 24),
-
-          // Botão primário: Ver planos
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              // Fecha o modal e sinaliza ao chamador para navegar para /planos.
-              // A navegação fica NO PAI — nunca neste widget.
-              onPressed: () => Navigator.of(context).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ctaBg,
-                foregroundColor: ctaFg,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                minimumSize: const Size(double.infinity, 52),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(ctaRadius),
-                ),
-              ),
-              child: const Text(
-                'Ver planos',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Botão secundário: Ok (apenas fecha)
           SizedBox(
             width: double.infinity,
             child: TextButton(
@@ -158,13 +115,12 @@ class DraftSavedSheet extends StatelessWidget {
                 'Ok, entendi',
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                   color: secondaryColor,
                 ),
               ),
             ),
           ),
-
           const SizedBox(height: 8),
         ],
       ),
