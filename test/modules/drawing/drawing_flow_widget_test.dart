@@ -9,6 +9,9 @@ import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_sheet
 import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
+import 'package:soloforte_app/modules/drawing/domain/repositories/i_clients_repository.dart';
+import 'package:soloforte_app/modules/drawing/infra/clients/i_clients_repository_provider.dart';
+import 'package:soloforte_app/modules/drawing/presentation/providers/drawing_client_provider.dart';
 
 /// Mock repository que não acessa banco de dados
 class MockDrawingRepository extends DrawingRepository {
@@ -40,6 +43,19 @@ class MockDrawingRepository extends DrawingRepository {
 
   @override
   Future<void> updateClientAreaTotal(String clientId, double areaTotal) async {}
+}
+
+class _FlowClientsRepository implements IClientsRepository {
+  static const client = Client(id: 'cli-flow', name: 'Cliente Fluxo');
+
+  @override
+  Future<List<Client>> getClients() async => [client];
+
+  @override
+  Future<List<Farm>> getFarms(String clientId) async => [];
+
+  @override
+  Future<void> saveFarm(Farm farm, String clientId) async {}
 }
 
 /// ✅ FIX-DRAW-FLOW-02 — Testes de Widget do Fluxo de Desenho
@@ -490,8 +506,23 @@ void main() {
       final controller = DrawingController(repository: repository);
       var closeCount = 0;
 
+      final container = ProviderContainer(
+        overrides: [
+          drawingClientsRepositoryProvider.overrideWithValue(
+            _FlowClientsRepository(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.read(drawingClientProvider.notifier).setClienteAtivo(
+            'cli-flow',
+            clientName: 'Cliente Fluxo',
+          );
+      await Future<void>.delayed(Duration.zero);
+
       await tester.pumpWidget(
-        ProviderScope(
+        UncontrolledProviderScope(
+          container: container,
           child: MaterialApp(
             home: Scaffold(
               body: SingleChildScrollView(
