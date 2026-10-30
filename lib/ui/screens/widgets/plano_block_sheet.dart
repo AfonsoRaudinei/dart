@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
+import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
 
 class PlanoBlockSheet extends StatelessWidget {
   final String motivo;
@@ -37,13 +37,13 @@ class PlanoBlockSheet extends StatelessWidget {
   int _limiteDoPlano(String? label) {
     switch (label) {
       case 'Bronze':
-        return 3;
+        return PlanoTipo.bronze.limiteCases;
       case 'Prata':
-        return 5;
+        return PlanoTipo.prata.limiteCases;
       case 'Ouro':
-        return 999999; // ilimitado (admin bypass deve evitar chegar aqui)
+        return PlanoTipo.ouro.limiteCases;
       default:
-        return 3; // free tier
+        return PlanoTipo.bronze.limiteCases;
     }
   }
 
@@ -59,11 +59,6 @@ class PlanoBlockSheet extends StatelessWidget {
     final handleColor = isIos
         ? SoloForteSheetSkinIos.handleColor
         : const Color(0xFF3A3A3C);
-    final ctaBg = isIos
-        ? SoloForteSheetSkinIos.ctaBackground
-        : const Color(0xFF32D74B);
-    final ctaFg = isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
-    final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 50.0;
 
     return SafeArea(
       child: Padding(
@@ -105,8 +100,8 @@ class PlanoBlockSheet extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               motivo == 'sem_plano'
-                  ? 'Assine um plano para publicar seus cases agronômicos no mapa.'
-                  : 'Seu plano ${planoLabel ?? 'atual'} permite apenas ${limite ?? _limiteDoPlano(planoLabel)} case(s) ativo(s). Faça upgrade para publicar mais.',
+                  ? 'Seu plano atual não permite publicar novos cases no mapa.'
+                  : 'Seu plano ${planoLabel ?? 'atual'} permite apenas ${limite ?? _limiteDoPlano(planoLabel)} case(s) ativo(s). Exclua um case publicado ou mantenha como Não gerado.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: 'Inter',
@@ -118,28 +113,15 @@ class PlanoBlockSheet extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               height: 50,
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.of(context).pop();
-                  Future.delayed(const Duration(milliseconds: 200), () {
-                    if (context.mounted) context.go('/planos');
-                  });
-                },
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: ctaBg,
-                    borderRadius: BorderRadius.circular(ctaRadius),
-                  ),
-                  child: Center(
-                    child: Text(
-                      'Ver planos',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: ctaFg,
-                      ),
-                    ),
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  'Ok, entendi',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: bodyColor,
                   ),
                 ),
               ),
