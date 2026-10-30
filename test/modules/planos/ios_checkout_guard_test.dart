@@ -31,7 +31,20 @@ void main() {
       const MaterialApp(home: PagamentoScreen(plano: 'bronze')),
     );
 
-    expect(find.text('Pagamento indisponivel no iOS'), findsOneWidget);
+    expect(find.text('Pagamento indisponível'), findsOneWidget);
+    expect(find.text('Continuar para pagamento'), findsNothing);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('PagamentoScreen não exibe ação de compra no Android', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    await tester.pumpWidget(
+      const MaterialApp(home: PagamentoScreen(plano: 'bronze')),
+    );
+
+    expect(find.text('Pagamento indisponível'), findsOneWidget);
     expect(find.text('Continuar para pagamento'), findsNothing);
     debugDefaultTargetPlatformOverride = null;
   });
@@ -47,8 +60,9 @@ void main() {
       ),
     );
 
-    expect(find.text('Checkout indisponivel no iOS'), findsOneWidget);
+    expect(find.text('Confirmação indisponível'), findsOneWidget);
     expect(find.text('Aguardando confirmação do pagamento...'), findsNothing);
+    expect(find.text('Plano ativado! 🎉'), findsNothing);
     debugDefaultTargetPlatformOverride = null;
   });
 }

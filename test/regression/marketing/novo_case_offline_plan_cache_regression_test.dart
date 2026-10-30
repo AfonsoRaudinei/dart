@@ -164,6 +164,11 @@ void main() {
             syncStatus: 'pending_sync',
             atualizadoEm: '2026-09-04T10:00:00.000Z',
           ),
+          _publishedCase(
+            'pend-extra',
+            syncStatus: 'pending_sync',
+            atualizadoEm: '2026-09-05T10:00:00.000Z',
+          ),
         ];
         final repo = _DraftAwareRepo(cases);
         final notifier = _StubMarketingCasesNotifier(
@@ -178,12 +183,16 @@ void main() {
 
         final state = notifier.state.valueOrNull!;
         expect(
-          state.firstWhere((c) => c.id == 'pend-new').status.toValue(),
+          state.firstWhere((c) => c.id == 'pend-extra').status.toValue(),
           'draft',
         );
         expect(
+          state.firstWhere((c) => c.id == 'pend-new').status.toValue(),
+          'published',
+        );
+        expect(
           state.firstWhere((c) => c.id == 'pend-mid').status.toValue(),
-          'draft',
+          'published',
         );
         expect(
           state.firstWhere((c) => c.id == 'pend-old').status.toValue(),
