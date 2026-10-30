@@ -495,6 +495,13 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     final geometry = widget.controller.liveGeometry;
     if (geometry == null) return;
 
+    if (_selectedClient?.id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecione o Cliente primeiro')),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
     final List<DrawingFeature> savedFeatures;
     try {
@@ -509,7 +516,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
         autorTipo: _isConsultant ? AuthorType.consultor : AuthorType.cliente,
         subtipo: widget.controller.pendingDrawingSubtipo,
         raioMetros: widget.controller.pendingDrawingRaioMetros,
-        clienteId: _selectedClient?.id ?? 'SELF',
+        clienteId: _selectedClient!.id,
         fazendaId: _selectedFarm?.id,
         grupo: _selectedFarm?.name,
         cor: _selectedColor.toARGB32(),
