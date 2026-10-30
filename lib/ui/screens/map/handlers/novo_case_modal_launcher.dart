@@ -173,18 +173,13 @@ class NovoCaseModalLauncher {
     }
 
     final cases = ref.read(marketingCasesProvider).valueOrNull ?? [];
-    final casesPublicados = cases
-        .where(
-          (c) =>
-              c.status.toValue() == 'published' &&
-              c.ativo &&
-              c.deletadoEm == null,
-        )
-        .length;
-
     final limite = plano.limiteCases;
 
-    if (casesPublicados >= limite) {
+    if (marketingPublishBlockedByPlan(
+      plano: plano,
+      cases: cases,
+      publishingCaseId: newCase.id,
+    )) {
       if (!context.mounted) return;
       Navigator.of(context).pop();
       try {
