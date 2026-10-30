@@ -41,6 +41,9 @@ void main() {
     totalAreaHa: 150,
   );
 
+  final talhaoNorteChipLabel =
+      buildTalhaoMapPreviewTitleChipLabel('Talhão Norte', 12.5);
+
   final linkedFields = [
     const FarmLinkedFieldSummary(
       id: 'drawing-1',
@@ -102,7 +105,7 @@ void main() {
     expect(find.byTooltip('Excluir talhão'), findsOneWidget);
     expect(find.byTooltip('Dados do talhão'), findsNothing);
     expect(find.byTooltip('Geometria e união'), findsNothing);
-    expect(find.text('Talhão Norte'), findsOneWidget);
+    expect(find.text(talhaoNorteChipLabel), findsOneWidget);
     expect(find.text('Área Total'), findsOneWidget);
     expect(find.byIcon(Icons.chevron_right), findsNothing);
   });
@@ -293,14 +296,14 @@ void main() {
     expect(find.text('Fazenda Retiro'), findsOneWidget);
     expect(find.text('Área Total'), findsOneWidget);
     expect(find.byTooltip('Mostrar talhões'), findsOneWidget);
-    expect(find.text('Talhão Norte'), findsNothing);
+    expect(find.text(talhaoNorteChipLabel), findsNothing);
     expect(find.text('Talhões'), findsNothing);
 
     await tester.tap(find.text('Fazenda Retiro'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Talhão Norte'), findsOneWidget);
+    expect(find.text(talhaoNorteChipLabel), findsOneWidget);
     expect(find.text('Talhões'), findsOneWidget);
     expect(find.byTooltip('Ocultar talhões'), findsOneWidget);
 
@@ -309,7 +312,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('Fazenda Retiro'), findsOneWidget);
-    expect(find.text('Talhão Norte'), findsNothing);
+    expect(find.text(talhaoNorteChipLabel), findsNothing);
     expect(find.byTooltip('Mostrar talhões'), findsOneWidget);
   });
 }
