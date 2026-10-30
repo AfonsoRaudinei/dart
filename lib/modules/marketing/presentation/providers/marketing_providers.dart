@@ -300,7 +300,7 @@ class MarketingCasesNotifier
   /// Reconcilia pins publicados offline (`pending_sync`) com o plano atual.
   ///
   /// Nunca faz hard-delete: demote via [saveAsDraft].
-  /// - Plano expirado/inativo: todos os published + pending_sync voltam a draft.
+  /// - Plano expirado/inativo: não altera status (pins ocultos só na leitura do mapa).
   /// - Acima do limite: demote os pending_sync mais novos até caber; synced ficam.
   Future<void> reconcileOfflinePublishes(UserPlan plano) async {
     final currentCases = List<MarketingCase>.from(state.valueOrNull ?? const []);
@@ -310,19 +310,7 @@ class MarketingCasesNotifier
         c.syncStatus == 'pending_sync' &&
         c.status == MarketingCaseStatus.published;
 
-    if (plano.expirado || !plano.ativo) {
-      for (final c in currentCases.where(isPendingPublished)) {
-        try {
-          await saveAsDraft(c);
-        } catch (e, st) {
-          AppLogger.error(
-            'Falha ao rebaixar case ${c.id} após plano inválido',
-            tag: 'MarketingProvider',
-            error: e,
-            stackTrace: st,
-          );
-        }
-      }
+    if (plano.ocultaPinsMarketingNoMapa) {
       return;
     }
 
@@ -532,11 +520,15 @@ final draftCasesProvider = Provider.autoDispose<List<MarketingCase>>((ref) {
   return allCases.where((c) => c.status == MarketingCaseStatus.draft).toList();
 });
 
-// ── Provider de cases publicados ───────────────────────────────
-/// Retorna apenas os cases com status=published (para o mapa)
+// ── Provider de cases publicados (pins no mapa privado) ─────────
+/// Cases publicados visíveis como pin no mapa logado.
+///
+/// Filtra por status/atividade e, em leitura, oculta pins se o plano estiver
+/// expirado ou inativo (admin sempre vê). Plano carregando ou erro → fail-open
+/// (mantém pins como hoje).
 final publishedCasesProvider = Provider.autoDispose<List<MarketingCase>>((ref) {
   final allCases = ref.watch(marketingCasesProvider).valueOrNull ?? [];
-  return allCases
+  final published = allCases
       .where(
         (c) =>
             c.status == MarketingCaseStatus.published &&
@@ -544,4 +536,23 @@ final publishedCasesProvider = Provider.autoDispose<List<MarketingCase>>((ref) {
             c.deletadoEm == null,
       )
       .toList();
+
+  final planAsync = ref.watch(planoAtivoProvider);
+
+  final hidePinsForPlan = planAsync.when(
+    data: (plano) => plano.ocultaPinsMarketingNoMapa,
+    loading: () => false,
+    error: (error, stackTrace) {
+      AppLogger.error(
+        'Erro ao ler plano para visibilidade de pins; mantendo pins visíveis',
+        tag: 'MarketingProvider',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return false;
+    },
+  );
+
+  if (hidePinsForPlan) return const [];
+  return published;
 });
