@@ -33,6 +33,8 @@ void main() {
         _publishedCase('mkt-1'),
         _publishedCase('mkt-2'),
         _publishedCase('mkt-3'),
+        _publishedCase('mkt-4'),
+        _publishedCase('mkt-5'),
       ]);
 
       await tester.pumpWidget(
@@ -48,6 +50,8 @@ void main() {
                   _publishedCase('mkt-1'),
                   _publishedCase('mkt-2'),
                   _publishedCase('mkt-3'),
+                  _publishedCase('mkt-4'),
+                  _publishedCase('mkt-5'),
                 ],
               );
             }),
@@ -73,7 +77,7 @@ void main() {
         find.textContaining('Salvo como Não gerado em Relatórios → Marketing'),
         findsOneWidget,
       );
-      expect(repo.cases.length, 4);
+      expect(repo.cases.length, 6);
       expect(
         repo.cases.singleWhere((c) => c.id == 'mkt-new').status.toValue(),
         'draft',
