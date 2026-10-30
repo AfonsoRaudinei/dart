@@ -20,6 +20,7 @@ void main() {
       ).readAsStringSync();
 
       expect(source.contains('static Future<void> submitCaseFromMap'), isTrue);
+      expect(source.contains('marketingPublishBlockedByPlan'), isTrue);
       expect(source.contains('.saveAsDraft(newCase)'), isTrue);
       expect(source.contains('Salvo como Não gerado em'), isTrue);
       expect(source.contains('Relatórios → Marketing'), isTrue);
@@ -46,6 +47,7 @@ void main() {
               return _StubMarketingCasesNotifier(
                 repo,
                 sync,
+                ref,
                 [
                   _publishedCase('mkt-1'),
                   _publishedCase('mkt-2'),
@@ -86,6 +88,61 @@ void main() {
       expect(find.text('Case salvo com sucesso!'), findsOneWidget);
       await tester.tap(find.text('Ok, entendi'));
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('abaixo do limite Publicar não bloqueia por marketingPublishBlockedByPlan', (
+      tester,
+    ) async {
+      final repo = _LauncherFakeMarketingRepo([
+        _publishedCase('mkt-1'),
+        _publishedCase('mkt-2'),
+        _publishedCase('mkt-3'),
+        _publishedCase('mkt-4'),
+      ]);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            marketingCaseRepositoryProvider.overrideWithValue(repo),
+            marketingCasesProvider.overrideWith((ref) {
+              final sync = ref.watch(marketingSyncServiceProvider);
+              return _StubMarketingCasesNotifier(
+                repo,
+                sync,
+                ref,
+                [
+                  _publishedCase('mkt-1'),
+                  _publishedCase('mkt-2'),
+                  _publishedCase('mkt-3'),
+                  _publishedCase('mkt-4'),
+                ],
+              );
+            }),
+            planoAtivoProvider.overrideWith(
+              (ref) async => UserPlan.free(userId: 'test-user'),
+            ),
+          ],
+          child: const MaterialApp(
+            home: _LauncherHarness(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('open_sheet')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('submit_case')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      expect(
+        find.textContaining('Salvo como Não gerado em Relatórios → Marketing'),
+        findsNothing,
+      );
+      expect(
+        repo.cases.singleWhere((c) => c.id == 'mkt-new').status.toValue(),
+        'published',
+      );
     });
   });
 }
@@ -165,6 +222,7 @@ class _StubMarketingCasesNotifier extends MarketingCasesNotifier {
   _StubMarketingCasesNotifier(
     super._repository,
     super._syncService,
+    Ref super._ref,
     List<MarketingCase> seed,
   ) {
     state = AsyncData(seed);
