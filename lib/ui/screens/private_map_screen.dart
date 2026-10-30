@@ -462,7 +462,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       pinPoints.add(LatLng(lat, lng));
     }
 
-    final cases = ref.read(marketingCasesProvider).valueOrNull ?? const [];
+    final cases = ref.read(publishedCasesProvider);
     for (final mCase in cases) {
       pinPoints.add(LatLng(mCase.lat, mCase.lng));
     }
