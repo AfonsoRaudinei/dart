@@ -84,7 +84,8 @@ class AsyncGeometryService {
 
   /// Valida polígono de forma assíncrona se complexo.
   ///
-  /// ⚠️ Validação de auto-interseção é O(n²), logo muito cara para n>1000.
+  /// Delega a [GeometryService.validatePolygon] (inclui furos via
+  /// [DrawingUtils.arePolygonHolesValid]).
   static Future<ValidationResult> validatePolygonAsync(
     DrawingPolygon polygon,
   ) async {
