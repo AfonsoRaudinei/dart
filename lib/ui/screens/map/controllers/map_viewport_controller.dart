@@ -30,7 +30,7 @@ List<LatLng> polygonPointsFromFields(List<Talhao>? fields) {
   if (fields == null) return const [];
   final points = <LatLng>[];
   for (final field in fields) {
-    points.addAll(TalhaoMapAdapter.toPolygon(field).points);
+    points.addAll(TalhaoMapAdapter.boundsSamplePoints(field));
   }
   return points;
 }

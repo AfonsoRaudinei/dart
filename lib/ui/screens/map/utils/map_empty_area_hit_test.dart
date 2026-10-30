@@ -1,7 +1,7 @@
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
+import '../../../../core/geo/geo_json_polygon_geometry.dart';
 import '../../../../modules/drawing/presentation/controllers/drawing_controller.dart';
 import 'field_hit_index.dart';
 
@@ -23,7 +23,7 @@ bool isEmptyMapArea({
   if (fieldHitIndex != null) {
     final fieldId = fieldHitIndex.hitTest(
       point,
-      TalhaoMapAdapter.isPointInside,
+      (p, geometry) => geoJsonContainsLatLngMap(geometry, p),
     );
     if (fieldId != null) return false;
   }

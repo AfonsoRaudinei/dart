@@ -25,6 +25,7 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
   const TalhaoMapPreviewWidget({
     super.key,
     required this.vertices,
+    this.boundsVertices = const [],
     required this.nome,
     required this.areaHa,
     this.subtitle,
@@ -42,6 +43,9 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
   });
 
   final List<LatLng> vertices;
+
+  /// Enquadramento do mapa (MultiPolygon/furos); desenho usa só [vertices].
+  final List<LatLng> boundsVertices;
   final String nome;
   final double areaHa;
   final String? subtitle;
@@ -64,6 +68,9 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
 
   /// Fetch NDVI em andamento — overlay com barra estilo iOS.
   final bool ndviLoading;
+
+  List<LatLng> get _framingPoints =>
+      boundsVertices.length >= 3 ? boundsVertices : vertices;
 
   @override
   Widget build(BuildContext context) {
@@ -255,7 +262,7 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
     return FlutterMap(
       options: MapOptions(
         initialCameraFit: CameraFit.bounds(
-          bounds: LatLngBounds.fromPoints(vertices),
+          bounds: LatLngBounds.fromPoints(_framingPoints),
           padding: const EdgeInsets.all(16),
         ),
         interactionOptions: const InteractionOptions(

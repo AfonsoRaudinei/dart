@@ -97,6 +97,46 @@ void main() {
     expect(points.first, const LatLng(-15.0, -48.0));
   });
 
+  test('MultiPolygon agrega pontos de bbox', () {
+    final fields = [
+      Talhao(
+        id: 'talhao-mp',
+        name: 'MP',
+        areaHa: 10,
+        crop: '',
+        harvest: '',
+        geometry: {
+          'type': 'MultiPolygon',
+          'coordinates': [
+            [
+              [
+                [-48.0, -15.0],
+                [-48.1, -15.0],
+                [-48.1, -15.1],
+                [-48.0, -15.0],
+              ],
+            ],
+            [
+              [
+                [-47.9, -15.0],
+                [-47.8, -15.0],
+                [-47.8, -15.1],
+                [-47.9, -15.0],
+              ],
+            ],
+          ],
+        },
+      ),
+    ];
+
+    final points = polygonPointsFromFields(fields);
+    expect(points.length, greaterThan(4));
+    expect(
+      points.any((p) => p.longitude <= -47.9),
+      isTrue,
+    );
+  });
+
   test('GPS tardio não move se o talhão já enquadrou', () {
     expect(
       shouldCommitGpsMove(

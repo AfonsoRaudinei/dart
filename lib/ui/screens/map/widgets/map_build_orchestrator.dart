@@ -30,6 +30,7 @@ import '../../../../modules/drawing/presentation/widgets/drawing_vertex_handle_o
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../../../modules/map/presentation/providers/map_location_mode_provider.dart';
 import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
+import '../../../../core/geo/geo_json_polygon_geometry.dart';
 import '../../../../modules/consultoria/occurrences/domain/occurrence.dart'
     as occ;
 import '../../../../modules/settings/presentation/providers/user_profile_provider.dart';
@@ -325,7 +326,8 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 if (hitIndex != null) {
                   hitId = hitIndex.hitTest(
                     point,
-                    TalhaoMapAdapter.isPointInside,
+                    (p, geometry) =>
+                        geoJsonContainsLatLngMap(geometry, p),
                   );
                 }
 
@@ -641,7 +643,7 @@ class _MapControlsHost extends ConsumerWidget {
           ? ProducerMapContextCard(
               onFocusFarm: (fields) {
                 final points = fields
-                    .expand((field) => TalhaoMapAdapter.toPolygon(field).points)
+                    .expand(TalhaoMapAdapter.boundsSamplePoints)
                     .toList(growable: false);
                 if (points.isEmpty) return false;
                 mapController.fitCamera(
@@ -653,7 +655,7 @@ class _MapControlsHost extends ConsumerWidget {
                 return true;
               },
               onFocusField: (field) {
-                final points = TalhaoMapAdapter.toPolygon(field).points;
+                final points = TalhaoMapAdapter.boundsSamplePoints(field);
                 if (points.isEmpty) return false;
                 mapController.fitCamera(
                   CameraFit.bounds(

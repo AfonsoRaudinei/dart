@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/core/geo/geo_json_polygon_geometry.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
 import 'package:soloforte_app/modules/consultoria/fields/data/repositories/field_repository.dart';
@@ -14,6 +15,7 @@ class ClientDrawingFieldSummary {
     required this.name,
     required this.areaHa,
     required this.vertices,
+    this.boundsVertices = const [],
     this.farmId,
     this.crop,
     this.material,
@@ -26,6 +28,9 @@ class ClientDrawingFieldSummary {
   final String name;
   final double areaHa;
   final List<LatLng> vertices;
+
+  /// Enquadramento (todas as partes/anéis); [vertices] = contorno externo p/ desenho.
+  final List<LatLng> boundsVertices;
   final String? farmId;
   final String? crop;
   final String? material;
@@ -43,6 +48,7 @@ class FarmLinkedFieldSummary {
     required this.areaHa,
     required this.source,
     this.vertices = const [],
+    this.boundsVertices = const [],
     this.crop,
     this.material,
     this.harvest,
@@ -57,6 +63,7 @@ class FarmLinkedFieldSummary {
   final double areaHa;
   final FarmLinkedFieldSource source;
   final List<LatLng> vertices;
+  final List<LatLng> boundsVertices;
   final String? crop;
   final String? material;
   final String? harvest;
@@ -146,6 +153,7 @@ final clientDrawingFieldsProvider = FutureProvider.family
           name: row['nome'] as String? ?? 'Talhão sem nome',
           areaHa: (row['area_ha'] as num?)?.toDouble() ?? 0,
           vertices: _verticesFromGeoJson(row['geojson'] as String?),
+          boundsVertices: _boundsVerticesFromGeoJson(row['geojson'] as String?),
           farmId: row['fazenda_id'] as String?,
           crop: _nullableNonEmptyString(row['cultura']),
           material: _nullableNonEmptyString(row['material']),
@@ -184,6 +192,7 @@ FarmLinkedFieldSummary _linkedSummaryFromField(Talhao field) {
     areaHa: field.areaHa,
     source: FarmLinkedFieldSource.field,
     vertices: _verticesFromGeometry(field.geometry),
+    boundsVertices: _boundsVerticesFromGeometry(field.geometry),
     crop: field.crop.isEmpty ? null : field.crop,
     material: null,
     harvest: field.harvest.isEmpty ? null : field.harvest,
@@ -227,6 +236,7 @@ Future<List<FarmLinkedFieldSummary>> _loadDrawingFieldsByFarmId(
       areaHa: (row['area_ha'] as num?)?.toDouble() ?? 0,
       source: FarmLinkedFieldSource.drawing,
       vertices: _verticesFromGeoJson(row['geojson'] as String?),
+      boundsVertices: _boundsVerticesFromGeoJson(row['geojson'] as String?),
       crop: row['cultura'] as String?,
       material: row['material'] as String?,
       harvest: row['safra'] as String?,
@@ -254,6 +264,12 @@ List<LatLng> _verticesFromGeometry(Map<String, dynamic>? geometry) {
   return _verticesFromGeoJson(jsonEncode(geometry));
 }
 
+List<LatLng> _boundsVerticesFromGeometry(Map<String, dynamic>? geometry) {
+  if (geometry == null || geometry.isEmpty) return const [];
+  return _boundsVerticesFromGeoJson(jsonEncode(geometry));
+}
+
+/// Contorno externo (1ª parte, 1º anel) — card, miniatura, preview, download.
 List<LatLng> _verticesFromGeoJson(String? rawGeoJson) {
   if (rawGeoJson == null || rawGeoJson.isEmpty) return const [];
 
@@ -275,6 +291,11 @@ List<LatLng> _verticesFromGeoJson(String? rawGeoJson) {
   }
 
   return const [];
+}
+
+/// Todas as partes e anéis — enquadramento/bbox offline.
+List<LatLng> _boundsVerticesFromGeoJson(String? rawGeoJson) {
+  return geoJsonVerticesForBounds(rawGeoJson);
 }
 
 List<LatLng> _ringToLatLngs(List ring) {

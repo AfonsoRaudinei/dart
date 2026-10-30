@@ -115,6 +115,34 @@ void main() {
     });
   });
 
+  group('TalhaoMapAdapter.containsPoint / boundsSamplePoints', () {
+    test('containsPoint respeita furo', () {
+      final t = _talhao({
+        'type': 'Polygon',
+        'coordinates': [_outerRing, _holeRing],
+      });
+      expect(
+        TalhaoMapAdapter.containsPoint(const LatLng(-15.775, -47.925), t),
+        isFalse,
+      );
+      expect(
+        TalhaoMapAdapter.containsPoint(const LatLng(-15.779, -47.929), t),
+        isTrue,
+      );
+    });
+
+    test('boundsSamplePoints inclui MultiPolygon', () {
+      final t = _talhao({
+        'type': 'MultiPolygon',
+        'coordinates': [
+          [_outerRing],
+          [_shift(_outerRing, 0.05, 0.0)],
+        ],
+      });
+      expect(TalhaoMapAdapter.boundsSamplePoints(t).length, greaterThan(4));
+    });
+  });
+
   group('TalhaoMapAdapter.toPolygon (legado)', () {
     test('mantém anel externo para chamadores antigos', () {
       final legacy = TalhaoMapAdapter.toPolygon(
