@@ -422,8 +422,8 @@ Não quebra contratos existentes — apenas adiciona dependências.
   4. demais erros (offline, timeout, HTTP) → se o cache ainda é válido, loga warning e retorna o plano em cache; senão lança `PlanoCacheUnavailableException`
 - UI Map-First (`novo_case_modal_launcher.dart`): `PlanoCacheUnavailableException` exibe a mensagem de 24h, distinta de “Sem conexão. Não foi possível verificar seu plano.”
 - Reconexão (`marketing_providers.dart`): invalida `planoAtivoProvider`, depois `reconcileOfflinePublishes(UserPlan)`, **depois** `retryPendingCases()`:
-  - plano expirado/inativo → demote `pending_sync` + `published` para draft via `saveAsDraft` (nunca hard-delete)
-  - senão, se publicados ativos > `plano.limiteCases` → demote os `pending_sync` mais novos até caber; published já `synced` permanecem
+  - plano expirado/inativo (`UserPlan.ocultaPinsMarketingNoMapa`) → **não** demote status; pins ficam ocultos só na leitura do mapa (`publishedCasesProvider` / `IsolatedMarketingMarkersLayer`)
+  - se publicados ativos > `plano.limiteCases` → demote os `pending_sync` mais novos até caber via `saveAsDraft` (nunca hard-delete); published já `synced` permanecem
   - só então o retry sobe o que restou como `pending_sync`
 - `planos/` não importa connectivity; `marketing/` pode importar `planos/` (já autorizado neste ADR).
 
