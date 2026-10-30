@@ -517,9 +517,17 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
             onPressed: () async {
               if (nameController.text.trim().isEmpty) return;
 
-              final clientId =
-                  _selectedClient?.id ??
-                  'SELF'; // TODO: Handle Producer ID properly
+              final clientId = _selectedClient?.id;
+              if (clientId == null) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Selecione o Cliente primeiro'),
+                    ),
+                  );
+                }
+                return;
+              }
               final newFarm = await ref
                   .read(drawingClientProvider.notifier)
                   .createFarm(
