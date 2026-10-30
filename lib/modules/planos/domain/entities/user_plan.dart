@@ -79,11 +79,7 @@ class UserPlan {
   /// Admin sempre tem acesso ilimitado, independente do plano.
   int get limiteCases {
     if (isAdmin) return 999999;
-    return switch (plano) {
-      PlanoTipo.ouro   => 999999,
-      PlanoTipo.prata  => 5,
-      PlanoTipo.bronze => 3,
-    };
+    return plano.limiteCases;
   }
 
   UserPlan copyWith({
