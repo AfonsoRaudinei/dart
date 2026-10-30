@@ -492,11 +492,11 @@ class _MenuPlanoBadgeItem extends ConsumerWidget {
     String targetRoute = AppRoutes.meuPlano;
 
     if (plano == null) {
-      subtitle = 'Sem plano · Assinar';
-      targetRoute = AppRoutes.planos;
+      subtitle = 'Sem plano';
+      targetRoute = AppRoutes.meuPlano;
     } else if (plano.expirado) {
-      subtitle = 'Plano expirado · Renovar';
-      targetRoute = AppRoutes.planos;
+      subtitle = 'Plano expirado';
+      targetRoute = AppRoutes.meuPlano;
     } else if (plano.expiraEmBreve) {
       subtitle = '⚠️ Expira em ${plano.diasRestantes} dia(s)';
     } else {
