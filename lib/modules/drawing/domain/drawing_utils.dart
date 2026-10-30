@@ -652,6 +652,10 @@ class DrawingUtils {
   // TOPOLOGICAL VALIDATION (RT-DRAW-08)
   // ===========================================================================
 
+  /// Mensagem única para furo inválido (validateTopology + GeometryService).
+  static const invalidHoleValidationMessage =
+      'Buraco inválido (fora do limite da área).';
+
   static DrawingValidationResult validateTopology(
     DrawingGeometry? geometry, {
     List<DrawingFeature>? existingFeatures,
@@ -692,15 +696,19 @@ class DrawingUtils {
             );
           }
         }
+        if (!_areHolesValid(p)) {
+          return const DrawingValidationResult.error(
+            invalidHoleValidationMessage,
+          );
+        }
       }
     }
 
     // 3. Holes Validation
-    // Check if holes are inside outer ring
     if (geometry is DrawingPolygon) {
       if (!_areHolesValid(geometry)) {
         return const DrawingValidationResult.error(
-          "Buraco inválido (fora do limite da área).",
+          invalidHoleValidationMessage,
         );
       }
     }
@@ -1005,35 +1013,85 @@ class DrawingUtils {
     return false;
   }
 
-  static bool _areHolesValid(DrawingPolygon poly) {
-    if (poly.coordinates.length <= 1) return true; // No holes
-
-    // Use Turf to check containment if possible, or fallback to ray casting / bounds
-    // Since we only have 'turf' imports, let's try to use basic turf logic if available or bounding box.
-    // Sticking to Bounding Box for MVP speed + reliability without complex deps.
+  /// Valida anéis internos (furos). Usado por [validateTopology] e
+  /// [GeometryService.validatePolygon].
+  static bool arePolygonHolesValid(DrawingPolygon poly) {
+    if (poly.coordinates.length <= 1) return true;
 
     final outer = poly.coordinates.first;
-    final outerBounds = _getBounds(outer);
+    if (outer.length < 4) return false;
 
-    for (int i = 1; i < poly.coordinates.length; i++) {
+    for (var i = 1; i < poly.coordinates.length; i++) {
       final hole = poly.coordinates[i];
-      // Check if hole is roughly inside outer
-      final holeBounds = _getBounds(hole);
+      if (hole.length < 4 || !_isClosedRing(hole)) return false;
 
-      // If hole is outside outer bounding box, it's definitely invalid
-      if (holeBounds.minX < outerBounds.minX ||
-          holeBounds.maxX > outerBounds.maxX ||
-          holeBounds.minY < outerBounds.minY ||
-          holeBounds.maxY > outerBounds.maxY) {
+      if (_hasSelfIntersection(DrawingPolygon(coordinates: [hole]))) {
         return false;
       }
 
-      // Check first point of hole is inside outer (Ray Casting)
-      if (hole.isNotEmpty) {
-        if (!_isPointInPolygon(hole.first, outer)) return false;
+      // Todos os vértices dentro do externo e fora dos furos anteriores
+      // (mesma regra de [tryAddHole] / [_holeFits]).
+      if (!_holeFits(poly.coordinates.sublist(0, i), hole)) {
+        return false;
+      }
+
+      if (_ringsHaveCrossingSegments(hole, outer)) {
+        return false;
       }
     }
+
+    for (var i = 1; i < poly.coordinates.length; i++) {
+      for (var j = i + 1; j < poly.coordinates.length; j++) {
+        if (_holesOverlap(poly.coordinates[i], poly.coordinates[j])) {
+          return false;
+        }
+      }
+    }
+
     return true;
+  }
+
+  static bool _areHolesValid(DrawingPolygon poly) => arePolygonHolesValid(poly);
+
+  static bool _holesOverlap(
+    List<List<double>> holeA,
+    List<List<double>> holeB,
+  ) {
+    if (_ringHasVertexInsideRing(holeA, holeB)) return true;
+    if (_ringHasVertexInsideRing(holeB, holeA)) return true;
+    return _ringsHaveCrossingSegments(holeA, holeB);
+  }
+
+  static bool _ringHasVertexInsideRing(
+    List<List<double>> ring,
+    List<List<double>> container,
+  ) {
+    final closing = ring.length > 1 && _sameCoord(ring.first, ring.last);
+    final count = closing ? ring.length - 1 : ring.length;
+    for (var v = 0; v < count; v++) {
+      if (_isPointInPolygon(ring[v], container)) return true;
+    }
+    return false;
+  }
+
+  /// Segmentos que se cruzam (ignora adjacência só no fechamento do anel).
+  static bool _ringsHaveCrossingSegments(
+    List<List<double>> ringA,
+    List<List<double>> ringB,
+  ) {
+    if (ringA.length < 2 || ringB.length < 2) return false;
+
+    final nA = ringA.length - 1;
+    final nB = ringB.length - 1;
+
+    for (var i = 0; i < nA; i++) {
+      for (var j = 0; j < nB; j++) {
+        if (_segmentsIntersect(ringA[i], ringA[i + 1], ringB[j], ringB[j + 1])) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   static bool _isPointInPolygon(
