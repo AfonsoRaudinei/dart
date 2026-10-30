@@ -28,19 +28,23 @@ class TalhaoPolygonLayer extends ConsumerWidget {
 
     for (final t in fields) {
       if (t.geometry == null) continue;
-      final base = TalhaoMapAdapter.toPolygon(
+      final isSelected = t.id == selectedTalhaoId;
+      final parts = TalhaoMapAdapter.toMapPolygons(
         t,
-        isSelected: t.id == selectedTalhaoId,
+        isSelected: isSelected,
         unit: areaUnit,
         labelPrefs: labelPrefs,
       );
-      if (base.points.isEmpty) continue;
 
-      if (bounds != null && !_intersectsBounds(base.points, bounds)) {
-        continue;
+      for (final base in parts) {
+        if (base.points.isEmpty) continue;
+
+        if (bounds != null && !_intersectsBounds(base.points, bounds)) {
+          continue;
+        }
+
+        polygons.add(base);
       }
-
-      polygons.add(base);
     }
 
     return PolygonLayer(polygons: polygons);
