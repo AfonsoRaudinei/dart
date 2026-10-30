@@ -122,7 +122,9 @@ class GeometryService {
       return ValidationResult.invalid('Polígono possui auto-interseção');
     }
 
-    // TODO: Validar furos dentro do anel externo
+    if (!DrawingUtils.arePolygonHolesValid(polygon)) {
+      return ValidationResult.invalid(DrawingUtils.invalidHoleValidationMessage);
+    }
 
     return ValidationResult.valid();
   }
