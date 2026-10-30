@@ -109,7 +109,7 @@ void main() {
       },
     );
 
-    test('plano expirado rebaixa pending_sync published para draft', () async {
+    test('plano expirado não rebaixa pending_sync nem synced publicados', () async {
       final pending = _publishedCase('pend-1', syncStatus: 'pending_sync');
       final synced = _publishedCase('sync-1', syncStatus: 'synced');
       final repo = _DraftAwareRepo([pending, synced]);
@@ -126,10 +126,30 @@ void main() {
       expect(
         notifier.state.valueOrNull!.firstWhere((c) => c.id == 'pend-1').status
             .toValue(),
-        'draft',
+        'published',
       );
       expect(
         notifier.state.valueOrNull!.firstWhere((c) => c.id == 'sync-1').status
+            .toValue(),
+        'published',
+      );
+    });
+
+    test('plano inativo não rebaixa cases publicados', () async {
+      final pending = _publishedCase('pend-1', syncStatus: 'pending_sync');
+      final repo = _DraftAwareRepo([pending]);
+      final notifier = _StubMarketingCasesNotifier(
+        repo,
+        MarketingSyncService(repo),
+        [pending],
+      );
+
+      await notifier.reconcileOfflinePublishes(
+        _plan(ativo: false),
+      );
+
+      expect(
+        notifier.state.valueOrNull!.firstWhere((c) => c.id == 'pend-1').status
             .toValue(),
         'published',
       );
