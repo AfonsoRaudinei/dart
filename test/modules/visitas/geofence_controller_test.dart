@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,6 +16,9 @@ import 'package:soloforte_app/modules/visitas/presentation/controllers/geofence_
 import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_controller.dart';
 
 class _FakeFieldLookup implements IFieldLookup {
+  _FakeFieldLookup({List<FieldSummary> fields = const []}) : _fields = fields;
+
+  final List<FieldSummary> _fields;
   int listAllCalls = 0;
 
   @override
@@ -23,7 +27,7 @@ class _FakeFieldLookup implements IFieldLookup {
   @override
   Future<List<FieldSummary>> listAll() async {
     listAllCalls++;
-    return const [];
+    return _fields;
   }
 
   @override
@@ -135,4 +139,95 @@ void main() {
       expect(fieldLookup.listAllCalls, 1);
     },
   );
+
+  group('GeofenceController.isInsideOrCloseForTest', () {
+    const outer = [
+      [-47.93, -15.78],
+      [-47.92, -15.78],
+      [-47.92, -15.77],
+      [-47.93, -15.77],
+      [-47.93, -15.78],
+    ];
+    const hole = [
+      [-47.927, -15.777],
+      [-47.923, -15.777],
+      [-47.923, -15.773],
+      [-47.927, -15.773],
+      [-47.927, -15.777],
+    ];
+
+    FieldSummary fieldSummary(String geoJson) => FieldSummary(
+          id: 'f1',
+          name: 'Talhão',
+          farmId: 'farm',
+          areaHa: 10,
+          geometry: geoJson,
+        );
+
+    test('MultiPolygon: dentro de qualquer parte', () {
+      final geo = jsonEncode({
+        'type': 'MultiPolygon',
+        'coordinates': [
+          [outer],
+          [
+            [
+              [-47.88, -15.78],
+              [-47.87, -15.78],
+              [-47.87, -15.77],
+              [-47.88, -15.77],
+              [-47.88, -15.78],
+            ],
+          ],
+        ],
+      });
+      final container = ProviderContainer(
+        overrides: [
+          locationStreamProvider.overrideWith((ref) => const Stream.empty()),
+          iFieldLookupGeofenceProvider.overrideWithValue(_FakeFieldLookup()),
+          visitRepositoryProvider.overrideWithValue(_FakeVisitRepository()),
+          agendaSessionBridgeProvider.overrideWithValue(_FakeAgendaBridge()),
+        ],
+      );
+      addTearDown(container.dispose);
+      final controller = container.read(geofenceControllerProvider);
+      expect(
+        controller.isInsideOrCloseForTest(
+          const LatLng(-15.775, -47.925),
+          fieldSummary(geo),
+        ),
+        isTrue,
+      );
+      expect(
+        controller.isInsideOrCloseForTest(
+          const LatLng(-15.775, -47.875),
+          fieldSummary(geo),
+        ),
+        isTrue,
+      );
+    });
+
+    test('furo: ponto no buraco não conta como dentro', () {
+      final geo = jsonEncode({
+        'type': 'Polygon',
+        'coordinates': [outer, hole],
+      });
+      final container = ProviderContainer(
+        overrides: [
+          locationStreamProvider.overrideWith((ref) => const Stream.empty()),
+          iFieldLookupGeofenceProvider.overrideWithValue(_FakeFieldLookup()),
+          visitRepositoryProvider.overrideWithValue(_FakeVisitRepository()),
+          agendaSessionBridgeProvider.overrideWithValue(_FakeAgendaBridge()),
+        ],
+      );
+      addTearDown(container.dispose);
+      final controller = container.read(geofenceControllerProvider);
+      expect(
+        controller.isInsideOrCloseForTest(
+          const LatLng(-15.775, -47.925),
+          fieldSummary(geo),
+        ),
+        isFalse,
+      );
+    });
+  });
 }

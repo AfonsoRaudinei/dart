@@ -1,20 +1,24 @@
 import 'package:latlong2/latlong.dart';
 
+import '../../../../core/geo/geo_json_polygon_geometry.dart';
+
 /// Índice espacial simples (grid) para hit-test de talhões.
 ///
 /// Substitui scan linear O(n) por candidatos em células vizinhas.
 class FieldHitIndex {
   FieldHitIndex({
-    required List<({String id, List<LatLng> points})> entries,
+    required List<({String id, Map<String, dynamic> geometry})> entries,
     this.cellSizeDeg = 0.02,
   }) {
     for (final entry in entries) {
-      if (entry.points.length < 3) continue;
-      double minLat = entry.points.first.latitude;
+      final sample = geoJsonVerticesForBoundsMap(entry.geometry);
+      if (sample.length < 3) continue;
+
+      double minLat = sample.first.latitude;
       double maxLat = minLat;
-      double minLng = entry.points.first.longitude;
+      double minLng = sample.first.longitude;
       double maxLng = minLng;
-      for (final p in entry.points) {
+      for (final p in sample) {
         if (p.latitude < minLat) minLat = p.latitude;
         if (p.latitude > maxLat) maxLat = p.latitude;
         if (p.longitude < minLng) minLng = p.longitude;
@@ -23,7 +27,7 @@ class FieldHitIndex {
       _items.add(
         _IndexedField(
           id: entry.id,
-          points: entry.points,
+          geometry: entry.geometry,
           minLat: minLat,
           maxLat: maxLat,
           minLng: minLng,
@@ -46,9 +50,13 @@ class FieldHitIndex {
   final List<_IndexedField> _items = [];
   final Map<int, List<int>> _grid = {};
 
-  /// Retorna o id do primeiro polígono que contém [point], ou null.
-  String? hitTest(LatLng point, bool Function(LatLng, List<LatLng>) contains) {
-    final candidates = _grid[_key(_cell(point.latitude), _cell(point.longitude))];
+  /// Retorna o id do primeiro talhão que contém [point], ou null.
+  String? hitTest(
+    LatLng point,
+    bool Function(LatLng point, Map<String, dynamic> geometry) contains,
+  ) {
+    final candidates =
+        _grid[_key(_cell(point.latitude), _cell(point.longitude))];
     if (candidates == null || candidates.isEmpty) return null;
 
     for (final idx in candidates) {
@@ -59,7 +67,7 @@ class FieldHitIndex {
           point.longitude > item.maxLng) {
         continue;
       }
-      if (contains(point, item.points)) return item.id;
+      if (contains(point, item.geometry)) return item.id;
     }
     return null;
   }
@@ -72,7 +80,7 @@ class FieldHitIndex {
 class _IndexedField {
   const _IndexedField({
     required this.id,
-    required this.points,
+    required this.geometry,
     required this.minLat,
     required this.maxLat,
     required this.minLng,
@@ -80,7 +88,7 @@ class _IndexedField {
   });
 
   final String id;
-  final List<LatLng> points;
+  final Map<String, dynamic> geometry;
   final double minLat;
   final double maxLat;
   final double minLng;

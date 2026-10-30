@@ -299,6 +299,7 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
 
                 return TalhaoMapPreviewWidget(
                   vertices: field.vertices,
+                  boundsVertices: field.boundsVertices,
                   nome: field.name,
                   areaHa: field.areaHa,
                   subtitle: 'Sem fazenda vinculada',
@@ -446,6 +447,7 @@ class _DrawingTalhaoNdviCard extends ConsumerWidget {
   }) {
     return TalhaoMapPreviewWidget(
       vertices: field.vertices,
+      boundsVertices: field.boundsVertices,
       nome: field.name,
       areaHa: field.areaHa,
       subtitle: 'Sem fazenda vinculada',

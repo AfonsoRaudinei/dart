@@ -1,6 +1,8 @@
 import 'dart:async';
-import 'dart:convert'; // para jsonDecode do GeoJSON — ADR-024
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/core/geo/geo_json_polygon_geometry.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../../core/services/notification_service.dart';
 import 'package:soloforte_app/modules/visitas/domain/models/geofence_state.dart';
 import 'package:soloforte_app/modules/dashboard/domain/user_location_fix.dart';
@@ -8,7 +10,6 @@ import 'package:soloforte_app/modules/dashboard/providers/location_providers.dar
 import '../controllers/visit_controller.dart';
 import 'package:soloforte_app/core/contracts/i_field_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_field_lookup_geofence_provider.dart';
-import 'package:latlong2/latlong.dart';
 import '../../../../core/utils/app_logger.dart';
 
 // State Provider for Geofence
@@ -167,85 +168,29 @@ class GeofenceController {
 
   /// Verifica se o ponto está dentro ou a menos de 300m do talhão.
   /// ADR-024: usa FieldSummary.geometry (GeoJSON String) em vez de Talhao.
+  @visibleForTesting
+  bool isInsideOrCloseForTest(LatLng userPoint, FieldSummary field) =>
+      _isInsideOrClose(userPoint, field);
+
   bool _isInsideOrClose(LatLng userPoint, FieldSummary field) {
     if (field.geometry == null) return false;
 
-    // 1. Parse GeoJSON string → pontos do polígono
-    final points = _geoJsonToLatLngs(field.geometry!);
-    if (points.isEmpty) return false;
+    if (geoJsonContainsLatLng(field.geometry, userPoint)) {
+      return true;
+    }
 
-    // 2. Contenção estrita via ray-casting
-    bool inside = _isPointInPolygon(userPoint, points);
-    if (inside) return true;
+    final samplePoints = geoJsonVerticesForBounds(field.geometry);
+    if (samplePoints.isEmpty) return false;
 
-    // 3. Buffer de 300m — distância mínima a qualquer vértice
     const double bufferMeters = 300.0;
     const Distance distance = Distance();
 
-    for (final point in points) {
+    for (final point in samplePoints) {
       if (distance.as(LengthUnit.Meter, userPoint, point) < bufferMeters) {
         return true;
       }
     }
     return false;
-  }
-
-  /// Converte GeoJSON serializado como String em lista de pontos LatLng.
-  /// Suporta Polygon (anel externo). Algoritmo inlinado de TalhaoMapAdapter — ADR-024.
-  static List<LatLng> _geoJsonToLatLngs(String geoJsonStr) {
-    try {
-      final geometry = jsonDecode(geoJsonStr) as Map<String, dynamic>;
-      final type = geometry['type'];
-      if (type == 'Polygon') {
-        final coordinates = geometry['coordinates'] as List;
-        if (coordinates.isNotEmpty) {
-          final ring = coordinates[0] as List;
-          return ring.map((coord) {
-            // GeoJSON é [lon, lat]
-            final double lng = (coord[0] as num).toDouble();
-            final double lat = (coord[1] as num).toDouble();
-            return LatLng(lat, lng);
-          }).toList();
-        }
-      }
-    } catch (e) {
-      AppLogger.warning(
-        'Erro ao parsear geometry do talhão',
-        tag: 'Geofence',
-        error: e,
-      );
-    }
-    return [];
-  }
-
-  /// Ray-casting algorithm — ponto dentro do polígono?
-  static bool _isPointInPolygon(LatLng point, List<LatLng> polygon) {
-    int intersectCount = 0;
-    for (int j = 0; j < polygon.length - 1; j++) {
-      if (_rayCastIntersect(point, polygon[j], polygon[j + 1])) {
-        intersectCount++;
-      }
-    }
-    return (intersectCount % 2) == 1;
-  }
-
-  static bool _rayCastIntersect(LatLng point, LatLng vertA, LatLng vertB) {
-    double aY = vertA.latitude;
-    double bY = vertB.latitude;
-    double aX = vertA.longitude;
-    double bX = vertB.longitude;
-    double pY = point.latitude;
-    double pX = point.longitude;
-
-    if ((aY > pY && bY > pY) || (aY < pY && bY < pY) || (aX < pX && bX < pX)) {
-      return false;
-    }
-    if (aY == bY) return false;
-
-    double m = (bX - aX) / (bY - aY);
-    double bee = -aY * m + aX;
-    double x = pY * m + bee;
-    return x > pX;
   }
 
   Future<void> _checkDuration() async {

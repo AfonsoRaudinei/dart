@@ -32,7 +32,12 @@ Future<void> downloadFarmSatelliteMap({
   final FarmMapDownloadPlan? plan;
   try {
     plan = buildFarmMapDownloadPlan(
-      polygons: fields.map((field) => field.vertices),
+      polygons: fields.map((field) {
+        if (field.boundsVertices.length >= 3) {
+          return field.boundsVertices;
+        }
+        return field.vertices;
+      }),
     );
   } on OfflineTileCacheException catch (error) {
     _snack(context, error.message);
