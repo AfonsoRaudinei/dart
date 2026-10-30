@@ -12,6 +12,35 @@ void main() {
       expect(plan.expiraEmBreve, isFalse);
     });
 
+    test('ocultaPinsMarketingNoMapa false para admin expirado', () {
+      final plan = UserPlan(
+        id: 'p-admin',
+        userId: 'u1',
+        plano: PlanoTipo.prata,
+        origem: PlanoOrigem.pagamento,
+        ativo: true,
+        isAdmin: true,
+        iniciouEm: DateTime.now(),
+        expiraEm: DateTime.utc(2020, 1, 1),
+        criadoEm: DateTime.now(),
+      );
+      expect(plan.ocultaPinsMarketingNoMapa, isFalse);
+    });
+
+    test('ocultaPinsMarketingNoMapa true quando expirado e não admin', () {
+      final plan = UserPlan(
+        id: 'p1',
+        userId: 'u1',
+        plano: PlanoTipo.bronze,
+        origem: PlanoOrigem.pagamento,
+        ativo: true,
+        iniciouEm: DateTime.now(),
+        expiraEm: DateTime.utc(2020, 1, 1),
+        criadoEm: DateTime.now(),
+      );
+      expect(plan.ocultaPinsMarketingNoMapa, isTrue);
+    });
+
     test('plano com expiração real mostra dias', () {
       final plan = UserPlan(
         id: 'p1',
