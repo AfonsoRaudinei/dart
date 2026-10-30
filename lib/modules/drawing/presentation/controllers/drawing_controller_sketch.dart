@@ -442,9 +442,11 @@ extension DrawingControllerSketch on DrawingController {
     _freehandStrokeActive = false;
 
     if (_freehandPoints.length < 3) {
-      _errorMessage = 'Traçado muito curto.';
       _freehandPoints.clear();
       revertToIdleIfDrawingSketchEmpty();
+      // O revert limpa _errorMessage ao voltar para idle. A rejeição
+      // precisa ficar visível depois disso.
+      _errorMessage = 'Traçado muito curto.';
       _notify();
       return;
     }
