@@ -210,10 +210,7 @@ class NovoCaseModalLauncher {
           duration: const Duration(seconds: 5),
         ),
       );
-      final verPlanos = await DraftSavedSheet.show(context);
-      if (verPlanos == true && context.mounted) {
-        context.go('/planos');
-      }
+      await DraftSavedSheet.show(context);
       return;
     }
 
