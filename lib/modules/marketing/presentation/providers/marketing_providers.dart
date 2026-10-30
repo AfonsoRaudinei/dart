@@ -178,6 +178,8 @@ class MarketingCasesNotifier
           error: e,
           stackTrace: st,
         );
+        // Fail-open bronze só para o teto local de limite (não persiste userId no case).
+        // Alinhado ao adapter; servidor continua sendo a fonte na sync.
         plano = UserPlan.free(userId: '');
       }
       final cases = state.valueOrNull ?? [];
