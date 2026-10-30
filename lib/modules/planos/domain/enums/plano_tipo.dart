@@ -9,7 +9,7 @@ enum PlanoTipo {
   int get limiteCases {
     switch (this) {
       case PlanoTipo.bronze:
-        return 3;
+        return 5;
       case PlanoTipo.prata:
         return 5;
       case PlanoTipo.ouro:
