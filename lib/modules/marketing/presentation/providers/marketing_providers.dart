@@ -168,24 +168,9 @@ class MarketingCasesNotifier
   /// Em falha, preserva o erro original para a UI classificar a causa.
   Future<PublishOutcome> publishCaseDetailed(MarketingCase newCase) async {
     if (newCase.status == MarketingCaseStatus.published && _ref != null) {
+      UserPlan plano;
       try {
-        final plano = await _ref.read(planoAtivoProvider.future);
-        final cases = state.valueOrNull ?? [];
-        if (marketingPublishBlockedByPlan(
-          plano: plano,
-          cases: cases,
-          publishingCaseId: newCase.id,
-        )) {
-          return PublishOutcome.failure(
-            MarketingPlanLimitException(
-              limite: plano.limiteCases,
-              publicados: marketingPublishedActiveCount(
-                cases,
-                excludeCaseId: newCase.id,
-              ),
-            ),
-          );
-        }
+        plano = await _ref.read(planoAtivoProvider.future);
       } catch (e, st) {
         AppLogger.error(
           'Erro ao checar limite do plano antes de publicar',
@@ -193,7 +178,23 @@ class MarketingCasesNotifier
           error: e,
           stackTrace: st,
         );
-        return PublishOutcome.failure(e);
+        plano = UserPlan.free(userId: '');
+      }
+      final cases = state.valueOrNull ?? [];
+      if (marketingPublishBlockedByPlan(
+        plano: plano,
+        cases: cases,
+        publishingCaseId: newCase.id,
+      )) {
+        return PublishOutcome.failure(
+          MarketingPlanLimitException(
+            limite: plano.limiteCases,
+            publicados: marketingPublishedActiveCount(
+              cases,
+              excludeCaseId: newCase.id,
+            ),
+          ),
+        );
       }
     }
 
