@@ -11,7 +11,6 @@ import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/domain/publicacao.dart';
 import '../../../../modules/consultoria/occurrences/domain/occurrence.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
-import '../../../../modules/marketing/domain/entities/marketing_case.dart';
 import '../../../../modules/marketing/domain/marketing_case_visibility.dart';
 import '../../../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../../../../modules/marketing/presentation/widgets/marketing_case_marker.dart';
@@ -129,7 +128,7 @@ class IsolatedLocalPublicationMarkersLayer extends ConsumerWidget {
 /// cartão de leitura (nome e resultado maiores) a partir desse zoom.
 ///
 /// Otimizações:
-/// ✅ Observa SOMENTE marketingCasesProvider.select (published + ativo)
+/// ✅ Observa [publishedCasesProvider] (published + gate de plano)
 /// ✅ Não rebuilda o mapa inteiro quando cases mudam
 /// ✅ Filtra e ordena dentro do widget isolado
 /// ✅ Rebuild apenas se a lista filtrada mudar
@@ -158,20 +157,12 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
                   const <String>{})
             : const <String>{};
 
-    final publishedCases = ref.watch(
-      marketingCasesProvider.select((async) {
-        if (!async.hasValue) return const <MarketingCase>[];
-        return async.value!
-            .where(
-              (c) =>
-                  c.status.toValue() == 'published' &&
-                  c.ativo &&
-                  c.deletadoEm == null &&
-                  (excludedMarkerId == null || c.id != excludedMarkerId),
-            )
-            .toList(growable: false);
-      }),
-    );
+    final publishedCases = ref
+        .watch(publishedCasesProvider)
+        .where(
+          (c) => excludedMarkerId == null || c.id != excludedMarkerId,
+        )
+        .toList(growable: false);
 
     final cases = (isProdutor
             ? publishedCases.where(
