@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer.dart';
+import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
@@ -44,6 +46,13 @@ class _FakeDrawingFieldWriter implements IDrawingFieldWriter {
 }
 
 void main() {
+  late PreferencesService preferences;
+
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
+    preferences = PreferencesService(await SharedPreferences.getInstance());
+  });
+
   final client = Client(
     id: 'client-1',
     name: 'Adriano Gomes Silva',
@@ -73,6 +82,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          preferencesServiceProvider.overrideWithValue(preferences),
           clientDrawingFieldsProvider.overrideWith(
             (ref, clientId) async => [orphanField],
           ),
