@@ -28,6 +28,46 @@ final marketingSyncServiceProvider = Provider<MarketingSyncService>((ref) {
   return MarketingSyncService(repo);
 });
 
+/// Falha de limite do plano ao publicar (cases ativos no mapa).
+class MarketingPlanLimitException implements Exception {
+  MarketingPlanLimitException({required this.limite, required this.publicados});
+
+  final int limite;
+  final int publicados;
+
+  @override
+  String toString() =>
+      'MarketingPlanLimitException(limite: $limite, publicados: $publicados)';
+}
+
+int marketingPublishedActiveCount(
+  List<MarketingCase> cases, {
+  String? excludeCaseId,
+}) {
+  return cases
+      .where(
+        (c) =>
+            c.id != excludeCaseId &&
+            c.status == MarketingCaseStatus.published &&
+            c.ativo &&
+            c.deletadoEm == null,
+      )
+      .length;
+}
+
+bool marketingPublishBlockedByPlan({
+  required UserPlan plano,
+  required List<MarketingCase> cases,
+  required String publishingCaseId,
+}) {
+  if (plano.isAdmin) return false;
+  final publicados = marketingPublishedActiveCount(
+    cases,
+    excludeCaseId: publishingCaseId,
+  );
+  return publicados >= plano.limiteCases;
+}
+
 /// Resultado detalhado de [MarketingCasesNotifier.publishCaseDetailed].
 class PublishOutcome {
   const PublishOutcome.success(this.publishedCase)
@@ -67,9 +107,10 @@ class MarketingCasesNotifier
     extends StateNotifier<AsyncValue<List<MarketingCase>>> {
   final IMarketingCaseRepository _repository;
   final MarketingSyncService _syncService;
+  final Ref? _ref;
   Future<void>? _activeLoad;
 
-  MarketingCasesNotifier(this._repository, this._syncService)
+  MarketingCasesNotifier(this._repository, this._syncService, [this._ref])
     : super(const AsyncLoading());
 
   /// Carrega os cases (cache local com fallback remoto)
@@ -126,6 +167,36 @@ class MarketingCasesNotifier
   /// Envia o case ao Supabase, atualiza a lista imediatamente (optimistic).
   /// Em falha, preserva o erro original para a UI classificar a causa.
   Future<PublishOutcome> publishCaseDetailed(MarketingCase newCase) async {
+    if (newCase.status == MarketingCaseStatus.published && _ref != null) {
+      try {
+        final plano = await _ref.read(planoAtivoProvider.future);
+        final cases = state.valueOrNull ?? [];
+        if (marketingPublishBlockedByPlan(
+          plano: plano,
+          cases: cases,
+          publishingCaseId: newCase.id,
+        )) {
+          return PublishOutcome.failure(
+            MarketingPlanLimitException(
+              limite: plano.limiteCases,
+              publicados: marketingPublishedActiveCount(
+                cases,
+                excludeCaseId: newCase.id,
+              ),
+            ),
+          );
+        }
+      } catch (e, st) {
+        AppLogger.error(
+          'Erro ao checar limite do plano antes de publicar',
+          tag: 'MarketingProvider',
+          error: e,
+          stackTrace: st,
+        );
+        return PublishOutcome.failure(e);
+      }
+    }
+
     // 1. Optimistic update idempotente por id (retry não duplica)
     final previousCases = state.valueOrNull ?? [];
     final withoutDuplicate =
@@ -411,7 +482,7 @@ final marketingCasesProvider =
       ref.keepAlive();
       final repo = ref.watch(marketingCaseRepositoryProvider);
       final sync = ref.watch(marketingSyncServiceProvider);
-      final notifier = MarketingCasesNotifier(repo, sync);
+      final notifier = MarketingCasesNotifier(repo, sync, ref);
 
       // Listener para re-tentar upload de pending_sync quando voltar a conexão
       ref.listen<AsyncValue<bool>>(connectivityStateProvider, (previous, next) {
