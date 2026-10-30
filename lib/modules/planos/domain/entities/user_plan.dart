@@ -74,6 +74,12 @@ class UserPlan {
   /// Verdadeiro se já passou da data de expiração.
   bool get expirado => expiraEm.isBefore(DateTime.now());
 
+  /// Leitura no mapa privado: pins de marketing ficam ocultos (cases inalterados).
+  ///
+  /// Admin sempre vê pins. Usado na leitura do mapa privado — não gravar status.
+  bool get ocultaPinsMarketingNoMapa =>
+      !isAdmin && (expirado || !ativo);
+
   /// Limite de cases ativos no mapa conforme o plano.
   ///
   /// Admin sempre tem acesso ilimitado, independente do plano.
