@@ -127,6 +127,7 @@ class FarmLinkedFieldList extends ConsumerWidget {
           else
             TalhaoMapPreviewWidget(
               vertices: field.vertices,
+              boundsVertices: field.boundsVertices,
               nome: field.name,
               areaHa: field.areaHa,
               subtitle: farmLinkedFieldSubtitle(
@@ -301,6 +302,7 @@ class _FarmTalhaoNdviCard extends ConsumerWidget {
   }) {
     return TalhaoMapPreviewWidget(
       vertices: field.vertices,
+      boundsVertices: field.boundsVertices,
       nome: field.name,
       areaHa: field.areaHa,
       subtitle: farmLinkedFieldSubtitle(

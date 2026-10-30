@@ -3,12 +3,23 @@ import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/geo/geo_json_polygon_geometry.dart';
 import '../../../core/state/map_state.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../core/utils/area_display_format.dart';
 import '../clients/domain/agronomic_models.dart';
 
 class TalhaoMapAdapter {
+  /// Ponto dentro de qualquer parte; furos excluem (GeoJSON consultoria).
+  static bool containsPoint(LatLng point, Talhao talhao) {
+    return geoJsonContainsLatLngMap(talhao.geometry, point);
+  }
+
+  /// Amostra de vértices (todas as partes e anéis) para bbox/câmera.
+  static List<LatLng> boundsSamplePoints(Talhao talhao) {
+    return geoJsonVerticesForBoundsMap(talhao.geometry);
+  }
+
   /// Converte [talhao] em um ou mais polígonos do mapa (MultiPolygon + furos).
   ///
   /// Rótulo/área usam [Talhao.areaHa]; label só no primeiro polígono gerado.
