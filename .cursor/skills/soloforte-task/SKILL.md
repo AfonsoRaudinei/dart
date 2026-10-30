@@ -62,7 +62,7 @@ flutter test test/regression/map/controls_overlay_regression_test.dart  # se toc
 [ ] Branch pushed — sem merge na main? (merge é do supervisor)
 ```
 
-Quem mergeia é o **supervisor** (`gh pr merge --auto --rebase` após o revisor). Este fluxo **não** faz `git push origin main`.
+Quem mergeia é o **supervisor** (`gh pr merge --auto --rebase`). **Pausa 30/10/2026:** não chamar o revisor Grok 4.6 (`REVISOR_GROK_46_PAUSADO`). Este fluxo **não** faz `git push origin main`.
 
 ## Contratos principais
 

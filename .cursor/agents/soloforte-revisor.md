@@ -10,10 +10,18 @@ force-default-model: true
 tools: [read, grep, glob, bash:readonly]
 scope: project
 version: 1.3
-status: ATIVO
-data: Set/2026
+status: PAUSADO
+data: Out/2026
 fonte_da_verdade: AGENTS.md
 ---
+
+# PAUSA TEMPORÁRIA — NÃO EXECUTAR
+
+`REVISOR_GROK_46_PAUSADO` desde 30/10/2026. Créditos do Grok 4.6 esgotados.
+
+Se este agente foi lançado: pare neste parágrafo. Não leia o repositório. Não produza DIFF. Responda só: "Revisor Grok 4.6 pausado até os créditos voltarem."
+
+Reativar quando o Raudinei avisar: `status: ATIVO` e restaurar o Task no `.cursor/rules/soloforte-supervisor.mdc`. O `model: cursor-grok-4.6-high` permanece no frontmatter de propósito, para a volta ser só religar o fluxo.
 
 # AGENTE REVISOR — SoloForte App
 

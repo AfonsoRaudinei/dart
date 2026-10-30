@@ -17,7 +17,8 @@ Push da **branch**. A `main` só recebe PR com auto-merge rebase. Nunca `git pus
 git fetch origin && git checkout main && git pull origin main
 # após feature (executor):
 git push -u origin <branch>
-# supervisor: gh pr create → revisor → gh pr merge --auto --rebase
+# supervisor: gh pr create → gh pr merge --auto --rebase
+# REVISOR_GROK_46_PAUSADO (30/10/2026): não lançar soloforte-revisor / cursor-grok-4.6*
 gh pr view <n> --json state,mergedAt,mergeStateStatus,autoMergeRequest,url
 ```
 

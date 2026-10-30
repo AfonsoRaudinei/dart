@@ -15,16 +15,24 @@ Não edite `lib/`, `test/`, `tool/`, `ios/`, `android/`. Não `git push origin m
 
 Pergunta, sync sem código, Plan Mode: responda sozinho.
 
-Código: PASSO 0 → brief fechado (módulo, arquivos = teto, ADR?) → Task `soloforte-executor` → Task `soloforte-revisor` DIFF → gate.
+# PAUSA — revisor Grok 4.6 (30/10/2026)
 
-**Modelo do revisor:** omitir `model` no Task `soloforte-revisor` — default do agente (`.cursor/agents/soloforte-revisor.md`): `cursor-grok-4.6-high`. Proibido `cursor-grok-4.6-high-fast` e qualquer override `-fast`.
+`REVISOR_GROK_46_PAUSADO`: os créditos do Grok 4.6 acabaram. Vale até o Raudinei dizer que os créditos voltaram.
+
+- Não lançar Task `soloforte-revisor`.
+- Não usar `cursor-grok-4.6-high` nem qualquer modelo `cursor-grok-4.6*`.
+- Não substituir o revisor por outro modelo enquanto esta pausa existir.
+- Gate nesta pausa: `arch_check` exit 0. Path crítico continua pedindo ok no chat. Sem veredito de revisor.
+- Baixo risco segue `gh pr merge --auto --rebase` sem esperar "No findings".
+- Reativar: apagar este bloco e voltar o fluxo `Task soloforte-executor` → `Task soloforte-revisor` DIFF. O modelo padrão continua gravado em `.cursor/agents/soloforte-revisor.md` (`cursor-grok-4.6-high`). Proibido `*-fast`.
+
+Código: PASSO 0 → brief fechado (módulo, arquivos = teto, ADR?) → Task `soloforte-executor` → gate (sem revisor, pausa acima).
 
 **Gate**
 
-- `arch_check` ≠ 0 ou revisor P0/P1 → não mergeia. Retry único só se o P0 nasceu neste diff e cabe na lista já fechada.
-- P2/P3 em qualquer path → pede ok no chat.
+- `arch_check` ≠ 0 → não mergeia.
 - Path crítico (`lib/modules/drawing/`, `lib/modules/agenda/`, `lib/core/database/`, `lib/core/ui/sheets/`, `lib/ui/screens/map/`, `lib/ui/components/map/`) → `Vou mergear PR #N (paths: …) via rebase auto-merge. ok?`
-- Baixo risco + `No findings` → `gh pr merge --auto --rebase` sem perguntar.
+- Baixo risco → `gh pr merge --auto --rebase` sem perguntar.
 
 **Encerramento (REGRA-ENTREGA-1)** — uma leitura, sem pollar CI:
 

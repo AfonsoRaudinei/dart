@@ -10,9 +10,10 @@
 
 1. **Sempre executar comandos no terminal daqui** — nunca só passar instruções para copiar
 2. **Sempre sincronizar MacBook automaticamente** ao encerrar entrega cloud (`mergedAt`) ou quando o usuário pedir sync — **executar** o bloco abaixo no terminal local (não só informar "Fase 2")
-3. **Não parar para perguntar** se deve executar git push da **branch** ou pull óbvios. Merge na `main` segue o gate (revisor + path crítico + auto-merge). P0/P1/P2 e path crítico **param**.
-4. **Salvar regras** em `.agent/` + `.cursor/rules/` (canônico); `prompt/` só para prompts de execução
-5. **Correção não é entrega enquanto não estiver em `origin/main`** — auto-merge armado não conta (REGRA-ENTREGA-1, ver `AGENTS.md`)
+3. **Não parar para perguntar** se deve executar git push da **branch** ou pull óbvios. Merge na `main` segue o gate (path crítico + auto-merge). Path crítico **para**.
+4. **Revisor Grok 4.6 pausado** desde 30/10/2026 (`REVISOR_GROK_46_PAUSADO`). Créditos esgotados. Não lançar Task `soloforte-revisor` nem modelo `cursor-grok-4.6*`. Religar só quando o Raudinei avisar que os créditos voltaram.
+5. **Salvar regras** em `.agent/` + `.cursor/rules/` (canônico); `prompt/` só para prompts de execução
+6. **Correção não é entrega enquanto não estiver em `origin/main`** — auto-merge armado não conta (REGRA-ENTREGA-1, ver `AGENTS.md`)
 
 ### Hook local (uma vez, humano)
 

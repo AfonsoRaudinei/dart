@@ -39,6 +39,8 @@ Foco: Arquitetura limpa, contratos reais, estado previsível, zero improviso.
 | **Executor** | `.cursor/agents/soloforte-executor.md` | sim, lista fechada | não — push da branch apenas |
 | **Revisor** | `.cursor/agents/soloforte-revisor.md` | não | não |
 
+**Pausa temporária (30/10/2026) — `REVISOR_GROK_46_PAUSADO`:** não lançar o revisor e não chamar `cursor-grok-4.6-high`. Créditos do Grok 4.6 esgotados. Enquanto a pausa valer, o gate é `arch_check` exit 0 mais ok no chat em path crítico. Reativar quando o Raudinei avisar que os créditos voltaram.
+
 Cadeado mecânico: `docs/03_ENFORCEMENT/supervisor-merge-gate.md`. Rule: `.cursor/rules/soloforte-supervisor.mdc`.
 
 -----
@@ -123,8 +125,8 @@ aparece em `git log origin/main` — não quando aparece só em `git log` da bra
 |---|---|---|
 | 1. Executor implementa + valida (`arch_check.sh`, analyze, testes) | ✅ | — |
 | 2. Commit por arquivo + push da **branch** | ✅ | `git push -u origin <branch>` |
-| 3. Supervisor abre PR + revisor DIFF | ✅ | `gh pr create` · Task `soloforte-revisor` |
-| 4. Gate (P0/P1 bloqueia; path crítico pede ok; baixo risco + No findings segue) | ✅ | ver supervisor |
+| 3. Supervisor abre PR. Revisor DIFF | pausado | `gh pr create`. Task `soloforte-revisor` **não** roda enquanto `REVISOR_GROK_46_PAUSADO` |
+| 4. Gate (`arch_check`; path crítico pede ok). P0/P1 do revisor só voltam com a reativação | ✅ | ver supervisor |
 | 5. Auto-merge nativo **rebase** | ✅ | `gh pr merge --auto --rebase` — nunca `--admin`, nunca squash |
 | 6. Encerramento honesto | ✅ | `gh pr view --json state,mergedAt,mergeStateStatus,autoMergeRequest,url` |
 

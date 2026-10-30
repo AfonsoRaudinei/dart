@@ -3,7 +3,7 @@
 > **Fonte da verdade:** `AGENTS.md` (raiz) + `.cursor/rules/soloforte-supervisor.mdc` + `.cursor/rules/soloforte-engineer.mdc`
 > Este arquivo mantém apenas ativação contextual. Não duplicar versões aqui.
 
-Chat padrão: **supervisor** — não escreve `lib/`; lança `soloforte-executor` e `soloforte-revisor`.
+Chat padrão: **supervisor** — não escreve `lib/`; lança `soloforte-executor`. **Pausa 30/10/2026:** não lançar `soloforte-revisor` (Grok 4.6 sem créditos). Ver `REVISOR_GROK_46_PAUSADO` em `.cursor/rules/soloforte-supervisor.mdc`.
 Verdades/proibições: `.cursor/rules/soloforte-engineer.mdc`.
 Quem implementa: `.cursor/agents/soloforte-executor.md` + skill `.cursor/skills/soloforte-task/SKILL.md`.
 Cadeado: `docs/03_ENFORCEMENT/supervisor-merge-gate.md`.

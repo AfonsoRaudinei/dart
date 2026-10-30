@@ -52,7 +52,9 @@ Não exigir os outros jobs do `architecture.yml` (NDVI, coverage, radar, shield)
 
 1. **Supervisor** (chat padrão) — não escreve `lib/`; lança executor e revisor; arma `gh pr merge --auto --rebase`; não polla CI.
 2. **Executor** (`.cursor/agents/soloforte-executor.md`) — escreve no escopo fechado; push só da branch.
-3. **Revisor** (`.cursor/agents/soloforte-revisor.md`) — DIFF read-only. Modelo padrão: `cursor-grok-4.6-high` (`force-default-model: true`). Supervisor **não** passa `model` no Task; proibido `*-fast`.
+3. **Revisor** (`.cursor/agents/soloforte-revisor.md`) — DIFF read-only. Modelo padrão, quando ativo: `cursor-grok-4.6-high` (`force-default-model: true`). Supervisor **não** passa `model` no Task; proibido `*-fast`.
+
+**Pausa 30/10/2026 (`REVISOR_GROK_46_PAUSADO`):** não lançar o revisor. Créditos do Grok 4.6 esgotados. O check mecânico continua sendo `Verificação de Fronteiras Arquiteturais`. Path crítico ainda pede ok no chat. Baixo risco segue auto-merge rebase sem veredito LLM. Reativar apagando o bloco de pausa em `.cursor/rules/soloforte-supervisor.mdc`.
 
 ## Merge por risco
 

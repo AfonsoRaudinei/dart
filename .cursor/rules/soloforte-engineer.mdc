@@ -43,7 +43,7 @@ flutter analyze lib/
 flutter test
 ```
 
-Quem mergeia é o supervisor, após o revisor e o ruleset — não este fluxo.
+Quem mergeia é o supervisor, após o ruleset. O revisor Grok 4.6 está pausado (`REVISOR_GROK_46_PAUSADO`, 30/10/2026) — não lançar. Não é este fluxo que mergeia.
 
 ## Ativação contextual
 
