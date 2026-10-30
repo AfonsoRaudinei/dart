@@ -514,11 +514,12 @@ void main() {
         ],
       );
       addTearDown(container.dispose);
+      await container.read(drawingClientProvider.notifier).loadClients();
       container.read(drawingClientProvider.notifier).setClienteAtivo(
             'cli-flow',
             clientName: 'Cliente Fluxo',
           );
-      await Future<void>.delayed(Duration.zero);
+      await container.read(drawingClientProvider.notifier).loadFarms('cli-flow');
 
       await tester.pumpWidget(
         UncontrolledProviderScope(
