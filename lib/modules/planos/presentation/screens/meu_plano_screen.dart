@@ -214,35 +214,6 @@ class _PlanoAtivoContent extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: 32),
-        if (plano.plano != PlanoTipo.ouro)
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                context.go('/planos');
-              },
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: primary,
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                child: const Center(
-                  child: Text(
-                    'Ver planos superiores',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black,
-                      letterSpacing: -0.4,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
         const SizedBox(height: kFabSafeArea),
       ],
     );
