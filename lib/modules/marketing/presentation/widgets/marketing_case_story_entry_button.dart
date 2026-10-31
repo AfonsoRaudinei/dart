@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../domain/entities/marketing_case.dart';
 
 /// CTA do sheet de detalhe → abre `/marketing/story`.
 class MarketingCaseStoryEntryButton extends StatelessWidget {
   final MarketingCase marketingCase;
+  final bool isIos;
 
   const MarketingCaseStoryEntryButton({
     required this.marketingCase,
+    this.isIos = false,
     super.key,
   });
 
@@ -26,18 +29,33 @@ class MarketingCaseStoryEntryButton extends StatelessWidget {
       },
       icon: const Icon(Icons.auto_awesome_mosaic_rounded, size: 20),
       label: const Text('Ver Story / Compartilhar'),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFFF5B935),
-        foregroundColor: const Color(0xFF1D1D1F),
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
-        textStyle: const TextStyle(
-          fontWeight: FontWeight.w700,
-          fontSize: 16,
-        ),
-      ),
+      style: isIos
+          ? ElevatedButton.styleFrom(
+              backgroundColor: SoloForteSheetSkinIos.ctaBackground,
+              foregroundColor: SoloForteSheetSkinIos.ctaText,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(
+                  SoloForteSheetSkinIos.ctaRadius,
+                ),
+              ),
+              textStyle: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
+            )
+          : ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF5B935),
+              foregroundColor: const Color(0xFF1D1D1F),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              textStyle: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
+            ),
     );
   }
 }

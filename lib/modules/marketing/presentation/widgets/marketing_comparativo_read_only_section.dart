@@ -8,11 +8,13 @@ import 'comparativo_chart.dart';
 class MarketingComparativoReadOnlySection extends StatefulWidget {
   final List<ParametroComparativo> parametros;
   final double mediaGanhoPercent;
+  final bool isIos;
 
   const MarketingComparativoReadOnlySection({
     super.key,
     required this.parametros,
     required this.mediaGanhoPercent,
+    this.isIos = false,
   });
 
   @override
@@ -26,23 +28,38 @@ class _MarketingComparativoReadOnlySectionState
 
   @override
   Widget build(BuildContext context) {
+    final cardBg = widget.isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final cardBorder = widget.isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : PremiumTokens.hairlineLight;
+    final sectionLabelColor = widget.isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+    final titleColor = widget.isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.inputText;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: SoloForteSheetTokens.inputBackground,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: PremiumTokens.hairlineLight),
+            color: cardBg,
+            borderRadius: BorderRadius.circular(
+              widget.isIos ? SoloForteSheetSkinIos.cardRadius : 16,
+            ),
+            border: Border.all(color: cardBorder),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'PARÂMETROS COMPARATIVOS',
                 style: TextStyle(
-                  color: SoloForteSheetTokens.inputHint,
+                  color: sectionLabelColor,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                 ),
@@ -50,15 +67,18 @@ class _MarketingComparativoReadOnlySectionState
               const SizedBox(height: 10),
               Text(
                 'Média de ganho: ${_formatSigned(widget.mediaGanhoPercent)}%',
-                style: const TextStyle(
-                  color: SoloForteSheetTokens.inputText,
+                style: TextStyle(
+                  color: titleColor,
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 12),
               ...widget.parametros.map(
-                (parametro) => _ParametroReadOnlyRow(parametro: parametro),
+                (parametro) => _ParametroReadOnlyRow(
+                  parametro: parametro,
+                  isIos: widget.isIos,
+                ),
               ),
             ],
           ),
@@ -81,8 +101,12 @@ class _MarketingComparativoReadOnlySectionState
 
 class _ParametroReadOnlyRow extends StatelessWidget {
   final ParametroComparativo parametro;
+  final bool isIos;
 
-  const _ParametroReadOnlyRow({required this.parametro});
+  const _ParametroReadOnlyRow({
+    required this.parametro,
+    this.isIos = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -95,8 +119,13 @@ class _ParametroReadOnlyRow extends StatelessWidget {
     final deltaColor = parametro.isNegativo
         ? PremiumTokens.alertError
         : parametro.isPositivo
-        ? PremiumTokens.brandGreen
-        : SoloForteSheetTokens.inputHint;
+        ? (isIos ? SoloForteSheetSkinIos.iconStroke : PremiumTokens.brandGreen)
+        : (isIos
+              ? SoloForteSheetSkinIos.subtitleColor
+              : SoloForteSheetTokens.inputHint);
+    final textColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.inputText;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -106,8 +135,8 @@ class _ParametroReadOnlyRow extends StatelessWidget {
             child: Text(
               parametro.titulo,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: SoloForteSheetTokens.inputText,
+              style: TextStyle(
+                color: textColor,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -115,8 +144,8 @@ class _ParametroReadOnlyRow extends StatelessWidget {
           ),
           Text(
             '${_formatValue(parametro.testemunha)} -> ${_formatValue(parametro.teste)}$unit',
-            style: const TextStyle(
-              color: SoloForteSheetTokens.inputText,
+            style: TextStyle(
+              color: textColor,
               fontSize: 12,
             ),
           ),

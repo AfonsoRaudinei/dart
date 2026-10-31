@@ -13,6 +13,7 @@ import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/marketing_case_status.dart';
 import '../../domain/enums/plano_marketing.dart';
 import '../providers/marketing_providers.dart';
+import '../marketing_case_report_sheet_actions.dart';
 import 'comparativo_chart.dart';
 import 'marketing_case_resultado_read_only_section.dart';
 import 'marketing_case_story_entry_button.dart';
@@ -316,7 +317,7 @@ class MarketingCaseSheet extends ConsumerWidget {
                       _buildFoto(marketingCase.fotoPrincipalUrl!, isIos),
 
                     // ── Métricas destaque ──────────────────────
-                    _buildMetricasRow(context),
+                    _buildMetricasRow(context, isIos: isIos),
                     const SizedBox(height: 20),
 
                     // ── Produtor / Fazenda ─────────────────────
@@ -341,6 +342,7 @@ class MarketingCaseSheet extends ConsumerWidget {
                     if (marketingCase.tipo == CaseTipo.resultado) ...[
                       MarketingCaseResultadoReadOnlySection(
                         marketingCase: marketingCase,
+                        isIos: isIos,
                       ),
                     ],
 
@@ -350,6 +352,7 @@ class MarketingCaseSheet extends ConsumerWidget {
                         MarketingComparativoReadOnlySection(
                           parametros: marketingCase.parametros,
                           mediaGanhoPercent: marketingCase.mediaGanhoPercent,
+                          isIos: isIos,
                         )
                       else ...[
                         if (marketingCase.ganhoProdutividade != null)
@@ -419,7 +422,12 @@ class MarketingCaseSheet extends ConsumerWidget {
                       ),
                     ],
 
-                    const SizedBox(height: 24),
+                    MarketingCaseReportActionsRow(
+                      marketingCase: marketingCase,
+                      isIos: isIos,
+                    ),
+
+                    const SizedBox(height: 8),
                     if (allowPinCorrection &&
                         marketingCasePinCorrectionEligible(marketingCase)) ...[
                       SizedBox(
@@ -452,7 +460,10 @@ class MarketingCaseSheet extends ConsumerWidget {
                       ),
                       const SizedBox(height: 16),
                     ],
-                    MarketingCaseStoryEntryButton(marketingCase: marketingCase),
+                    MarketingCaseStoryEntryButton(
+                      marketingCase: marketingCase,
+                      isIos: isIos,
+                    ),
                     const SizedBox(height: 80),
                   ],
                 ),
@@ -497,8 +508,11 @@ class MarketingCaseSheet extends ConsumerWidget {
     );
   }
 
-  Widget _buildMetricasRow(BuildContext context) {
+  Widget _buildMetricasRow(BuildContext context, {required bool isIos}) {
     final items = <_MetricaItem>[];
+    final roiAccent = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : const Color(0xFF34C759);
 
     final resultadoRoi = marketingCase.computeRoi();
     if (resultadoRoi != null) {
@@ -507,7 +521,7 @@ class MarketingCaseSheet extends ConsumerWidget {
           label: 'ROI/ha',
           value: _formatMoney(resultadoRoi.roiLiquidoRsHa),
           icon: Icons.trending_up_rounded,
-          color: const Color(0xFF34C759),
+          color: roiAccent,
         ),
       );
     } else if (marketingCase.produtividadeValor != null) {
@@ -517,7 +531,7 @@ class MarketingCaseSheet extends ConsumerWidget {
           value:
               '${marketingCase.produtividadeValor!.toStringAsFixed(1)} ${marketingCase.produtividadeUnidade?.toValue() ?? ''}',
           icon: Icons.bar_chart_rounded,
-          color: PremiumTokens.brandGreen,
+          color: isIos ? SoloForteSheetSkinIos.iconStroke : PremiumTokens.brandGreen,
         ),
       );
     }
@@ -537,24 +551,41 @@ class MarketingCaseSheet extends ConsumerWidget {
     return Row(
       children: items
           .map(
-            (item) => Expanded(
+            (item) {
+              final chipBg = isIos
+                  ? SoloForteSheetSkinIos.cardBackground
+                  : item.color.withValues(alpha: 0.08);
+              final chipBorder = isIos
+                  ? SoloForteSheetSkinIos.cardBorder
+                  : item.color.withValues(alpha: 0.2);
+              final labelColor = isIos
+                  ? SoloForteSheetSkinIos.subtitleColor
+                  : item.color.withValues(alpha: 0.85);
+              final valueColor =
+                  isIos ? SoloForteSheetSkinIos.iconStroke : item.color;
+              final iconColor =
+                  isIos ? SoloForteSheetSkinIos.iconStroke : item.color;
+
+              return Expanded(
               child: Container(
                 margin: const EdgeInsets.only(right: 8),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: item.color.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: item.color.withValues(alpha: 0.2)),
+                  color: chipBg,
+                  borderRadius: BorderRadius.circular(
+                    isIos ? SoloForteSheetSkinIos.cardRadius : 14,
+                  ),
+                  border: Border.all(color: chipBorder),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(item.icon, color: item.color, size: 20),
+                    Icon(item.icon, color: iconColor, size: 20),
                     const SizedBox(height: 8),
                     Text(
                       item.label,
                       style: TextStyle(
-                        color: item.color.withValues(alpha: 0.85),
+                        color: labelColor,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -563,7 +594,7 @@ class MarketingCaseSheet extends ConsumerWidget {
                     Text(
                       item.value,
                       style: TextStyle(
-                        color: item.color,
+                        color: valueColor,
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
                       ),
@@ -571,7 +602,8 @@ class MarketingCaseSheet extends ConsumerWidget {
                   ],
                 ),
               ),
-            ),
+            );
+            },
           )
           .toList(),
     );

@@ -635,6 +635,13 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
   // ── Builders locais ────────────────────────────────────────────
 
   Widget _buildUnidadeDropdown() {
+    final isIos = soloForteSheetIsIos(context);
+    final dropdownBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final dropdownFg =
+        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+
     return DropdownButtonHideUnderline(
       child: DropdownButton<ProdutividadeUnidade>(
         value: _produtividadeUnidade,
@@ -642,11 +649,17 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
         items: ProdutividadeUnidade.values.map((u) {
           return DropdownMenuItem(
             value: u,
-            child: Text(u.toValue(), style: const TextStyle(fontSize: 13)),
+            child: Text(
+              u.toValue(),
+              style: TextStyle(fontSize: 13, color: dropdownFg),
+            ),
           );
         }).toList(),
-        style: Theme.of(context).textTheme.bodyMedium,
-        dropdownColor: SoloForteSheetTokens.inputBackground,
+        style: TextStyle(fontSize: 13, color: dropdownFg),
+        dropdownColor: dropdownBg,
+        iconEnabledColor: isIos
+            ? SoloForteSheetSkinIos.subtitleColor
+            : Colors.white54,
       ),
     );
   }

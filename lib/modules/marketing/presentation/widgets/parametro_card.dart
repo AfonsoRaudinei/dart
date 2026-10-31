@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/parametro_comparativo.dart';
 import 'novo_case_form_helpers.dart';
@@ -67,11 +68,15 @@ class _ParametroCardState extends State<ParametroCard> {
   @override
   Widget build(BuildContext context) {
     final delta = widget.parametro.deltaPercent;
+    final isIos = soloForteSheetIsIos(context);
+    final neutralDeltaColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
     final deltaColor = widget.parametro.isPositivo
         ? PremiumTokens.brandGreen
         : widget.parametro.isNegativo
         ? PremiumTokens.alertError
-        : SoloForteSheetTokens.inputHint;
+        : neutralDeltaColor;
 
     return Focus(
       onFocusChange: (hasFocus) {
@@ -81,23 +86,9 @@ class _ParametroCardState extends State<ParametroCard> {
         duration: const Duration(milliseconds: 160),
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: SoloForteSheetTokens.inputBackground,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: widget.selected
-                ? PremiumTokens.brandGreen
-                : PremiumTokens.hairlineLight,
-          ),
-          boxShadow: widget.selected
-              ? const [
-                  BoxShadow(
-                    color: Color.fromRGBO(0, 0, 0, 0.08),
-                    offset: Offset(0, 10),
-                    blurRadius: 28,
-                  ),
-                ]
-              : null,
+        decoration: novoCaseInnerCardDecoration(
+          context,
+          selected: widget.selected,
         ),
         child: Column(
           children: [
