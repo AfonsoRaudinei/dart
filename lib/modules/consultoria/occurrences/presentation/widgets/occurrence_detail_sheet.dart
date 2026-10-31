@@ -14,6 +14,7 @@ import '../../../../../../core/design/sf_icons.dart';
 import '../../../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/occurrence.dart';
 import '../controllers/occurrence_controller.dart';
+import '../occurrence_detail_report_actions.dart';
 import 'occurrence_creation_sheet.dart';
 import 'occurrence_detail_pin_correction.dart';
 import 'occurrence_detail_photo_section.dart';
@@ -26,12 +27,15 @@ class OccurrenceDetailSheet extends ConsumerWidget {
   final Occurrence occurrence;
   final String? backRoute;
   final bool allowPinCorrection;
+  final Future<void> Function(BuildContext context, Occurrence occurrence)?
+      onExportLocation;
 
   const OccurrenceDetailSheet({
     super.key,
     required this.occurrence,
     this.backRoute,
     this.allowPinCorrection = false,
+    this.onExportLocation,
   });
 
   bool get _isReadOnly => occurrence.cachedByUserId != null;
@@ -48,6 +52,8 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     Occurrence occurrence, {
     String? backRoute,
     bool allowPinCorrection = false,
+    Future<void> Function(BuildContext context, Occurrence occurrence)?
+        onExportLocation,
   }) {
     HapticFeedback.lightImpact();
     return showSoloForteSheet(
@@ -60,6 +66,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
         occurrence: occurrence,
         backRoute: backRoute,
         allowPinCorrection: allowPinCorrection,
+        onExportLocation: onExportLocation,
       ),
     );
   }
@@ -112,10 +119,6 @@ class OccurrenceDetailSheet extends ConsumerWidget {
       default:
         return 'Média';
     }
-  }
-
-  static String _labelForStatus(String? status) {
-    return status == 'confirmed' ? 'Confirmada' : 'Rascunho';
   }
 
   static String? _firstMetricLabel(Occurrence occurrence) {
@@ -302,11 +305,6 @@ class OccurrenceDetailSheet extends ConsumerWidget {
           ),
         ),
       _DetailRowData(
-        icon: SFIcons.info,
-        label: 'Status',
-        value: _labelForStatus(occurrence.status),
-      ),
-      _DetailRowData(
         icon: SFIcons.description,
         label: 'Descrição',
         value: occurrence.description.isNotEmpty
@@ -375,7 +373,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
       top: false,
       child: DraggableScrollableSheet(
         expand: false,
-        initialChildSize: 0.72,
+        initialChildSize: 0.6,
         minChildSize: 0.35,
         maxChildSize: 0.95,
         shouldCloseOnMinExtent: true,
@@ -406,7 +404,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
@@ -436,8 +434,8 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                       const SizedBox(width: 4),
                     ],
                     Container(
-                      width: 48,
-                      height: 48,
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
                         color: isIos
                             ? SoloForteSheetSkinIos.iconBackground
@@ -447,7 +445,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                       child: Center(
                         child: Text(
                           category.emoji,
-                          style: const TextStyle(fontSize: 22),
+                          style: const TextStyle(fontSize: 20),
                         ),
                       ),
                     ),
@@ -465,22 +463,15 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                               color: titleColor,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              _HeaderChip(
-                                label: 'Urgência $urgencyLabel',
-                                color: urgencyColor,
-                              ),
-                              const SizedBox(width: 6),
-                              _HeaderChip(
-                                label: _labelForStatus(occurrence.status),
-                                color: occurrence.status == 'confirmed'
-                                    ? const Color(0xFF34C759)
-                                    : const Color(0xFFFF9500),
-                              ),
-                            ],
-                          ),
+                          if (!isAreaVisitadaCategory(
+                            occurrence.category,
+                          )) ...[
+                            const SizedBox(height: 4),
+                            _HeaderChip(
+                              label: 'Urgência $urgencyLabel',
+                              color: urgencyColor,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -499,7 +490,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Divider(
@@ -508,7 +499,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                   height: 1,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               OccurrenceDetailPhotoSection(
                 occurrence: occurrence,
                 cardBg: cardBg,
@@ -541,6 +532,23 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                     ],
                   ),
                 ),
+              ),
+              if (OccurrenceDetailExportLocationButton.eligible(
+                occurrence,
+                onExportLocation,
+              )) ...[
+                const SizedBox(height: 12),
+                OccurrenceDetailExportLocationButton(
+                  occurrence: occurrence,
+                  isIos: isIos,
+                  accentColor: categoryColor,
+                  onExportLocation: onExportLocation!,
+                ),
+              ],
+              const SizedBox(height: 12),
+              OccurrenceDetailReportActionsRow(
+                occurrence: occurrence,
+                isIos: isIos,
               ),
               if (allowPinCorrection &&
                   occurrencePinCorrectionEligible(occurrence)) ...[
@@ -742,7 +750,7 @@ class _DetailRow extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

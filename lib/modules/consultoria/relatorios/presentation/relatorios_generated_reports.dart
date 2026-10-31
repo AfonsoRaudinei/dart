@@ -389,45 +389,10 @@ Future<String> _buildOccurrenceReportHtml(
   WidgetRef ref,
   Occurrence occurrence, {
   bool asFragment = false,
-}) async {
-  final data = occurrence.toMap();
-  final cover = coverPhotoPath(occurrence);
-  data['foto_base64'] =
-      await RelatorioHtmlRenderer.photoPathToBase64(cover) ?? '';
-  if (occurrence.fotosCategoriasJson != null) {
-    data['fotos_categorias_json'] = encodeFotosCategoriasJson(
-      occurrence.fotosCategoriasJson,
-      ImageStorageService().toStoredPath,
-    );
-  }
-  if (cover != null) {
-    data['photo_path'] = ImageStorageService().toStoredPath(cover);
-  }
-  data['cliente_nome'] = await _occurrenceClienteNome(ref, occurrence.clientId);
-  final location = await resolveOccurrenceLocationNames(
-    clientId: occurrence.clientId,
-    lat: occurrence.lat,
-    lng: occurrence.long,
-    visitSessionId: occurrence.visitSessionId,
-    farmLookup: _tryReadContract(() => ref.read(iFarmLookupProvider)),
-    fieldLookup: _tryReadContract(() => ref.read(iFieldLookupProvider)),
-    visitSessionLookup: _tryReadContract(
-      () => ref.read(visitSessionLookupProvider),
-    ),
-  );
-  data['fazenda_nome'] = location.fazenda;
-  data['talhao_nome'] = location.talhao;
-  final branding = await resolveReportBrandingContext(
+}) {
+  return buildOccurrenceReportHtml(
     ref,
-    fallbackConsultantName: 'Equipe técnica',
-    fallbackConsultantRole: 'Consultoria',
-  );
-  return OcorrenciaHtmlRenderer.renderDetalhe(
-    data,
-    reportBrandName: branding.brandName,
-    reportLogoPath: branding.logoPath,
-    consultantName: branding.consultantName,
-    consultantRole: branding.consultantRole,
+    occurrence,
     asFragment: asFragment,
   );
 }

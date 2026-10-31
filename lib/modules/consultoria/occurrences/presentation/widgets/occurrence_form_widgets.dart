@@ -238,6 +238,8 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
         ? SoloForteSheetSkinIos.background
         : const Color(0xFF2C2C2E);
     final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+    final accent =
+        isIos ? SoloForteSheetSkinIos.iconStroke : PremiumTokens.brandGreen;
 
     return Column(
       children: [
@@ -295,7 +297,7 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                       expanded
                           ? Icons.keyboard_arrow_up
                           : Icons.keyboard_arrow_down,
-                      color: PremiumTokens.brandGreen,
+                      color: accent,
                     ),
                   ),
                 ),
@@ -310,10 +312,16 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                   margin: const EdgeInsets.only(top: 8),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: PremiumTokens.brandGreen.withValues(alpha: .07),
-                    borderRadius: BorderRadius.circular(12),
+                    color: isIos
+                        ? SoloForteSheetSkinIos.cardBackground
+                        : PremiumTokens.brandGreen.withValues(alpha: .07),
+                    borderRadius: BorderRadius.circular(
+                      isIos ? SoloForteSheetSkinIos.cardRadius : 12,
+                    ),
                     border: Border.all(
-                      color: PremiumTokens.brandGreen.withValues(alpha: .3),
+                      color: isIos
+                          ? SoloForteSheetSkinIos.cardBorder
+                          : PremiumTokens.brandGreen.withValues(alpha: .3),
                     ),
                   ),
                   child: Column(
@@ -327,15 +335,17 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: PremiumTokens.brandGreen.withValues(
-                                alpha: .2,
-                              ),
+                              color: isIos
+                                  ? SoloForteSheetSkinIos.iconBackground
+                                  : PremiumTokens.brandGreen.withValues(
+                                      alpha: .2,
+                                    ),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               selected!.code,
-                              style: const TextStyle(
-                                color: PremiumTokens.brandGreen,
+                              style: TextStyle(
+                                color: accent,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
@@ -345,26 +355,26 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                           Expanded(
                             child: Text(
                               selected!.description,
-                              style: const TextStyle(
-                                color: Colors.white70,
+                              style: TextStyle(
+                                color: isIos ? title : Colors.white70,
                                 fontSize: 12,
                               ),
                             ),
                           ),
                           Text(
                             '~${selected!.dap} DAP',
-                            style: const TextStyle(
-                              color: Colors.white38,
+                            style: TextStyle(
+                              color: isIos ? muted : Colors.white38,
                               fontSize: 11,
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 10),
-                      const Text(
+                      Text(
                         '⚠️ Atenção neste estádio:',
                         style: TextStyle(
-                          color: Colors.white60,
+                          color: isIos ? title : Colors.white60,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -376,18 +386,18 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 '• ',
                                 style: TextStyle(
-                                  color: PremiumTokens.brandGreen,
+                                  color: accent,
                                   fontSize: 12,
                                 ),
                               ),
                               Expanded(
                                 child: Text(
                                   a,
-                                  style: const TextStyle(
-                                    color: Colors.white54,
+                                  style: TextStyle(
+                                    color: isIos ? muted : Colors.white54,
                                     fontSize: 11,
                                   ),
                                 ),
