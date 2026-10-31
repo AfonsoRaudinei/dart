@@ -1,0 +1,174 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
+
+import '../../../../core/state/map_ui_providers.dart';
+import '../../../../modules/consultoria/clients/domain/agronomic_models.dart';
+import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
+import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
+import '../../../../modules/drawing/presentation/providers/drawing_client_provider.dart';
+
+/// Pedido de foco no mapa a partir do sheet Iniciar Visita (sem iniciar sessão).
+class VisitCheckInMapFocusRequest {
+  const VisitCheckInMapFocusRequest({
+    required this.clientId,
+    required this.clientName,
+    this.farmId,
+    this.farmName,
+    this.talhaoId,
+    this.talhaoName,
+  });
+
+  final String clientId;
+  final String clientName;
+  final String? farmId;
+  final String? farmName;
+  final String? talhaoId;
+  final String? talhaoName;
+}
+
+enum VisitCheckInMapFocusOutcome {
+  success,
+  missingFarmOrField,
+  noGeometry,
+}
+
+typedef VisitCheckInNavigateToAreaCallback =
+    void Function(
+      String clientId,
+      String clientName,
+      String? farmId,
+      String? farmName,
+      String? talhaoId,
+      String? talhaoName,
+    );
+
+final visitCheckInMapFocusRequestProvider =
+    StateProvider.autoDispose<VisitCheckInMapFocusRequest?>((ref) => null);
+
+void queueVisitCheckInMapFocus(
+  WidgetRef ref, {
+  required String clientId,
+  required String clientName,
+  String? farmId,
+  String? farmName,
+  String? talhaoId,
+  String? talhaoName,
+}) {
+  ref.read(visitCheckInMapFocusRequestProvider.notifier).state =
+      VisitCheckInMapFocusRequest(
+        clientId: clientId,
+        clientName: clientName,
+        farmId: farmId,
+        farmName: farmName,
+        talhaoId: talhaoId,
+        talhaoName: talhaoName,
+      );
+}
+
+VisitCheckInNavigateToAreaCallback buildVisitCheckInNavigateHandler(
+  WidgetRef ref,
+  VoidCallback closeSheet,
+) {
+  return (
+    String clientId,
+    String clientName,
+    String? farmId,
+    String? farmName,
+    String? talhaoId,
+    String? talhaoName,
+  ) {
+    queueVisitCheckInMapFocus(
+      ref,
+      clientId: clientId,
+      clientName: clientName,
+      farmId: farmId,
+      farmName: farmName,
+      talhaoId: talhaoId,
+      talhaoName: talhaoName,
+    );
+    closeSheet();
+  };
+}
+
+/// Regra de produto: produtor + (fazenda ou talhão).
+bool visitCheckInNavigateToAreaEnabled({
+  required String? clientId,
+  required String? farmId,
+  required String? talhaoId,
+}) {
+  if (clientId == null || clientId.isEmpty) return false;
+  final hasFarm = farmId != null && farmId.isNotEmpty;
+  final hasTalhao = talhaoId != null && talhaoId.isNotEmpty;
+  return hasFarm || hasTalhao;
+}
+
+/// Pontos para [CameraFit.bounds] — talhão único ou união dos talhões da fazenda.
+List<LatLng> visitCheckInMapFocusSamplePoints({
+  required List<Talhao> farmFields,
+  required String? talhaoId,
+}) {
+  if (talhaoId != null && talhaoId.isNotEmpty) {
+    final field = farmFields.where((f) => f.id == talhaoId).firstOrNull;
+    if (field == null) return const [];
+    return TalhaoMapAdapter.boundsSamplePoints(field);
+  }
+  return farmFields
+      .expand(TalhaoMapAdapter.boundsSamplePoints)
+      .toList(growable: false);
+}
+
+String visitCheckInNoGeometryMessage(VisitCheckInMapFocusRequest request) {
+  if (request.talhaoName != null && request.talhaoName!.isNotEmpty) {
+    return '${request.talhaoName} sem geometria no mapa.';
+  }
+  if (request.farmName != null && request.farmName!.isNotEmpty) {
+    return '${request.clientName} · ${request.farmName} sem geometria no mapa.';
+  }
+  return 'Área selecionada sem geometria no mapa.';
+}
+
+Future<VisitCheckInMapFocusOutcome> applyVisitCheckInMapFocusRequest({
+  required WidgetRef ref,
+  required MapController mapController,
+  required VisitCheckInMapFocusRequest request,
+}) async {
+  ref.read(explicitMapCameraIntentProvider.notifier).state = true;
+  ref
+      .read(drawingClientProvider.notifier)
+      .setClienteAtivo(
+        request.clientId,
+        clientName: request.clientName,
+        farmId: request.farmId,
+        farmName: request.farmName,
+      );
+
+  if (request.farmId != null && request.farmId!.isNotEmpty) {
+    ref.read(selectedFarmIdProvider.notifier).state = request.farmId;
+  }
+  ref.read(selectedTalhaoIdProvider.notifier).state = request.talhaoId;
+
+  final farmId = request.farmId;
+  if (farmId == null || farmId.isEmpty) {
+    return VisitCheckInMapFocusOutcome.missingFarmOrField;
+  }
+
+  final fields = await ref.read(farmFieldsProvider(farmId).future);
+  final points = visitCheckInMapFocusSamplePoints(
+    farmFields: fields,
+    talhaoId: request.talhaoId,
+  );
+  if (points.isEmpty) {
+    return VisitCheckInMapFocusOutcome.noGeometry;
+  }
+
+  mapController.fitCamera(
+    CameraFit.bounds(
+      bounds: LatLngBounds.fromPoints(points),
+      padding: const EdgeInsets.all(56),
+    ),
+  );
+  ref.read(viewportStateProvider.notifier).state = InitialViewportState.applied;
+  return VisitCheckInMapFocusOutcome.success;
+}
