@@ -28,11 +28,7 @@ class PagamentoScreen extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.lock_outline_rounded,
-                  color: primary,
-                  size: 56,
-                ),
+                Icon(Icons.lock_outline_rounded, color: primary, size: 56),
                 const SizedBox(height: 24),
                 Text(
                   'Pagamento indisponível',
@@ -45,14 +41,14 @@ class PagamentoScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'Assinaturas pagas estão temporariamente indisponíveis neste app. '
                   'Planos ativos na conta continuam sendo sincronizados normalmente.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 14,
-                    color: Color(0xFF8E8E93),
+                    color: context.premiumTextSecondary,
                   ),
                 ),
                 const SizedBox(height: 32),
