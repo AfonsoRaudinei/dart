@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/design/sf_icons.dart';
@@ -26,6 +25,7 @@ import '../../screens/map/providers/occurrence_form_guard_provider.dart';
 import '../../../modules/dashboard/services/location_service.dart';
 import '../../../modules/dashboard/domain/location_settings.dart';
 import '../../screens/map/handlers/map_location_handler.dart';
+import '../../screens/map/handlers/visit_check_in_map_focus.dart';
 import 'map_sheet_state.dart'; // 🛡 REFATORAÇÃO: Modelo compartilhado
 import '../../../core/utils/app_logger.dart';
 import '../../../core/state/map_ui_providers.dart';
@@ -626,6 +626,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
     // Iniciar visita
     return VisitSheet(
+      onNavigateToArea: buildVisitCheckInNavigateHandler(ref, widget.onClose),
       onConfirm: (clientId, farmId, areaId, activity) async {
         final locationService = LocationService();
         final isAvailable = await locationService.checkAvailability();
@@ -672,7 +673,6 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
             backgroundColor: PremiumTokens.brandGreenDark,
           ),
         );
-        // 🔹 FECHAMENTO REAL: Iniciar visita fecha o sheet (ETAPA 5)
         widget.onClose();
       },
     );
