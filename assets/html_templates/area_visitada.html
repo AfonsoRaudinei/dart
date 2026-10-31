@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SoloForte — Relatório de área visitada</title>
+<style>
+{{sf_base_css}}
+</style>
+</head>
+<body>
+<div class="sf-doc">
+
+  <header class="sf-letterhead">
+    <div class="sf-letterhead-row">
+      <span class="sf-doc-type">Relatório de área visitada</span>
+    </div>
+    <h1 class="sf-title">Área visitada</h1>
+  </header>
+
+  <main>
+
+    <div class="sf-sheet">
+      <!-- {{#if cliente_nome}} -->
+      <div class="sf-row"><span class="sf-row-label">Produtor</span><span class="sf-row-value">{{cliente_nome}}</span></div>
+      <!-- {{/if}} -->
+      <!-- {{#if lat && long}} -->
+      <div class="sf-row localizacao-inline"><span class="sf-row-label">Localização</span><span class="sf-row-value">{{localizacao_mapa}}</span></div>
+      <!-- {{/if}} -->
+    </div>
+
+  </main>
+
+  <!-- {{#if consultant_nome}} -->
+  <div class="sf-signature">
+    <div class="sf-signature-line"></div>
+    <div class="sf-signature-name">{{consultant_nome}}</div>
+    <!-- {{#if consultant_role}} -->
+    <div class="sf-signature-role">{{consultant_role}}</div>
+    <!-- {{/if}} -->
+    <div class="sf-signature-date">Emitido em {{emitido_em}}</div>
+  </div>
+  <!-- {{/if}} -->
+
+  <!-- {{#if created_at}} -->
+  <p class="sf-meta-right sf-created-at">Criado em {{created_at_formatado}}</p>
+  <!-- {{/if}} -->
+
+  <footer class="sf-footer">
+    {{report_footer_signature}}
+  </footer>
+
+</div>
+</body>
+</html>

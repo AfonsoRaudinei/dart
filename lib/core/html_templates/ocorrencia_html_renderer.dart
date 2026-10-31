@@ -16,6 +16,16 @@ class OcorrenciaHtmlRenderer {
     String? consultantRole,
     bool asFragment = false,
   }) async {
+    if (_isAreaVisitada(data['category'] as String?)) {
+      return _renderAreaVisitada(
+        data,
+        reportBrandName: reportBrandName,
+        reportLogoPath: reportLogoPath,
+        consultantName: consultantName,
+        consultantRole: consultantRole,
+        asFragment: asFragment,
+      );
+    }
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'ocorrencia_detalhada.html',
     );
@@ -188,6 +198,57 @@ class OcorrenciaHtmlRenderer {
       'lat && long',
       data['lat'] != null && data['long'] != null,
     );
+
+    return RelatorioHtmlRenderer.completeRender(tpl, asFragment: asFragment);
+  }
+
+  static bool _isAreaVisitada(String? category) {
+    final value = category?.trim() ?? '';
+    return value == 'area_visitada' || value == 'areaVisitada';
+  }
+
+  /// Área visitada: só produtor + localização, assinatura e rodapé.
+  static Future<String> _renderAreaVisitada(
+    Map<String, dynamic> data, {
+    String? reportBrandName,
+    String? reportLogoPath,
+    String? consultantName,
+    String? consultantRole,
+    bool asFragment = false,
+  }) async {
+    var tpl = await RelatorioHtmlRenderer.loadTemplate('area_visitada.html');
+    final branding = await RelatorioHtmlRenderer.brandingPlaceholders(
+      customBrandName: reportBrandName,
+      customLogoPath: reportLogoPath,
+      consultantName: consultantName,
+      consultantRole: consultantRole,
+    );
+    final createdAt = _parseDateTime(data['created_at'] as String?);
+    final consultantNome = consultantName?.trim() ?? '';
+    final clienteNome = (data['cliente_nome'] as String?)?.trim() ?? '';
+    final localizacao = _localizacaoMapa(data);
+
+    tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
+      ...branding,
+      'cliente_nome': RelatorioHtmlRenderer.escapeHtml(clienteNome),
+      'localizacao_mapa': localizacao,
+      'consultant_nome': RelatorioHtmlRenderer.escapeHtml(consultantNome),
+      'consultant_role': RelatorioHtmlRenderer.escapeHtml(
+        consultantRole?.trim(),
+      ),
+      'emitido_em': RelatorioHtmlRenderer.formatDate(DateTime.now()),
+      'created_at_formatado': RelatorioHtmlRenderer.formatDateTime(createdAt),
+    });
+
+    tpl = _resolveRepeatedIf(tpl, 'cliente_nome', clienteNome.isNotEmpty);
+    tpl = _resolveRepeatedIf(tpl, 'lat && long', localizacao.isNotEmpty);
+    tpl = _resolveRepeatedIf(tpl, 'consultant_nome', consultantNome.isNotEmpty);
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'consultant_role',
+      consultantRole?.trim().isNotEmpty == true,
+    );
+    tpl = _resolveRepeatedIf(tpl, 'created_at', createdAt != null);
 
     return RelatorioHtmlRenderer.completeRender(tpl, asFragment: asFragment);
   }
