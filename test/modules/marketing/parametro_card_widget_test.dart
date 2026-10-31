@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/modules/marketing/domain/entities/parametro_comparativo.dart';
 import 'package:soloforte_app/modules/marketing/presentation/widgets/novo_case_antes_depois_section.dart';
 import 'package:soloforte_app/modules/marketing/presentation/widgets/parametro_card.dart';
+
+Widget _blueThemeApp(Widget child) {
+  return MaterialApp(
+    theme: ThemeData(
+      extensions: const [SoloForteThemeExtension(themeId: 'blue')],
+    ),
+    home: Scaffold(body: child),
+  );
+}
 
 void main() {
   testWidgets('ParametroCard propaga testemunha e teste do produto', (
@@ -95,5 +105,56 @@ void main() {
     expect(current.testemunha, 38);
     expect(current.teste, 47);
     expect(current.deltaPercent, closeTo(23.68, 0.01));
+  });
+
+  testWidgets('perfil azul: ParametroCard usa card iOS claro e texto titleColor', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _blueThemeApp(
+        ParametroCard(
+          parametro: const ParametroComparativo(
+            id: 'param-blue',
+            titulo: '',
+            testemunha: 0,
+            teste: 0,
+          ),
+          selected: false,
+          onChanged: (_) {},
+          onDelete: () {},
+          onTap: () {},
+        ),
+      ),
+    );
+
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w is DecoratedBox &&
+            w.decoration is BoxDecoration &&
+            (w.decoration as BoxDecoration).color ==
+                SoloForteSheetSkinIos.cardBackground,
+      ),
+      findsWidgets,
+    );
+
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w is DecoratedBox &&
+            w.decoration is BoxDecoration &&
+            (w.decoration as BoxDecoration).color ==
+                SoloForteSheetTokens.inputBackground,
+      ),
+      findsNothing,
+    );
+
+    final editable = tester.widget<EditableText>(
+      find.descendant(
+        of: find.byType(TextFormField).first,
+        matching: find.byType(EditableText),
+      ),
+    );
+    expect(editable.style.color, SoloForteSheetSkinIos.titleColor);
   });
 }
