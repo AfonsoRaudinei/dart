@@ -25,8 +25,8 @@
 
 | Item | Status | Responsável |
 |------|--------|-------------|
-| Teste em aparelho (MultiPolygon, furo, offline) | ⬜ Manual | Raudinei |
-| Schema grátis 2 meses / expiração servidor | ⬜ Bloqueado — aprovação escrita | Raudinei |
+| Teste em aparelho (MultiPolygon, furo, offline) | ⬜ Manual — `prompt/ROTEIRO_TESTE_APARELHO_PRD_ITEM9.md` (#342) | Raudinei |
+| Schema grátis 2 meses / expiração servidor | ⬜ Bloqueado — `prompt/PROMPT_SCHEMA_GRATIS_AGUARDA_APROVACAO.md` | Raudinei |
 | Play Billing / StoreKit | ⬜ Futuro | — |
 | Auditoria 27/10 (B1, B3, C2–C4, D2–D3, E2–E5, pacotes) | ⬜ Não iniciado neste ciclo | PRD §10 |
 | Proteção branch `main` GitHub | ⬜ Pendência #8 | Raudinei |
