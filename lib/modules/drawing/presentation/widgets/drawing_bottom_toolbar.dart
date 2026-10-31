@@ -30,6 +30,10 @@ class DrawingBottomToolbar extends StatefulWidget {
     this.onToggleMeasurementDetails,
     this.distanceUnit = DistanceDisplayUnit.kilometer,
     this.onDistanceUnit,
+    this.onStartHoleCut,
+    this.onRemoveHoleRing,
+    this.showRemoveHoleRing = false,
+    this.canRemoveHoleRing = false,
   });
 
   final VoidCallback onConfirm;
@@ -49,6 +53,17 @@ class DrawingBottomToolbar extends StatefulWidget {
   final VoidCallback? onToggleMeasurementDetails;
   final DistanceDisplayUnit distanceUnit;
   final ValueChanged<DistanceDisplayUnit>? onDistanceUnit;
+
+  /// Segunda linha compacta (edição): recortar talhão.
+  final VoidCallback? onStartHoleCut;
+
+  /// Segunda linha compacta (edição): excluir anel interno.
+  final VoidCallback? onRemoveHoleRing;
+  final bool showRemoveHoleRing;
+  final bool canRemoveHoleRing;
+
+  bool get _showsSecondaryActions =>
+      onStartHoleCut != null || showRemoveHoleRing;
 
   bool get _showsMeasurement =>
       (vertexDragPreview?.areaHa ?? measurementAreaHa) > 0 ||
@@ -175,6 +190,53 @@ class _DrawingBottomToolbarState extends State<DrawingBottomToolbar>
                     ],
                   ),
                 ),
+                if (widget._showsSecondaryActions) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Divider(
+                      height: 1,
+                      thickness: 0.5,
+                      color: Colors.white.withValues(alpha: 0.22),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                    child: Row(
+                      children: [
+                        if (widget.onStartHoleCut != null)
+                          Expanded(
+                            child: _ToolbarAction(
+                              icon: Icons.content_cut,
+                              label: 'Recortar',
+                              iconColor: Colors.white,
+                              labelColor: Colors.white70,
+                              iconSize: 20,
+                              semanticsLabel: 'Recortar área interna do talhão',
+                              onTap: widget.onStartHoleCut,
+                            ),
+                          ),
+                        if (widget.onStartHoleCut != null &&
+                            widget.showRemoveHoleRing)
+                          const _ToolbarDivider(),
+                        if (widget.showRemoveHoleRing)
+                          Expanded(
+                            child: _ToolbarAction(
+                              icon: Icons.remove_circle_outline,
+                              label: 'Excluir recorte',
+                              iconColor: const Color(0xFFFF3B30),
+                              labelColor: Colors.white70,
+                              iconSize: 20,
+                              semanticsLabel: 'Excluir recorte interno',
+                              enabled: widget.canRemoveHoleRing,
+                              onTap: widget.canRemoveHoleRing
+                                  ? widget.onRemoveHoleRing
+                                  : null,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
                 if (widget._showsMeasurement) ...[
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
