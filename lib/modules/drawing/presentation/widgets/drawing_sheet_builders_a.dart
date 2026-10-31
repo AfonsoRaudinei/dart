@@ -356,24 +356,32 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
   // 🆕 REFATORADO: Métodos de construção de modo
 
   Widget _buildImportingMode(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.sectionLabel;
+    final hintColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             'Importar Arquivo',
             style: TextStyle(
-              color: SoloForteSheetTokens.sectionLabel,
+              color: titleColor,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Selecione o arquivo KML ou KMZ para importar:',
-            style: TextStyle(color: SoloForteSheetTokens.inputHint),
+            style: TextStyle(color: hintColor),
           ),
           const SizedBox(height: 24),
           _FormatButton(
@@ -383,13 +391,33 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
             onTap: () => widget.controller.pickImportFile(),
           ),
           const SizedBox(height: 16),
-          TextButton(
+          OutlinedButton(
             onPressed: () =>
                 _requestClose(DrawingCloseIntent.cancelFlowAndClose),
-            child: const Text(
+            style: isIos
+                ? OutlinedButton.styleFrom(
+                    foregroundColor: SoloForteSheetSkinIos.ghostText,
+                    side: const BorderSide(
+                      color: SoloForteSheetSkinIos.ghostBorder,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        SoloForteSheetSkinIos.ghostRadius,
+                      ),
+                    ),
+                  )
+                : OutlinedButton.styleFrom(
+                    foregroundColor: PremiumTokens.brandGreen,
+                    side: BorderSide(
+                      color: PremiumTokens.brandGreen.withValues(alpha: 0.4),
+                    ),
+                  ),
+            child: Text(
               'Cancelar',
               style: TextStyle(
-                color: PremiumTokens.brandGreen,
+                color: isIos
+                    ? SoloForteSheetSkinIos.ghostText
+                    : PremiumTokens.brandGreen,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -432,6 +460,14 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
     String instructions,
     VoidCallback onConfirm,
   ) {
+    final isIos = soloForteSheetIsIos(context);
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.sectionLabel;
+    final hintColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -440,8 +476,8 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: SoloForteSheetTokens.sectionLabel,
+            style: TextStyle(
+              color: titleColor,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
@@ -452,7 +488,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
             child: Text(
               instructions,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: SoloForteSheetTokens.inputHint),
+              style: TextStyle(color: hintColor),
             ),
           ),
           if (widget.controller.errorMessage != null)
@@ -465,13 +501,35 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
           Row(
             children: [
               Expanded(
-                child: TextButton(
+                child: OutlinedButton(
                   onPressed: () =>
                       _requestClose(DrawingCloseIntent.cancelFlowAndClose),
-                  child: const Text(
+                  style: isIos
+                      ? OutlinedButton.styleFrom(
+                          foregroundColor: SoloForteSheetSkinIos.ghostText,
+                          side: const BorderSide(
+                            color: SoloForteSheetSkinIos.ghostBorder,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              SoloForteSheetSkinIos.ghostRadius,
+                            ),
+                          ),
+                        )
+                      : OutlinedButton.styleFrom(
+                          foregroundColor: PremiumTokens.brandGreen,
+                          side: BorderSide(
+                            color: PremiumTokens.brandGreen.withValues(
+                              alpha: 0.4,
+                            ),
+                          ),
+                        ),
+                  child: Text(
                     'Cancelar',
                     style: TextStyle(
-                      color: PremiumTokens.brandGreen,
+                      color: isIos
+                          ? SoloForteSheetSkinIos.ghostText
+                          : PremiumTokens.brandGreen,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -485,8 +543,18 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
                     onConfirm();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: PremiumTokens.brandGreen,
-                  ), // ✅ iOS Premium
+                    backgroundColor: isIos
+                        ? SoloForteSheetSkinIos.ctaBackground
+                        : PremiumTokens.brandGreen,
+                    foregroundColor: Colors.white,
+                    shape: isIos
+                        ? RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              SoloForteSheetSkinIos.ctaRadius,
+                            ),
+                          )
+                        : null,
+                  ),
                   child: const Text(
                     'Confirmar',
                     style: TextStyle(
