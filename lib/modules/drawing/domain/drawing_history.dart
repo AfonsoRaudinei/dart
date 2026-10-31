@@ -1,25 +1,19 @@
 import 'package:latlong2/latlong.dart';
 
+import 'models/drawing_models.dart';
+
 /// Histórico de estados do desenho com suporte a Undo e Redo.
 ///
 /// Mantém um buffer circular de snapshots de geometria, representado como
 /// lista de vértices ([List<LatLng>]). O cursor aponta para o estado "atual".
 ///
+/// Quando [push] recebe [fullPolygonSnapshot], o undo restaura todos os anéis
+/// (furos inclusos), não só o contorno externo.
+///
 /// ### Invariantes
 /// - `_cursor` sempre aponta para um índice válido quando `isNotEmpty`
 /// - Push de novo estado descarta qualquer estado "futuro" (à frente do cursor)
 /// - Capacidade máxima definida por [maxStates] (evita uso de memória crescente)
-///
-/// ### Uso
-/// ```dart
-/// final history = DrawingHistory();
-/// history.push(initialVertices);
-///
-/// history.push(newVertices);  // adiciona estado
-/// history.undo();              // volta ao estado anterior
-/// history.redo();              // avança para próximo estado
-/// final current = history.current; // lê estado atual
-/// ```
 class DrawingHistory {
   DrawingHistory({this.maxStates = 50});
 
@@ -27,6 +21,7 @@ class DrawingHistory {
   final int maxStates;
 
   final List<List<LatLng>> _states = [];
+  final List<DrawingPolygon?> _fullPolygonSnapshots = [];
   int _cursor = -1;
 
   // ─── Consultas ────────────────────────────────────────────────────────────
@@ -48,6 +43,16 @@ class DrawingHistory {
   List<LatLng>? get current =>
       isNotEmpty ? List.unmodifiable(_states[_cursor]) : null;
 
+  /// Polígono completo no cursor, quando registrado via [fullPolygonSnapshot].
+  DrawingPolygon? get currentFullPolygon {
+    if (!isNotEmpty || _cursor < 0 || _cursor >= _fullPolygonSnapshots.length) {
+      return null;
+    }
+    final snap = _fullPolygonSnapshots[_cursor];
+    if (snap == null) return null;
+    return _clonePolygon(snap);
+  }
+
   /// Número de estados registrados.
   int get length => _states.length;
 
@@ -55,24 +60,37 @@ class DrawingHistory {
 
   /// Registra um novo estado descartando todos os estados "futuros" (redo branch).
   ///
-  /// Se o novo estado for idêntico ao estado atual, é ignorado (idempotente).
-  void push(List<LatLng> vertices) {
-    // Idempotência — não registrar duplicatas consecutivas
-    if (isNotEmpty && _verticesEqual(_states[_cursor], vertices)) return;
+  /// Se o novo estado for idêntico ao estado atual (só vértices externos), é
+  /// ignorado — exceto quando [fullPolygonSnapshot] distingue furos/anéis.
+  void push(
+    List<LatLng> vertices, {
+    DrawingPolygon? fullPolygonSnapshot,
+  }) {
+    final skipDuplicate =
+        fullPolygonSnapshot == null &&
+        isNotEmpty &&
+        _verticesEqual(_states[_cursor], vertices);
+    if (skipDuplicate) return;
 
-    // Descartar estados futuros (redo branch)
     if (_cursor < _states.length - 1) {
       _states.removeRange(_cursor + 1, _states.length);
+      _fullPolygonSnapshots.removeRange(_cursor + 1, _fullPolygonSnapshots.length);
     }
 
-    // Respeitar capacidade máxima (descarta o mais antigo)
     if (_states.length >= maxStates) {
       _states.removeAt(0);
-      // cursor já aponta para o mesmo estado relativo (deslocado -1)
+      if (_fullPolygonSnapshots.isNotEmpty) {
+        _fullPolygonSnapshots.removeAt(0);
+      }
       if (_cursor > 0) _cursor--;
     }
 
     _states.add(List<LatLng>.from(vertices));
+    _fullPolygonSnapshots.add(
+      fullPolygonSnapshot != null
+          ? _clonePolygon(fullPolygonSnapshot)
+          : null,
+    );
     _cursor = _states.length - 1;
   }
 
@@ -95,10 +113,19 @@ class DrawingHistory {
   /// Limpa todo o histórico e reinicia o cursor.
   void clear() {
     _states.clear();
+    _fullPolygonSnapshots.clear();
     _cursor = -1;
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
+
+  static DrawingPolygon _clonePolygon(DrawingPolygon poly) {
+    return DrawingPolygon(
+      coordinates: poly.coordinates
+          .map((ring) => ring.map((p) => [p[0], p[1]]).toList())
+          .toList(),
+    );
+  }
 
   bool _verticesEqual(List<LatLng> a, List<LatLng> b) {
     if (a.length != b.length) return false;
