@@ -155,4 +155,46 @@ void main() {
     final geometry = controller.selectedFeature!.geometry as DrawingPolygon;
     expect(geometry.coordinates, hasLength(1));
   });
+
+  test('Recortar durante edição aplica vértices pendentes e abre hole cut',
+      () async {
+    controller.selectFeature(controller.features.first);
+    controller.startEditMode();
+    expect(controller.currentState, DrawingState.editing);
+
+    controller.startHoleCutFromEdit();
+
+    expect(controller.currentState, DrawingState.armed);
+    expect(controller.isCuttingHole, isTrue);
+    expect(controller.selectedFeature, isNotNull);
+  });
+
+  test('excluir recorte interno na edição restaura área externa', () async {
+    controller.selectFeature(controller.features.first);
+    controller.startHoleCut();
+    controller.appendDrawingPoint(const LatLng(-15.777, -47.927));
+    controller.appendDrawingPoint(const LatLng(-15.777, -47.923));
+    controller.appendDrawingPoint(const LatLng(-15.773, -47.925));
+    controller.completeDrawing();
+
+    final outerArea = DrawingUtils.calculateGeometryArea(
+      DrawingPolygon(coordinates: [_outer]),
+    );
+    final withHoleArea = DrawingUtils.calculateGeometryArea(
+      controller.selectedFeature!.geometry,
+    );
+    expect(withHoleArea, lessThan(outerArea));
+
+    controller.startEditMode();
+    expect(controller.editHoleRingCount, 1);
+    expect(controller.canRemoveHoleRing, isTrue);
+
+    controller.removeSelectedHoleRing();
+
+    expect(controller.editHoleRingCount, 0);
+    expect(
+      DrawingUtils.calculateGeometryArea(controller.liveGeometry!),
+      closeTo(outerArea, 1e-4),
+    );
+  });
 }
