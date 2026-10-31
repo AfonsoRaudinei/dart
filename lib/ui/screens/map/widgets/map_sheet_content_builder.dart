@@ -7,6 +7,7 @@ import '../../../../modules/visitas/presentation/controllers/visit_controller.da
 import '../../../../ui/components/map/map_sheet_state.dart';
 import '../../../../ui/components/map/map_layers_sheet.dart';
 import 'active_visit_sheet.dart';
+import '../handlers/visit_check_in_map_focus.dart';
 
 /// Constrói o widget de conteúdo correto para cada [MapSheetType].
 ///
@@ -63,6 +64,10 @@ Widget buildSheetContent(
             // Bug 1: scrollController conecta DraggableScrollableSheet ao
             // SingleChildScrollView interno para expansão correta via drag.
             scrollController: scrollController,
+            onNavigateToArea: buildVisitCheckInNavigateHandler(
+              widgetRef,
+              () => Navigator.of(context).pop(),
+            ),
             onConfirm: (clientId, farmId, areaId, activity) async {
               final locationService = LocationService();
               final isAvailable = await locationService.checkAvailability();
