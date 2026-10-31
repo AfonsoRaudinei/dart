@@ -87,17 +87,6 @@ class _PlanoAtivoContent extends ConsumerWidget {
     }
   }
 
-  String get _emoji {
-    switch (plano.plano) {
-      case PlanoTipo.bronze:
-        return '🥉';
-      case PlanoTipo.prata:
-        return '🥈';
-      case PlanoTipo.ouro:
-        return '🥇';
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dias = plano.diasRestantes;
@@ -113,13 +102,26 @@ class _PlanoAtivoContent extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: const Color(0xFF1C1C1E),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: _accentColor.withAlpha(80)),
+            color: context.premiumSurface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: context.premiumHairline),
           ),
           child: Column(
             children: [
-              Text(_emoji, style: const TextStyle(fontSize: 48)),
+              Container(
+                width: 64,
+                height: 64,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: primary.withValues(alpha: 0.12),
+                ),
+                child: Icon(
+                  Icons.workspace_premium_rounded,
+                  color: primary,
+                  size: 32,
+                ),
+              ),
               const SizedBox(height: 12),
               Text(
                 'Plano ${plano.plano.label}',
@@ -134,10 +136,10 @@ class _PlanoAtivoContent extends ConsumerWidget {
               const SizedBox(height: 8),
               Text(
                 'via ${plano.origem.label}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 14,
-                  color: Color(0xFF8E8E93),
+                  color: context.premiumTextSecondary,
                 ),
               ),
             ],
@@ -148,11 +150,13 @@ class _PlanoAtivoContent extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFF1C1C1E),
+            color: context.premiumSurface,
             borderRadius: BorderRadius.circular(16),
-            border: expiraEmBreve
-                ? Border.all(color: Colors.red.withAlpha(120))
-                : null,
+            border: Border.all(
+              color: expiraEmBreve
+                  ? Colors.red.withAlpha(120)
+                  : context.premiumHairline,
+            ),
           ),
           child: Row(
             children: [
@@ -177,16 +181,18 @@ class _PlanoAtivoContent extends ConsumerWidget {
                       fontFamily: 'Inter',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: expiraEmBreve ? Colors.red : context.premiumTextPrimary,
+                      color: expiraEmBreve
+                          ? Colors.red
+                          : context.premiumTextPrimary,
                     ),
                   ),
                   if (!plano.isIndefinite)
                     Text(
                       'Expira em ${_formatDate(plano.expiraEm)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 13,
-                        color: Color(0xFF8E8E93),
+                        color: context.premiumTextSecondary,
                       ),
                     ),
                 ],
@@ -284,8 +290,9 @@ class _InfoRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
+        color: context.premiumSurface,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.premiumHairline),
       ),
       child: Row(
         children: [
@@ -293,10 +300,10 @@ class _InfoRow extends StatelessWidget {
           const SizedBox(width: 12),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 15,
-              color: Color(0xFFE5E5EA),
+              color: context.premiumTextPrimary,
             ),
           ),
           const Spacer(),
@@ -332,8 +339,12 @@ class _NavigationRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
     return Material(
-      color: const Color(0xFF1C1C1E),
-      borderRadius: BorderRadius.circular(16),
+      color: context.premiumSurface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: context.premiumHairline),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
@@ -349,10 +360,10 @@ class _NavigationRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,
-                    color: Color(0xFFE5E5EA),
+                    color: context.premiumTextPrimary,
                   ),
                 ),
               ),
@@ -366,9 +377,9 @@ class _NavigationRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
-                color: Color(0xFF8E8E93),
+                color: context.premiumTextSecondary,
                 size: 22,
               ),
             ],
