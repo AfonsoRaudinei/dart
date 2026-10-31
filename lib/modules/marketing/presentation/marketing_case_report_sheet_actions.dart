@@ -69,6 +69,16 @@ HtmlReportViewerActions marketingCaseReportViewerActions(
     }
   }
 
+  void schedulePopParentSheetAfterViewer() {
+    if (!closeParentSheetOnAction || parentSheetContext == null) return;
+    final capturedContext = parentSheetContext;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (capturedContext.mounted) {
+        Navigator.of(capturedContext).pop();
+      }
+    });
+  }
+
   return HtmlReportViewerActions(
     onEdit: (viewerContext) async {
       Navigator.of(viewerContext).pop();
@@ -111,6 +121,7 @@ HtmlReportViewerActions marketingCaseReportViewerActions(
               ScaffoldMessenger.of(viewerContext).showSnackBar(
                 const SnackBar(content: Text('Case publicado com sucesso!')),
               );
+              schedulePopParentSheetAfterViewer();
             }
             return published;
           }
@@ -119,7 +130,7 @@ HtmlReportViewerActions marketingCaseReportViewerActions(
     publishDialogMessage: 'O case será publicado no mapa conforme seu plano.',
     onDelete: (viewerContext) async {
       await lookup.deleteCase(marketingCase.id);
-      popParentSheet();
+      schedulePopParentSheetAfterViewer();
       return true;
     },
     deleteDialogTitle: 'Excluir publicação?',
