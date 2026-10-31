@@ -1673,7 +1673,14 @@ class DrawingController extends ChangeNotifier {
     _editGeometry = _vertexService.normalizeForVertexEdit(cloned);
     _editGeometrySnapshotJson = _serializeGeometry(_editGeometry!);
     _history.clear();
-    _history.push(_geomToVertices(_editGeometry!));
+    if (_editGeometry is DrawingPolygon) {
+      _history.push(
+        _geomToVertices(_editGeometry!),
+        fullPolygonSnapshot: _editGeometry! as DrawingPolygon,
+      );
+    } else {
+      _history.push(_geomToVertices(_editGeometry!));
+    }
 
     // 🔧 FASE1-FIX-01: Garantir que os dois vetores só avançam juntos.
     // Se a SM rejeitar a transição, não setar interactionMode.
@@ -1756,7 +1763,7 @@ class DrawingController extends ChangeNotifier {
   void undoEdit() {
     final prev = _history.undo();
     if (prev != null) {
-      _editGeometry = _verticesToGeom(prev, _editGeometry);
+      _restoreEditGeometryFromHistory(prev);
       notifyListeners();
     }
   }
@@ -1765,9 +1772,20 @@ class DrawingController extends ChangeNotifier {
   void redoEdit() {
     final next = _history.redo();
     if (next != null) {
-      _editGeometry = _verticesToGeom(next, _editGeometry);
+      _restoreEditGeometryFromHistory(next);
       notifyListeners();
     }
+  }
+
+  void _restoreEditGeometryFromHistory(List<LatLng> vertices) {
+    final full = _history.currentFullPolygon;
+    if (full != null) {
+      _editGeometry = _vertexService.cloneGeometry(full);
+    } else {
+      _editGeometry = _verticesToGeom(vertices, _editGeometry);
+    }
+    _updateRealTimeIntersection();
+    validateGeometry(_editGeometry);
   }
 
   /// Desfaz o último vértice adicionado no modo de desenho livre.
@@ -1920,32 +1938,7 @@ class DrawingController extends ChangeNotifier {
       startHoleCut();
       return;
     }
-
-    if (_selectedFeature != null && _editGeometry != null) {
-      var geometryToApply = _editGeometry!;
-      final original = _selectedFeature!.geometry;
-      if (_vertexService.isSingleShellMultiPolygon(original) &&
-          geometryToApply is DrawingPolygon) {
-        geometryToApply = _vertexService.wrapAsSingleShellMultiPolygon(
-          geometryToApply,
-        );
-      }
-      updateFeature(
-        _selectedFeature!.id,
-        newGeometry: geometryToApply,
-        editorId: 'sistema',
-        editorType: AuthorType.sistema,
-      );
-    }
-
-    _editGeometry = null;
-    _editGeometrySnapshotJson = null;
-    _history.clear();
-    _selectedEditRingIndex = null;
-    _selectedEditPointIndex = null;
-    _interactionMode = DrawingInteraction.normal;
-    _stateMachine.tryTransitionTo(DrawingState.selected);
-
+    if (!saveEdit()) return;
     startHoleCut();
   }
 
@@ -1962,7 +1955,9 @@ class DrawingController extends ChangeNotifier {
     if (geometry is! DrawingPolygon) return false;
     if (geometry.coordinates.length <= 1) return false;
     final selectedRing = _selectedEditRingIndex;
-    if (selectedRing != null && selectedRing > 0) return true;
+    if (selectedRing != null && selectedRing > 0) {
+      return selectedRing < geometry.coordinates.length;
+    }
     return geometry.coordinates.length == 2;
   }
 
