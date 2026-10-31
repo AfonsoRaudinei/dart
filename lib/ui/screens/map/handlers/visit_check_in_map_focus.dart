@@ -119,6 +119,26 @@ List<LatLng> visitCheckInMapFocusSamplePoints({
       .toList(growable: false);
 }
 
+List<LatLng> _linkedFieldBounds(FarmLinkedFieldSummary field) {
+  if (field.boundsVertices.isNotEmpty) return field.boundsVertices;
+  return field.vertices;
+}
+
+/// Cadastro da fazenda e polígonos desenhados no mapa (`drawings`).
+///
+/// O talhão escolhido sem contorno cai para o enquadramento da fazenda inteira.
+List<LatLng> visitCheckInMapFocusPointsFromLinked({
+  required List<FarmLinkedFieldSummary> fields,
+  required String? talhaoId,
+}) {
+  if (talhaoId != null && talhaoId.isNotEmpty) {
+    final field = fields.where((item) => item.id == talhaoId).firstOrNull;
+    final selected = field == null ? const <LatLng>[] : _linkedFieldBounds(field);
+    if (selected.isNotEmpty) return selected;
+  }
+  return fields.expand(_linkedFieldBounds).toList(growable: false);
+}
+
 String visitCheckInNoGeometryMessage(VisitCheckInMapFocusRequest request) {
   if (request.talhaoName != null && request.talhaoName!.isNotEmpty) {
     return '${request.talhaoName} sem geometria no mapa.';
@@ -154,9 +174,9 @@ Future<VisitCheckInMapFocusOutcome> applyVisitCheckInMapFocusRequest({
     return VisitCheckInMapFocusOutcome.missingFarmOrField;
   }
 
-  final fields = await ref.read(farmFieldsProvider(farmId).future);
-  final points = visitCheckInMapFocusSamplePoints(
-    farmFields: fields,
+  final fields = await ref.read(farmLinkedFieldsProvider(farmId).future);
+  final points = visitCheckInMapFocusPointsFromLinked(
+    fields: fields,
     talhaoId: request.talhaoId,
   );
   if (points.isEmpty) {

@@ -166,16 +166,28 @@ final clientDrawingFieldsProvider = FutureProvider.family
       }).toList();
     });
 
+bool farmLinkedFieldHasBounds(FarmLinkedFieldSummary field) {
+  return field.boundsVertices.isNotEmpty || field.vertices.isNotEmpty;
+}
+
 List<FarmLinkedFieldSummary> mergeFarmLinkedFieldSummaries({
   required List<FarmLinkedFieldSummary> fieldSummaries,
   required List<FarmLinkedFieldSummary> drawingSummaries,
 }) {
-  final seenIds = <String>{};
   final merged = <FarmLinkedFieldSummary>[];
 
   for (final summary in [...fieldSummaries, ...drawingSummaries]) {
-    if (summary.id.isEmpty || !seenIds.add(summary.id)) continue;
-    merged.add(summary);
+    if (summary.id.isEmpty) continue;
+    final existingIndex = merged.indexWhere((item) => item.id == summary.id);
+    if (existingIndex < 0) {
+      merged.add(summary);
+      continue;
+    }
+    final existing = merged[existingIndex];
+    if (!farmLinkedFieldHasBounds(existing) &&
+        farmLinkedFieldHasBounds(summary)) {
+      merged[existingIndex] = summary;
+    }
   }
 
   return merged;
