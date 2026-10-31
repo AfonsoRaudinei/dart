@@ -119,7 +119,7 @@ void main() {
       expect(find.text('Editar'), findsOneWidget);
       expect(find.text('Excluir'), findsOneWidget);
       expect(find.text('Ferrugem no talhão 3'), findsOneWidget);
-      expect(find.text('Status'), findsOneWidget);
+      expect(find.text('Status'), findsNothing);
     });
 
     testWidgets('sem backRoute não exibe seta contextual', (tester) async {
