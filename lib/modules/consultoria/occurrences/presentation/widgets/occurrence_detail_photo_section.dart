@@ -28,9 +28,9 @@ class OccurrenceDetailPhotoSection extends StatelessWidget {
     if (photoPaths.isEmpty) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(cardRadius),
@@ -54,11 +54,11 @@ class OccurrenceDetailPhotoSection extends StatelessWidget {
                         : context.premiumTextSecondary),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             OccurrencePhotoGallery(
               paths: photoPaths,
               captions: parseFotosCaptions(occurrence.fotosCategoriasJson),
-              thumbnailSize: 72,
+              thumbnailSize: 64,
               readOnly: true,
             ),
           ],

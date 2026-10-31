@@ -31,6 +31,7 @@ import '../../quick_photo/domain/quick_photo_record.dart';
 import '../../quick_photo/presentation/providers/quick_photo_list_provider.dart';
 import '../../quick_photo/presentation/quick_photo_flow.dart';
 import '../infra/consultoria_report_export_data.dart';
+import '../infra/occurrence_report_html_builder.dart';
 import '../infra/relatorio_visit_html_builder.dart';
 import '../models/relatorio_combinado.dart';
 import '../models/relatorio_status.dart';
@@ -48,7 +49,6 @@ import '../../occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../occurrences/presentation/widgets/occurrence_creation_sheet.dart';
 import '../../occurrences/presentation/widgets/occurrence_photo_gallery.dart';
 import '../../occurrences/domain/occurrence_photo_paths.dart';
-import '../../relatorio_visita/data/image_storage_service.dart';
 // hide SyncStatus para evitar conflito com o enum de relatorio.dart
 import '../../occurrences/domain/occurrence.dart' hide SyncStatus;
 import '../../../../core/contracts/marketing_case_reports_list_provider.dart';
@@ -65,11 +65,6 @@ part 'relatorios_combined_composer.dart';
 part 'relatorios_shared_widgets.dart';
 part 'relatorios_visit_photos_section.dart';
 part 'relatorios_report_visuals.dart';
-
-/// Testes injetam corpo fake via override; produção permanece `null` (WebView).
-final htmlReportViewerBodyBuilderProvider = Provider<WidgetBuilder?>(
-  (ref) => null,
-);
 
 String? _relatoriosRouteClienteId(BuildContext context) {
   return GoRouter.maybeOf(context)
