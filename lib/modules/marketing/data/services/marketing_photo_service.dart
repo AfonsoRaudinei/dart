@@ -79,7 +79,17 @@ class MarketingPhotoService {
       return null;
     }
 
-    return _upload(file, folder: folder);
+    final url = await _upload(file, folder: folder);
+    if (url == null && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível enviar a foto. Tente novamente.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+    return url;
   }
 
   /// Faz upload do arquivo para o Supabase Storage.
@@ -135,6 +145,7 @@ class MarketingPhotoService {
   Future<ImageSource?> _showSourceDialog(BuildContext context) async {
     return showSoloForteSheet<ImageSource>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: null, // chrome iOS Azul automático
       showDragHandle: false,
       builder: (sheetContext) {
