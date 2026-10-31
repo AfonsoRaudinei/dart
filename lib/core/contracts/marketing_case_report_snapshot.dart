@@ -14,6 +14,9 @@ class MarketingCaseReportSnapshot {
   /// Cliente consultoria vinculado ao case (filtro Relatórios por produtor).
   final String? clientId;
 
+  /// Publicado no relatório, pin oculto no mapa privado (plano expirado/inativo).
+  final bool pinOcultoNoMapa;
+
   /// Opcionais — o snapshot antigo continua válido sem eles.
   final String? produtoUtilizado;
   final String? localizacaoTexto;
@@ -30,6 +33,7 @@ class MarketingCaseReportSnapshot {
     required this.lng,
     this.nomeVendedor,
     this.clientId,
+    this.pinOcultoNoMapa = false,
     this.produtoUtilizado,
     this.localizacaoTexto,
     this.nomeTalhao,
