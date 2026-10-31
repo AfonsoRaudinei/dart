@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -14,6 +15,11 @@ import 'report_photo_links.dart';
 import 'report_photo_viewer.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
+
+/// Testes injetam corpo fake via override; produção permanece `null` (WebView).
+final htmlReportViewerBodyBuilderProvider = Provider<WidgetBuilder?>(
+  (ref) => null,
+);
 
 /// Ações opcionais na AppBar do viewer (Relatórios — opt-in).
 ///

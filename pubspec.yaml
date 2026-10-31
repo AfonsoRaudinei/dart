@@ -126,6 +126,7 @@ flutter:
     - assets/html_templates/marketing_antes_depois.html
     - assets/html_templates/marketing_avaliacao.html
     - assets/html_templates/ocorrencia_detalhada.html
+    - assets/html_templates/area_visitada.html
     - assets/html_templates/ocorrencias_lista.html
     - assets/html_templates/resumo_propriedade.html
     - assets/html_templates/historico_visitas.html
