@@ -3,11 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:soloforte_app/core/html_templates/html_report_viewer.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
+import 'package:soloforte_app/modules/consultoria/occurrences/data/occurrence_repository.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/domain/occurrence.dart';
+import 'package:soloforte_app/modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
+import 'package:soloforte_app/modules/consultoria/occurrences/presentation/occurrence_detail_report_actions.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/widgets/occurrence_detail_sheet.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUpAll(() => initializeDateFormatting('pt_BR'));
 
   testWidgets(
@@ -141,4 +147,190 @@ void main() {
     expect(find.text('Exportar localização'), findsNothing);
     expect(find.textContaining('Urgência'), findsOneWidget);
   });
+
+  group('HtmlReportViewer ações com sheet pai', () {
+    Future<void> pumpHarness(
+      WidgetTester tester,
+      FakeOccurrenceRepository repository,
+      Occurrence occurrence,
+      _PopRecorder popRecorder,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            occurrenceRepositoryProvider.overrideWithValue(repository),
+            htmlReportViewerBodyBuilderProvider.overrideWithValue(
+              (_) => const SizedBox(key: Key('fake-html-body')),
+            ),
+          ],
+          child: MaterialApp(
+            navigatorObservers: [popRecorder],
+            home: _OccurrenceReportViewerHarness(occurrence: occurrence),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('open-parent-sheet'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('open-viewer'));
+      await tester.pumpAndSettle();
+      expect(find.byType(HtmlReportViewer), findsOneWidget);
+    }
+
+    testWidgets('confirmar não faz pop síncrono do pai com viewer aberto', (
+      tester,
+    ) async {
+      final popRecorder = _PopRecorder();
+      final occurrence = Occurrence(
+        id: 'occ-confirm-stack',
+        type: 'Média',
+        description: 'Confirmar stack',
+        status: 'draft',
+        createdAt: DateTime.utc(2026, 10, 2),
+      );
+      final repository = FakeOccurrenceRepository()..seed([occurrence]);
+
+      await pumpHarness(tester, repository, occurrence, popRecorder);
+
+      final viewerContext = tester.element(find.byType(HtmlReportViewer));
+      final actions = tester
+          .widget<HtmlReportViewer>(find.byType(HtmlReportViewer))
+          .actions!;
+      final done = await actions.onConfirm!(viewerContext);
+      expect(done, isTrue);
+      expect(repository.get('occ-confirm-stack')?.status, 'confirmed');
+      expect(popRecorder.popCount, 0);
+      expect(find.byType(HtmlReportViewer), findsOneWidget);
+    });
+
+    testWidgets('excluir não faz pop síncrono do pai com viewer aberto', (
+      tester,
+    ) async {
+      final popRecorder = _PopRecorder();
+      final occurrence = Occurrence(
+        id: 'occ-delete-stack',
+        type: 'Média',
+        description: 'Excluir stack',
+        status: 'draft',
+        createdAt: DateTime.utc(2026, 10, 2),
+      );
+      final repository = FakeOccurrenceRepository()..seed([occurrence]);
+
+      await pumpHarness(tester, repository, occurrence, popRecorder);
+
+      final viewerContext = tester.element(find.byType(HtmlReportViewer));
+      final actions = tester
+          .widget<HtmlReportViewer>(find.byType(HtmlReportViewer))
+          .actions!;
+      final done = await actions.onDelete!(viewerContext);
+      expect(done, isTrue);
+      expect(repository.get('occ-delete-stack')?.syncStatus, 'deleted');
+      expect(popRecorder.popCount, 0);
+      expect(find.byType(HtmlReportViewer), findsOneWidget);
+    });
+  });
+}
+
+class _PopRecorder extends NavigatorObserver {
+  int popCount = 0;
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    popCount++;
+    super.didPop(route, previousRoute);
+  }
+}
+
+class _OccurrenceReportViewerHarness extends ConsumerWidget {
+  const _OccurrenceReportViewerHarness({required this.occurrence});
+
+  final Occurrence occurrence;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      body: Center(
+        child: TextButton(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (sheetContext) {
+                  return Scaffold(
+                    body: Column(
+                      children: [
+                        const Text('parent-occurrence-sheet'),
+                        TextButton(
+                          onPressed: () async {
+                            final container = ProviderScope.containerOf(
+                              sheetContext,
+                              listen: false,
+                            );
+                            await Navigator.of(sheetContext).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => HtmlReportViewer(
+                                  title: 'Test',
+                                  htmlContent: '<html></html>',
+                                  bodyBuilder: (_) =>
+                                      const SizedBox(key: Key('fake-body')),
+                                  actions: occurrenceReportHtmlViewerActions(
+                                    container,
+                                    occurrence,
+                                    closeParentSheetOnAction: true,
+                                    parentSheetContext: sheetContext,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Text('open-viewer'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+          child: const Text('open-parent-sheet'),
+        ),
+      ),
+    );
+  }
+}
+
+class FakeOccurrenceRepository extends OccurrenceRepository {
+  final Map<String, Occurrence> _store = {};
+
+  void seed(List<Occurrence> occurrences) {
+    for (final occurrence in occurrences) {
+      _store[occurrence.id] = occurrence;
+    }
+  }
+
+  Occurrence? get(String id) => _store[id];
+
+  @override
+  Future<List<Occurrence>> getAllOccurrences() async {
+    return _store.values
+        .where((occurrence) => occurrence.syncStatus != 'deleted')
+        .toList();
+  }
+
+  @override
+  Future<void> updateOccurrence(Occurrence occurrence) async {
+    _store[occurrence.id] = occurrence.copyWith(
+      updatedAt: DateTime.now().toUtc(),
+      syncStatus: 'updated',
+    );
+  }
+
+  @override
+  Future<void> softDeleteOccurrence(String id) async {
+    final occurrence = _store[id];
+    if (occurrence == null) return;
+    _store[id] = occurrence.copyWith(
+      updatedAt: DateTime.now().toUtc(),
+      syncStatus: 'deleted',
+    );
+  }
 }
