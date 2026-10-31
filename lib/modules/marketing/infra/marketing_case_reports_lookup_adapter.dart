@@ -34,6 +34,10 @@ final marketingCaseReportsListImplProvider =
         return casesAsync.when(
           data: (cases) {
             final authorized = authorizedAsync.valueOrNull ?? const <String>{};
+            final hideMapPins = ref.watch(planoAtivoProvider).maybeWhen(
+                  data: (plano) => plano.ocultaPinsMarketingNoMapa,
+                  orElse: () => false,
+                );
             final visible = cases.where((item) {
               if (item.deletadoEm != null) return false;
               if (!item.ativo) return false;
@@ -48,7 +52,7 @@ final marketingCaseReportsListImplProvider =
                 currentUserId: currentUserId,
                 authorizedClientIds: authorized,
               );
-            }).map(_toSnapshot).toList();
+            }).map((item) => _toSnapshot(item, hideMapPins: hideMapPins)).toList();
             return AsyncData(visible);
           },
           loading: () => const AsyncLoading(),
@@ -59,7 +63,11 @@ final marketingCaseReportsListImplProvider =
       }
     });
 
-MarketingCaseReportSnapshot _toSnapshot(MarketingCase item) {
+MarketingCaseReportSnapshot _toSnapshot(
+  MarketingCase item, {
+  required bool hideMapPins,
+}) {
+  final isPublished = item.status == MarketingCaseStatus.published;
   return MarketingCaseReportSnapshot(
     id: item.id,
     tipo: item.tipo.toValue(),
@@ -71,6 +79,7 @@ MarketingCaseReportSnapshot _toSnapshot(MarketingCase item) {
     lng: item.lng,
     nomeVendedor: item.nomeVendedor,
     clientId: item.clientId,
+    pinOcultoNoMapa: isPublished && hideMapPins,
     produtoUtilizado: item.produtoUtilizado,
     localizacaoTexto: item.localizacaoTexto,
     nomeTalhao: item.nomeTalhao,
