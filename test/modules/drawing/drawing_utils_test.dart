@@ -159,6 +159,35 @@ void main() {
 
       expect(DrawingUtils.tryAddHole(base, hole), isNull);
     });
+
+    test('removeHoleRing remove anel interno e recalcula área', () {
+      final outer = const [
+        [-47.93, -15.78],
+        [-47.92, -15.78],
+        [-47.92, -15.77],
+        [-47.93, -15.77],
+        [-47.93, -15.78],
+      ];
+      final hole = const [
+        [-47.927, -15.777],
+        [-47.923, -15.777],
+        [-47.923, -15.773],
+        [-47.927, -15.773],
+        [-47.927, -15.777],
+      ];
+      final withHole = DrawingPolygon(coordinates: [outer, hole]);
+      final outerOnly = DrawingPolygon(coordinates: [outer]);
+
+      final removed = DrawingUtils.removeHoleRing(withHole, 1);
+      expect(removed, isA<DrawingPolygon>());
+      expect((removed as DrawingPolygon).coordinates, hasLength(1));
+      expect(
+        DrawingUtils.calculateGeometryArea(removed),
+        closeTo(DrawingUtils.calculateGeometryArea(outerOnly), 1e-6),
+      );
+      expect(DrawingUtils.removeHoleRing(withHole, 0), isNull);
+      expect(DrawingUtils.removeHoleRing(outerOnly, 1), isNull);
+    });
   });
 
   group('DrawingUtils - Validação', () {
