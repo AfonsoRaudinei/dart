@@ -63,6 +63,10 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final VoidCallback onUndoEdit;
   final VoidCallback? onUndoDrawing; // Undo no modo drawing
   final bool canUndo;
+  final VoidCallback? onStartHoleCutFromEdit;
+  final VoidCallback? onRemoveHoleRing;
+  final bool editHasHoleRings;
+  final bool canRemoveHoleRing;
 
   final double measurementAreaHa;
   final double measurementPerimeterKm;
@@ -93,6 +97,10 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     required this.onUndoEdit,
     this.onUndoDrawing,
     this.canUndo = false,
+    this.onStartHoleCutFromEdit,
+    this.onRemoveHoleRing,
+    this.editHasHoleRings = false,
+    this.canRemoveHoleRing = false,
     this.measurementAreaHa = 0,
     this.measurementPerimeterKm = 0,
     this.vertexDragPreview,
@@ -293,6 +301,14 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             distanceUnit: distanceUnit,
             onDistanceUnit: (u) =>
                 ref.read(distanceDisplayUnitProvider.notifier).setUnit(u),
+            onStartHoleCut: widget.drawingState == DrawingState.editing
+                ? widget.onStartHoleCutFromEdit
+                : null,
+            onRemoveHoleRing: widget.onRemoveHoleRing,
+            showRemoveHoleRing:
+                widget.drawingState == DrawingState.editing &&
+                widget.editHasHoleRings,
+            canRemoveHoleRing: widget.canRemoveHoleRing,
           ),
       ],
     );
