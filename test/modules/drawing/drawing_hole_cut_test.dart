@@ -162,11 +162,90 @@ void main() {
     controller.startEditMode();
     expect(controller.currentState, DrawingState.editing);
 
+    const moved = LatLng(-15.781, -47.931);
+    controller.moveVertex(0, 0, moved);
     controller.startHoleCutFromEdit();
 
     expect(controller.currentState, DrawingState.armed);
     expect(controller.isCuttingHole, isTrue);
     expect(controller.selectedFeature, isNotNull);
+    final geometry = controller.selectedFeature!.geometry as DrawingPolygon;
+    expect(geometry.coordinates.first[0][1], closeTo(moved.latitude, 1e-6));
+    expect(geometry.coordinates.first[0][0], closeTo(moved.longitude, 1e-6));
+  });
+
+  test('remove hole → undo restores hole count and area', () async {
+    controller.selectFeature(controller.features.first);
+    controller.startHoleCut();
+    controller.appendDrawingPoint(const LatLng(-15.777, -47.927));
+    controller.appendDrawingPoint(const LatLng(-15.777, -47.923));
+    controller.appendDrawingPoint(const LatLng(-15.773, -47.925));
+    controller.completeDrawing();
+
+    final outerArea = DrawingUtils.calculateGeometryArea(
+      DrawingPolygon(coordinates: [_outer]),
+    );
+    final withHoleArea = DrawingUtils.calculateGeometryArea(
+      controller.selectedFeature!.geometry,
+    );
+
+    controller.startEditMode();
+    expect(controller.editHoleRingCount, 1);
+
+    controller.removeSelectedHoleRing();
+    expect(controller.editHoleRingCount, 0);
+    expect(controller.canUndo, isTrue);
+
+    controller.undoEdit();
+    expect(controller.editHoleRingCount, 1);
+    expect(
+      DrawingUtils.calculateGeometryArea(controller.liveGeometry!),
+      closeTo(withHoleArea, 1e-4),
+    );
+    expect(
+      DrawingUtils.calculateGeometryArea(controller.liveGeometry!),
+      lessThan(outerArea),
+    );
+  });
+
+  test('two holes: remove one → undo restores both', () async {
+    const holeA = <List<double>>[
+      [-47.927, -15.777],
+      [-47.923, -15.777],
+      [-47.923, -15.773],
+      [-47.927, -15.773],
+      [-47.927, -15.777],
+    ];
+    const holeB = <List<double>>[
+      [-47.929, -15.779],
+      [-47.928, -15.779],
+      [-47.928, -15.778],
+      [-47.929, -15.778],
+      [-47.929, -15.779],
+    ];
+    final twoHoles = DrawingFeature(
+      id: 'talhao-two-holes',
+      geometry: DrawingPolygon(coordinates: [_outer, holeA, holeB]),
+      properties: _brasiliaSquare().properties,
+    );
+    controller.dispose();
+    controller = DrawingController(
+      repository: _HoleRepository([twoHoles]),
+    );
+    await controller.loadFeatures();
+    await Future<void>.delayed(Duration.zero);
+
+    controller.selectFeature(controller.features.first);
+    controller.startEditMode();
+    expect(controller.editHoleRingCount, 2);
+
+    controller.selectEditVertex(1, 0);
+    controller.removeSelectedHoleRing();
+    expect(controller.editHoleRingCount, 1);
+    expect(controller.canUndo, isTrue);
+
+    controller.undoEdit();
+    expect(controller.editHoleRingCount, 2);
   });
 
   test('excluir recorte interno na edição restaura área externa', () async {
