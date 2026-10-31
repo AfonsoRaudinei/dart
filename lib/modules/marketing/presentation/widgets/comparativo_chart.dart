@@ -1,9 +1,9 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/parametro_comparativo.dart';
+import 'novo_case_form_helpers.dart';
 
 class ComparativoChart extends StatelessWidget {
   final List<ParametroComparativo> parametros;
@@ -30,11 +30,7 @@ class ComparativoChart extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: SoloForteSheetTokens.inputBackground,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: PremiumTokens.hairlineLight),
-      ),
+      decoration: novoCaseInnerCardDecoration(context),
       child: selected == null
           ? _GeneralChart(parametros: parametros, onSelect: onSelect)
           : _SelectedChart(
@@ -55,6 +51,8 @@ class _GeneralChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = novoCasePrimaryTextColor(context);
+    final accent = novoCaseAccentColor(context);
     final media =
         parametros.fold<double>(0, (sum, item) => sum + item.deltaPercent) /
         parametros.length;
@@ -70,18 +68,18 @@ class _GeneralChart extends StatelessWidget {
             Expanded(
               child: Text(
                 'Média de ganho: ${_signed(media)}%',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 15,
-                  color: SoloForteSheetTokens.inputText,
+                  color: primary,
                 ),
               ),
             ),
             TextButton(
               onPressed: () => onSelect(null),
-              child: const Text(
+              child: Text(
                 'Visão Geral',
-                style: TextStyle(color: PremiumTokens.brandGreen),
+                style: TextStyle(color: accent),
               ),
             ),
           ],
@@ -132,9 +130,9 @@ class _GeneralChart extends StatelessWidget {
                         child: Text(
                           _short(parametros[index].titulo),
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
-                            color: SoloForteSheetTokens.inputText,
+                            color: primary,
                           ),
                         ),
                       );
@@ -153,7 +151,7 @@ class _GeneralChart extends StatelessWidget {
                         borderRadius: BorderRadius.circular(6),
                         color: parametros[i].isNegativo
                             ? PremiumTokens.alertError
-                            : PremiumTokens.brandGreen,
+                            : accent,
                       ),
                     ],
                   ),
@@ -191,6 +189,8 @@ class _SelectedChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = novoCasePrimaryTextColor(context);
+    final accent = novoCaseAccentColor(context);
     final maxValue = [
       parametro.testemunha,
       parametro.teste,
@@ -204,18 +204,18 @@ class _SelectedChart extends StatelessWidget {
             Expanded(
               child: Text(
                 parametro.titulo,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 15,
-                  color: SoloForteSheetTokens.inputText,
+                  color: primary,
                 ),
               ),
             ),
             TextButton(
               onPressed: onBack,
-              child: const Text(
+              child: Text(
                 'Visão Geral',
-                style: TextStyle(color: PremiumTokens.brandGreen),
+                style: TextStyle(color: accent),
               ),
             ),
           ],
@@ -251,9 +251,9 @@ class _SelectedChart extends StatelessWidget {
                           value.toInt() == 0
                               ? _short(testemunhaLabel)
                               : _short(testeLabel),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: SoloForteSheetTokens.inputText,
+                            color: primary,
                           ),
                         ),
                       );
@@ -280,7 +280,7 @@ class _SelectedChart extends StatelessWidget {
                       toY: parametro.teste,
                       width: 28,
                       borderRadius: BorderRadius.circular(8),
-                      color: PremiumTokens.brandGreen,
+                      color: accent,
                     ),
                   ],
                 ),
@@ -295,7 +295,7 @@ class _SelectedChart extends StatelessWidget {
             fontWeight: FontWeight.w800,
             color: parametro.isNegativo
                 ? PremiumTokens.alertError
-                : PremiumTokens.brandGreen,
+                : accent,
           ),
         ),
       ],
@@ -316,6 +316,7 @@ class _LegendRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = novoCasePrimaryTextColor(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -327,16 +328,16 @@ class _LegendRow extends StatelessWidget {
               child: Text(
                 label,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: SoloForteSheetTokens.inputText,
+                style: TextStyle(
+                  color: primary,
                   fontSize: 13,
                 ),
               ),
             ),
             Text(
               value,
-              style: const TextStyle(
-                color: SoloForteSheetTokens.inputText,
+              style: TextStyle(
+                color: primary,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),

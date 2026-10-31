@@ -7,10 +7,12 @@ import '../../domain/entities/marketing_roi_calculation.dart';
 /// Seção read-only de Resultado/ROI no sheet do pin (hierarquia hero + linhas).
 class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
   final MarketingCase marketingCase;
+  final bool isIos;
 
   const MarketingCaseResultadoReadOnlySection({
     super.key,
     required this.marketingCase,
+    this.isIos = false,
   });
 
   String _formatMoney(double value) {
@@ -33,6 +35,40 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
     final MarketingRoiCalculation calc = roi;
     final input = calc.input;
 
+    final heroBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : const Color(0xFF123D2A);
+    final heroRadius =
+        isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
+    final heroLabelColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : const Color(0xCCFFFFFF);
+    final heroValueColor = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : PremiumTokens.brandGreen;
+    final heroSubColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : const Color(0xCCFFFFFF);
+
+    final detailBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final detailBorder = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : PremiumTokens.hairlineLight;
+    final sectionLabelColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+    final lineLabelColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+    final lineValueColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.inputText;
+    final gainColor = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : PremiumTokens.brandGreen;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -40,19 +76,21 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
           margin: const EdgeInsets.only(top: 4),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF123D2A),
-            borderRadius: BorderRadius.circular(16),
+            color: heroBg,
+            borderRadius: BorderRadius.circular(heroRadius),
             border: Border.all(
-              color: PremiumTokens.brandGreen.withValues(alpha: 0.35),
+              color: isIos
+                  ? SoloForteSheetSkinIos.cardBorder
+                  : PremiumTokens.brandGreen.withValues(alpha: 0.35),
             ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'ROI líquido',
                 style: TextStyle(
-                  color: Color(0xCCFFFFFF),
+                  color: heroLabelColor,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -60,8 +98,8 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 '${_formatMoney(calc.roiLiquidoRsHa)}/ha',
-                style: const TextStyle(
-                  color: PremiumTokens.brandGreen,
+                style: TextStyle(
+                  color: heroValueColor,
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
                   height: 1.1,
@@ -70,8 +108,8 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 '${_formatNumber(calc.roiEmSacasHa)} sc/ha',
-                style: const TextStyle(
-                  color: Color(0xCCFFFFFF),
+                style: TextStyle(
+                  color: heroSubColor,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
@@ -83,17 +121,19 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: SoloForteSheetTokens.inputBackground,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: PremiumTokens.hairlineLight),
+            color: detailBg,
+            borderRadius: BorderRadius.circular(
+              isIos ? SoloForteSheetSkinIos.cardRadius : 16,
+            ),
+            border: Border.all(color: detailBorder),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'PRODUTIVIDADE',
                 style: TextStyle(
-                  color: SoloForteSheetTokens.inputHint,
+                  color: sectionLabelColor,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                 ),
@@ -103,23 +143,28 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
                 label: 'Testemunha',
                 value:
                     '${_formatNumber(input.prodSemProduto)} ${input.unidadeProdutividade}',
+                labelColor: lineLabelColor,
+                valueColor: lineValueColor,
               ),
               _SheetRoiLine(
                 label: 'Com produto',
                 value:
                     '${_formatNumber(input.prodComProduto)} ${input.unidadeProdutividade}',
+                labelColor: lineLabelColor,
+                valueColor: lineValueColor,
               ),
               _SheetRoiLine(
                 label: 'Ganho',
                 value:
                     '${_formatSigned(calc.ganhoScHa)} ${input.unidadeProdutividade}',
-                valueColor: PremiumTokens.brandGreen,
+                valueColor: gainColor,
+                labelColor: lineLabelColor,
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'ROI / RETORNO',
                 style: TextStyle(
-                  color: SoloForteSheetTokens.inputHint,
+                  color: sectionLabelColor,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                 ),
@@ -128,10 +173,14 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
               _SheetRoiLine(
                 label: 'Custo do produto',
                 value: '${_formatMoney(input.custoProdutoPorHa)}/ha',
+                labelColor: lineLabelColor,
+                valueColor: lineValueColor,
               ),
               _SheetRoiLine(
                 label: 'Valor do grão',
                 value: '${_formatMoney(input.valorGrao)}/sc',
+                labelColor: lineLabelColor,
+                valueColor: lineValueColor,
               ),
               if (calc.roiSacasTalhao != null && calc.roiReaisTalhao != null)
                 _SheetRoiLine(
@@ -139,6 +188,8 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
                       'No talhão (${marketingCase.tamanhoHa!.toStringAsFixed(1)} ha)',
                   value:
                       '${_formatNumber(calc.roiSacasTalhao!)} sc · ${_formatMoney(calc.roiReaisTalhao!)}',
+                  labelColor: lineLabelColor,
+                  valueColor: lineValueColor,
                 ),
             ],
           ),
@@ -152,11 +203,13 @@ class _SheetRoiLine extends StatelessWidget {
   final String label;
   final String value;
   final Color? valueColor;
+  final Color? labelColor;
 
   const _SheetRoiLine({
     required this.label,
     required this.value,
     this.valueColor,
+    this.labelColor,
   });
 
   @override
@@ -169,8 +222,8 @@ class _SheetRoiLine extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                color: SoloForteSheetTokens.inputHint,
+              style: TextStyle(
+                color: labelColor ?? SoloForteSheetTokens.inputHint,
                 fontSize: 13,
               ),
             ),

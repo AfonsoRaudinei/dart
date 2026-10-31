@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/avaliacao_item.dart';
 import '../../domain/entities/parametro_comparativo.dart';
@@ -90,13 +91,13 @@ class _AvaliacaoCardState extends State<AvaliacaoCard> {
   Widget build(BuildContext context) {
     final avaliacao = widget.avaliacao;
     final media = _formatSigned(avaliacao.mediaGanhoPercent);
+    final isIos = soloForteSheetIsIos(context);
+    final accent = novoCaseAccentColor(context);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: SoloForteSheetTokens.inputBackground,
+      decoration: novoCaseInnerCardDecoration(context).copyWith(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: PremiumTokens.hairlineLight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -110,13 +111,13 @@ class _AvaliacaoCardState extends State<AvaliacaoCard> {
                 children: [
                   CircleAvatar(
                     radius: 13,
-                    backgroundColor: PremiumTokens.brandGreen.withValues(
+                    backgroundColor: accent.withValues(
                       alpha: 0.12,
                     ),
                     child: Text(
                       '${widget.index + 1}',
-                      style: const TextStyle(
-                        color: PremiumTokens.brandGreen,
+                      style: TextStyle(
+                        color: accent,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                       ),
@@ -130,18 +131,18 @@ class _AvaliacaoCardState extends State<AvaliacaoCard> {
                         Text(
                           '${_title(avaliacao)} — ${avaliacao.nomeLadoA} vs ${avaliacao.nomeLadoB}',
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
-                            color: SoloForteSheetTokens.inputText,
+                            color: novoCasePrimaryTextColor(context),
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           'Média: $media% · ${avaliacao.parametros.length} parâmetros',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: SoloForteSheetTokens.inputHint,
+                            color: novoCaseSecondaryTextColor(context),
                           ),
                         ),
                       ],
@@ -171,7 +172,12 @@ class _AvaliacaoCardState extends State<AvaliacaoCard> {
             ),
           ),
           if (widget.expanded) ...[
-            const Divider(height: 1, color: PremiumTokens.hairlineLight),
+            Divider(
+              height: 1,
+              color: isIos
+                  ? SoloForteSheetSkinIos.rowDivider
+                  : PremiumTokens.hairlineLight,
+            ),
             Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
@@ -265,6 +271,7 @@ class _AvaliacaoCardState extends State<AvaliacaoCard> {
                     onPressed: _addParametro,
                     icon: const Icon(Icons.add_rounded),
                     label: const Text('Adicionar Parâmetro'),
+                    style: novoCaseGhostOutlinedButtonStyle(context),
                   ),
                   if (avaliacao.parametros.isNotEmpty) ...[
                     const SizedBox(height: 12),
@@ -402,17 +409,35 @@ class _CulturaDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final fillColor = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final hintColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+    final textColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.inputText;
+
     return DropdownButtonFormField<String>(
       initialValue: value != null && culturas.contains(value) ? value : null,
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         hintText: 'Cultura',
+        hintStyle: TextStyle(color: hintColor, fontSize: 14),
         border: InputBorder.none,
         filled: true,
-        fillColor: SoloForteSheetTokens.inputBackground,
+        fillColor: fillColor,
       ),
-      dropdownColor: SoloForteSheetTokens.inputBackground,
+      style: TextStyle(color: textColor),
+      dropdownColor: fillColor,
       items: culturas
-          .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+          .map(
+            (item) => DropdownMenuItem(
+              value: item,
+              child: Text(item, style: TextStyle(color: textColor)),
+            ),
+          )
           .toList(),
       onChanged: onChanged,
     );

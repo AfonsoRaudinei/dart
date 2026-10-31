@@ -6,6 +6,89 @@ import '../../../../ui/theme/premium/design_tokens.dart';
 /// Helpers compartilhados pelas seções do NovoCaseSheet.
 /// Funções top-level e widget auxiliar — sem estado, sem providers.
 
+Color novoCasePrimaryTextColor(BuildContext context) {
+  return soloForteSheetIsIos(context)
+      ? SoloForteSheetSkinIos.titleColor
+      : SoloForteSheetTokens.inputText;
+}
+
+Color novoCaseSecondaryTextColor(BuildContext context) {
+  return soloForteSheetIsIos(context)
+      ? SoloForteSheetSkinIos.subtitleColor
+      : SoloForteSheetTokens.inputHint;
+}
+
+Color novoCaseAccentColor(BuildContext context) {
+  return soloForteSheetIsIos(context)
+      ? SoloForteSheetSkinIos.iconStroke
+      : PremiumTokens.brandGreen;
+}
+
+BoxDecoration novoCaseInnerCardDecoration(
+  BuildContext context, {
+  bool selected = false,
+}) {
+  final isIos = soloForteSheetIsIos(context);
+  if (isIos) {
+    return BoxDecoration(
+      color: SoloForteSheetSkinIos.cardBackground,
+      borderRadius: BorderRadius.circular(SoloForteSheetSkinIos.cardRadius),
+      border: Border.all(
+        color: selected
+            ? SoloForteSheetSkinIos.iconStroke
+            : SoloForteSheetSkinIos.cardBorder,
+      ),
+      boxShadow: selected
+          ? const [
+              BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.08),
+                offset: Offset(0, 10),
+                blurRadius: 28,
+              ),
+            ]
+          : null,
+    );
+  }
+  return BoxDecoration(
+    color: SoloForteSheetTokens.inputBackground,
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(
+      color: selected
+          ? PremiumTokens.brandGreen
+          : PremiumTokens.hairlineLight,
+    ),
+    boxShadow: selected
+        ? const [
+            BoxShadow(
+              color: Color.fromRGBO(0, 0, 0, 0.08),
+              offset: Offset(0, 10),
+              blurRadius: 28,
+            ),
+          ]
+        : null,
+  );
+}
+
+ButtonStyle novoCaseGhostOutlinedButtonStyle(BuildContext context) {
+  final isIos = soloForteSheetIsIos(context);
+  return OutlinedButton.styleFrom(
+    foregroundColor: isIos
+        ? SoloForteSheetSkinIos.ghostText
+        : SoloForteSheetTokens.inputText,
+    side: BorderSide(
+      color: isIos
+          ? SoloForteSheetSkinIos.ghostBorder
+          : PremiumTokens.hairlineLight,
+    ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(
+        isIos ? SoloForteSheetSkinIos.ghostRadius : 16,
+      ),
+    ),
+    minimumSize: const Size.fromHeight(48),
+  );
+}
+
 Widget novoCaseSectionLabel(String label) {
   return Builder(
     builder: (context) {

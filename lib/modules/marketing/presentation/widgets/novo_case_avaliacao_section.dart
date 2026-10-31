@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../ui/theme/premium/design_tokens.dart';
+import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../domain/entities/avaliacao_item.dart';
 import 'avaliacao_card.dart';
 import 'conclusao_bloco_widget.dart';
@@ -119,7 +120,7 @@ class NovoCaseAvaliacaoSection extends StatelessWidget {
         _buildActionButton(
           icon: Icons.add_circle_outline,
           label: 'Adicionar Avaliação',
-          color: PremiumTokens.brandGreen,
+          color: novoCaseAccentColor(context),
           onTap: onAddAvaliacao,
         ),
         const SizedBox(height: 16),
@@ -127,7 +128,9 @@ class NovoCaseAvaliacaoSection extends StatelessWidget {
           _buildActionButton(
             icon: Icons.notes_rounded,
             label: 'Adicionar Conclusão Técnica',
-            color: const Color(0xFF0057FF),
+            color: soloForteSheetIsIos(context)
+                ? SoloForteSheetSkinIos.iconStroke
+                : const Color(0xFF0057FF),
             onTap: onAddConclusao,
           )
         else

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
-import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/parametro_comparativo.dart';
 import 'comparativo_chart.dart';
 import '../widgets/foto_picker_widget.dart';
@@ -58,14 +56,7 @@ class NovoCaseAntesDepoisSection extends StatelessWidget {
           onPressed: onAddParametro,
           icon: const Icon(Icons.add_rounded),
           label: const Text('Adicionar Parâmetro'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: SoloForteSheetTokens.inputText,
-            side: const BorderSide(color: PremiumTokens.hairlineLight),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            minimumSize: const Size.fromHeight(48),
-          ),
+          style: novoCaseGhostOutlinedButtonStyle(context),
         ),
         const SizedBox(height: 16),
         if (parametros.isNotEmpty) ...[
@@ -86,12 +77,12 @@ class NovoCaseAntesDepoisSection extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
+                  Text(
                     'Antes *',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 12,
-                      color: SoloForteSheetTokens.inputHint,
+                      color: novoCaseSecondaryTextColor(context),
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -112,12 +103,12 @@ class NovoCaseAntesDepoisSection extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
+                  Text(
                     'Depois *',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 12,
-                      color: SoloForteSheetTokens.inputHint,
+                      color: novoCaseSecondaryTextColor(context),
                     ),
                   ),
                   const SizedBox(height: 6),
