@@ -1912,6 +1912,60 @@ class DrawingController extends ChangeNotifier {
   // DRAWING FLOW
   // ===========================================================================
 
+  /// Durante edição de vértices: persiste [_editGeometry] no talhão em memória,
+  /// encerra edição em [DrawingState.selected] e abre [startHoleCut].
+  void startHoleCutFromEdit() {
+    if (_isDisposed) return;
+    if (_stateMachine.currentState != DrawingState.editing) {
+      startHoleCut();
+      return;
+    }
+
+    if (_selectedFeature != null && _editGeometry != null) {
+      var geometryToApply = _editGeometry!;
+      final original = _selectedFeature!.geometry;
+      if (_vertexService.isSingleShellMultiPolygon(original) &&
+          geometryToApply is DrawingPolygon) {
+        geometryToApply = _vertexService.wrapAsSingleShellMultiPolygon(
+          geometryToApply,
+        );
+      }
+      updateFeature(
+        _selectedFeature!.id,
+        newGeometry: geometryToApply,
+        editorId: 'sistema',
+        editorType: AuthorType.sistema,
+      );
+    }
+
+    _editGeometry = null;
+    _editGeometrySnapshotJson = null;
+    _history.clear();
+    _selectedEditRingIndex = null;
+    _selectedEditPointIndex = null;
+    _interactionMode = DrawingInteraction.normal;
+    _stateMachine.tryTransitionTo(DrawingState.selected);
+
+    startHoleCut();
+  }
+
+  /// Quantidade de anéis internos (furos) na geometria em edição.
+  int get editHoleRingCount {
+    final geometry = _editGeometry;
+    if (geometry is! DrawingPolygon) return 0;
+    return geometry.coordinates.length > 1 ? geometry.coordinates.length - 1 : 0;
+  }
+
+  /// Indica se o usuário pode excluir um furo na edição atual.
+  bool get canRemoveHoleRing {
+    final geometry = _editGeometry;
+    if (geometry is! DrawingPolygon) return false;
+    if (geometry.coordinates.length <= 1) return false;
+    final selectedRing = _selectedEditRingIndex;
+    if (selectedRing != null && selectedRing > 0) return true;
+    return geometry.coordinates.length == 2;
+  }
+
   /// Abre o recorte interno do talhão selecionado.
   ///
   /// Compõe transições já válidas: selected → idle → armed.
