@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
@@ -30,7 +31,7 @@ class DrawingReviewMetricsPanel extends StatelessWidget {
     );
     final iconColor = isIos
         ? SoloForteSheetSkinIos.iconStroke
-        : PremiumTokens.brandGreen;
+        : context.themeAccent;
 
     return Container(
       padding: const EdgeInsets.all(16),

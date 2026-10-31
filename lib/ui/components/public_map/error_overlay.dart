@@ -80,7 +80,7 @@ class PublicMapErrorOverlay extends StatelessWidget {
                   label: 'Tentar novamente',
                   button: true,
                   child: Material(
-                    color: PremiumTokens.brandGreen,
+                    color: context.themeAccent,
                     borderRadius: BorderRadius.circular(8),
                     child: InkWell(
                       onTap: onRetry,
@@ -132,12 +132,12 @@ class LocationPermissionDialog extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: PremiumTokens.brandGreen.withValues(alpha: 0.1),
+              color: context.themeAccent.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.location_on,
-              color: PremiumTokens.brandGreen,
+              color: context.themeAccent,
               size: 20,
             ),
           ),
@@ -203,7 +203,7 @@ class LocationPermissionDialog extends StatelessWidget {
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(true),
           style: ElevatedButton.styleFrom(
-            backgroundColor: PremiumTokens.brandGreen,
+            backgroundColor: context.themeAccent,
             foregroundColor: Colors.white,
             elevation: 0,
             shape: RoundedRectangleBorder(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/layout_constants.dart';
@@ -22,9 +23,8 @@ class LayersSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isIos = soloForteSheetIsIos(context);
-    final bg = isIos
-        ? SoloForteSheetSkinIos.background
-        : SoloForteSheetTokens.sheetBackground;
+    final v = SoloForteSheetVisuals.of(context);
+    final bg = v.sheetBackground;
     final radius = isIos
         ? SoloForteSheetSkinIos.sheetRadius
         : SoloForteSheetTokens.borderRadius;

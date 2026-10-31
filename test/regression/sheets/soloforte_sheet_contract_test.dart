@@ -11,7 +11,7 @@ void main() {
     test('tema Azul + transparent resolve para SoloForteSheetSkinIos.background', () {
       expect(
         resolveSoloForteSheetBackgroundColor(
-          isIos: true,
+          variant: SoloForteSheetVariant.ios,
           preserveMaterialDefaults: false,
           backgroundColor: Colors.transparent,
         ),
@@ -22,7 +22,7 @@ void main() {
     test('tema Azul + null resolve para SoloForteSheetSkinIos.background', () {
       expect(
         resolveSoloForteSheetBackgroundColor(
-          isIos: true,
+          variant: SoloForteSheetVariant.ios,
           preserveMaterialDefaults: false,
           backgroundColor: null,
         ),
@@ -30,10 +30,21 @@ void main() {
       );
     });
 
+    test('tema Verde (light) resolve fundo claro', () {
+      expect(
+        resolveSoloForteSheetBackgroundColor(
+          variant: SoloForteSheetVariant.light,
+          preserveMaterialDefaults: false,
+          backgroundColor: null,
+        ),
+        SoloForteSheetSkinLight.background,
+      );
+    });
+
     test('preserveMaterialDefaults: true não pinta prata com transparent', () {
       expect(
         resolveSoloForteSheetBackgroundColor(
-          isIos: true,
+          variant: SoloForteSheetVariant.ios,
           preserveMaterialDefaults: true,
           backgroundColor: Colors.transparent,
         ),
@@ -41,10 +52,10 @@ void main() {
       );
     });
 
-    test('tema escuro (não iOS) mantém fundo escuro padrão', () {
+    test('tema Black mantém fundo escuro padrão', () {
       expect(
         resolveSoloForteSheetBackgroundColor(
-          isIos: false,
+          variant: SoloForteSheetVariant.dark,
           preserveMaterialDefaults: false,
           backgroundColor: null,
         ),
@@ -65,8 +76,6 @@ void main() {
     test(
       'kernel iOS não envolve conteúdo em Column-chrome (anti sheet duplo)',
       () {
-        // Ago/2026: Column+handle no chrome iOS duplicava o painel e
-        // quebrava drag/scroll (mainAxisSize: min). Fundo só no modal.
         final source = File(
           'lib/core/ui/sheets/soloforte_sheet.dart',
         ).readAsStringSync();
@@ -83,8 +92,6 @@ void main() {
     test(
       'map_sheet_controller (check-in/layers) usa preserveMaterialDefaults',
       () {
-        // Host com DraggableScrollableSheet: sem o flag, tema Azul colapsa
-        // o sheet (tela branca no check-in). REGRA-SHEET-BLAST-1.
         final source = File(
           'lib/ui/screens/map/controllers/map_sheet_controller.dart',
         ).readAsStringSync();
@@ -98,12 +105,11 @@ void main() {
     test(
       'DrawingSheet não força sheetBackground escuro quando tema Azul',
       () {
-        // Imagem 3 regressão: painel #1C1C1E aninhado no chrome prata.
         final source = File(
           'lib/modules/drawing/presentation/widgets/drawing_sheet.dart',
         ).readAsStringSync();
 
-        expect(source.contains('soloForteSheetIsIos(context)'), isTrue);
+        expect(source.contains('SoloForteSheetVisuals.of(context)'), isTrue);
         expect(source.contains('Colors.transparent'), isTrue);
         expect(
           source.contains(
@@ -116,7 +122,7 @@ void main() {
     );
 
     test(
-      'DrawingActionsBar / InfoEdit usam tokens iOS no tema Azul',
+      'DrawingActionsBar / InfoEdit usam SoloForteSheetVisuals no tema Azul',
       () {
         final actions = File(
           'lib/modules/drawing/presentation/widgets/components/drawing_actions_bar.dart',
@@ -128,11 +134,9 @@ void main() {
           'lib/modules/drawing/presentation/widgets/drawing_sheet_builders_b.dart',
         ).readAsStringSync();
 
-        expect(actions.contains('soloForteSheetIsIos(context)'), isTrue);
-        expect(actions.contains('SoloForteSheetSkinIos'), isTrue);
-        expect(info.contains('soloForteSheetIsIos(context)'), isTrue);
-        expect(info.contains('SoloForteSheetSkinIos.titleColor'), isTrue);
-        expect(review.contains('SoloForteSheetSkinIos.titleColor'), isTrue);
+        expect(actions.contains('SoloForteSheetVisuals.of(context)'), isTrue);
+        expect(info.contains('SoloForteSheetVisuals.of(context)'), isTrue);
+        expect(review.contains('SoloForteSheetVisuals.of(context)'), isTrue);
       },
     );
   });

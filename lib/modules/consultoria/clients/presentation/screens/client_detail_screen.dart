@@ -123,7 +123,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
     final culturasAsync = ref.watch(clientCulturasProvider(widget.clientId));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.premiumBackground,
       body: clientAsync.when(
         data: (client) {
           if (client == null) {
@@ -189,7 +189,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.edit_outlined),
-                            color: PremiumTokens.brandGreen,
+                            color: context.themeAccent,
                             tooltip: 'Editar',
                             onPressed: _excluindo
                                 ? null
@@ -349,17 +349,14 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                         ),
                         // ── INTEGRAÇÃO MAP-FIRST ───────────────────────
                         TextButton.icon(
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.add,
-                            color: PremiumTokens.brandGreen,
+                            color: context.themeAccent,
                           ),
-                          label: const Text(
-                            'Nova',
-                            style: TextStyle(
-                              color: PremiumTokens.brandGreen,
+                          label: Text('Nova', style: TextStyle(
+                              color: context.themeAccent,
                               fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                            )),
                           onPressed: () =>
                               _showCreateFarmSheet(context, client),
                         ),

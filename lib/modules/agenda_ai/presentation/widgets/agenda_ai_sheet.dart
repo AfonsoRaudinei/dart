@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -280,6 +281,7 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
     final maxHeight = (screenHeight - keyboard).clamp(280.0, screenHeight);
     final height = (screenHeight * 0.86).clamp(280.0, maxHeight);
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final sheetBg = isIos ? Colors.transparent : const Color(0xFF1C1C1E);
     final sheetRadius = isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;

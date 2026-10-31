@@ -35,7 +35,6 @@ class ConfirmacaoScreen extends ConsumerWidget {
                   'Confirmação indisponível',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: context.premiumTextPrimary,
@@ -47,7 +46,6 @@ class ConfirmacaoScreen extends ConsumerWidget {
                   'Quando houver plano ativo na conta, ele será sincronizado automaticamente.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 14,
                     color: context.premiumTextSecondary,
                   ),
@@ -61,7 +59,6 @@ class ConfirmacaoScreen extends ConsumerWidget {
                   child: Text(
                     'Voltar aos planos',
                     style: TextStyle(
-                      fontFamily: 'Inter',
                       fontSize: 15,
                       color: primary,
                     ),

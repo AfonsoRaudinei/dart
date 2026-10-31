@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/contracts/i_client_lookup.dart';
@@ -24,6 +25,7 @@ class MarketingClientSelector extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final clientsAsync = ref.watch(_marketingClientsAtivosProvider);
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final surface = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : const Color(0xFF2C2C2E);

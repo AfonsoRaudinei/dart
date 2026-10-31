@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
@@ -50,6 +51,7 @@ class PlanoBlockSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final titleColor = isIos
         ? SoloForteSheetSkinIos.titleColor
         : Colors.white;
@@ -91,7 +93,6 @@ class PlanoBlockSheet extends StatelessWidget {
                   : 'Limite de cases atingido',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Inter',
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
                 color: titleColor,
@@ -104,7 +105,6 @@ class PlanoBlockSheet extends StatelessWidget {
                   : 'Seu plano ${planoLabel ?? 'atual'} permite apenas ${limite ?? _limiteDoPlano(planoLabel)} case(s) ativo(s). Exclua um case publicado ou mantenha como Não gerado.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Inter',
                 fontSize: 14,
                 color: bodyColor,
               ),
@@ -118,7 +118,6 @@ class PlanoBlockSheet extends StatelessWidget {
                 child: Text(
                   'Ok, entendi',
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: bodyColor,

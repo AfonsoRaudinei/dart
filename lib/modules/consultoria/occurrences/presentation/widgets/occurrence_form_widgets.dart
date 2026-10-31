@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/core/design/sf_icons.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/widgets/photo/soloforte_photo_picker_sheet.dart';
@@ -32,6 +33,7 @@ class OccurrenceSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final isIos = occurrenceFormIsIos(context);
     return Row(
       children: [
@@ -40,7 +42,7 @@ class OccurrenceSectionHeader extends StatelessWidget {
         Text(
           title,
           style: TextStyle(
-            color: isIos ? SoloForteSheetSkinIos.titleColor : Colors.white,
+            color: v.onSheetPrimary,
             fontSize: 13,
             fontWeight: FontWeight.w700,
             letterSpacing: .4,
@@ -49,7 +51,7 @@ class OccurrenceSectionHeader extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: Divider(
-            color: isIos ? SoloForteSheetSkinIos.rowDivider : Colors.white12,
+            color: v.onSheetDivider,
           ),
         ),
       ],
@@ -75,8 +77,9 @@ class OccurrenceDarkField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final isIos = occurrenceFormIsIos(context);
-    final textColor = isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final textColor = v.onSheetPrimary;
     final labelColor = isIos
         ? SoloForteSheetSkinIos.subtitleColor
         : Colors.white38;
@@ -86,10 +89,10 @@ class OccurrenceDarkField extends StatelessWidget {
     final fill = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : const Color(0xFF1C1C1E);
-    final border = isIos ? SoloForteSheetSkinIos.cardBorder : Colors.white12;
+    final border = v.cardBorder;
     final focus = isIos
         ? SoloForteSheetSkinIos.iconStroke
-        : PremiumTokens.brandGreen;
+        : context.themeAccent;
     final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
 
     return TextField(
@@ -143,11 +146,10 @@ class OccurrenceSliderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final isIos = occurrenceFormIsIos(context);
-    final labelColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : Colors.white70;
-    final inactive = isIos ? SoloForteSheetSkinIos.rowDivider : Colors.white12;
+    final labelColor = v.onSheetSecondary;
+    final inactive = v.onSheetDivider;
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
       child: Column(
@@ -227,19 +229,20 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final isIos = occurrenceFormIsIos(context);
     final surface = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : const Color(0xFF1C1C1E);
-    final border = isIos ? SoloForteSheetSkinIos.cardBorder : Colors.white12;
-    final muted = isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white38;
-    final title = isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final border = v.cardBorder;
+    final muted = v.onSheetSecondary;
+    final title = v.onSheetPrimary;
     final dropdownBg = isIos
         ? SoloForteSheetSkinIos.background
         : const Color(0xFF2C2C2E);
     final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
     final accent =
-        isIos ? SoloForteSheetSkinIos.iconStroke : PremiumTokens.brandGreen;
+        v.accent;
 
     return Column(
       children: [
@@ -314,14 +317,14 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isIos
                         ? SoloForteSheetSkinIos.cardBackground
-                        : PremiumTokens.brandGreen.withValues(alpha: .07),
+                        : context.themeAccent.withValues(alpha: .07),
                     borderRadius: BorderRadius.circular(
                       isIos ? SoloForteSheetSkinIos.cardRadius : 12,
                     ),
                     border: Border.all(
                       color: isIos
                           ? SoloForteSheetSkinIos.cardBorder
-                          : PremiumTokens.brandGreen.withValues(alpha: .3),
+                          : context.themeAccent.withValues(alpha: .3),
                     ),
                   ),
                   child: Column(
@@ -337,7 +340,7 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: isIos
                                   ? SoloForteSheetSkinIos.iconBackground
-                                  : PremiumTokens.brandGreen.withValues(
+                                  : context.themeAccent.withValues(
                                       alpha: .2,
                                     ),
                               borderRadius: BorderRadius.circular(6),
@@ -434,10 +437,11 @@ class OccurrenceRadioChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final isIos = occurrenceFormIsIos(context);
     final accent = isIos
         ? SoloForteSheetSkinIos.iconStroke
-        : PremiumTokens.brandGreen;
+        : context.themeAccent;
     final idleSurface = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : const Color(0xFF1C1C1E);
@@ -496,6 +500,7 @@ class OccurrencePhotoOriginToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
@@ -537,6 +542,7 @@ class _OccurrencePhotoOriginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final isIos = occurrenceFormIsIos(context);
     final surface = isIos
         ? SoloForteSheetSkinIos.iconBackground
@@ -576,13 +582,14 @@ class OccurrenceCatPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final isIos = occurrenceFormIsIos(context);
     final bg = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : const Color(0xFF1C1C1E);
     final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
-    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
-    final tileColor = isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final titleColor = v.onSheetPrimary;
+    final tileColor = v.onSheetPrimary;
 
     return Container(
       margin: const EdgeInsets.all(12),

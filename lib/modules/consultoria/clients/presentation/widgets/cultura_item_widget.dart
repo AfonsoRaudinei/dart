@@ -130,7 +130,7 @@ class VariedadesCultivaresInput extends StatelessWidget {
             IconButton(
               tooltip: 'Adicionar variedade',
               icon: const Icon(Icons.add_circle_outline),
-              color: PremiumTokens.brandGreen,
+              color: context.themeAccent,
               onPressed: onAdd,
             ),
           ],
@@ -182,7 +182,7 @@ Future<ClientCultura?> showAddCulturaSheet({
       final titleColor = ios ? SoloForteSheetSkinIos.titleColor : null;
       final ctaBg = ios
           ? SoloForteSheetSkinIos.ctaBackground
-          : PremiumTokens.brandGreen;
+          : context.themeAccent;
       final ctaFg = ios ? SoloForteSheetSkinIos.ctaText : Colors.white;
       final ctaRadius = ios ? SoloForteSheetSkinIos.ctaRadius : 8.0;
 

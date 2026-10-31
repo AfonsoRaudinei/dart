@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../domain/entities/marketing_roi_calculation.dart';
@@ -132,6 +133,7 @@ class _RoiInputRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final dropdownBg = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : SoloForteSheetTokens.inputBackground;
@@ -203,6 +205,7 @@ class _RoiPreviewCard extends StatelessWidget {
     if (input == null || !input.isComplete) return const SizedBox.shrink();
     final roi = MarketingRoiCalculation(input);
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final cardBg = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : const Color(0xFF123D2A);

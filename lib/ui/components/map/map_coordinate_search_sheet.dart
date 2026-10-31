@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/ui/sheets/sheet_keyboard_inset.dart';
@@ -47,6 +48,7 @@ class _MapCoordinateSearchSheetState extends State<MapCoordinateSearchSheet> {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final bottom = sheetFormKeyboardBottomPadding(
       safeBottom: MediaQuery.paddingOf(context).bottom,
       keyboard: MediaQuery.viewInsetsOf(context).bottom,

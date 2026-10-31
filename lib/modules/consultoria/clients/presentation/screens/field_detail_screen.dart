@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:soloforte_app/core/contracts/i_ndvi_field_presenter_provider.dart';
 import 'package:soloforte_app/core/contracts/i_ndvi_latest_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/ndvi_latest_summary.dart';
@@ -19,6 +20,7 @@ class FieldDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
+      backgroundColor: context.premiumBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -33,15 +35,11 @@ class FieldDetailScreen extends ConsumerWidget {
                     icon: const Icon(Icons.arrow_back),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Talhão',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
+                      style: Theme.of(context).textTheme.headlineMedium,
                     ),
                   ),
                   const SizedBox(width: 48),

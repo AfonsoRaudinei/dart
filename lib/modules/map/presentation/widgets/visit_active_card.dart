@@ -1,4 +1,5 @@
 import 'dart:ui' as ui;
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -72,11 +73,11 @@ class VisitActiveCard extends ConsumerWidget {
                       width: 7,
                       height: 7,
                       decoration: BoxDecoration(
-                        color: PremiumTokens.brandGreen,
+                        color: context.themeAccent,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: PremiumTokens.brandGreen.withValues(
+                            color: context.themeAccent.withValues(
                               alpha: 0.5,
                             ),
                             blurRadius: 6,
@@ -292,7 +293,7 @@ class _EditableRow extends StatelessWidget {
                 fontWeight: FontWeight.w500,
                 letterSpacing: -0.2,
                 color: onTap != null
-                    ? PremiumTokens.brandGreen
+                    ? context.themeAccent
                     : const Color(0xFF3C3C43),
               ),
               overflow: TextOverflow.ellipsis,
@@ -304,7 +305,7 @@ class _EditableRow extends StatelessWidget {
             Icon(
               Icons.expand_more_rounded,
               size: 13,
-              color: PremiumTokens.brandGreen.withValues(alpha: 0.8),
+              color: context.themeAccent.withValues(alpha: 0.8),
             ),
           ],
         ],
@@ -324,7 +325,7 @@ class _LoadingRow extends StatelessWidget {
           height: 10,
           child: CircularProgressIndicator(
             strokeWidth: 1.5,
-            color: PremiumTokens.brandGreen.withValues(alpha: 0.7),
+            color: context.themeAccent.withValues(alpha: 0.7),
           ),
         ),
         const SizedBox(width: 8),
@@ -356,6 +357,7 @@ class _SelectionSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final bg =
         isIos ? SoloForteSheetSkinIos.background : Colors.white;
     final handle = isIos
@@ -365,7 +367,7 @@ class _SelectionSheet extends StatelessWidget {
         isIos ? SoloForteSheetSkinIos.titleColor : null;
     final accent = isIos
         ? SoloForteSheetSkinIos.iconStroke
-        : PremiumTokens.brandGreen;
+        : context.themeAccent;
     final divider = isIos
         ? SoloForteSheetSkinIos.rowDivider
         : Colors.black.withValues(alpha: 0.07);

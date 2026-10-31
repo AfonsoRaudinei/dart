@@ -19,6 +19,7 @@ import 'marketing_case_resultado_read_only_section.dart';
 import 'marketing_case_story_entry_button.dart';
 import 'marketing_comparativo_read_only_section.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/solo_forte_sheet_visuals.dart';
 
 part 'marketing_case_sheet_avaliacao.dart';
 
@@ -134,28 +135,15 @@ class MarketingCaseSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isIos = _isIosBlue(context);
-    final sheetBg = isIos
-        ? SoloForteSheetSkinIos.background
-        : SoloForteSheetTokens.sheetBackground;
-    final sheetRadius = isIos
-        ? SoloForteSheetSkinIos.sheetRadius
-        : SoloForteSheetTokens.borderRadius;
-    final handleColor = isIos
-        ? SoloForteSheetSkinIos.handleColor
-        : Theme.of(context).dividerColor.withValues(alpha: 0.4);
-    final titleColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.inputText;
-    final hintColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
-    final cardBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
-    final cardBorder = isIos
-        ? SoloForteSheetSkinIos.cardBorder
-        : PremiumTokens.hairlineLight;
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
+    final sheetBg = v.sheetBackground;
+    final sheetRadius = v.sheetRadius;
+    final handleColor = v.handleColor;
+    final titleColor = v.titleColor;
+    final hintColor = v.subtitleColor;
+    final cardBg = v.cardBackground;
+    final cardBorder = v.cardBorder;
 
     return DraggableScrollableSheet(
       expand: false,
@@ -246,7 +234,7 @@ class MarketingCaseSheet extends ConsumerWidget {
                           decoration: BoxDecoration(
                             color: (isIos
                                     ? SoloForteSheetSkinIos.iconStroke
-                                    : PremiumTokens.brandGreen)
+                                    : context.themeAccent)
                                 .withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -255,7 +243,7 @@ class MarketingCaseSheet extends ConsumerWidget {
                             style: TextStyle(
                               color: isIos
                                   ? SoloForteSheetSkinIos.iconStroke
-                                  : PremiumTokens.brandGreen,
+                                  : context.themeAccent,
                               fontWeight: FontWeight.w600,
                               fontSize: 11,
                             ),
@@ -453,7 +441,7 @@ class MarketingCaseSheet extends ConsumerWidget {
                             size: 18,
                             color: isIos
                                 ? SoloForteSheetSkinIos.iconStroke
-                                : PremiumTokens.brandGreen,
+                                : context.themeAccent,
                           ),
                           label: const Text('Corrigir posição'),
                         ),
@@ -531,7 +519,7 @@ class MarketingCaseSheet extends ConsumerWidget {
           value:
               '${marketingCase.produtividadeValor!.toStringAsFixed(1)} ${marketingCase.produtividadeUnidade?.toValue() ?? ''}',
           icon: Icons.bar_chart_rounded,
-          color: isIos ? SoloForteSheetSkinIos.iconStroke : PremiumTokens.brandGreen,
+          color: isIos ? SoloForteSheetSkinIos.iconStroke : context.themeAccent,
         ),
       );
     }
@@ -682,7 +670,7 @@ class MarketingCaseSheet extends ConsumerWidget {
                     fontWeight: FontWeight.w600,
                     color: isIos
                         ? SoloForteSheetSkinIos.iconStroke
-                        : PremiumTokens.brandGreen,
+                        : context.themeAccent,
                   ),
                 ),
               ],
@@ -821,7 +809,7 @@ class MarketingCaseSheet extends ConsumerWidget {
               icon: const Icon(Icons.phone_outlined),
               color: isIos
                   ? SoloForteSheetSkinIos.iconStroke
-                  : PremiumTokens.brandGreen,
+                  : context.themeAccent,
               onPressed: () => HapticFeedback.lightImpact(),
             ),
         ],

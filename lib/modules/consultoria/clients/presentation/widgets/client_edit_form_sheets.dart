@@ -51,14 +51,14 @@ extension _ClientEditFormSheets on _ClientEditFormState {
         colorScheme: ColorScheme.light(
           primary: isIos
               ? SoloForteSheetSkinIos.ctaBackground
-              : PremiumTokens.brandGreen,
+              : context.themeAccent,
         ),
       );
 
   ButtonStyle _sheetCtaStyle(bool isIos) => ElevatedButton.styleFrom(
         backgroundColor: isIos
             ? SoloForteSheetSkinIos.ctaBackground
-            : PremiumTokens.brandGreen,
+            : context.themeAccent,
         foregroundColor:
             isIos ? SoloForteSheetSkinIos.ctaText : Colors.white,
         shape: RoundedRectangleBorder(

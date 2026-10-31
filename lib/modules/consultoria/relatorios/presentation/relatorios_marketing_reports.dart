@@ -339,7 +339,7 @@ Widget _marketingReportCard(
     statusLabel: mapHidden ? 'Oculto no mapa' : statusLabel,
     statusColor: mapHidden
         ? const Color(0xFFFF9500)
-        : _marketingStatusColor(item.statusValue),
+        : _marketingStatusColor(context, item.statusValue),
     buildPayload: () => _buildMarketingPayload(ref, item),
     viewerActions: _marketingReportViewerActions(
       ProviderScope.containerOf(context, listen: false),
@@ -441,10 +441,10 @@ String _marketingStatusLabel(String statusValue) {
   }
 }
 
-Color _marketingStatusColor(String statusValue) {
+Color _marketingStatusColor(BuildContext context, String statusValue) {
   switch (statusValue.toLowerCase()) {
     case 'published':
-      return PremiumTokens.brandGreen;
+      return context.themeAccent;
     case 'draft':
       return const Color(0xFFFF9500);
     case 'pending_sync':
@@ -452,7 +452,7 @@ Color _marketingStatusColor(String statusValue) {
     case 'archived':
       return Colors.grey;
     default:
-      return PremiumTokens.brandGreen;
+      return context.themeAccent;
   }
 }
 
@@ -596,11 +596,11 @@ class _MarketingCaseFilterBar extends StatelessWidget {
         duration: const Duration(milliseconds: 140),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? PremiumTokens.brandGreen : Colors.white,
+          color: isSelected ? context.themeAccent : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? PremiumTokens.brandGreen
+                ? context.themeAccent
                 : const Color(0xFFD1D1D6),
           ),
         ),

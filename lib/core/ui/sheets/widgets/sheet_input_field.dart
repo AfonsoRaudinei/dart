@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../sheet_tokens.dart';
-import '../soloforte_sheet.dart';
+import '../solo_forte_sheet_visuals.dart';
 
 class SheetInputField extends StatelessWidget {
   const SheetInputField({
@@ -30,22 +30,8 @@ class SheetInputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final textColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.inputText;
-    final hintColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
-    final fillColor = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
-    final focusBorder = isIos
-        ? SoloForteSheetSkinIos.iconStroke
-        : SoloForteSheetTokens.chipBorderActive;
-    final radius = isIos
-        ? SoloForteSheetSkinIos.cardRadius
-        : SoloForteSheetTokens.inputRadius;
+    final v = SoloForteSheetVisuals.of(context);
+    final showInputBorder = v.isIos || v.isLight;
 
     return TextField(
       controller: controller,
@@ -56,29 +42,29 @@ class SheetInputField extends StatelessWidget {
       textInputAction: textInputAction,
       onSubmitted: onSubmitted,
       onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-      style: TextStyle(color: textColor),
+      style: TextStyle(color: v.inputText),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: TextStyle(color: hintColor),
+        hintStyle: TextStyle(color: v.inputHint),
         prefixIcon: prefixIcon,
         filled: true,
-        fillColor: fillColor,
+        fillColor: v.inputFill,
         contentPadding: SoloForteSheetTokens.inputPadding,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius),
-          borderSide: isIos
-              ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+          borderRadius: BorderRadius.circular(v.inputRadius),
+          borderSide: showInputBorder
+              ? BorderSide(color: v.inputBorder)
               : BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius),
-          borderSide: isIos
-              ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+          borderRadius: BorderRadius.circular(v.inputRadius),
+          borderSide: showInputBorder
+              ? BorderSide(color: v.inputBorder)
               : BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius),
-          borderSide: BorderSide(color: focusBorder, width: 1.5),
+          borderRadius: BorderRadius.circular(v.inputRadius),
+          borderSide: BorderSide(color: v.focusBorder, width: 1.5),
         ),
       ),
     );

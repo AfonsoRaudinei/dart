@@ -54,7 +54,6 @@ class MeuPlanoScreen extends ConsumerWidget {
           Text(
             'Meu Plano',
             style: TextStyle(
-              fontFamily: 'Inter',
               fontSize: 22,
               fontWeight: FontWeight.w700,
               color: context.premiumTextPrimary,
@@ -115,7 +114,6 @@ class _PlanoAtivoContent extends ConsumerWidget {
               Text(
                 'Plano ${plano.plano.label}',
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
                   color: context.premiumTextPrimary,
@@ -126,7 +124,6 @@ class _PlanoAtivoContent extends ConsumerWidget {
               Text(
                 'via ${plano.origem.label}',
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 14,
                   color: context.premiumTextSecondary,
                 ),
@@ -167,7 +164,6 @@ class _PlanoAtivoContent extends ConsumerWidget {
                         ? '⚠️ Expira em $dias dias'
                         : plano.diasRestantesLabel,
                     style: TextStyle(
-                      fontFamily: 'Inter',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: expiraEmBreve
@@ -179,7 +175,6 @@ class _PlanoAtivoContent extends ConsumerWidget {
                     Text(
                       'Expira em ${_formatDate(plano.expiraEm)}',
                       style: TextStyle(
-                        fontFamily: 'Inter',
                         fontSize: 13,
                         color: context.premiumTextSecondary,
                       ),
@@ -290,7 +285,6 @@ class _InfoRow extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontFamily: 'Inter',
               fontSize: 15,
               color: context.premiumTextPrimary,
             ),
@@ -299,7 +293,6 @@ class _InfoRow extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontFamily: 'Inter',
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: context.premiumTextPrimary,
@@ -350,7 +343,6 @@ class _NavigationRow extends StatelessWidget {
                 child: Text(
                   label,
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 15,
                     color: context.premiumTextPrimary,
                   ),
@@ -359,7 +351,6 @@ class _NavigationRow extends StatelessWidget {
               Text(
                 value,
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: context.premiumTextPrimary,

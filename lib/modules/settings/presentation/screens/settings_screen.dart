@@ -20,6 +20,7 @@ import '../providers/user_profile_provider.dart';
 import '../../domain/settings_models.dart';
 import '../../domain/entities/user_profile.dart';
 import '../widgets/audit_trail_widget.dart';
+import '../widgets/theme_typography_preview.dart';
 import 'report_branding_screen.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/constants/external_links.dart';
@@ -89,6 +90,7 @@ class SettingsScreen extends ConsumerWidget {
               _buildSectionHeader('APARÊNCIA'),
               _buildSection(context, [
                 _buildThemeSelector(context, ref, currentThemeMode),
+                const ThemeTypographyPreview(),
               ]),
 
               // Histórico de alterações do perfil
@@ -697,9 +699,9 @@ class SettingsScreen extends ConsumerWidget {
         style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle())
             .copyWith(color: context.premiumTextPrimary),
       ),
-      trailing: const Icon(
+      trailing: Icon(
         SFIcons.chevronRight,
-        color: PremiumTokens.textTertiaryLight,
+        color: context.premiumTextTertiary,
       ),
       onTap: () {
         HapticFeedback.lightImpact();

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/contracts/i_client_lookup.dart';
@@ -367,10 +368,9 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
-    final sheetBg = isIos
-        ? Colors.transparent
-        : SoloForteSheetTokens.sheetBackground;
+    final sheetBg = v.sheetBackground;
     final sheetRadius = isIos ? SoloForteSheetSkinIos.sheetRadius : 28.0;
     final handleColor = isIos
         ? SoloForteSheetSkinIos.handleColor
@@ -383,7 +383,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
         : SoloForteSheetTokens.inputHint;
     final lockAccent = isIos
         ? SoloForteSheetSkinIos.iconStroke
-        : PremiumTokens.brandGreen;
+        : context.themeAccent;
     final dropdownBg = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : SoloForteSheetTokens.inputBackground;
@@ -392,7 +392,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
         : SoloForteSheetTokens.inputText;
     final ctaBg = isIos
         ? SoloForteSheetSkinIos.ctaBackground
-        : PremiumTokens.brandGreen;
+        : context.themeAccent;
     final ghostBorder = isIos
         ? SoloForteSheetSkinIos.ghostBorder
         : PremiumTokens.hairlineLight;

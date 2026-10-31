@@ -135,7 +135,7 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
             _GeneratedReportCard(
               leading: _relatoriosReportIconBadge(
                 icon: SFIcons.calendar,
-                accent: PremiumTokens.brandGreen,
+                accent: context.themeAccent,
               ),
               eyebrow: 'Gerado sob demanda',
               title: 'Histórico de Visitas',

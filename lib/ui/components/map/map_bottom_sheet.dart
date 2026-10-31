@@ -32,6 +32,7 @@ import '../../../core/state/map_ui_providers.dart';
 import '../../../../core/contracts/i_visit_session_lookup.dart';
 import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/solo_forte_sheet_visuals.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 
 /// Provider local para sessão ativa — substitui visitControllerProvider para leituras
@@ -444,6 +445,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     return LayoutBuilder(
       builder: (context, constraints) {
         final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
         final titleColor =
             isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
         final bodyColor = isIos
@@ -781,22 +783,20 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       tag: 'MapSheet',
     );
     // Host próprio (não passa por showSoloForteSheet) — detecta via ThemeExtension.
-    final isIos = soloForteSheetIsIos(context);
-    final sheetRadius = isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
-    final sheetBg =
-        isIos ? SoloForteSheetSkinIos.background : PremiumTokens.surfaceDark;
+    final variant = soloForteSheetVariant(context);
+    final isIos = variant == SoloForteSheetVariant.ios;
+    final visuals = SoloForteSheetVisuals.of(context);
+    final sheetRadius = visuals.sheetRadius;
+    final sheetBg = visuals.sheetBackground;
     final topBorder = isIos
         ? SoloForteSheetSkinIos.sheetBorder
         : Theme.of(context).dividerColor.withValues(alpha: 0.1);
-    final handleColor =
-        isIos ? SoloForteSheetSkinIos.handleColor : const Color(0xFFC5C5C7);
-    final handleWidth =
-        isIos ? SoloForteSheetSkinIos.handleSize.width : 36.0;
-    final handleHeight =
-        isIos ? SoloForteSheetSkinIos.handleSize.height : 5.0;
+    final handleColor = visuals.handleColor;
+    final handleWidth = visuals.handleSize.width;
+    final handleHeight = visuals.handleSize.height;
 
     return SoloForteSheetSkinScope(
-      isIos: isIos,
+      variant: variant,
       child: GestureDetector(
         key: const Key('map_bottom_sheet_root'),
         onVerticalDragStart: _handleDragStart,

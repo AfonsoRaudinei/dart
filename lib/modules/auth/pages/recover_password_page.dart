@@ -69,20 +69,17 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
                   onPressed: () => context.go(AppRoutes.login),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.arrow_back_ios,
                     size: 16,
-                    color: PremiumTokens.brandGreen,
+                    color: context.themeAccent,
                   ),
-                  label: const Text(
-                    'VOLTAR',
-                    style: TextStyle(
+                  label: Text('VOLTAR', style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: PremiumTokens.brandGreen,
+                      color: context.themeAccent,
                       letterSpacing: 0.5,
-                    ),
-                  ),
+                    )),
                 ),
               ),
               _sent ? _buildSuccess() : _buildForm(),
@@ -117,11 +114,11 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
           const SizedBox(height: 32),
           TextFormField(
             controller: _emailController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'E-mail',
               prefixIcon: Icon(
                 Icons.email_outlined,
-                color: PremiumTokens.brandGreen,
+                color: context.themeAccent,
                 size: 20,
               ),
             ),
@@ -139,7 +136,7 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
             child: ElevatedButton(
               onPressed: _isLoading ? null : _handleRecover,
               style: ElevatedButton.styleFrom(
-                backgroundColor: PremiumTokens.brandGreen,
+                backgroundColor: context.themeAccent,
                 disabledBackgroundColor: context.premiumBackground,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
@@ -202,7 +199,7 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
           child: ElevatedButton(
             onPressed: () => context.go(AppRoutes.login),
             style: ElevatedButton.styleFrom(
-              backgroundColor: PremiumTokens.brandGreen,
+              backgroundColor: context.themeAccent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10.0),
               ),

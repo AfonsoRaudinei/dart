@@ -31,7 +31,7 @@ class _AvaliacaoLivreReadOnlyCardState
     final avaliacao = widget.avaliacao;
     final accent = widget.isIos
         ? SoloForteSheetSkinIos.iconStroke
-        : PremiumTokens.brandGreen;
+        : context.themeAccent;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

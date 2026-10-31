@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
 import 'package:soloforte_app/core/services/connectivity_service.dart';
@@ -32,11 +33,8 @@ Color _menuBorder(BuildContext context) {
       : const Color(0xFFE5E5E7);
 }
 
-Color _menuSecondaryText(BuildContext context) {
-  return Theme.of(context).brightness == Brightness.dark
-      ? const Color(0xFFA0A0A5)
-      : const Color(0xFF8E8E93);
-}
+Color _menuSecondaryText(BuildContext context) =>
+    context.premiumTextSecondary;
 
 const _appBuildVersion = String.fromEnvironment(
   'APP_VERSION',

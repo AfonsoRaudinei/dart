@@ -306,9 +306,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     // 2. SCAFFOLD SIMPLES (SEM DRAWER)
     // ═══════════════════════════════════════════════════════════════
     return Scaffold(
-      // 🛡 IPA-123: background branco explícito — evita tela preta durante
-      // transições de rota quando o tema é 'black' (scaffoldBackgroundColor = #000).
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Camada 1: Conteúdo da tela (child)

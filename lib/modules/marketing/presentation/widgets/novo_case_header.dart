@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 
@@ -22,6 +23,7 @@ class NovoCaseHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final titleColor =
         isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
     final subtitleColor =

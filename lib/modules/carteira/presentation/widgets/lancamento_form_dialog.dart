@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../../../core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -250,6 +251,7 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return AlertDialog(
+      backgroundColor: context.premiumSurface,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       title: Row(
         children: [

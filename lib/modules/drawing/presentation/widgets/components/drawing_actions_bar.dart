@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import '../../../domain/drawing_feature_actions_mode.dart';
 import '../../../domain/models/drawing_models.dart';
@@ -66,19 +67,15 @@ class DrawingActionsBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final showSplitAction =
         onSplitPolygons != null &&
         selectedFeature.geometry is DrawingMultiPolygon &&
         (selectedFeature.geometry as DrawingMultiPolygon).coordinates.length > 1;
-    final panelBg = isIos
-        ? Colors.transparent
-        : SoloForteSheetTokens.sheetBackground;
-    final muted = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
-    final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final panelBg = isIos ? Colors.transparent : v.sheetBackground;
+    final muted = v.inputHint;
+    final titleColor = v.titleColor;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -422,21 +419,11 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final color = isDestructive
-        ? Colors.red
-        : (isIos
-            ? SoloForteSheetSkinIos.titleColor
-            : SoloForteSheetTokens.sectionLabel);
-    final tileBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
-    final descColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
-    final chevronColor = isIos
-        ? SoloForteSheetSkinIos.arrowColor
-        : SoloForteSheetTokens.divider;
+    final v = SoloForteSheetVisuals.of(context);
+    final color = isDestructive ? Colors.red : v.sectionLabelColor;
+    final tileBg = v.cardBackground;
+    final descColor = v.inputHint;
+    final chevronColor = v.arrowColor;
 
     return Material(
       color: tileBg,

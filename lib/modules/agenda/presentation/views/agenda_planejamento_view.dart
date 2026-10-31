@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../../../core/html_templates/html_report_viewer.dart';
 import '../../../../core/contracts/i_client_lookup_provider.dart';
 import '../../../../core/contracts/i_farm_lookup_provider.dart';
@@ -85,9 +86,7 @@ class _AgendaPlanejamentoViewState
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.brightness == Brightness.dark
-              ? const Color(0xFF2A3136)
-              : const Color(0xFFE5E7EB),
+          color: context.premiumHairline,
         ),
       ),
       child: Row(
@@ -276,14 +275,10 @@ class _AgendaPlanejamentoViewState
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: !isVisible
-                    ? (theme.brightness == Brightness.dark
-                          ? const Color(0xFF1E2428)
-                          : const Color(0xFFF3F4F6))
+                    ? context.premiumSurface
                     : isActive
                     ? theme.colorScheme.primary
-                    : (theme.brightness == Brightness.dark
-                          ? const Color(0xFF2A3136)
-                          : const Color(0xFFE5E7EB)),
+                    : context.premiumHairline.withValues(alpha: 0.35),
               ),
               child: Center(
                 child: Text(
@@ -292,14 +287,10 @@ class _AgendaPlanejamentoViewState
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: !isVisible
-                        ? (theme.brightness == Brightness.dark
-                              ? const Color(0xFF3A3A3C)
-                              : const Color(0xFFD1D5DB))
+                        ? context.premiumTextTertiary
                         : isActive
                         ? theme.colorScheme.onPrimary
-                        : (theme.brightness == Brightness.dark
-                              ? const Color(0xFF9CA3AF)
-                              : const Color(0xFF6B7280)),
+                        : context.premiumTextSecondary,
                   ),
                 ),
               ),
@@ -318,22 +309,15 @@ class _AgendaPlanejamentoViewState
   ) {
     final isSunday = day.weekday == DateTime.sunday;
     final isToday = _isToday(day);
+    final sundayFill = theme.colorScheme.primaryContainer;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: isSunday
-            ? (theme.brightness == Brightness.dark
-                  ? const Color(0xFF1A3A1F)
-                  : const Color(0xFFD1FAE5))
-            : theme.cardColor,
+        color: isSunday ? sundayFill : theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isToday
-              ? theme.colorScheme.primary
-              : (theme.brightness == Brightness.dark
-                    ? const Color(0xFF2A3136)
-                    : const Color(0xFFE5E7EB)),
+          color: isToday ? theme.colorScheme.primary : context.premiumHairline,
           width: isToday ? 2 : 1,
         ),
       ),
@@ -351,9 +335,7 @@ class _AgendaPlanejamentoViewState
               child: Text(
                 'Nenhum evento agendado',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.brightness == Brightness.dark
-                      ? const Color(0xFF9CA3AF)
-                      : const Color(0xFF6B7280),
+                  color: context.premiumTextSecondary,
                 ),
               ),
             )
@@ -439,9 +421,7 @@ class _AgendaPlanejamentoViewState
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: theme.brightness == Brightness.dark
-                ? const Color(0xFF2A3136)
-                : const Color(0xFFE5E7EB),
+            color: context.premiumHairline,
           ),
         ),
       ),
@@ -462,9 +442,7 @@ class _AgendaPlanejamentoViewState
                 Text(
                   DateFormat('d MMM yyyy', 'pt_BR').format(day),
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.brightness == Brightness.dark
-                        ? const Color(0xFF9CA3AF)
-                        : const Color(0xFF6B7280),
+                    color: context.premiumTextSecondary,
                   ),
                 ),
               ],
@@ -474,9 +452,7 @@ class _AgendaPlanejamentoViewState
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: theme.brightness == Brightness.dark
-                    ? const Color(0xFF1E2428)
-                    : const Color(0xFFF3F4F6),
+                color: context.premiumSurface,
                 borderRadius: BorderRadius.circular(99),
               ),
               child: Text(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
@@ -16,10 +17,9 @@ class AgendaFiltersSheet extends ConsumerWidget {
     final filters = ref.watch(agendaFiltersProvider);
     final bottomPad = MediaQuery.of(context).viewPadding.bottom;
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
-    final sheetBg = isIos
-        ? Colors.transparent
-        : SoloForteSheetTokens.sheetBackground;
+    final sheetBg = v.sheetBackground;
     final handleColor = isIos
         ? SoloForteSheetSkinIos.handleColor
         : SoloForteSheetTokens.divider;
@@ -205,6 +205,7 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     return Text(
       label,
       style: TextStyle(
@@ -227,6 +228,7 @@ class _FilterGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -262,6 +264,7 @@ class _AgendaFilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final unselectedFill = isIos
         ? SoloForteSheetSkinIos.background
         : context.premiumSurface;

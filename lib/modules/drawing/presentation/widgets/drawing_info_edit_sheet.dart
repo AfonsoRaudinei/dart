@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../domain/repositories/i_clients_repository.dart';
@@ -144,6 +145,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final clientState = ref.watch(drawingClientProvider);
 
     // Tenta reidrar a seleção de cliente após carregamento tardio
@@ -169,41 +171,29 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
       }
     }
 
-    final isIos = soloForteSheetIsIos(context);
-    final bg = isIos
-        ? (widget.embedded
-            ? Colors.transparent
-            : SoloForteSheetSkinIos.background)
-        : SoloForteSheetTokens.sheetBackground;
-    final inputBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
-    final hintColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
-    final divColor = isIos
-        ? SoloForteSheetSkinIos.rowDivider
-        : SoloForteSheetTokens.divider;
+    final isIos = v.isIos;
+    final bg = isIos && !widget.embedded
+        ? SoloForteSheetSkinIos.background
+        : (widget.embedded ? Colors.transparent : v.sheetBackground);
+    final inputBg = v.cardBackground;
+    final hintColor = v.inputHint;
+    final divColor = v.rowDivider;
     final textStyle = TextStyle(
-      color: isIos ? SoloForteSheetSkinIos.titleColor : Colors.white,
+      color: v.onSheetPrimary,
       fontSize: 14,
     );
     final labelStyle = TextStyle(
-      color: isIos
-          ? SoloForteSheetSkinIos.subtitleColor
-          : Colors.white70,
+      color: v.onSheetSecondary,
       fontSize: 12,
       fontWeight: FontWeight.w500,
     );
     final titleStyle = TextStyle(
-      color: isIos ? SoloForteSheetSkinIos.titleColor : Colors.white,
+      color: v.onSheetPrimary,
       fontSize: 17,
       fontWeight: FontWeight.w600,
     );
     final mutedText = textStyle.copyWith(
-      color: isIos
-          ? SoloForteSheetSkinIos.subtitleColor
-          : Colors.white60,
+      color: v.onSheetSecondary,
     );
 
     return Container(

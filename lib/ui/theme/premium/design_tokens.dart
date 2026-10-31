@@ -120,4 +120,7 @@ extension PremiumThemeAware on BuildContext {
 
   Color get premiumHairline =>
       isPremiumDark ? PremiumTokens.hairlineDark : PremiumTokens.hairlineLight;
+
+  /// Acento de marca por tema (Verde · Azul Samsung · Black dourado via primary).
+  Color get themeAccent => Theme.of(this).colorScheme.primary;
 }

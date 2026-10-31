@@ -461,7 +461,7 @@ class _RelatorioCardState extends ConsumerState<_RelatorioCard> {
   Color _statusColor(RelatorioStatus status) {
     switch (status) {
       case RelatorioStatus.publicado:
-        return PremiumTokens.brandGreen;
+        return context.themeAccent;
       case RelatorioStatus.arquivado:
         return Colors.grey;
       case RelatorioStatus.pendente_revisao:
@@ -806,7 +806,7 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
 
   Color _occStatusColor(String? status) {
     return status == 'confirmed'
-        ? PremiumTokens.brandGreen
+        ? context.themeAccent
         : const Color(0xFFFF9500);
   }
 }

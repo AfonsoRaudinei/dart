@@ -250,8 +250,8 @@ class _PremiumEmptyState extends StatelessWidget {
               onPressed: onCta,
               child: Text(
                 ctaLabel!,
-                style: const TextStyle(
-                  color: PremiumTokens.brandGreen,
+                style: TextStyle(
+                  color: context.themeAccent,
                   fontWeight: FontWeight.w600,
                 ),
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
@@ -19,10 +20,11 @@ class CaseTipoSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final selectedBg =
-        isIos ? SoloForteSheetSkinIos.ctaBackground : PremiumTokens.brandGreen;
+        isIos ? SoloForteSheetSkinIos.ctaBackground : context.themeAccent;
     final selectedBorder =
-        isIos ? SoloForteSheetSkinIos.ctaBackground : PremiumTokens.brandGreen;
+        isIos ? SoloForteSheetSkinIos.ctaBackground : context.themeAccent;
     final inactiveBorder =
         isIos ? SoloForteSheetSkinIos.cardBorder : PremiumTokens.hairlineLight;
     final selectedFg =
@@ -86,6 +88,7 @@ class PlanoMarketingSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final inactiveBorder =
         isIos ? SoloForteSheetSkinIos.cardBorder : PremiumTokens.hairlineLight;
 

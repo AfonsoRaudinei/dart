@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
@@ -38,9 +39,8 @@ class DraftSavedSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    final bg = isIos
-        ? Colors.transparent
-        : SoloForteSheetTokens.sheetBackground;
+    final v = SoloForteSheetVisuals.of(context);
+    final bg = v.sheetBackground;
     final radius = isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
     final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
     final messageColor = isIos

@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 import 'dart:async';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -397,6 +398,7 @@ class _OccurrenceCreationSheetState
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final safeBottom = MediaQuery.paddingOf(context).bottom;
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final actionBarBottomPadding = sheetStickyActionBottomPadding(
@@ -406,13 +408,11 @@ class _OccurrenceCreationSheetState
       closedExtra: kFabSafeArea,
     );
     final isIos = occurrenceFormIsIos(context);
-    final sheetBg = isIos
-        ? SoloForteSheetSkinIos.background
-        : SoloForteSheetTokens.sheetBackground;
+    final sheetBg = v.sheetBackground;
     final accent = isIos
         ? SoloForteSheetSkinIos.iconStroke
-        : PremiumTokens.brandGreen;
-    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+        : context.themeAccent;
+    final titleColor = v.onSheetPrimary;
     final muted = isIos
         ? SoloForteSheetSkinIos.subtitleColor
         : const Color(0xFF8E8E93);
@@ -827,7 +827,7 @@ class _OccurrenceCreationSheetState
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isIos
                             ? SoloForteSheetSkinIos.ctaBackground
-                            : PremiumTokens.brandGreen,
+                            : context.themeAccent,
                         foregroundColor: isIos
                             ? SoloForteSheetSkinIos.ctaText
                             : Colors.black,

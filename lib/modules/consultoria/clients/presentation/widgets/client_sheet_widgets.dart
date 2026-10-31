@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/client_sheet_form_padding.dart';
-import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 /// Tokens visuais compartilhados pelos sheets premium de clientes/consultoria.
 class ClientSheetVisuals {
@@ -16,7 +15,12 @@ class ClientSheetVisuals {
 
   bool get isIos => soloForteSheetIsIos(context);
 
-  Color get sheetBg => isIos ? Colors.transparent : Colors.white;
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+
+  Color get sheetBg {
+    if (isIos) return Colors.transparent;
+    return _isDark ? const Color(0xFF1C1C1E) : Colors.white;
+  }
 
   double get sheetRadius => isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
 
@@ -26,8 +30,7 @@ class ClientSheetVisuals {
   Color get muted =>
       isIos ? SoloForteSheetSkinIos.subtitleColor : SoloForteSheetTokens.inputHint;
 
-  Color get accent =>
-      isIos ? SoloForteSheetSkinIos.iconStroke : PremiumTokens.brandGreen;
+  Color get accent => Theme.of(context).colorScheme.primary;
 
   Color get cardBg =>
       isIos ? SoloForteSheetSkinIos.cardBackground : const Color(0xFFEFFAF2);
@@ -49,7 +52,7 @@ class ClientSheetVisuals {
       isIos ? SoloForteSheetSkinIos.rowDivider : const Color(0xFFE5E5EA);
 
   Color get ctaBg =>
-      isIos ? SoloForteSheetSkinIos.ctaBackground : PremiumTokens.brandGreen;
+      isIos ? SoloForteSheetSkinIos.ctaBackground : accent;
 
   Color get ctaFg => isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
 
@@ -59,7 +62,7 @@ class ClientSheetVisuals {
       isIos ? SoloForteSheetSkinIos.ghostBorder : const Color(0xFFE2E2E8);
 
   Color get ghostText =>
-      isIos ? SoloForteSheetSkinIos.ghostText : PremiumTokens.brandGreen;
+      isIos ? SoloForteSheetSkinIos.ghostText : accent;
 
   double get ghostRadius => isIos ? SoloForteSheetSkinIos.ghostRadius : 13.0;
 

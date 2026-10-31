@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
@@ -17,8 +18,9 @@ class NovoCasePublicarButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final bg =
-        isIos ? SoloForteSheetSkinIos.ctaBackground : PremiumTokens.brandGreen;
+        isIos ? SoloForteSheetSkinIos.ctaBackground : context.themeAccent;
     final fg = isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
     final radius =
         isIos ? SoloForteSheetSkinIos.ctaRadius : 14.0;

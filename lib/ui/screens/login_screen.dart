@@ -179,9 +179,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.primary;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.transparent,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -302,17 +304,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               child: TextButton.icon(
                                 onPressed: () =>
                                     context.go(AppRoutes.publicMap),
-                                icon: const Icon(
+                                icon: Icon(
                                   Icons.arrow_back_ios,
                                   size: 16,
-                                  color: PremiumTokens.brandGreen,
+                                  color: accent,
                                 ),
-                                label: const Text(
+                                label: Text(
                                   'VOLTAR',
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
-                                    color: PremiumTokens.brandGreen,
+                                    color: accent,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -409,11 +411,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 style: TextButton.styleFrom(
                                   padding: EdgeInsets.zero,
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'Esqueceu a senha?',
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: PremiumTokens.brandGreen,
+                                    color: accent,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -463,11 +465,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                       color: Colors.grey.shade600,
                                       fontSize: 13,
                                     ),
-                                    children: const [
+                                    children: [
                                       TextSpan(
                                         text: 'Cadastrar',
                                         style: TextStyle(
-                                          color: PremiumTokens.brandGreen,
+                                          color: accent,
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),

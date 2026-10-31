@@ -94,9 +94,9 @@ class _PublicacaoEditorScreenState
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Publicação salva com sucesso!'),
-          backgroundColor: PremiumTokens.brandGreen,
+          backgroundColor: context.themeAccent,
         ),
       );
 
@@ -116,9 +116,9 @@ class _PublicacaoEditorScreenState
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
-          child: CircularProgressIndicator(color: PremiumTokens.brandGreen),
+          child: CircularProgressIndicator(color: context.themeAccent),
         ),
       );
     }
@@ -127,7 +127,7 @@ class _PublicacaoEditorScreenState
       return Scaffold(
         appBar: AppBar(
           title: const Text('Editar Publicação'),
-          backgroundColor: Colors.white,
+          backgroundColor: context.premiumBackground,
           foregroundColor: context.premiumTextPrimary,
           elevation: 0,
           leading: IconButton(
@@ -151,7 +151,7 @@ class _PublicacaoEditorScreenState
     return Scaffold(
       appBar: AppBar(
         title: const Text('Editar Publicação'),
-        backgroundColor: Colors.white,
+        backgroundColor: context.premiumBackground,
         foregroundColor: context.premiumTextPrimary,
         elevation: 0,
         automaticallyImplyLeading: false,
@@ -159,21 +159,18 @@ class _PublicacaoEditorScreenState
           TextButton(
             onPressed: _isSaving ? null : _handleSave,
             child: _isSaving
-                ? const SizedBox(
+                ? SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: PremiumTokens.brandGreen,
+                      color: context.themeAccent,
                     ),
                   )
-                : const Text(
-                    'Salvar',
-                    style: TextStyle(
-                      color: PremiumTokens.brandGreen,
+                : Text('Salvar', style: TextStyle(
+                      color: context.themeAccent,
                       fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                    )),
           ),
         ],
       ),
@@ -233,8 +230,8 @@ class _PublicacaoEditorScreenState
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10.0),
-                  borderSide: const BorderSide(
-                    color: PremiumTokens.brandGreen,
+                  borderSide: BorderSide(
+                    color: context.themeAccent,
                     width: 2,
                   ),
                 ),
@@ -265,8 +262,8 @@ class _PublicacaoEditorScreenState
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10.0),
-                  borderSide: const BorderSide(
-                    color: PremiumTokens.brandGreen,
+                  borderSide: BorderSide(
+                    color: context.themeAccent,
                     width: 2,
                   ),
                 ),

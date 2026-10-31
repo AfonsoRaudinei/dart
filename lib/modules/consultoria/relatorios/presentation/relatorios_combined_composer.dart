@@ -128,6 +128,7 @@ List<_CombinedReportEvent> _assembleCombinedEvents({
   required List<RelatorioTecnico> visits,
   required List<Occurrence> occurrences,
   required List<MarketingCaseReportSnapshot> marketing,
+  required Color visitAccent,
   Map<String, String> occurrenceDetails = const {},
 }) {
   final events = <_CombinedReportEvent>[
@@ -142,7 +143,7 @@ List<_CombinedReportEvent> _assembleCombinedEvents({
         subtitle: report.farmName,
         detail: _visitEventDetail(report),
         icon: SFIcons.calendar,
-        accent: PremiumTokens.brandGreen,
+        accent: visitAccent,
         buildFragment: (ref) =>
             buildRelatorioVisitHtml(ref, report, asFragment: true),
       ),
@@ -196,6 +197,7 @@ List<_CombinedReportEvent> _assembleCombinedEvents({
 }
 
 Future<List<_CombinedReportEvent>> _combinedEventsForProducer({
+  required BuildContext context,
   required WidgetRef ref,
   required bool Function() isAlive,
   required List<RelatorioTecnico> visits,
@@ -215,6 +217,7 @@ Future<List<_CombinedReportEvent>> _combinedEventsForProducer({
     visits: visits,
     occurrences: occurrences,
     marketing: marketing,
+    visitAccent: context.themeAccent,
     occurrenceDetails: details,
   );
 }
@@ -242,14 +245,23 @@ class _CombinedEventsLoader extends ConsumerStatefulWidget {
 class _CombinedEventsLoaderState extends ConsumerState<_CombinedEventsLoader> {
   List<_CombinedReportEvent> _events = const [];
   bool _ready = false;
+  bool _initialEventsBuilt = false;
   int _generation = 0;
 
   @override
   void initState() {
     super.initState();
-    _events = _assembleFromWidget();
-    _ready = true;
     _load();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialEventsBuilt) {
+      _initialEventsBuilt = true;
+      _events = _assembleFromWidget();
+      _ready = true;
+    }
   }
 
   @override
@@ -266,6 +278,7 @@ class _CombinedEventsLoaderState extends ConsumerState<_CombinedEventsLoader> {
       visits: widget.visits,
       occurrences: widget.occurrences,
       marketing: widget.marketing,
+      visitAccent: context.themeAccent,
     );
   }
 
@@ -295,6 +308,7 @@ class _CombinedEventsLoaderState extends ConsumerState<_CombinedEventsLoader> {
     final generation = ++_generation;
     try {
       final events = await _combinedEventsForProducer(
+        context: context,
         ref: ref,
         isAlive: () => mounted && generation == _generation,
         visits: widget.visits,

@@ -33,49 +33,70 @@ class PremiumAppTheme {
   }
 
   // ============================================
-  // TEXT THEMES: Geometria de texto iOS com Fonte Inter
+  // TEXT THEMES: Inter — cor primária (títulos/corpo) vs secundária (metadados)
+  // Verde/Azul: PremiumTokens text*Light · Black: text*Dark
   // ============================================
+
+  static TextStyle _interText({
+    required double fontSize,
+    required FontWeight fontWeight,
+    required Color color,
+    double letterSpacing = 0,
+    double? height,
+  }) {
+    return GoogleFonts.inter(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      letterSpacing: letterSpacing,
+      height: height,
+    );
+  }
 
   static TextTheme _buildTextTheme(
     Color primaryTextColor,
     Color secondaryTextColor,
   ) {
+    TextStyle primary({
+      required double size,
+      required FontWeight weight,
+      double letterSpacing = 0,
+    }) =>
+        _interText(
+          fontSize: size,
+          fontWeight: weight,
+          color: primaryTextColor,
+          letterSpacing: letterSpacing,
+        );
+
+    TextStyle secondary({
+      required double size,
+      required FontWeight weight,
+      double letterSpacing = 0,
+    }) =>
+        _interText(
+          fontSize: size,
+          fontWeight: weight,
+          color: secondaryTextColor,
+          letterSpacing: letterSpacing,
+        );
+
     return TextTheme(
-      // Large Title
-      displayLarge: GoogleFonts.inter(
-        fontSize: 34,
-        fontWeight: FontWeight.w700,
-        color: primaryTextColor,
-        letterSpacing: 0.37,
-      ),
-      // Small Titles (Header Dialogs)
-      titleMedium: GoogleFonts.inter(
-        fontSize: 17,
-        fontWeight: FontWeight.w600,
-        color: primaryTextColor,
-        letterSpacing: -0.4,
-      ),
-      // Body (Reading)
-      bodyLarge: GoogleFonts.inter(
-        fontSize: 17,
-        fontWeight: FontWeight.w400,
-        color: primaryTextColor,
-        letterSpacing: -0.4,
-      ),
-      // Small body / Metadados Explicativos
-      bodyMedium: GoogleFonts.inter(
-        fontSize: 15,
-        fontWeight: FontWeight.w500,
-        color: secondaryTextColor,
-        letterSpacing: 0,
-      ),
-      // Mínimos
-      labelSmall: GoogleFonts.inter(
-        fontSize: 11,
-        fontWeight: FontWeight.w500,
-        color: secondaryTextColor,
-        letterSpacing: 0.07,
-      ),
+      displayLarge: primary(size: 34, weight: FontWeight.w700, letterSpacing: 0.37),
+      displayMedium: primary(size: 28, weight: FontWeight.w700, letterSpacing: 0.36),
+      displaySmall: primary(size: 22, weight: FontWeight.w700, letterSpacing: 0.35),
+      headlineLarge: primary(size: 28, weight: FontWeight.w700),
+      headlineMedium: primary(size: 24, weight: FontWeight.w600),
+      headlineSmall: primary(size: 20, weight: FontWeight.w600),
+      titleLarge: primary(size: 20, weight: FontWeight.w600, letterSpacing: -0.4),
+      titleMedium: primary(size: 17, weight: FontWeight.w600, letterSpacing: -0.4),
+      titleSmall: primary(size: 15, weight: FontWeight.w600),
+      bodyLarge: primary(size: 17, weight: FontWeight.w400, letterSpacing: -0.4),
+      bodyMedium: secondary(size: 15, weight: FontWeight.w500),
+      bodySmall: secondary(size: 13, weight: FontWeight.w400),
+      labelLarge: primary(size: 15, weight: FontWeight.w600),
+      labelMedium: secondary(size: 13, weight: FontWeight.w500),
+      labelSmall: secondary(size: 11, weight: FontWeight.w500, letterSpacing: 0.07),
     );
   }
 

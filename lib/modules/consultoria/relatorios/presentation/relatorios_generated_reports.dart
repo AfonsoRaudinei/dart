@@ -102,7 +102,7 @@ class _GeneratedReportCardState extends ConsumerState<_GeneratedReportCard> {
       statusLabel:
           widget.statusLabel ?? (widget.enabled ? 'Disponível' : 'Vazio'),
       statusColor: widget.statusColor ??
-          (widget.enabled ? PremiumTokens.brandGreen : Colors.grey),
+          (widget.enabled ? context.themeAccent : Colors.grey),
       onTapAsync: widget.enabled ? () => _openPreview(context) : null,
     );
   }

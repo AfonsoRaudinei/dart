@@ -14,12 +14,11 @@ class _SelectedModeFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final footerBg = isIos
         ? SoloForteSheetSkinIos.background
-        : SoloForteSheetTokens.sheetBackground;
-    final topBorder = isIos
-        ? SoloForteSheetSkinIos.cardBorder
-        : SoloForteSheetTokens.inputBackground;
+        : v.sheetBackground;
+    final topBorder = v.cardBorder;
 
     return Container(
       key: const Key('drawing_selected_sticky_footer'),
@@ -63,7 +62,7 @@ class _SelectedModeFooter extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: isIos
                     ? SoloForteSheetSkinIos.ctaBackground
-                    : PremiumTokens.brandGreen,
+                    : context.themeAccent,
               ),
               child: const Text(
                 'Sair da seleção',
@@ -86,8 +85,9 @@ class _SheetHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : SoloForteSheetTokens.titleColor;
+        isIos ? SoloForteSheetSkinIos.titleColor : v.titleColor;
     final iconColor =
         isIos ? SoloForteSheetSkinIos.iconStroke : Theme.of(context).colorScheme.onSurface;
 
@@ -196,6 +196,7 @@ class _MetricItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final valueColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
     final labelColor =
         isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.grey;
@@ -232,6 +233,7 @@ class _FormatButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final surface = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : Colors.grey[50];

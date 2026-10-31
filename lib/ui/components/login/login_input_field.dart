@@ -54,7 +54,7 @@ class _LoginInputFieldState extends State<LoginInputField> {
     // Coleta do tema atual
     final theme = Theme.of(context);
     final errorColor = theme.colorScheme.error;
-    final primaryColor = PremiumTokens.brandGreen; // Verde
+    final primaryColor = context.themeAccent; // Verde
     final secondaryColor = context.premiumTextSecondary;
     final tertiaryColor = context.premiumTextTertiary;
 

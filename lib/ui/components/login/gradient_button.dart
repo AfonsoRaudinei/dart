@@ -31,7 +31,7 @@ class GradientButton extends StatelessWidget {
 
     // Cores baseadas no estado
     final Color backgroundColor = isEnabled
-        ? PremiumTokens.brandGreen
+        ? context.themeAccent
         : context.premiumBackground; // Disabled
 
     final Color textColor = isEnabled

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -115,6 +116,7 @@ class SoloFortePhotoPickerSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final cardBg = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : Theme.of(context).scaffoldBackgroundColor;

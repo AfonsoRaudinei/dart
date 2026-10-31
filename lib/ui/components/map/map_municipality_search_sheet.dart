@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -222,6 +223,7 @@ class _MapMunicipalitySearchSheetState
       keyboard: MediaQuery.viewInsetsOf(context).bottom,
     );
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final titleColor = isIos
         ? SoloForteSheetSkinIos.titleColor
         : SoloForteSheetTokens.titleColor;

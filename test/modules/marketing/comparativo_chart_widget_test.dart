@@ -31,9 +31,10 @@ void main() {
     final legendText = tester.widget<Text>(find.text('grãos').last);
     final valueText = tester.widget<Text>(find.text('+12,5%'));
     final overviewText = tester.widget<Text>(find.text('Visão Geral'));
+    final accent = Theme.of(tester.element(find.text('Visão Geral'))).colorScheme.primary;
 
     expect(legendText.style?.color, SoloForteSheetTokens.inputText);
     expect(valueText.style?.color, SoloForteSheetTokens.inputText);
-    expect(overviewText.style?.color, const Color(0xFF34C759));
+    expect(overviewText.style?.color, accent);
   });
 }

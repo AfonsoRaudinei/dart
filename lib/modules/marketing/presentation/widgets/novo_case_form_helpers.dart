@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
@@ -21,7 +22,7 @@ Color novoCaseSecondaryTextColor(BuildContext context) {
 Color novoCaseAccentColor(BuildContext context) {
   return soloForteSheetIsIos(context)
       ? SoloForteSheetSkinIos.iconStroke
-      : PremiumTokens.brandGreen;
+      : context.themeAccent;
 }
 
 BoxDecoration novoCaseInnerCardDecoration(
@@ -29,6 +30,7 @@ BoxDecoration novoCaseInnerCardDecoration(
   bool selected = false,
 }) {
   final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
   if (isIos) {
     return BoxDecoration(
       color: SoloForteSheetSkinIos.cardBackground,
@@ -54,7 +56,7 @@ BoxDecoration novoCaseInnerCardDecoration(
     borderRadius: BorderRadius.circular(16),
     border: Border.all(
       color: selected
-          ? PremiumTokens.brandGreen
+          ? context.themeAccent
           : PremiumTokens.hairlineLight,
     ),
     boxShadow: selected
@@ -71,6 +73,7 @@ BoxDecoration novoCaseInnerCardDecoration(
 
 ButtonStyle novoCaseGhostOutlinedButtonStyle(BuildContext context) {
   final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
   return OutlinedButton.styleFrom(
     foregroundColor: isIos
         ? SoloForteSheetSkinIos.ghostText
@@ -93,6 +96,7 @@ Widget novoCaseSectionLabel(String label) {
   return Builder(
     builder: (context) {
       final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
       return Text(
         label.toUpperCase(),
         style: TextStyle(
@@ -111,6 +115,7 @@ Widget novoCaseFieldBox({required Widget child}) {
   return Builder(
     builder: (context) {
       final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
@@ -143,6 +148,7 @@ Widget novoCaseTextInput(
   return Builder(
     builder: (context) {
       final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
       final textColor = isIos
           ? SoloForteSheetSkinIos.titleColor
           : SoloForteSheetTokens.inputText;
@@ -194,6 +200,7 @@ class NovoCaseFDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     return Divider(
       height: 0.5,
       thickness: 0.5,

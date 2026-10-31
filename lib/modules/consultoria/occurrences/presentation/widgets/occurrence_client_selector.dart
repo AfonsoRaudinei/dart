@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/widgets/occurrence_form_widgets.dart';
@@ -17,6 +18,7 @@ class OccurrenceClientSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final isIos = occurrenceFormIsIos(context);
     final surface = isIos
         ? SoloForteSheetSkinIos.cardBackground
@@ -28,7 +30,7 @@ class OccurrenceClientSelector extends StatelessWidget {
         ? SoloForteSheetSkinIos.subtitleColor
         : const Color(0xFF8E8E93);
     final title =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+        v.onSheetPrimary;
     final iconColor =
         isIos ? SoloForteSheetSkinIos.iconStroke : Colors.white70;
     final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
