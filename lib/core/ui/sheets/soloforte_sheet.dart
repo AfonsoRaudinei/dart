@@ -88,6 +88,7 @@ Future<T?> showSoloForteSheet<T>({
   BoxConstraints? constraints,
   Clip? clipBehavior,
   bool preserveMaterialDefaults = false,
+  bool useRootNavigator = false,
 }) {
   final ext = Theme.of(context).extension<SoloForteThemeExtension>();
   final bool isIos = !preserveMaterialDefaults && ext?.themeId == 'blue';
@@ -131,6 +132,7 @@ Future<T?> showSoloForteSheet<T>({
 
   return showModalBottomSheet<T>(
     context: context,
+    useRootNavigator: useRootNavigator,
     isScrollControlled: isScrollControlled,
     isDismissible: isDismissible,
     enableDrag: enableDrag,
