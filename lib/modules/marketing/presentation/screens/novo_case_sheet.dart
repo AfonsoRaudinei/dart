@@ -448,6 +448,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
       child: Form(
       key: _formKey,
       child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
