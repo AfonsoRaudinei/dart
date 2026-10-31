@@ -231,26 +231,53 @@ class _FormatButton extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final surface = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : Colors.grey[50];
+    final border = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : Colors.grey[300]!;
+    final iconColor = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : Theme.of(context).primaryColor;
+    final labelColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : null;
+    final sublabelColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : Colors.grey;
+
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(
+        isIos ? SoloForteSheetSkinIos.cardRadius : 12,
+      ),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 24),
         decoration: BoxDecoration(
-          color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!),
+          color: surface,
+          borderRadius: BorderRadius.circular(
+            isIos ? SoloForteSheetSkinIos.cardRadius : 12,
+          ),
+          border: Border.all(color: border),
         ),
         child: Column(
           children: [
-            Icon(icon, size: 32, color: Theme.of(context).primaryColor),
+            Icon(icon, size: 32, color: iconColor),
             const SizedBox(height: 8),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: labelColor,
+              ),
+            ),
             if (sublabel != null) ...[
               const SizedBox(height: 4),
               Text(
                 sublabel!,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                style: TextStyle(fontSize: 12, color: sublabelColor),
               ),
             ],
           ],

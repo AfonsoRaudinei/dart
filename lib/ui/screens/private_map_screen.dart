@@ -31,6 +31,7 @@ import '../components/map/map_coordinate_search_sheet.dart';
 import '../components/map/map_municipality_search_sheet.dart';
 import '../components/map/map_offline_download_sheet.dart';
 import '../components/map/map_sheet_state.dart';
+import '../components/map/widgets/location_export_bottom_sheet.dart';
 import '../components/map/widgets/map_mark_sheet.dart';
 import '../theme/premium/design_tokens.dart';
 import 'map/utils/map_camera_snapshot_throttle.dart';
@@ -900,7 +901,21 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   void _handleOccurrencePinTap(occ.Occurrence occurrence) {
     if (!mounted) return;
     if (ref.read(drawingControllerProvider).suppressesMapContextTaps) return;
-    OccurrenceDetailSheet.show(context, occurrence, allowPinCorrection: true);
+    OccurrenceDetailSheet.show(
+      context,
+      occurrence,
+      allowPinCorrection: true,
+      onExportLocation: (ctx, o) {
+        final c = o.getCoordinates();
+        if (c == null) return Future.value();
+        return LocationExportBottomSheet.show(
+          context: ctx,
+          latitude: c['lat']!,
+          longitude: c['long']!,
+          label: 'Área Visitada',
+        );
+      },
+    );
   }
 
   @override
