@@ -51,6 +51,7 @@ import 'map/controllers/map_viewport_controller.dart';
 import 'map/controllers/map_sheet_controller.dart';
 import 'map/handlers/drawing_focus_sheet_policy.dart';
 import 'map/handlers/map_first_query_handler.dart';
+import 'map/handlers/visit_check_in_map_focus.dart';
 
 // ADR-032 F1: _isMapReady migrado → mapReadyStateProvider (autoDispose).
 // Bloqueador restante: _setSheetState (modal state).
@@ -174,6 +175,44 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     ref.listen<ArmedMode>(armedModeProvider, (prev, next) {
       if (next != ArmedMode.none) _dismissLongPressHint();
     });
+  }
+
+  void _listenVisitCheckInMapFocusRequests() {
+    ref.listen<VisitCheckInMapFocusRequest?>(
+      visitCheckInMapFocusRequestProvider,
+      (previous, next) {
+        if (next == null) return;
+        unawaited(_applyVisitCheckInMapFocus(next));
+      },
+    );
+  }
+
+  Future<void> _applyVisitCheckInMapFocus(
+    VisitCheckInMapFocusRequest request,
+  ) async {
+    final outcome = await applyVisitCheckInMapFocusRequest(
+      ref: ref,
+      mapController: _mapController,
+      request: request,
+    );
+    ref.read(visitCheckInMapFocusRequestProvider.notifier).state = null;
+    if (!mounted) return;
+    if (outcome == VisitCheckInMapFocusOutcome.noGeometry) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(visitCheckInNoGeometryMessage(request)),
+          backgroundColor: Colors.black.withValues(alpha: 0.78),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } else if (outcome == VisitCheckInMapFocusOutcome.missingFarmOrField) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecione uma fazenda ou área/talhão.'),
+        ),
+      );
+    }
   }
 
   void _scheduleMapFirstQueryHandling(Uri uri) {
@@ -925,6 +964,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     _drawingController = ref.read(drawingControllerProvider);
     _scheduleMapFirstQueryHandling(GoRouterState.of(context).uri);
     _listenLongPressHintDismissals();
+    _listenVisitCheckInMapFocusRequests();
 
     // ADR-032 F3: Build orchestrado por MapBuildOrchestrator.
     // Todo o conteúdo do Stack (canvas, layers, overlays, controls, sheet)
