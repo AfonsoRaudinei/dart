@@ -324,6 +324,8 @@ Widget _marketingReportCard(
   MarketingCaseReportSnapshot item,
 ) {
   final tipoColor = _relatoriosMarketingTipoColor(item.tipo);
+  final mapHidden = item.pinOcultoNoMapa;
+  final statusLabel = _marketingStatusLabel(item.statusValue);
   return _GeneratedReportCard(
     leading: _relatoriosReportIconBadge(
       icon: _relatoriosMarketingTipoIcon(item.tipo),
@@ -331,11 +333,13 @@ Widget _marketingReportCard(
     ),
     eyebrow: _relatoriosMarketingTipoSectionTitle(item.tipo),
     title: item.produtorFazenda,
-    subtitle: _marketingStatusLabel(item.statusValue),
+    subtitle: mapHidden ? 'Oculto no mapa' : statusLabel,
     date: dateFormat.format(item.criadoEm.toLocal()),
     enabled: true,
-    statusLabel: _marketingStatusLabel(item.statusValue),
-    statusColor: _marketingStatusColor(item.statusValue),
+    statusLabel: mapHidden ? 'Oculto no mapa' : statusLabel,
+    statusColor: mapHidden
+        ? const Color(0xFFFF9500)
+        : _marketingStatusColor(item.statusValue),
     buildPayload: () => _buildMarketingPayload(ref, item),
     viewerActions: _marketingReportViewerActions(
       ProviderScope.containerOf(context, listen: false),
