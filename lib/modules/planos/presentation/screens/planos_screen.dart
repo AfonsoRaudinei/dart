@@ -64,14 +64,14 @@ class PlanosScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-              const Text(
+              Text(
                 'Assinaturas pagas estão temporariamente indisponíveis neste app. '
                 'Seu plano gratuito e indicações continuam valendo na conta.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 15,
-                  color: Color(0xFF8E8E93),
+                  color: context.premiumTextSecondary,
                 ),
               ),
               const SizedBox(height: 24),
@@ -87,10 +87,10 @@ class PlanosScreen extends StatelessWidget {
                       'Plano atual: $planoNome · ${plano.diasRestantesLabel} · '
                       'até ${plano.limiteCases} cases no mapa',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 14,
-                        color: Color(0xFF8E8E93),
+                        color: context.premiumTextSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     );
