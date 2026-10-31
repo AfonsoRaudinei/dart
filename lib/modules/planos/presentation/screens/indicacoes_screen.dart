@@ -13,7 +13,6 @@ import '../providers/plano_providers.dart';
 import '../../domain/entities/referral.dart';
 import '../../domain/entities/referral_code.dart';
 import '../../domain/enums/referral_status.dart';
-import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 class IndicacoesScreen extends ConsumerWidget {
   const IndicacoesScreen({super.key});
@@ -40,14 +39,9 @@ class IndicacoesScreen extends ConsumerWidget {
                     color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
-                error: (e, _) => Center(
-                  child: Text(
-                    userFacingError(e, action: 'Erro'),
-                    style: const TextStyle(
-                      color: Colors.red,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
+                error: (_, _) => _IndicacoesContent(
+                  codigo: null,
+                  referralsAsync: referralsAsync,
                 ),
               ),
             ),
@@ -129,10 +123,7 @@ class _IndicacoesContent extends StatelessWidget {
               ),
             ),
           ),
-          error: (e, _) => Text(
-            userFacingError(e, action: 'Erro ao carregar indicações'),
-            style: const TextStyle(color: Colors.red, fontFamily: 'Inter'),
-          ),
+          error: (_, _) => const _EmptyReferrals(),
         ),
         const SizedBox(height: 32),
         const SizedBox(height: kFabSafeArea),
@@ -156,18 +147,18 @@ class _CodigoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: primary.withAlpha(60)),
+        color: context.premiumSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.premiumHairline),
       ),
       child: Column(
         children: [
-          const Text(
+          Text(
             'Seu código de indicação',
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 14,
-              color: Color(0xFF8E8E93),
+              color: context.premiumTextSecondary,
             ),
           ),
           const SizedBox(height: 12),
@@ -202,22 +193,18 @@ class _CodigoCard extends StatelessWidget {
                     color: primary.withAlpha(30),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(
-                    Icons.copy_rounded,
-                    color: primary,
-                    size: 18,
-                  ),
+                  child: Icon(Icons.copy_rounded, color: primary, size: 18),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Compartilhe com colegas agrônomos',
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 13,
-              color: Color(0xFF8E8E93),
+              color: context.premiumTextSecondary,
             ),
           ),
         ],
@@ -246,8 +233,9 @@ class _ProgressoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.circular(20),
+        color: context.premiumSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.premiumHairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,10 +254,10 @@ class _ProgressoCard extends StatelessWidget {
               ),
               Text(
                 '$indicacoesValidadas/$meta para o próximo nível',
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 13,
-                  color: Color(0xFF8E8E93),
+                  color: context.premiumTextSecondary,
                 ),
               ),
             ],
@@ -279,7 +267,7 @@ class _ProgressoCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: progresso,
-              backgroundColor: const Color(0xFF3A3A3C),
+              backgroundColor: context.premiumHairline,
               color: primary,
               minHeight: 8,
             ),
@@ -306,7 +294,7 @@ class _ReferralTile extends StatelessWidget {
       case ReferralStatus.pendente:
         return const Color(0xFFFF9F0A);
       case ReferralStatus.expirada:
-        return const Color(0xFF8E8E93);
+        return context.premiumTextSecondary;
     }
   }
 
@@ -328,8 +316,9 @@ class _ReferralTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.circular(14),
+        color: context.premiumSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.premiumHairline),
       ),
       child: Row(
         children: [
@@ -362,10 +351,10 @@ class _ReferralTile extends StatelessWidget {
                 ),
                 Text(
                   _formatDate(referral.criadoEm),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 12,
-                    color: Color(0xFF8E8E93),
+                    color: context.premiumTextSecondary,
                   ),
                 ),
               ],
@@ -398,8 +387,8 @@ class _EmptyReferrals extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 32),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32),
       child: Center(
         child: Text(
           'Nenhuma indicação ainda.\nCompartilhe seu código!',
@@ -407,7 +396,7 @@ class _EmptyReferrals extends StatelessWidget {
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 15,
-            color: Color(0xFF8E8E93),
+            color: context.premiumTextSecondary,
           ),
         ),
       ),
