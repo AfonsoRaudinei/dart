@@ -389,6 +389,23 @@ class DrawingUtils {
     return null;
   }
 
+  /// Remove um anel interno (furo) pelo índice em [base].
+  ///
+  /// [ringIndex] deve ser maior que 0 (0 = anel externo). Retorna null se o
+  /// índice é inválido ou se [base] não é [DrawingPolygon].
+  static DrawingGeometry? removeHoleRing(
+    DrawingGeometry base,
+    int ringIndex,
+  ) {
+    if (ringIndex <= 0) return null;
+    if (base is! DrawingPolygon) return null;
+    if (ringIndex >= base.coordinates.length) return null;
+
+    final newCoords = List<List<List<double>>>.from(base.coordinates);
+    newCoords.removeAt(ringIndex);
+    return DrawingPolygon(coordinates: newCoords);
+  }
+
   static List<List<double>>? _primaryRing(DrawingGeometry geometry) {
     if (geometry is DrawingPolygon) {
       if (geometry.coordinates.isEmpty) return null;
