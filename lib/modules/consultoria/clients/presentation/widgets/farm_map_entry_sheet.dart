@@ -194,7 +194,7 @@ class _FarmMapEntrySheetState extends State<FarmMapEntrySheet> {
         isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.black54;
     final ctaBg = isIos
         ? SoloForteSheetSkinIos.ctaBackground
-        : PremiumTokens.brandGreen;
+        : context.themeAccent;
     final ctaFg =
         isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
     final ctaRadius =
@@ -337,7 +337,7 @@ class _FarmMapEntrySheetState extends State<FarmMapEntrySheet> {
 
   Widget _buildFarmList(bool isIos) {
     final accent =
-        isIos ? SoloForteSheetSkinIos.iconStroke : PremiumTokens.brandGreen;
+        isIos ? SoloForteSheetSkinIos.iconStroke : context.themeAccent;
     final selectedBg = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : const Color(0xFFEFFAF2);
@@ -450,7 +450,7 @@ class _FarmMapEntrySheetState extends State<FarmMapEntrySheet> {
   Widget _buildToggleAction(bool isIos) {
     final hasFarms = _farms.isNotEmpty;
     final accent =
-        isIos ? SoloForteSheetSkinIos.iconStroke : PremiumTokens.brandGreen;
+        isIos ? SoloForteSheetSkinIos.iconStroke : context.themeAccent;
     return TextButton.icon(
       onPressed: () {
         setState(() {

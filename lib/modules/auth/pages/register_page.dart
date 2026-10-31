@@ -176,20 +176,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         alignment: Alignment.centerLeft,
                         child: TextButton.icon(
                           onPressed: () => context.go(AppRoutes.publicMap),
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.arrow_back_ios,
                             size: 16,
-                            color: PremiumTokens.brandGreen,
+                            color: context.themeAccent,
                           ),
-                          label: const Text(
-                            'VOLTAR',
-                            style: TextStyle(
+                          label: Text('VOLTAR', style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: PremiumTokens.brandGreen,
+                              color: context.themeAccent,
                               letterSpacing: 0.5,
-                            ),
-                          ),
+                            )),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -396,8 +393,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             ? _handleRegister
                             : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: PremiumTokens.brandGreen,
-                          disabledBackgroundColor: PremiumTokens.brandGreen
+                          backgroundColor: context.themeAccent,
+                          disabledBackgroundColor: context.themeAccent
                               .withValues(alpha: 0.5),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           minimumSize: const Size.fromHeight(48),
@@ -438,7 +435,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               'Entrar',
                               style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
-                                    color: PremiumTokens.brandGreen,
+                                    color: context.themeAccent,
                                     fontWeight: FontWeight.bold,
                                   ),
                             ),

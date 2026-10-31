@@ -34,7 +34,6 @@ class PagamentoScreen extends ConsumerWidget {
                   'Pagamento indisponível',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: context.premiumTextPrimary,
@@ -46,7 +45,6 @@ class PagamentoScreen extends ConsumerWidget {
                   'Planos ativos na conta continuam sendo sincronizados normalmente.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 14,
                     color: context.premiumTextSecondary,
                   ),
@@ -60,7 +58,6 @@ class PagamentoScreen extends ConsumerWidget {
                   child: Text(
                     'Voltar aos planos',
                     style: TextStyle(
-                      fontFamily: 'Inter',
                       fontSize: 15,
                       color: primary,
                     ),

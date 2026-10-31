@@ -44,9 +44,9 @@ class ClientListScreen extends ConsumerWidget {
             actions: [
               IconButton(
                 onPressed: () => context.go(AppRoutes.clientNew),
-                icon: const Icon(
+                icon: Icon(
                   SFIcons.add,
-                  color: PremiumTokens.brandGreen,
+                  color: context.themeAccent,
                   size: 28,
                 ),
               ),
@@ -304,10 +304,10 @@ class ClientListScreen extends ConsumerWidget {
                   }, childCount: clients.length),
                 );
               },
-              loading: () => const SliverFillRemaining(
+              loading: () => SliverFillRemaining(
                 child: Center(
                   child: CircularProgressIndicator(
-                    color: PremiumTokens.brandGreen,
+                    color: context.themeAccent,
                   ),
                 ),
               ),

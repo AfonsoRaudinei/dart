@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/services/offline_tile_cache_service.dart';
@@ -80,6 +81,7 @@ class _MapOfflineDownloadSheetState extends State<MapOfflineDownloadSheet> {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final bottom = sheetFormKeyboardBottomPadding(
       safeBottom: MediaQuery.paddingOf(context).bottom,
       keyboard: MediaQuery.viewInsetsOf(context).bottom,
@@ -197,6 +199,7 @@ class MapOfflineDownloadProgressSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final bottom = MediaQuery.paddingOf(context).bottom;
     final titleColor = isIos
         ? SoloForteSheetSkinIos.titleColor

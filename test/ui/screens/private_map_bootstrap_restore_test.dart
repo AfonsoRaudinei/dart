@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/core/services/connectivity_service.dart';
 import 'package:soloforte_app/core/services/sync_orchestrator.dart';
 import 'package:soloforte_app/ui/screens/private_map_bootstrap_screen.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 class _StaticConnectivityService extends ConnectivityService {
   _StaticConnectivityService(this._connected);
@@ -211,7 +212,7 @@ void main() {
       expect(find.text('Sincronizando seus dados…'), findsOneWidget);
       expect(find.byType(Scaffold), findsOneWidget);
       final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
-      expect(scaffold.backgroundColor, Colors.white);
+      expect(scaffold.backgroundColor, PremiumTokens.backgroundLight);
     });
 
     testWidgets('erro de restore mostra tentar novamente', (tester) async {

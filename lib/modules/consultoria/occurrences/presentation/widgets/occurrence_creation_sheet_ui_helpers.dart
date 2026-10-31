@@ -26,17 +26,12 @@ extension _OccurrenceCreationSheetLifecycle on _OccurrenceCreationSheetState {
 
 extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
   Widget _buildNutrientGrid(Color color) {
-    final isIos = occurrenceFormIsIos(context);
-    final idleSurface = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : const Color(0xFF1C1C1E);
-    final idleBorder = isIos
-        ? SoloForteSheetSkinIos.cardBorder
-        : Colors.white12;
-    final idleText =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white60;
-    final idleSub =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white24;
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
+    final idleSurface = v.cardBackground;
+    final idleBorder = v.cardBorder;
+    final idleText = v.onSheetSecondary;
+    final idleSub = v.onSheetSecondary;
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
       child: Wrap(
@@ -96,15 +91,10 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
 
   Widget _buildAguaSection(Color color) {
     final current = _metricValue(OccurrenceCategory.agua, 'status');
-    final isIos = occurrenceFormIsIos(context);
-    final idleSurface = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : const Color(0xFF1C1C1E);
-    final idleBorder = isIos
-        ? SoloForteSheetSkinIos.cardBorder
-        : Colors.white12;
-    final idleText =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white38;
+    final v = SoloForteSheetVisuals.of(context);
+    final idleSurface = v.cardBackground;
+    final idleBorder = v.cardBorder;
+    final idleText = v.onSheetSecondary;
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
       child: Row(
@@ -236,7 +226,7 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
     final isIos = occurrenceFormIsIos(context);
     final accent = isIos
         ? SoloForteSheetSkinIos.iconStroke
-        : PremiumTokens.brandGreen;
+        : context.themeAccent;
     final hint = isIos
         ? SoloForteSheetSkinIos.subtitleColor
         : const Color(0xFFAEAEB2);

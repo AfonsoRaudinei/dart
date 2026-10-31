@@ -165,7 +165,7 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
             isIos ? SoloForteSheetSkinIos.titleColor : null;
         final ctaBg = isIos
             ? SoloForteSheetSkinIos.ctaBackground
-            : PremiumTokens.brandGreen;
+            : context.themeAccent;
         final ctaFg =
             isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
         final ctaRadius =
@@ -338,7 +338,7 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.premiumBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -406,14 +406,11 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
           ),
           TextButton(
             onPressed: _saveClient,
-            child: const Text(
-              'Salvar',
-              style: TextStyle(
+            child: Text('Salvar', style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: PremiumTokens.brandGreen,
-              ),
-            ),
+                color: context.themeAccent,
+              )),
           ),
         ],
       ),
@@ -530,9 +527,9 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
           final area = _areas[index];
           return ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(
+            leading: Icon(
               Icons.landscape_outlined,
-              color: PremiumTokens.brandGreen,
+              color: context.themeAccent,
             ),
             title: Text('${_formatArea(area.areaHa)} ha'),
             subtitle: Text(area.tipoLabel),
@@ -551,11 +548,8 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
       ],
       TextButton.icon(
         onPressed: _abrirBottomSheetArea,
-        icon: const Icon(Icons.add, color: PremiumTokens.brandGreen),
-        label: const Text(
-          'Adicionar Área',
-          style: TextStyle(color: PremiumTokens.brandGreen),
-        ),
+        icon: Icon(Icons.add, color: context.themeAccent),
+        label: Text('Adicionar Área', style: TextStyle(color: context.themeAccent)),
       ),
       const SizedBox(height: 16),
       _chipRow(
@@ -585,7 +579,7 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
         contentPadding: EdgeInsets.zero,
         title: const Text('Usa Assistência Técnica'),
         value: _usaAssistencia,
-        activeThumbColor: PremiumTokens.brandGreen,
+        activeThumbColor: context.themeAccent,
         onChanged: (v) => setState(() => _usaAssistencia = v),
       ),
       AnimatedSize(
@@ -674,11 +668,8 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
         ),
       const SizedBox(height: 8),
       TextButton.icon(
-        icon: const Icon(Icons.add, color: PremiumTokens.brandGreen),
-        label: const Text(
-          'Adicionar Cultura',
-          style: TextStyle(color: PremiumTokens.brandGreen),
-        ),
+        icon: Icon(Icons.add, color: context.themeAccent),
+        label: Text('Adicionar Cultura', style: TextStyle(color: context.themeAccent)),
         onPressed: _abrirBottomSheetCultura,
       ),
     ],
@@ -741,7 +732,7 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
           return ChoiceChip(
             label: Text(labels[i]),
             selected: isSel,
-            selectedColor: PremiumTokens.brandGreen,
+            selectedColor: context.themeAccent,
             labelStyle: TextStyle(
               color: isSel ? Colors.white : Colors.black87,
               fontWeight: isSel ? FontWeight.w600 : FontWeight.normal,

@@ -38,7 +38,7 @@ class FarmDetailScreen extends ConsumerWidget {
     final linkedFieldsAsync = ref.watch(farmLinkedFieldsProvider(farmId));
     final areaUnit = ref.watch(areaDisplayUnitProvider);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.premiumBackground,
       body: farmAsync.when(
         data: (farm) {
           if (farm == null) {
@@ -160,17 +160,14 @@ class FarmDetailScreen extends ConsumerWidget {
                                   ),
                                 );
                               },
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.add,
-                                color: PremiumTokens.brandGreen,
+                                color: context.themeAccent,
                               ),
-                              label: const Text(
-                                'Novo',
-                                style: TextStyle(
-                                  color: PremiumTokens.brandGreen,
+                              label: Text('Novo', style: TextStyle(
+                                  color: context.themeAccent,
                                   fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                                )),
                             ),
                           ],
                         ),

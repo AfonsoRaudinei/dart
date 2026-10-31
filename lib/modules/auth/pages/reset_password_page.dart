@@ -123,10 +123,10 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 48),
-            const Icon(
+            Icon(
               Icons.lock_reset_outlined,
               size: 64,
-              color: PremiumTokens.brandGreen,
+              color: context.themeAccent,
             ),
             const SizedBox(height: 24),
             const Text(
@@ -201,7 +201,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
             ElevatedButton(
               onPressed: _isLoading ? null : _handleReset,
               style: ElevatedButton.styleFrom(
-                backgroundColor: PremiumTokens.brandGreen,
+                backgroundColor: context.themeAccent,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 minimumSize: const Size.fromHeight(48),
                 shape: RoundedRectangleBorder(

@@ -66,7 +66,7 @@ class _ClientActionButtonState extends State<ClientActionButton> {
                 ),
                 child: Icon(
                   widget.icon,
-                  color: PremiumTokens.brandGreen,
+                  color: context.themeAccent,
                   size: 24,
                 ),
               ),

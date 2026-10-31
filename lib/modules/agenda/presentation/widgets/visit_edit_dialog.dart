@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/visit.dart';
 import '../providers/agenda_provider.dart';
@@ -199,8 +200,10 @@ class _VisitEditDialogState extends ConsumerState<VisitEditDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AlertDialog(
-      title: const Text('Editar Visita'),
+      backgroundColor: context.premiumSurface,
+      title: Text('Editar Visita', style: theme.textTheme.titleLarge),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,

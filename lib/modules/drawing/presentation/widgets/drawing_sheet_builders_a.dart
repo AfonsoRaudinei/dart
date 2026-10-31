@@ -14,14 +14,11 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
 
     final f = NumberFormat("##0.##", "pt_BR");
     final isIos = soloForteSheetIsIos(context);
-    final panelBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.sheetBackground;
-    final panelBorder = isIos
-        ? SoloForteSheetSkinIos.cardBorder
-        : SoloForteSheetTokens.inputBackground;
+    final v = SoloForteSheetVisuals.of(context);
+    final panelBg = v.cardBackground;
+    final panelBorder = v.cardBorder;
     final labelColor =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.blueGrey;
+        v.subtitleColor;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -96,6 +93,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
     // 🆕 REFATORADO: Usar DrawingToolSelector component
     final pendingCount = widget.controller.pendingSyncCount;
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -357,12 +355,11 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
 
   Widget _buildImportingMode(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final titleColor = isIos
         ? SoloForteSheetSkinIos.titleColor
         : SoloForteSheetTokens.sectionLabel;
-    final hintColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
+    final hintColor = v.subtitleColor;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -407,9 +404,9 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
                     ),
                   )
                 : OutlinedButton.styleFrom(
-                    foregroundColor: PremiumTokens.brandGreen,
+                    foregroundColor: context.themeAccent,
                     side: BorderSide(
-                      color: PremiumTokens.brandGreen.withValues(alpha: 0.4),
+                      color: context.themeAccent.withValues(alpha: 0.4),
                     ),
                   ),
             child: Text(
@@ -417,7 +414,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
               style: TextStyle(
                 color: isIos
                     ? SoloForteSheetSkinIos.ghostText
-                    : PremiumTokens.brandGreen,
+                    : context.themeAccent,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -461,12 +458,11 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
     VoidCallback onConfirm,
   ) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final titleColor = isIos
         ? SoloForteSheetSkinIos.titleColor
         : SoloForteSheetTokens.sectionLabel;
-    final hintColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
+    final hintColor = v.subtitleColor;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -517,9 +513,9 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
                           ),
                         )
                       : OutlinedButton.styleFrom(
-                          foregroundColor: PremiumTokens.brandGreen,
+                          foregroundColor: context.themeAccent,
                           side: BorderSide(
-                            color: PremiumTokens.brandGreen.withValues(
+                            color: context.themeAccent.withValues(
                               alpha: 0.4,
                             ),
                           ),
@@ -529,7 +525,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
                     style: TextStyle(
                       color: isIos
                           ? SoloForteSheetSkinIos.ghostText
-                          : PremiumTokens.brandGreen,
+                          : context.themeAccent,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -545,7 +541,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isIos
                         ? SoloForteSheetSkinIos.ctaBackground
-                        : PremiumTokens.brandGreen,
+                        : context.themeAccent,
                     foregroundColor: Colors.white,
                     shape: isIos
                         ? RoundedRectangleBorder(
@@ -599,10 +595,10 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: PremiumTokens.brandGreen.withValues(alpha: 0.08),
+                color: context.themeAccent.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: PremiumTokens.brandGreen.withValues(alpha: 0.2),
+                  color: context.themeAccent.withValues(alpha: 0.2),
                 ),
               ),
               child: Text(
@@ -627,13 +623,10 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
                 child: TextButton(
                   onPressed: () =>
                       _requestClose(DrawingCloseIntent.cancelFlowAndClose),
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(
-                      color: PremiumTokens.brandGreen,
+                  child: Text('Cancelar', style: TextStyle(
+                      color: context.themeAccent,
                       fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                    )),
                 ),
               ),
               const SizedBox(width: 12),
@@ -645,7 +638,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor:
-                        PremiumTokens.brandGreen, // Keep import green
+                        context.themeAccent, // Keep import green
                   ),
                   child: Text(
                     hasImportWarning ? 'Importar assim mesmo' : 'Confirmar',

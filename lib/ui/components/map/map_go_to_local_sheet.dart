@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 
 import '../../../core/constants/layout_constants.dart';
 import '../../../core/ui/sheets/sheet_tokens.dart';
@@ -38,9 +39,8 @@ class MapGoToLocalSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    final bg = isIos
-        ? SoloForteSheetSkinIos.background
-        : SoloForteSheetTokens.sheetBackground;
+    final v = SoloForteSheetVisuals.of(context);
+    final bg = v.sheetBackground;
     final radius = isIos
         ? SoloForteSheetSkinIos.sheetRadius
         : SoloForteSheetTokens.borderRadius;

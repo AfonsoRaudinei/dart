@@ -135,14 +135,11 @@ class _ClientFarmWithTalhoesSectionState
                 onPressed: () => context.go(
                   farmMapCreateUri(clientId: client.id, farmId: farm.id),
                 ),
-                icon: const Icon(Icons.add, color: PremiumTokens.brandGreen),
-                label: const Text(
-                  'Novo',
-                  style: TextStyle(
-                    color: PremiumTokens.brandGreen,
+                icon: Icon(Icons.add, color: context.themeAccent),
+                label: Text('Novo', style: TextStyle(
+                    color: context.themeAccent,
                     fontWeight: FontWeight.bold,
-                  ),
-                ),
+                  )),
               ),
             ],
           ),
@@ -197,14 +194,11 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 TextButton.icon(
-                  icon: const Icon(Icons.add, color: PremiumTokens.brandGreen),
-                  label: const Text(
-                    'Talhão',
-                    style: TextStyle(
-                      color: PremiumTokens.brandGreen,
+                  icon: Icon(Icons.add, color: context.themeAccent),
+                  label: Text('Talhão', style: TextStyle(
+                      color: context.themeAccent,
                       fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                    )),
                   onPressed: () => showAdicionarTalhaoModal(context, client),
                 ),
               ],
@@ -240,10 +234,10 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
                   ),
                   IconButton(
                     tooltip: 'Vincular à fazenda',
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.link,
                       size: 20,
-                      color: PremiumTokens.brandGreen,
+                      color: context.themeAccent,
                     ),
                     onPressed: () => _linkDrawingToFarm(context, ref, field),
                   ),

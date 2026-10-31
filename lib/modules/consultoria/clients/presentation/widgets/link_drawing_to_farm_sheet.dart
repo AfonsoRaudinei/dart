@@ -160,10 +160,10 @@ class _LinkDrawingToFarmSheetState
     final subtitleColor =
         isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.black54;
     final accent =
-        isIos ? SoloForteSheetSkinIos.iconStroke : PremiumTokens.brandGreen;
+        isIos ? SoloForteSheetSkinIos.iconStroke : context.themeAccent;
     final ctaBg = isIos
         ? SoloForteSheetSkinIos.ctaBackground
-        : PremiumTokens.brandGreen;
+        : context.themeAccent;
     final ctaFg =
         isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
     final ctaRadius =
@@ -286,7 +286,7 @@ class _LinkDrawingToFarmSheetState
 
   Widget _buildFarmList(bool isIos) {
     final accent =
-        isIos ? SoloForteSheetSkinIos.iconStroke : PremiumTokens.brandGreen;
+        isIos ? SoloForteSheetSkinIos.iconStroke : context.themeAccent;
     final selectedBg = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : const Color(0xFFEFFAF2);

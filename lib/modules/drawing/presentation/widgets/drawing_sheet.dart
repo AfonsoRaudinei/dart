@@ -30,6 +30,7 @@ import 'drawing_review_metrics_panel.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import 'gps_walk_controls_overlay.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/solo_forte_sheet_visuals.dart';
 import '../../../../ui/components/sync/conflict_resolution_dialog.dart';
 
 part 'drawing_sheet_builders_a.dart';
@@ -348,11 +349,10 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     // Este widget não inclui handle próprio.
     // Tema Azul: fundo transparente — herda prata do host do sheet de desenho
     // (MapBottomSheet). Evita painel escuro aninhado fora do padrão iOS.
-    final isIos = soloForteSheetIsIos(context);
-    final sheetBg = isIos
-        ? Colors.transparent
-        : SoloForteSheetTokens.sheetBackground;
-    final sheetRadius = isIos ? 0.0 : 20.0;
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
+    final sheetBg = isIos ? Colors.transparent : v.sheetBackground;
+    final sheetRadius = isIos ? 0.0 : v.sheetRadius;
 
     return AnimatedPadding(
       duration: const Duration(milliseconds: 150),

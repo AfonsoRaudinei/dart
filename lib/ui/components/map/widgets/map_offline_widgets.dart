@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
@@ -359,6 +360,7 @@ class MapOfflineStatusCard extends ConsumerWidget {
         presentation.canDownloadCurrentArea && onDownloadOfflineArea != null;
     final subtitle = '${mapLayerLabel(snapshot.activeLayer)} • $areasLabel';
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final cardBg = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : Colors.white.withValues(alpha: 0.06);

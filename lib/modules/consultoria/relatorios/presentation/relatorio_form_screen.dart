@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../providers/relatorio_providers.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
@@ -59,25 +60,34 @@ class _RelatorioFormScreenState extends ConsumerState<RelatorioFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final relatorioAsync =
         ref.watch(relatorioDetailProvider(id: widget.relatorioId));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F7),
+      backgroundColor: context.premiumBackground,
       body: SafeArea(
         child: relatorioAsync.when(
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: Color(0xFF1A56DB)),
+          loading: () => Center(
+            child: CircularProgressIndicator(color: theme.colorScheme.primary),
           ),
           error: (error, _) => Center(
-            child: Text(userFacingError(error, action: 'Erro'),
-                style: const TextStyle(color: Color(0xFF6B7280))),
+            child: Text(
+              userFacingError(error, action: 'Erro'),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: context.premiumTextSecondary,
+              ),
+            ),
           ),
           data: (relatorio) {
             if (relatorio == null) {
-              return const Center(
-                child: Text('Relatório não encontrado',
-                    style: TextStyle(color: Color(0xFF6B7280))),
+              return Center(
+                child: Text(
+                  'Relatório não encontrado',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: context.premiumTextSecondary,
+                  ),
+                ),
               );
             }
 
@@ -106,12 +116,9 @@ class _RelatorioFormScreenState extends ConsumerState<RelatorioFormScreen> {
                             '/consultoria/relatorios/${widget.relatorioId}'),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         'Editar Relatório',
-                        style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF111827)),
+                        style: theme.textTheme.headlineMedium,
                       ),
                     ],
                   ),
@@ -119,12 +126,11 @@ class _RelatorioFormScreenState extends ConsumerState<RelatorioFormScreen> {
                   TextFormField(
                     controller: _titleController,
                     maxLength: 120,
-                    style: const TextStyle(color: Colors.white),
+                    style: theme.textTheme.bodyLarge,
                     decoration: InputDecoration(
                       labelText: 'Título',
-                      labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
                       filled: true,
-                      fillColor: const Color(0xFF2C2C2E),
+                      fillColor: context.premiumSurface,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -141,12 +147,11 @@ class _RelatorioFormScreenState extends ConsumerState<RelatorioFormScreen> {
                   TextFormField(
                     controller: _notesController,
                     maxLines: 6,
-                    style: const TextStyle(color: Colors.white),
+                    style: theme.textTheme.bodyLarge,
                     decoration: InputDecoration(
                       labelText: 'Observações (Notas customizadas)',
-                      labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
                       filled: true,
-                      fillColor: const Color(0xFF2C2C2E),
+                      fillColor: context.premiumSurface,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -157,16 +162,22 @@ class _RelatorioFormScreenState extends ConsumerState<RelatorioFormScreen> {
                   FilledButton(
                     onPressed: _isSaving ? null : () => _save(relatorio),
                     style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A56DB),
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12))),
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                     child: _isSaving
-                        ? const SizedBox(
+                        ? SizedBox(
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2))
+                              color: theme.colorScheme.onPrimary,
+                              strokeWidth: 2,
+                            ),
+                          )
                         : const Text('Salvar'),
                   ),
                 ],

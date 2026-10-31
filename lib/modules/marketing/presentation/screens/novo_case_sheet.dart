@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -610,8 +611,8 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                 _isLoading ? 'Salvando...' : 'Salvar rascunho (Relatórios)',
               ),
               style: OutlinedButton.styleFrom(
-                foregroundColor: PremiumTokens.brandGreen,
-                side: const BorderSide(color: PremiumTokens.brandGreen),
+                foregroundColor: context.themeAccent,
+                side: BorderSide(color: context.themeAccent),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -637,6 +638,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
 
   Widget _buildUnidadeDropdown() {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final dropdownBg = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : SoloForteSheetTokens.inputBackground;
@@ -668,6 +670,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
   Widget _buildDataCasePicker() {
     final selected = _dataCase;
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final dateColor = isIos
         ? SoloForteSheetSkinIos.titleColor
         : SoloForteSheetTokens.inputText;
@@ -681,10 +684,10 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.calendar_today_outlined,
                 size: 18,
-                color: PremiumTokens.brandGreen,
+                color: context.themeAccent,
               ),
               const SizedBox(width: 10),
               Expanded(

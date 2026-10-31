@@ -45,7 +45,7 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
         : const Color(0xCCFFFFFF);
     final heroValueColor = isIos
         ? SoloForteSheetSkinIos.iconStroke
-        : PremiumTokens.brandGreen;
+        : context.themeAccent;
     final heroSubColor = isIos
         ? SoloForteSheetSkinIos.titleColor
         : const Color(0xCCFFFFFF);
@@ -67,7 +67,7 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
         : SoloForteSheetTokens.inputText;
     final gainColor = isIos
         ? SoloForteSheetSkinIos.iconStroke
-        : PremiumTokens.brandGreen;
+        : context.themeAccent;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -81,7 +81,7 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
             border: Border.all(
               color: isIos
                   ? SoloForteSheetSkinIos.cardBorder
-                  : PremiumTokens.brandGreen.withValues(alpha: 0.35),
+                  : context.themeAccent.withValues(alpha: 0.35),
             ),
           ),
           child: Column(

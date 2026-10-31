@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
@@ -54,6 +55,7 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final occurrencesAsync = ref.watch(occurrencesListProvider);
     final visitState = ref.watch(_activeVisitSessionProvider);
     final activeVisitId = visitState.value?.isActive == true
@@ -66,9 +68,7 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
     final handleColor = isIos
         ? SoloForteSheetSkinIos.handleColor
         : context.premiumSurface;
-    final titleColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : null;
+    final titleColor = v.titleColor;
     final closeColor = isIos
         ? SoloForteSheetSkinIos.arrowColor
         : context.premiumTextSecondary;
@@ -266,11 +266,11 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
                       },
                     );
                   },
-                  loading: () => const Center(
+                  loading: () => Center(
                     child: Padding(
                       padding: EdgeInsets.all(40),
                       child: CircularProgressIndicator(
-                        color: PremiumTokens.brandGreen,
+                        color: context.themeAccent,
                       ),
                     ),
                   ),
@@ -418,6 +418,7 @@ class _OccurrenceListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final cats = _activeCategories();
     final primaryCat = cats.isNotEmpty
         ? cats.first
@@ -437,7 +438,7 @@ class _OccurrenceListItem extends StatelessWidget {
               : const Color(0xFF1C1C1E));
     final cardBorder = isSelected
         ? color
-        : (isIos ? SoloForteSheetSkinIos.cardBorder : Colors.white12);
+        : (v.cardBorder);
     final secondaryText = isIos
         ? SoloForteSheetSkinIos.subtitleColor
         : Colors.white54;
@@ -535,7 +536,7 @@ class _OccurrenceListItem extends StatelessWidget {
                               label: '📊 ${occurrence.estadioFenologico}',
                               color: isIos
                                   ? SoloForteSheetSkinIos.iconStroke
-                                  : PremiumTokens.brandGreen,
+                                  : context.themeAccent,
                             ),
                           if (occurrence.cultivar != null) ...[
                             const SizedBox(width: 4),
@@ -587,7 +588,7 @@ class _OccurrenceListItem extends StatelessWidget {
                             label: '✓ Em Visita',
                             color: isIos
                                 ? SoloForteSheetSkinIos.iconStroke
-                                : PremiumTokens.brandGreen,
+                                : context.themeAccent,
                           ),
                         const Spacer(),
                         // Sync badge

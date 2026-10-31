@@ -119,3 +119,39 @@ abstract final class SoloForteSheetSkinIos {
   // Separador entre rows do card
   static const Color rowDivider = Color(0x1A0175C2); // 10% opacity
 }
+
+/// Skin clara — tema Verde (light mode).
+abstract final class SoloForteSheetSkinLight {
+  static const Color background = Color(0xFFF2F2F7);
+  static const Color cardBackground = Color(0xFFFFFFFF);
+  static const Color cardBorder = Color(0xFFE5E5EA);
+  static const double cardRadius = 14.0;
+  static const Color handleColor = Color(0xFFC7C7CC);
+  static const Size handleSize = Size(36, 4);
+  static const double sheetRadius = 20.0;
+  static const Color titleColor = Color(0xFF000000);
+  static const Color subtitleColor = Color(0xFF3C3C43);
+  static const Color iconStroke = Color(0xFF34C759);
+  static const Color rowDivider = Color(0xFFE5E5EA);
+  static const double chipRadius = 12.0;
+  static const Color chipBorderInactive = Color(0xFFE5E5EA);
+  static const Color chipTextInactive = Color(0xFF8E8E93);
+  static const double inputRadius = 12.0;
+  static const Color inputBackground = Color(0xFFFFFFFF);
+  static const Color inputText = Color(0xFF000000);
+  static const Color inputHint = Color(0xFF8E8E93);
+  static const double sectionFontSize = 15.0;
+  static const FontWeight sectionWeight = FontWeight.w600;
+}
+
+/// Variante visual do sheet conforme aparência (Verde / Azul / Black).
+enum SoloForteSheetVariant { light, ios, dark }
+
+/// Mapeia [SoloForteThemeExtension.themeId] para variante de sheet.
+SoloForteSheetVariant soloForteSheetVariantFromThemeId(String? themeId) {
+  return switch (themeId) {
+    'blue' => SoloForteSheetVariant.ios,
+    'black' => SoloForteSheetVariant.dark,
+    _ => SoloForteSheetVariant.light,
+  };
+}

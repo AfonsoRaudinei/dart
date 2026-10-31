@@ -69,6 +69,9 @@ class _SegmentItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -79,7 +82,11 @@ class _SegmentItem extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected ? selectedFill : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
-            boxShadow: isSelected
+            border: isSelected
+                ? Border.all(color: primary.withValues(alpha: 0.35))
+                : null,
+            boxShadow: isSelected &&
+                    Theme.of(context).brightness != Brightness.dark
                 ? [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.06),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 /// Dialog de confirmação para alterações não salvas
 class UnsavedChangesDialog extends StatelessWidget {
@@ -30,19 +31,17 @@ class UnsavedChangesDialog extends StatelessWidget {
           const Text('Alterações não salvas'),
         ],
       ),
-      content: const Text(
+      content: Text(
         'Você possui alterações não salvas nesta aba. Deseja sair sem salvar?',
-        style: TextStyle(fontSize: 14),
+        style: theme.textTheme.bodyMedium,
       ),
       actions: [
         TextButton(
           onPressed: onCancel,
           child: Text(
             'Cancelar',
-            style: TextStyle(
-              color: theme.brightness == Brightness.dark
-                  ? const Color(0xFF9CA3AF)
-                  : const Color(0xFF6B7280),
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: context.premiumTextSecondary,
             ),
           ),
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
@@ -78,7 +79,7 @@ class OccurrenceFilterSelector extends StatelessWidget {
     final isIos = soloForteSheetIsIos(context);
     final accent = isIos
         ? SoloForteSheetSkinIos.iconStroke
-        : PremiumTokens.brandGreen;
+        : context.themeAccent;
     final chipBg = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : Colors.white;

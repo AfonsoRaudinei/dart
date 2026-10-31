@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -134,6 +135,7 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final hasPhoto = widget.url != null && widget.url!.isNotEmpty;
     final isEmpty = !hasPhoto && widget.required;
     final bg = isIos ? SoloForteSheetSkinIos.cardBackground : _bgDark;

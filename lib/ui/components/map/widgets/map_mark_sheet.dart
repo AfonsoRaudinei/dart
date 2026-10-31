@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
@@ -77,9 +78,8 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
   Widget build(BuildContext context) {
     final height = MediaQuery.sizeOf(context).height * 0.88;
     final isIos = soloForteSheetIsIos(context);
-    final bg = isIos
-        ? SoloForteSheetSkinIos.background
-        : SoloForteSheetTokens.sheetBackground;
+    final v = SoloForteSheetVisuals.of(context);
+    final bg = v.sheetBackground;
     return Material(
       color: bg,
       borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -312,9 +312,7 @@ class _MarkKindToggleBarState extends State<_MarkKindToggleBar> {
   }
 
   Color _sheetFadeColor() {
-    return widget.isIos
-        ? SoloForteSheetSkinIos.background
-        : SoloForteSheetTokens.sheetBackground;
+    return SoloForteSheetVisuals.of(context).sheetBackground;
   }
 
   @override

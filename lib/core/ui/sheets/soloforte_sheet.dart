@@ -8,38 +8,50 @@ import 'sheet_tokens.dart';
 /// Extraído para teste de contrato (REGRA-SHEET-BLAST-1).
 @visibleForTesting
 Color? resolveSoloForteSheetBackgroundColor({
-  required bool isIos,
+  required SoloForteSheetVariant variant,
   required bool preserveMaterialDefaults,
   Color? backgroundColor,
 }) {
   if (preserveMaterialDefaults) {
     return backgroundColor;
   }
-  if (isIos) {
-    final transparentOverride =
-        backgroundColor == null || backgroundColor == Colors.transparent;
-    return transparentOverride
-        ? SoloForteSheetSkinIos.background
-        : backgroundColor;
+  final defaultBg = switch (variant) {
+    SoloForteSheetVariant.ios => SoloForteSheetSkinIos.background,
+    SoloForteSheetVariant.light => SoloForteSheetSkinLight.background,
+    SoloForteSheetVariant.dark => SoloForteSheetTokens.sheetBackground,
+  };
+  if (backgroundColor == null || backgroundColor == Colors.transparent) {
+    return defaultBg;
   }
-  return backgroundColor ?? SoloForteSheetTokens.sheetBackground;
+  return backgroundColor;
+}
+
+/// Variante ativa do sheet (Verde claro · Azul iOS · Black escuro).
+SoloForteSheetVariant soloForteSheetVariant(BuildContext context) {
+  final scope = SoloForteSheetSkinScope.of(context);
+  if (scope != null) return scope.variant;
+  final ext = Theme.of(context).extension<SoloForteThemeExtension>();
+  return soloForteSheetVariantFromThemeId(ext?.themeId);
 }
 
 /// Propaga a skin ativa do sheet para widgets filhos (headers, inputs, etc.).
 class SoloForteSheetSkinScope extends InheritedWidget {
-  final bool isIos;
+  final SoloForteSheetVariant variant;
 
   const SoloForteSheetSkinScope({
-    required this.isIos,
+    required this.variant,
     required super.child,
     super.key,
   });
+
+  bool get isIos => variant == SoloForteSheetVariant.ios;
 
   static SoloForteSheetSkinScope? of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<SoloForteSheetSkinScope>();
 
   @override
-  bool updateShouldNotify(SoloForteSheetSkinScope old) => old.isIos != isIos;
+  bool updateShouldNotify(SoloForteSheetSkinScope old) =>
+      old.variant != variant;
 }
 
 /// Resolve se a skin iOS Azul está ativa.
@@ -91,18 +103,22 @@ Future<T?> showSoloForteSheet<T>({
   bool useRootNavigator = false,
 }) {
   final ext = Theme.of(context).extension<SoloForteThemeExtension>();
-  final bool isIos = !preserveMaterialDefaults && ext?.themeId == 'blue';
+  final variant = preserveMaterialDefaults
+      ? SoloForteSheetVariant.light
+      : soloForteSheetVariantFromThemeId(ext?.themeId);
+  final bool isIos = variant == SoloForteSheetVariant.ios;
 
-  // Fase 2: `Colors.transparent` não anula o fundo prata iOS — callers que
-  // pintavam glass escuro por cima passam a herdar o chrome correto.
   final resolvedBackground = resolveSoloForteSheetBackgroundColor(
-    isIos: isIos,
+    variant: variant,
     preserveMaterialDefaults: preserveMaterialDefaults,
     backgroundColor: backgroundColor,
   );
 
-  final resolvedRadius =
-      isIos ? SoloForteSheetSkinIos.sheetRadius : SoloForteSheetTokens.borderRadius;
+  final resolvedRadius = switch (variant) {
+    SoloForteSheetVariant.ios => SoloForteSheetSkinIos.sheetRadius,
+    SoloForteSheetVariant.light => SoloForteSheetSkinLight.sheetRadius,
+    SoloForteSheetVariant.dark => SoloForteSheetTokens.borderRadius,
+  };
 
   final resolvedShape = preserveMaterialDefaults
       ? shape
@@ -121,14 +137,24 @@ Future<T?> showSoloForteSheet<T>({
   final resolvedShowDragHandle = showDragHandle;
 
   final baseTheme = Theme.of(context);
-  final sheetTheme = isIos
-      ? baseTheme.copyWith(
+  final handleColor = switch (variant) {
+    SoloForteSheetVariant.ios => SoloForteSheetSkinIos.handleColor,
+    SoloForteSheetVariant.light => SoloForteSheetSkinLight.handleColor,
+    SoloForteSheetVariant.dark => const Color(0xFF5C5C5E),
+  };
+  final handleSize = switch (variant) {
+    SoloForteSheetVariant.ios => SoloForteSheetSkinIos.handleSize,
+    SoloForteSheetVariant.light => SoloForteSheetSkinLight.handleSize,
+    SoloForteSheetVariant.dark => const Size(36, 4),
+  };
+  final sheetTheme = preserveMaterialDefaults
+      ? baseTheme
+      : baseTheme.copyWith(
           bottomSheetTheme: baseTheme.bottomSheetTheme.copyWith(
-            dragHandleColor: SoloForteSheetSkinIos.handleColor,
-            dragHandleSize: SoloForteSheetSkinIos.handleSize,
+            dragHandleColor: handleColor,
+            dragHandleSize: handleSize,
           ),
-        )
-      : baseTheme;
+        );
 
   return showModalBottomSheet<T>(
     context: context,
@@ -157,15 +183,15 @@ Future<T?> showSoloForteSheet<T>({
       // Opt-out explícito: scope isIos=false evita fallback themeId nos widgets
       // internos quando preserveMaterialDefaults=true.
       if (preserveMaterialDefaults) {
-        return SoloForteSheetSkinScope(isIos: false, child: sheet);
+        return SoloForteSheetSkinScope(
+          variant: SoloForteSheetVariant.light,
+          child: sheet,
+        );
       }
-      // Flutter 3.44+ exige ancestral Material para ListTile dentro de sheet
-      // com backgroundColor (DecoratedBox). Material transparente satisfaz o
-      // contrato sem alterar a aparência do token visual.
       return Theme(
         data: sheetTheme,
         child: SoloForteSheetSkinScope(
-          isIos: isIos,
+          variant: variant,
           child: Material(
             color: Colors.transparent,
             child: sheet,

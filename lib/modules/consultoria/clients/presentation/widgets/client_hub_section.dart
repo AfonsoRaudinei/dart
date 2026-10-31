@@ -192,7 +192,7 @@ class _StatTile extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Icon(icon, size: 22, color: PremiumTokens.brandGreen),
+            Icon(icon, size: 22, color: context.themeAccent),
             const SizedBox(height: 6),
             Text(
               value,
@@ -243,10 +243,10 @@ class _EventoItem extends StatelessWidget {
               color: Color(0xFFE8F8ED),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.event,
               size: 14,
-              color: PremiumTokens.brandGreen,
+              color: context.themeAccent,
             ),
           ),
           const SizedBox(width: 12),

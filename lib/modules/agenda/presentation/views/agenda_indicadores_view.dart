@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../domain/enums/event_status.dart';
 import '../providers/agenda_provider.dart';
 
@@ -11,6 +12,8 @@ class AgendaIndicadoresView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final accent = theme.colorScheme.primary;
+    final pendingAccent = theme.colorScheme.outline;
+    final progressAccent = const Color(0xFFFBBF24);
 
     final now = DateTime.now();
     final weekStart = now.subtract(Duration(days: now.weekday - 1));
@@ -58,6 +61,7 @@ class AgendaIndicadoresView extends ConsumerWidget {
           const SizedBox(height: 16),
           _buildMetricCard(
             theme,
+            context,
             'Total de Eventos',
             totalEvents.toString(),
             Icons.event,
@@ -66,6 +70,7 @@ class AgendaIndicadoresView extends ConsumerWidget {
           const SizedBox(height: 8),
           _buildMetricCard(
             theme,
+            context,
             'Concluídos',
             completedEvents.toString(),
             Icons.check_circle,
@@ -74,18 +79,20 @@ class AgendaIndicadoresView extends ConsumerWidget {
           const SizedBox(height: 8),
           _buildMetricCard(
             theme,
+            context,
             'Em Andamento',
             inProgressEvents.toString(),
             Icons.pending,
-            const Color(0xFFFBBF24),
+            progressAccent,
           ),
           const SizedBox(height: 8),
           _buildMetricCard(
             theme,
+            context,
             'Pendentes',
             pendingEvents.toString(),
             Icons.schedule,
-            const Color(0xFF6B7280),
+            pendingAccent,
           ),
         ],
       ),
@@ -150,6 +157,7 @@ class AgendaIndicadoresView extends ConsumerWidget {
 
   Widget _buildMetricCard(
     ThemeData theme,
+    BuildContext context,
     String label,
     String value,
     IconData icon,
@@ -161,9 +169,7 @@ class AgendaIndicadoresView extends ConsumerWidget {
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.brightness == Brightness.dark
-              ? const Color(0xFF2A3136)
-              : const Color(0xFFE5E7EB),
+          color: context.premiumHairline,
         ),
       ),
       child: Row(
@@ -181,9 +187,7 @@ class AgendaIndicadoresView extends ConsumerWidget {
             child: Text(
               label,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.brightness == Brightness.dark
-                    ? const Color(0xFF9CA3AF)
-                    : const Color(0xFF6B7280),
+                color: context.premiumTextSecondary,
               ),
             ),
           ),

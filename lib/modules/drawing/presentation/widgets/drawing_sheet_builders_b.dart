@@ -92,6 +92,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
   }
 
   Widget _buildEditingMode(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -103,9 +104,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: soloForteSheetIsIos(context)
-                  ? SoloForteSheetSkinIos.titleColor
-                  : null,
+              color: v.titleColor,
             ),
           ),
           const Divider(),
@@ -120,9 +119,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
               'Arraste os pontos para modificar a área.\nUse os controles laterais para salvar, desfazer, refazer ou cancelar.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: soloForteSheetIsIos(context)
-                    ? SoloForteSheetSkinIos.subtitleColor
-                    : SoloForteSheetTokens.inputHint,
+                color: v.subtitleColor,
               ),
             ),
           ),
@@ -145,7 +142,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                   onPressed: () =>
                       _requestClose(DrawingCloseIntent.saveEditAndClose),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: PremiumTokens.brandGreen,
+                    backgroundColor: context.themeAccent,
                   ),
                   child: const Text(
                     'Salvar e sair',
@@ -169,6 +166,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     final isMultiPartSave = detectedParts > 1;
     final f = NumberFormat("##0.##", "pt_BR");
     final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
     final sectionLabelStyle = TextStyle(
       color: isIos
           ? SoloForteSheetSkinIos.titleColor
@@ -178,28 +176,16 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     );
     final titleColor = isIos
         ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.titleColor;
+        : v.titleColor;
     final muted = isIos
         ? SoloForteSheetSkinIos.subtitleColor
         : SoloForteSheetTokens.sectionLabel;
-    final panelBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
-    final panelBorder = isIos
-        ? SoloForteSheetSkinIos.cardBorder
-        : SoloForteSheetTokens.divider;
-    final inputText = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.inputText;
-    final inputHint = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
-    final inputFill = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
-    final focusBorder = isIos
-        ? SoloForteSheetSkinIos.iconStroke
-        : PremiumTokens.brandGreen;
+    final panelBg = v.cardBackground;
+    final panelBorder = v.cardBorder;
+    final inputText = v.titleColor;
+    final inputHint = v.subtitleColor;
+    final inputFill = v.cardBackground;
+    final focusBorder = v.accent;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Form(
@@ -221,17 +207,17 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
               key: const Key('drawing_review_save_hint'),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: PremiumTokens.brandGreen.withValues(alpha: 0.08),
+                color: context.themeAccent.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: PremiumTokens.brandGreen.withValues(alpha: 0.2),
+                  color: context.themeAccent.withValues(alpha: 0.2),
                 ),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.save_outlined,
-                    color: PremiumTokens.brandGreen,
+                    color: context.themeAccent,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -248,7 +234,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                     key: const Key('drawing_review_save_cta_top'),
                     onPressed: _isSaving ? null : _submitReview,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: PremiumTokens.brandGreen,
+                      backgroundColor: context.themeAccent,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 12,
@@ -353,7 +339,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                     child: Row(
                       children: [
                         _ColorOption(
-                          color: PremiumTokens.brandGreen,
+                          color: context.themeAccent,
                           selected: _selectedColor,
                           onTap: (c) {
                             HapticFeedback.selectionClick();
@@ -419,7 +405,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                     key: const Key('drawing_review_save_cta_bottom'),
                     onPressed: _isSaving ? null : _submitReview,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: PremiumTokens.brandGreen,
+                      backgroundColor: context.themeAccent,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     child: Text(
@@ -559,15 +545,10 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
   Widget _buildClientField() {
     final clientState = ref.watch(drawingClientProvider);
     final isIos = soloForteSheetIsIos(context);
-    final inputText = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.inputText;
-    final inputHint = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
-    final dropdownBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
+    final v = SoloForteSheetVisuals.of(context);
+    final inputText = v.titleColor;
+    final inputHint = v.subtitleColor;
+    final dropdownBg = v.cardBackground;
 
     if (clientState.preSelectedClientId != null) {
       final name =
@@ -618,15 +599,10 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
   Widget _buildFarmField() {
     final clientState = ref.watch(drawingClientProvider);
     final isIos = soloForteSheetIsIos(context);
-    final inputText = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.inputText;
-    final inputHint = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
-    final dropdownBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
+    final v = SoloForteSheetVisuals.of(context);
+    final inputText = v.titleColor;
+    final inputHint = v.subtitleColor;
+    final dropdownBg = v.cardBackground;
 
     if (clientState.preSelectedFarmId != null) {
       final name =
@@ -701,18 +677,15 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     _rebuild(() {
       if (!preserveContextClient) _selectedClient = null;
       if (!preserveContextFarm) _selectedFarm = null;
-      _selectedColor = PremiumTokens.brandGreen;
+      _selectedColor = context.themeAccent;
     });
   }
 
   InputDecoration _sheetFieldDecoration({Widget? suffixIcon}) {
     final isIos = soloForteSheetIsIos(context);
-    final fillColor = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
-    final focusBorder = isIos
-        ? SoloForteSheetSkinIos.iconStroke
-        : PremiumTokens.brandGreen;
+    final v = SoloForteSheetVisuals.of(context);
+    final fillColor = v.cardBackground;
+    final focusBorder = v.accent;
     return InputDecoration(
       filled: true,
       fillColor: fillColor,
@@ -772,13 +745,12 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       context: context,
       builder: (ctx) {
         final isIos = soloForteSheetIsIos(ctx);
+        final v = SoloForteSheetVisuals.of(context);
         final titleColor =
             isIos ? SoloForteSheetSkinIos.titleColor : null;
         final subtitleColor =
             isIos ? SoloForteSheetSkinIos.subtitleColor : null;
-        final iconColor = isIos
-            ? SoloForteSheetSkinIos.iconStroke
-            : PremiumTokens.brandGreen;
+        final iconColor = v.accent;
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,

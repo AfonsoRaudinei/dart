@@ -119,7 +119,7 @@ class _ParametroReadOnlyRow extends StatelessWidget {
     final deltaColor = parametro.isNegativo
         ? PremiumTokens.alertError
         : parametro.isPositivo
-        ? (isIos ? SoloForteSheetSkinIos.iconStroke : PremiumTokens.brandGreen)
+        ? (isIos ? SoloForteSheetSkinIos.iconStroke : context.themeAccent)
         : (isIos
               ? SoloForteSheetSkinIos.subtitleColor
               : SoloForteSheetTokens.inputHint);

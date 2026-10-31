@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/visit.dart';
 import '../../domain/enums/event_type.dart';
 import '../providers/agenda_provider.dart';
@@ -213,8 +214,10 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AlertDialog(
-      title: const Text('Nova Visita'),
+      backgroundColor: context.premiumSurface,
+      title: Text('Nova Visita', style: theme.textTheme.titleLarge),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,

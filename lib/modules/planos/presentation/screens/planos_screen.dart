@@ -25,7 +25,6 @@ class PlanosScreen extends StatelessWidget {
         title: Text(
           'Planos SoloForte',
           style: TextStyle(
-            fontFamily: 'Inter',
             fontWeight: FontWeight.w700,
             color: context.premiumTextPrimary,
           ),
@@ -47,7 +46,6 @@ class PlanosScreen extends StatelessWidget {
               Text(
                 'Plano SoloForte',
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
                   color: context.premiumTextPrimary,
@@ -57,7 +55,6 @@ class PlanosScreen extends StatelessWidget {
               Text(
                 'Status da assinatura',
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.primary,
@@ -69,7 +66,6 @@ class PlanosScreen extends StatelessWidget {
                 'Seu plano gratuito e indicações continuam valendo na conta.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 15,
                   color: context.premiumTextSecondary,
                 ),
@@ -88,7 +84,6 @@ class PlanosScreen extends StatelessWidget {
                       'até ${plano.limiteCases} cases no mapa',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Inter',
                         fontSize: 14,
                         color: context.premiumTextSecondary,
                         fontWeight: FontWeight.w500,
@@ -107,7 +102,6 @@ class PlanosScreen extends StatelessWidget {
                 child: Text(
                   'Voltar ao mapa',
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 15,
                     color: Theme.of(context).colorScheme.primary,
                   ),

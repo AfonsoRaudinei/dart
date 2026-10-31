@@ -62,7 +62,6 @@ class IndicacoesScreen extends ConsumerWidget {
           Text(
             'Indicações',
             style: TextStyle(
-              fontFamily: 'Inter',
               fontSize: 22,
               fontWeight: FontWeight.w700,
               color: context.premiumTextPrimary,
@@ -102,7 +101,6 @@ class _IndicacoesContent extends StatelessWidget {
         Text(
           'Histórico de indicações',
           style: TextStyle(
-            fontFamily: 'Inter',
             fontSize: 17,
             fontWeight: FontWeight.w600,
             color: context.premiumTextPrimary,
@@ -158,7 +156,6 @@ class _CodigoCard extends StatelessWidget {
           Text(
             'Seu código de indicação',
             style: TextStyle(
-              fontFamily: 'Inter',
               fontSize: 14,
               color: context.premiumTextSecondary,
             ),
@@ -170,7 +167,6 @@ class _CodigoCard extends StatelessWidget {
               Text(
                 codigo.code,
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 32,
                   fontWeight: FontWeight.w700,
                   color: primary,
@@ -204,7 +200,6 @@ class _CodigoCard extends StatelessWidget {
           Text(
             'Compartilhe com colegas agrônomos',
             style: TextStyle(
-              fontFamily: 'Inter',
               fontSize: 13,
               color: context.premiumTextSecondary,
             ),
@@ -248,7 +243,6 @@ class _ProgressoCard extends StatelessWidget {
               Text(
                 'Progresso',
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: context.premiumTextPrimary,
@@ -257,7 +251,6 @@ class _ProgressoCard extends StatelessWidget {
               Text(
                 '$indicacoesValidadas/$meta para o próximo nível',
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 13,
                   color: context.premiumTextSecondary,
                 ),
@@ -345,7 +338,6 @@ class _ReferralTile extends StatelessWidget {
                 Text(
                   'Código: ${referral.code}',
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: context.premiumTextPrimary,
@@ -354,7 +346,6 @@ class _ReferralTile extends StatelessWidget {
                 Text(
                   _formatDate(referral.criadoEm),
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 12,
                     color: context.premiumTextSecondary,
                   ),
@@ -365,7 +356,6 @@ class _ReferralTile extends StatelessWidget {
           Text(
             _statusLabel,
             style: TextStyle(
-              fontFamily: 'Inter',
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: statusColor,
@@ -396,7 +386,6 @@ class _EmptyReferrals extends StatelessWidget {
           'Nenhuma indicação ainda.\nCompartilhe seu código!',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'Inter',
             fontSize: 15,
             color: context.premiumTextSecondary,
           ),

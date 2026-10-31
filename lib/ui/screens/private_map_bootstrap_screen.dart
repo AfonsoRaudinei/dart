@@ -8,6 +8,7 @@ import '../../core/database/database_helper.dart';
 import '../../core/services/connectivity_service.dart';
 import '../../core/services/sync_orchestrator.dart';
 import '../../core/utils/app_logger.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'private_map_screen.dart';
 
 typedef PrivateMapBootstrapResult = ({
@@ -178,10 +179,9 @@ class _BootstrapScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      // 🛡 IPA-120: fundo branco garante legibilidade mesmo sem fontes
-      // customizadas no bundle. Fundo preto causava tela preta no IPA 119.
-      backgroundColor: Colors.white,
+      backgroundColor: context.premiumBackground,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -191,19 +191,16 @@ class _BootstrapScaffold extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.storage_outlined,
-                    color: Color(0xFF888888),
+                    color: context.premiumTextSecondary,
                     size: 64,
                   ),
                   const SizedBox(height: 20),
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: Color(0xFF333333),
-                      fontSize: 18,
+                    style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
-                      fontFamily: null,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -211,11 +208,9 @@ class _BootstrapScaffold extends StatelessWidget {
                     const SizedBox(height: 10),
                     Text(
                       subtitle,
-                      style: const TextStyle(
-                        color: Color(0xFF666666),
-                        fontSize: 14,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: context.premiumTextSecondary,
                         height: 1.4,
-                        fontFamily: null,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -224,8 +219,8 @@ class _BootstrapScaffold extends StatelessWidget {
                     const SizedBox(height: 22),
                     LinearProgressIndicator(
                       value: progress <= 0 || progress >= 1 ? null : progress,
-                      backgroundColor: Colors.white10,
-                      color: const Color(0xFF34C759),
+                      backgroundColor: context.premiumHairline,
+                      color: theme.colorScheme.primary,
                       minHeight: 6,
                     ),
                   ],
@@ -233,11 +228,11 @@ class _BootstrapScaffold extends StatelessWidget {
                     const SizedBox(height: 26),
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
+                      child: FilledButton(
                         onPressed: onAction,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF34C759),
-                          foregroundColor: Colors.black,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
@@ -245,7 +240,9 @@ class _BootstrapScaffold extends StatelessWidget {
                         ),
                         child: Text(
                           actionLabel!,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),

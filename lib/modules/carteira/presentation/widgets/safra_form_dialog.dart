@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../../../core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -126,6 +127,7 @@ class _SafraFormDialogState extends ConsumerState<SafraFormDialog> {
     }
 
     return AlertDialog(
+      backgroundColor: context.premiumSurface,
       title: const Text('Nova Safra'),
       content: Column(
         mainAxisSize: MainAxisSize.min,

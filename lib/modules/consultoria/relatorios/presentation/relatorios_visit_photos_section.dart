@@ -330,13 +330,10 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
                   ),
                   TextButton(
                     onPressed: () => Navigator.of(sheetContext).pop(),
-                    child: const Text(
-                      'Fechar',
-                      style: TextStyle(
-                        color: PremiumTokens.brandGreenDark,
+                    child: Text('Fechar', style: TextStyle(
+                        color: context.themeAccent,
                         fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                      )),
                   ),
                 ],
               ),
@@ -423,11 +420,11 @@ class _VisitPhotoFilterBar extends StatelessWidget {
         duration: const Duration(milliseconds: 140),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? PremiumTokens.brandGreen : Colors.white,
+          color: isSelected ? context.themeAccent : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? PremiumTokens.brandGreen
+                ? context.themeAccent
                 : const Color(0xFFD1D1D6),
           ),
         ),
@@ -473,7 +470,7 @@ class _VisitPhotoCard extends StatelessWidget {
           : 'Sem visita vinculada',
       date: dateFormat.format(photo.createdAt.toLocal()),
       statusLabel: linked ? 'Vinculada' : 'Órfã',
-      statusColor: linked ? PremiumTokens.brandGreen : const Color(0xFFFF9500),
+      statusColor: linked ? context.themeAccent : const Color(0xFFFF9500),
       onTap: onTap,
       trailing: _AsyncActionMenu(
         tooltip: 'Ações da mídia',

@@ -242,7 +242,7 @@ class _ClientEditFormState extends State<ClientEditForm> {
           return ChoiceChip(
             label: Text(labels[i]),
             selected: isSel,
-            selectedColor: PremiumTokens.brandGreen,
+            selectedColor: context.themeAccent,
             labelStyle: TextStyle(
               color: isSel ? Colors.white : Colors.black87,
               fontWeight: isSel ? FontWeight.w600 : FontWeight.normal,
@@ -359,13 +359,10 @@ class _ClientEditFormState extends State<ClientEditForm> {
                 const Spacer(),
                 TextButton(
                   onPressed: _salvar,
-                  child: const Text(
-                    'Salvar',
-                    style: TextStyle(
+                  child: Text('Salvar', style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: PremiumTokens.brandGreen,
-                    ),
-                  ),
+                      color: context.themeAccent,
+                    )),
                 ),
               ],
             ),
@@ -488,9 +485,9 @@ class _ClientEditFormState extends State<ClientEditForm> {
                       final area = _areasPropriedadeEditadas[i];
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(
+                        leading: Icon(
                           Icons.landscape_outlined,
-                          color: PremiumTokens.brandGreen,
+                          color: context.themeAccent,
                         ),
                         title: Text('${_formatArea(area.areaHa)} ha'),
                         subtitle: Text(area.tipoLabel),
@@ -516,14 +513,11 @@ class _ClientEditFormState extends State<ClientEditForm> {
                   ],
                   TextButton.icon(
                     onPressed: _abrirBottomSheetArea,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.add,
-                      color: PremiumTokens.brandGreen,
+                      color: context.themeAccent,
                     ),
-                    label: const Text(
-                      'Adicionar Área',
-                      style: TextStyle(color: PremiumTokens.brandGreen),
-                    ),
+                    label: Text('Adicionar Área', style: TextStyle(color: context.themeAccent)),
                   ),
                   const SizedBox(height: 16),
                   _chipRow(
@@ -550,7 +544,7 @@ class _ClientEditFormState extends State<ClientEditForm> {
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Usa Assistência Técnica'),
                     value: _usaAssistenciaEdit,
-                    activeThumbColor: PremiumTokens.brandGreen,
+                    activeThumbColor: context.themeAccent,
                     onChanged: (v) => setState(() => _usaAssistenciaEdit = v),
                   ),
                   AnimatedSize(

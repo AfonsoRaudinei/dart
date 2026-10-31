@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/visit.dart';
 
@@ -48,6 +49,7 @@ class DistanceWarningDialog extends StatelessWidget {
     final theme = Theme.of(context);
 
     return AlertDialog(
+      backgroundColor: context.premiumSurface,
       icon: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -60,9 +62,10 @@ class DistanceWarningDialog extends StatelessWidget {
           size: 32,
         ),
       ),
-      title: const Text(
+      title: Text(
         'Atenção: Distância entre visitas',
         textAlign: TextAlign.center,
+        style: theme.textTheme.titleMedium,
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
