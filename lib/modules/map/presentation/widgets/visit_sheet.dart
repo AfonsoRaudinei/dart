@@ -37,6 +37,16 @@ class VisitSheet extends ConsumerStatefulWidget {
   )
   onConfirm;
 
+  final void Function(
+    String clientId,
+    String clientName,
+    String? farmId,
+    String? farmName,
+    String? talhaoId,
+    String? talhaoName,
+  )
+  onNavigateToArea;
+
   /// ID do cliente pré-selecionado via query param modo=visita (P5).
   /// Quando informado, o dropdown de Produtor já inicia selecionado.
   final String? preSelectedClienteId;
@@ -46,6 +56,7 @@ class VisitSheet extends ConsumerStatefulWidget {
   const VisitSheet({
     super.key,
     required this.onConfirm,
+    required this.onNavigateToArea,
     this.preSelectedClienteId,
     this.scrollController,
   });
@@ -85,6 +96,9 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
         : const AsyncData<List<VisitFieldSummary>>([]);
 
     final isConfirmEnabled = _selectedClient != null;
+    final isNavigateEnabled =
+        _selectedClient != null &&
+        (_selectedFarm != null || _selectedTalhao != null);
     final isIos = _visitSheetIsIosBlue(context);
     final sheetBg =
         isIos ? SoloForteSheetSkinIos.background : _sheetBgDark;
@@ -230,42 +244,112 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
               20,
               math.max(20, MediaQuery.of(context).padding.bottom + 20),
             ),
-            child: SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: isConfirmEnabled
-                    ? () {
-                        widget.onConfirm(
-                          _selectedClient!.id,
-                          _selectedFarm?.id,
-                          _selectedTalhao?.id,
-                          _selectedActivity,
-                        );
-                      }
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  elevation: 0,
-                  backgroundColor: ctaBg,
-                  disabledBackgroundColor: ctaDisabled,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(ctaRadius),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: OutlinedButton(
+                    onPressed: _selectedClient != null
+                        ? () {
+                            if (!isNavigateEnabled) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text(
+                                    'Selecione uma fazenda ou área/talhão.',
+                                  ),
+                                  backgroundColor: isIos
+                                      ? SoloForteSheetSkinIos.cardBackground
+                                      : _surfaceDark,
+                                ),
+                              );
+                              return;
+                            }
+                            widget.onNavigateToArea(
+                              _selectedClient!.id,
+                              _selectedClient!.name,
+                              _selectedFarm?.id,
+                              _selectedFarm?.name,
+                              _selectedTalhao?.id,
+                              _selectedTalhao?.name,
+                            );
+                          }
+                        : null,
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(
+                        color: isNavigateEnabled
+                            ? (isIos
+                                ? SoloForteSheetSkinIos.iconStroke
+                                : _accentGreen)
+                            : (isIos
+                                ? SoloForteSheetSkinIos.cardBorder
+                                : _borderDark),
+                        width: 1.5,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(ctaRadius),
+                      ),
+                      foregroundColor: isIos
+                          ? SoloForteSheetSkinIos.titleColor
+                          : Colors.white,
+                    ),
+                    child: Text(
+                      'IR ATÉ A ÁREA OU FAZENDA',
+                      style: TextStyle(
+                        color: isNavigateEnabled
+                            ? (isIos
+                                ? SoloForteSheetSkinIos.titleColor
+                                : Colors.white)
+                            : (isIos
+                                ? SoloForteSheetSkinIos.subtitleColor
+                                : Colors.white24),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
                   ),
                 ),
-                child: Text(
-                  'CONFIRMAR CHEGADA',
-                  style: TextStyle(
-                    color: isConfirmEnabled
-                        ? Colors.white
-                        : (isIos
-                            ? SoloForteSheetSkinIos.subtitleColor
-                            : Colors.white24),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                    letterSpacing: 1.2,
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: isConfirmEnabled
+                        ? () {
+                            widget.onConfirm(
+                              _selectedClient!.id,
+                              _selectedFarm?.id,
+                              _selectedTalhao?.id,
+                              _selectedActivity,
+                            );
+                          }
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      elevation: 0,
+                      backgroundColor: ctaBg,
+                      disabledBackgroundColor: ctaDisabled,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(ctaRadius),
+                      ),
+                    ),
+                    child: Text(
+                      'CONFIRMAR CHEGADA',
+                      style: TextStyle(
+                        color: isConfirmEnabled
+                            ? Colors.white
+                            : (isIos
+                                ? SoloForteSheetSkinIos.subtitleColor
+                                : Colors.white24),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
