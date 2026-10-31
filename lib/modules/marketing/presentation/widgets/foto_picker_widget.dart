@@ -53,6 +53,7 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
   bool _loading = false;
 
   Future<void> _pick() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     HapticFeedback.lightImpact();
     setState(() => _loading = true);
 
@@ -60,18 +61,21 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
       final service = MarketingPhotoService(Supabase.instance.client);
       String? url;
       if (widget.includeVegetalInversion) {
+        String? uploadedUrl;
         await showSoloFortePhotoPicker(
           context: context,
           label: widget.label,
+          useRootNavigator: true,
           onPhotoSelected: (path) async {
             if (!context.mounted) return;
-            url = await service.uploadPickedPath(
+            uploadedUrl = await service.uploadPickedPath(
               context: context,
               path: path,
               folder: widget.folder,
             );
           },
         );
+        url = uploadedUrl;
       } else {
         url = await service.pickAndUpload(
           context: context,
