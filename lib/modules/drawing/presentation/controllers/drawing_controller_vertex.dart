@@ -496,6 +496,35 @@ extension DrawingControllerVertexEditing on DrawingController {
     selectEditVertex(ringIndex, segmentIndex + 1);
   }
 
+  /// Remove o anel interno selecionado (ou o único furo) durante edição.
+  void removeSelectedHoleRing() {
+    if (_editGeometry is! DrawingPolygon) return;
+    final poly = _editGeometry as DrawingPolygon;
+    if (poly.coordinates.length <= 1) return;
+
+    var ringIndex = _selectedEditRingIndex ?? 0;
+    if (ringIndex <= 0) {
+      if (poly.coordinates.length == 2) {
+        ringIndex = 1;
+      } else {
+        _errorMessage = 'Toque em um vértice do recorte para excluir';
+        _notify();
+        return;
+      }
+    }
+
+    onDragStart();
+    final updated = DrawingUtils.removeHoleRing(poly, ringIndex);
+    if (updated == null) return;
+
+    _editGeometry = updated;
+    _selectedEditRingIndex = null;
+    _selectedEditPointIndex = null;
+    _updateRealTimeIntersection();
+    validateGeometry(_editGeometry);
+    _notify();
+  }
+
   /// Removes a vertex at the specified index.
   /// Delega para [DrawingVertexEditService.removeVertex].
   void removeVertex(int ringIndex, int pointIndex) {
