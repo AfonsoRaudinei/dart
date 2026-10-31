@@ -43,6 +43,16 @@ HtmlReportViewerActions occurrenceReportHtmlViewerActions(
     }
   }
 
+  void schedulePopParentSheetAfterViewer() {
+    if (!closeParentSheetOnAction || parentSheetContext == null) return;
+    final capturedContext = parentSheetContext;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (capturedContext.mounted) {
+        Navigator.of(capturedContext).pop();
+      }
+    });
+  }
+
   return HtmlReportViewerActions(
     onEdit: (viewerContext) async {
       Navigator.of(viewerContext).pop();
@@ -81,7 +91,7 @@ HtmlReportViewerActions occurrenceReportHtmlViewerActions(
               occurrence.copyWith(status: 'confirmed'),
             );
             container.invalidate(occurrencesListProvider);
-            popParentSheet();
+            schedulePopParentSheetAfterViewer();
             return true;
           }
         : null,
@@ -90,7 +100,7 @@ HtmlReportViewerActions occurrenceReportHtmlViewerActions(
     onDelete: (viewerContext) async {
       await repository.softDeleteOccurrence(occurrence.id);
       container.invalidate(occurrencesListProvider);
-      popParentSheet();
+      schedulePopParentSheetAfterViewer();
       return true;
     },
     deleteDialogTitle: 'Excluir ocorrência?',
