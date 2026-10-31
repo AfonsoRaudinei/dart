@@ -512,8 +512,16 @@ extension DrawingControllerVertexEditing on DrawingController {
         return;
       }
     }
+    if (ringIndex >= poly.coordinates.length) {
+      _errorMessage = 'Toque em um vértice do recorte para excluir';
+      _notify();
+      return;
+    }
 
-    onDragStart();
+    _history.push(
+      _geomToVertices(poly),
+      fullPolygonSnapshot: poly,
+    );
     final updated = DrawingUtils.removeHoleRing(poly, ringIndex);
     if (updated == null) return;
 
