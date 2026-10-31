@@ -76,17 +76,6 @@ class _PlanoAtivoContent extends ConsumerWidget {
 
   const _PlanoAtivoContent({required this.plano});
 
-  Color get _accentColor {
-    switch (plano.plano) {
-      case PlanoTipo.bronze:
-        return const Color(0xFFCD7F32);
-      case PlanoTipo.prata:
-        return const Color(0xFFC0C0C0);
-      case PlanoTipo.ouro:
-        return const Color(0xFFFFD700);
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dias = plano.diasRestantes;
@@ -129,7 +118,7 @@ class _PlanoAtivoContent extends ConsumerWidget {
                   fontFamily: 'Inter',
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
-                  color: _accentColor,
+                  color: context.premiumTextPrimary,
                   letterSpacing: -0.4,
                 ),
               ),
