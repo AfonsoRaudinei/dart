@@ -23,9 +23,11 @@ Future<void> showSoloFortePhotoPicker({
   required BuildContext context,
   required String label,
   required Future<void> Function(String path) onPhotoSelected,
+  bool useRootNavigator = false,
 }) async {
   final origin = await showSoloForteSheet<SoloFortePhotoPickerOrigin>(
     context: context,
+    useRootNavigator: useRootNavigator,
     backgroundColor: null,
     showDragHandle: false,
     builder: (sheetContext) => SoloFortePhotoPickerSheet(label: label),
