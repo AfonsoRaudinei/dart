@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 import 'package:soloforte_app/ui/screens/map/handlers/visit_check_in_map_focus.dart';
 
 void main() {
@@ -112,6 +113,63 @@ void main() {
         talhaoId: null,
       );
       expect(points, isEmpty);
+    });
+  });
+
+  group('visitCheckInMapFocusPointsFromLinked', () {
+    const square = [
+      LatLng(-15, -47),
+      LatLng(-15, -47.01),
+      LatLng(-15.01, -47.01),
+      LatLng(-15.01, -47),
+    ];
+
+    test('fazenda usa polígono desenhado no mapa', () {
+      const fields = [
+        FarmLinkedFieldSummary(
+          id: 'cadastro',
+          name: 'Sem contorno',
+          areaHa: 1,
+          source: FarmLinkedFieldSource.field,
+        ),
+        FarmLinkedFieldSummary(
+          id: 'drawing-1',
+          name: 'Talhão do mapa',
+          areaHa: 12,
+          source: FarmLinkedFieldSource.drawing,
+          boundsVertices: square,
+        ),
+      ];
+
+      final points = visitCheckInMapFocusPointsFromLinked(
+        fields: fields,
+        talhaoId: null,
+      );
+      expect(points, square);
+    });
+
+    test('talhão sem contorno enquadra os polígonos da fazenda', () {
+      const fields = [
+        FarmLinkedFieldSummary(
+          id: 't1',
+          name: 'Cadastro',
+          areaHa: 1,
+          source: FarmLinkedFieldSource.field,
+        ),
+        FarmLinkedFieldSummary(
+          id: 'drawing-1',
+          name: 'Mapa',
+          areaHa: 12,
+          source: FarmLinkedFieldSource.drawing,
+          boundsVertices: square,
+        ),
+      ];
+
+      final points = visitCheckInMapFocusPointsFromLinked(
+        fields: fields,
+        talhaoId: 't1',
+      );
+      expect(points, square);
     });
   });
 }

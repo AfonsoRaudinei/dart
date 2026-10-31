@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 
 /// Espelha o filtro SQL de talhões avulsos em [clientDrawingFieldsProvider].
@@ -39,6 +40,31 @@ void main() {
       expect(merged.map((item) => item.id), ['talhao-1', 'drawing-1']);
       expect(merged.first.name, 'Talhao em fields');
       expect(totalFarmLinkedAreaHa(merged), 35.5);
+    });
+
+    test('desenho com contorno substitui cadastro sem geometria', () {
+      const field = FarmLinkedFieldSummary(
+        id: 'talhao-1',
+        name: 'Cadastro',
+        areaHa: 10,
+        source: FarmLinkedFieldSource.field,
+      );
+      const drawing = FarmLinkedFieldSummary(
+        id: 'talhao-1',
+        name: 'Mapa',
+        areaHa: 10,
+        source: FarmLinkedFieldSource.drawing,
+        boundsVertices: [LatLng(-15, -47), LatLng(-15.1, -47.1)],
+      );
+
+      final merged = mergeFarmLinkedFieldSummaries(
+        fieldSummaries: const [field],
+        drawingSummaries: const [drawing],
+      );
+
+      expect(merged, hasLength(1));
+      expect(merged.single.name, 'Mapa');
+      expect(merged.single.boundsVertices, isNotEmpty);
     });
 
     test('ignora registros sem id para evitar item sem chave estável', () {
