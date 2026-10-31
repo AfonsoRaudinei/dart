@@ -39,7 +39,12 @@ class IndicacoesScreen extends ConsumerWidget {
                     color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
-                error: (_, _) => const Center(child: _IndicacoesLoadFailure()),
+                error: (_, _) => _IndicacoesContent(
+                  codigo: null,
+                  referralsAsync: referralsAsync.hasError
+                      ? const AsyncData(<Referral>[])
+                      : referralsAsync,
+                ),
               ),
             ),
           ],
@@ -120,7 +125,7 @@ class _IndicacoesContent extends StatelessWidget {
               ),
             ),
           ),
-          error: (_, _) => const _IndicacoesLoadFailure(),
+          error: (_, _) => const _EmptyReferrals(),
         ),
         const SizedBox(height: 32),
         const SizedBox(height: kFabSafeArea),
@@ -378,50 +383,6 @@ class _ReferralTile extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────
 // ESTADO VAZIO
 // ─────────────────────────────────────────────────────────────
-
-class _IndicacoesLoadFailure extends ConsumerWidget {
-  const _IndicacoesLoadFailure();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final primary = Theme.of(context).colorScheme.primary;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.cloud_off_outlined, color: primary, size: 40),
-          const SizedBox(height: 12),
-          Text(
-            'Não foi possível carregar as indicações.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 15,
-              color: context.premiumTextSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              ref.invalidate(meuCodigoIndicacaoProvider);
-              ref.invalidate(referralsProvider);
-            },
-            child: Text(
-              'Tentar de novo',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 15,
-                color: primary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _EmptyReferrals extends StatelessWidget {
   const _EmptyReferrals();
