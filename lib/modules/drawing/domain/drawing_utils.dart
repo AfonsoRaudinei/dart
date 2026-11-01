@@ -37,10 +37,13 @@ class DrawingUtils {
   /// Dedo na aresta na edição, depois do teste curto do vértice.
   static const double editEdgeHitPx = 44;
 
-  /// Tolerância geodésica (~56dp) para hit-test de vértice via tap no mapa.
+  /// Raio da bolinha idle (28dp / 2): projeções na ponta da aresta não contam como linha.
+  static const double editEdgeEndpointCapPx = 14;
+
+  /// Tolerância geodésica (~24dp) para hit-test de vértice via tap no mapa.
   static double vertexHitToleranceMeters(
     MapCamera camera, {
-    double hitPx = 56,
+    double hitPx = editVertexHitPx,
   }) {
     final center = camera.center;
     final c = camera.latLngToScreenPoint(center);
