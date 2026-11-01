@@ -8,6 +8,7 @@ import '../../../core/contracts/i_ndvi_latest_lookup.dart';
 import '../../../core/contracts/ndvi_latest_summary.dart';
 import '../data/processing/ndvi_green_mask_processor.dart';
 import '../data/repositories/i_ndvi_repository.dart';
+import '../domain/entities/ndvi_image.dart';
 import '../domain/ndvi_image_utils.dart';
 
 /// Lookup neutro da última imagem NDVI. ADR-045.
@@ -17,8 +18,16 @@ class NdviLatestLookupAdapter implements INdviLatestLookup {
   final INdviRepository _repository;
 
   @override
-  Future<NdviLatestSummary?> getLatest(String fieldId) async {
-    final image = await _repository.getLatestByFieldId(fieldId);
+  Future<NdviLatestSummary?> getLatest(
+    String fieldId, {
+    String? imageDate,
+  }) async {
+    final NdviImage? image;
+    if (imageDate != null && imageDate.isNotEmpty) {
+      image = await _repository.ensureImageForDate(fieldId, imageDate);
+    } else {
+      image = await _repository.getLatestByFieldId(fieldId);
+    }
     if (image == null || !ndviImageHasRenderableData(image)) return null;
 
     String? greenMaskLocalPath;
