@@ -94,16 +94,14 @@ VisitCheckInNavigateToAreaCallback buildVisitCheckInNavigateHandler(
   };
 }
 
-/// Regra de produto: produtor + (fazenda ou talhão).
+/// Regra de produto: basta o produtor selecionado (usa fazenda/talhão se
+/// houver, ou busca desenhos e ocorrências do produtor).
 bool visitCheckInNavigateToAreaEnabled({
   required String? clientId,
   required String? farmId,
   required String? talhaoId,
 }) {
-  if (clientId == null || clientId.isEmpty) return false;
-  final hasFarm = farmId != null && farmId.isNotEmpty;
-  final hasTalhao = talhaoId != null && talhaoId.isNotEmpty;
-  return hasFarm || hasTalhao;
+  return clientId != null && clientId.trim().isNotEmpty;
 }
 
 /// Pontos para [CameraFit.bounds] — talhão único ou união dos talhões da fazenda.
@@ -195,18 +193,20 @@ List<LatLng> visitCheckInMapFocusPointsFromOccurrences(
 Future<List<LatLng>> resolveVisitCheckInMapFocusPoints({
   required WidgetRef ref,
   required String clientId,
-  required String farmId,
+  required String? farmId,
   required String? talhaoId,
 }) async {
-  final fields = await ref.read(farmLinkedFieldsProvider(farmId).future);
-  final fromFarm = visitCheckInMapFocusPointsFromLinked(
-    fields: fields,
-    talhaoId: talhaoId,
-  );
-  if (fromFarm.isNotEmpty) return fromFarm;
+  if (farmId != null && farmId.isNotEmpty) {
+    final fields = await ref.read(farmLinkedFieldsProvider(farmId).future);
+    final fromFarm = visitCheckInMapFocusPointsFromLinked(
+      fields: fields,
+      talhaoId: talhaoId,
+    );
+    if (fromFarm.isNotEmpty) return fromFarm;
+  }
 
   final clientDrawings = await ref.read(
-    clientDrawingFieldsProvider(clientId).future,
+    clientAllDrawingFieldsProvider(clientId).future,
   );
   final fromClientDrawings = visitCheckInMapFocusPointsFromClientDrawings(
     clientDrawings,
@@ -218,12 +218,44 @@ Future<List<LatLng>> resolveVisitCheckInMapFocusPoints({
   return visitCheckInMapFocusPointsFromOccurrences(occurrences);
 }
 
+/// Move ou enquadra a câmera nos pontos resolvidos.
+///
+/// Quando há apenas 1 ponto (ex.: 1 pin de ocorrência) ou pontos idênticos,
+/// evita `CameraFit.bounds` com bbox degenerada (span ~ 0) e usa `move`.
+bool fitVisitFocusPointsOnMap(
+  MapController mapController,
+  List<LatLng> points,
+) {
+  if (points.isEmpty) return false;
+  final bounds = LatLngBounds.fromPoints(points);
+  final isSinglePoint =
+      (bounds.north - bounds.south).abs() < 1e-5 &&
+      (bounds.east - bounds.west).abs() < 1e-5;
+  if (isSinglePoint) {
+    mapController.move(bounds.center, 16.0);
+    return true;
+  }
+  mapController.fitCamera(
+    CameraFit.bounds(
+      bounds: bounds,
+      padding: const EdgeInsets.all(56),
+      maxZoom: 17.0,
+    ),
+  );
+  return true;
+}
+
 String visitCheckInNoGeometryMessage(VisitCheckInMapFocusRequest request) {
   if (request.talhaoName != null && request.talhaoName!.isNotEmpty) {
-    return '${request.talhaoName} sem geometria no mapa.';
+    return '${request.talhaoName} sem geometria no mapa '
+        'nem ocorrências com localização.';
   }
   if (request.farmName != null && request.farmName!.isNotEmpty) {
     return '${request.clientName} · ${request.farmName} sem geometria no mapa '
+        'nem ocorrências com localização.';
+  }
+  if (request.clientName.trim().isNotEmpty) {
+    return '${request.clientName} sem área desenhada no mapa '
         'nem ocorrências com localização.';
   }
   return 'Área selecionada sem geometria no mapa '
@@ -235,6 +267,10 @@ Future<VisitCheckInMapFocusOutcome> applyVisitCheckInMapFocusRequest({
   required MapController mapController,
   required VisitCheckInMapFocusRequest request,
 }) async {
+  if (request.clientId.trim().isEmpty) {
+    return VisitCheckInMapFocusOutcome.missingFarmOrField;
+  }
+
   ref.read(explicitMapCameraIntentProvider.notifier).state = true;
   ref
       .read(drawingClientProvider.notifier)
@@ -247,30 +283,21 @@ Future<VisitCheckInMapFocusOutcome> applyVisitCheckInMapFocusRequest({
 
   if (request.farmId != null && request.farmId!.isNotEmpty) {
     ref.read(selectedFarmIdProvider.notifier).state = request.farmId;
+  } else {
+    ref.read(selectedFarmIdProvider.notifier).state = null;
   }
   ref.read(selectedTalhaoIdProvider.notifier).state = request.talhaoId;
-
-  final farmId = request.farmId;
-  if (farmId == null || farmId.isEmpty) {
-    return VisitCheckInMapFocusOutcome.missingFarmOrField;
-  }
 
   final points = await resolveVisitCheckInMapFocusPoints(
     ref: ref,
     clientId: request.clientId,
-    farmId: farmId,
+    farmId: request.farmId,
     talhaoId: request.talhaoId,
   );
-  if (points.isEmpty) {
+  if (!fitVisitFocusPointsOnMap(mapController, points)) {
     return VisitCheckInMapFocusOutcome.noGeometry;
   }
 
-  mapController.fitCamera(
-    CameraFit.bounds(
-      bounds: LatLngBounds.fromPoints(points),
-      padding: const EdgeInsets.all(56),
-    ),
-  );
   ref.read(viewportStateProvider.notifier).state = InitialViewportState.applied;
   return VisitCheckInMapFocusOutcome.success;
 }

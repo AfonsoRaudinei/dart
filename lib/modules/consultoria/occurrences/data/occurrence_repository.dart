@@ -177,8 +177,9 @@ class OccurrenceRepository {
     final maps = await db.rawQuery(
       '''
       SELECT o.* FROM occurrences o
-      INNER JOIN visit_sessions v ON o.visit_session_id = v.id
-      WHERE v.producer_id = ?
+      LEFT JOIN visit_sessions v ON o.visit_session_id = v.id
+      LEFT JOIN agenda_visit_sessions av ON o.visit_session_id = av.id
+      WHERE (v.producer_id = ? OR av.producer_id = ?)
         AND (o.client_id IS NULL OR TRIM(o.client_id) = '')
         AND ($ownedClause OR o.cached_by_user_id = ?)
         AND o.sync_status NOT IN ('deleted', 'deleted_local')
@@ -186,6 +187,7 @@ class OccurrenceRepository {
       ORDER BY o.created_at DESC
       ''',
       [
+        producerClientId,
         producerClientId,
         ...OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereArgs(currentUserId),
         currentUserId,

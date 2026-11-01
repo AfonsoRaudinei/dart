@@ -166,6 +166,56 @@ final clientDrawingFieldsProvider = FutureProvider.family
       }).toList();
     });
 
+/// Todos os desenhos ativos do produtor (com ou sem `fazenda_id`).
+final clientAllDrawingFieldsProvider = FutureProvider.family
+    .autoDispose<List<ClientDrawingFieldSummary>, String>((
+      ref,
+      clientId,
+    ) async {
+      final userId = LocalSessionIdentity.resolveUserId();
+      if (userId.isEmpty || clientId.isEmpty) return const [];
+
+      final Database db = await DatabaseHelper.instance.database;
+      final maps = await db.query(
+        'drawings',
+        columns: [
+          'id',
+          'nome',
+          'area_ha',
+          'fazenda_id',
+          'geojson',
+          'updated_at',
+          'sync_status',
+          'cultura',
+          'material',
+          'safra',
+        ],
+        where:
+            'user_id = ? AND cliente_id = ? AND deleted_at IS NULL AND ativo = 1',
+        whereArgs: [userId, clientId],
+        orderBy: 'updated_at DESC',
+      );
+
+      return maps.map((row) {
+        final syncValue = row['sync_status'];
+        return ClientDrawingFieldSummary(
+          id: row['id'] as String,
+          name: row['nome'] as String? ?? 'Talhão sem nome',
+          areaHa: (row['area_ha'] as num?)?.toDouble() ?? 0,
+          vertices: _verticesFromGeoJson(row['geojson'] as String?),
+          boundsVertices: _boundsVerticesFromGeoJson(row['geojson'] as String?),
+          farmId: row['fazenda_id'] as String?,
+          crop: _nullableNonEmptyString(row['cultura']),
+          material: _nullableNonEmptyString(row['material']),
+          harvest: _nullableNonEmptyString(row['safra']),
+          updatedAt: row['updated_at'] != null
+              ? DateTime.tryParse(row['updated_at'] as String)
+              : null,
+          syncStatus: syncValue is int ? syncValue : null,
+        );
+      }).toList();
+    });
+
 bool farmLinkedFieldHasBounds(FarmLinkedFieldSummary field) {
   return field.boundsVertices.isNotEmpty || field.vertices.isNotEmpty;
 }
