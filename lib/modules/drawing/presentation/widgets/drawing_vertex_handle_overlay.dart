@@ -17,9 +17,6 @@ import 'vertex_handle_drag_preview.dart';
 const double _kHandleWidth = 56;
 const double _kHandleHeight = 78;
 
-/// Bolinha idle na edição. Menor que o retângulo da gota para a linha passar.
-const double _kEditIdleHitDiameter = 28;
-
 /// Alças de vértice acima do [FlutterMap].
 ///
 /// O dedo fica no corpo da gota (abaixo do LatLng). O mapa não recebe esse
@@ -97,7 +94,9 @@ class _DrawingVertexHandleOverlayState
     final handles = _handles();
     if (handles.isEmpty) return const SizedBox.shrink();
 
-    return Stack(children: [for (final handle in handles) _positioned(handle)]);
+    return _NearestVertexHandleStack(
+      children: [for (final handle in handles) _positioned(handle)],
+    );
   }
 
   List<_VertexHandleTarget> _handles() {
@@ -119,6 +118,11 @@ class _DrawingVertexHandleOverlayState
             isSketch: true,
             ringIndex: 0,
             pointIndex: i,
+            showGota:
+                controller.selectedSketchVertexIndex == i ||
+                (preview != null &&
+                    preview.isSketch &&
+                    preview.pointIndex == i),
           ),
       ];
     }
@@ -178,7 +182,8 @@ class _DrawingVertexHandleOverlayState
   Widget _positioned(_VertexHandleTarget handle) {
     final screen = _screenOf(handle.point);
     if (screen == null) return const SizedBox.shrink();
-    final canDrag = handle.isSketch || handle.showGota;
+    final showGota = handle.showGota;
+    final canDrag = handle.isSketch || showGota;
     final detector = GestureDetector(
       key: handle.key,
       behavior: HitTestBehavior.opaque,
@@ -195,9 +200,7 @@ class _DrawingVertexHandleOverlayState
       top: screen.y,
       width: _kHandleWidth,
       height: _kHandleHeight,
-      child: handle.isSketch
-          ? detector
-          : _EditVertexHitBox(showGota: handle.showGota, child: detector),
+      child: _VertexHandleHitScope(showGota: showGota, child: detector),
     );
   }
 
@@ -394,28 +397,83 @@ class _VertexHandleTarget {
   final bool showGota;
 }
 
-/// Em edição, só a bolinha ou o corpo da gota capturam o dedo.
-class _EditVertexHitBox extends SingleChildRenderObjectWidget {
-  const _EditVertexHitBox({required this.showGota, required super.child});
+/// Stack que repassa o hit apenas ao handle cuja ponta (top-center) está mais
+/// perto do toque quando várias formas se sobrepõem.
+class _NearestVertexHandleStack extends Stack {
+  const _NearestVertexHandleStack({super.children});
+
+  @override
+  RenderStack createRenderObject(BuildContext context) {
+    return _RenderNearestVertexHandleStack(
+      alignment: alignment,
+      textDirection: textDirection ?? Directionality.maybeOf(context),
+      fit: fit,
+      clipBehavior: clipBehavior,
+    );
+  }
+}
+
+class _RenderNearestVertexHandleStack extends RenderStack {
+  _RenderNearestVertexHandleStack({
+    super.alignment,
+    super.textDirection,
+    super.fit,
+    super.clipBehavior,
+  });
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+    RenderBox? winner;
+    var bestDist = double.infinity;
+    var child = firstChild;
+    while (child != null) {
+      if (child is RenderBox) {
+        final box = child;
+        final parentData = box.parentData;
+        if (parentData is StackParentData) {
+          final local = position - parentData.offset;
+          if (box.size.contains(local) &&
+              box is _RenderVertexHandleHitScope &&
+              box.containsLocalHit(local)) {
+            final tip = parentData.offset + Offset(box.size.width / 2, 0);
+            final dist = (position - tip).distance;
+            if (dist < bestDist) {
+              bestDist = dist;
+              winner = box;
+            }
+          }
+        }
+      }
+      child = childAfter(child);
+    }
+    if (winner == null) return false;
+    final offset = (winner.parentData! as StackParentData).offset;
+    return winner.hitTest(result, position: position - offset);
+  }
+}
+
+/// Só a bolinha idle (28px) ou o corpo da gota capturam o dedo — não o 56×78.
+class _VertexHandleHitScope extends SingleChildRenderObjectWidget {
+  const _VertexHandleHitScope({required this.showGota, required super.child});
 
   final bool showGota;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
-    return _RenderEditVertexHitBox(showGota: showGota);
+    return _RenderVertexHandleHitScope(showGota: showGota);
   }
 
   @override
   void updateRenderObject(
     BuildContext context,
-    _RenderEditVertexHitBox renderObject,
+    _RenderVertexHandleHitScope renderObject,
   ) {
     renderObject.showGota = showGota;
   }
 }
 
-class _RenderEditVertexHitBox extends RenderProxyBox {
-  _RenderEditVertexHitBox({required bool showGota}) : _showGota = showGota;
+class _RenderVertexHandleHitScope extends RenderProxyBox {
+  _RenderVertexHandleHitScope({required bool showGota}) : _showGota = showGota;
 
   bool _showGota;
 
@@ -424,18 +482,17 @@ class _RenderEditVertexHitBox extends RenderProxyBox {
     _showGota = value;
   }
 
-  @override
-  bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    if (!size.contains(position) || !_contains(position)) return false;
-    return super.hitTest(result, position: position);
+  bool containsLocalHit(Offset local) {
+    return vertexHandleHitContainsLocal(
+      local,
+      size,
+      showGota: _showGota,
+    );
   }
 
-  bool _contains(Offset position) {
-    if (_showGota) {
-      return vertexGotaContainsLocal(position, size);
-    }
-    const radius = _kEditIdleHitDiameter / 2;
-    final center = Offset(size.width / 2, radius);
-    return (position - center).distance <= radius;
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (!size.contains(position) || !containsLocalHit(position)) return false;
+    return super.hitTest(result, position: position);
   }
 }
