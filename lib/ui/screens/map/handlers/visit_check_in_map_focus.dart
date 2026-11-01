@@ -6,6 +6,8 @@ import 'package:latlong2/latlong.dart';
 import '../../../../core/state/map_ui_providers.dart';
 import '../../../../modules/consultoria/clients/domain/agronomic_models.dart';
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
+import '../../../../modules/consultoria/occurrences/domain/occurrence.dart';
+import '../../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_client_provider.dart';
 
@@ -139,14 +141,47 @@ List<LatLng> visitCheckInMapFocusPointsFromLinked({
   return fields.expand(_linkedFieldBounds).toList(growable: false);
 }
 
+/// Pins de ocorrências registradas para o produtor (lat/long ou GeoJSON Point).
+List<LatLng> visitCheckInMapFocusPointsFromOccurrences(
+  Iterable<Occurrence> occurrences,
+) {
+  final points = <LatLng>[];
+  for (final occurrence in occurrences) {
+    final coords = occurrence.getCoordinates();
+    if (coords == null) continue;
+    points.add(LatLng(coords['lat']!, coords['long']!));
+  }
+  return points;
+}
+
+Future<List<LatLng>> resolveVisitCheckInMapFocusPoints({
+  required WidgetRef ref,
+  required String clientId,
+  required String farmId,
+  required String? talhaoId,
+}) async {
+  final fields = await ref.read(farmLinkedFieldsProvider(farmId).future);
+  final fromFarm = visitCheckInMapFocusPointsFromLinked(
+    fields: fields,
+    talhaoId: talhaoId,
+  );
+  if (fromFarm.isNotEmpty) return fromFarm;
+
+  final repository = ref.read(occurrenceRepositoryProvider);
+  final occurrences = await repository.getOccurrencesByClientId(clientId);
+  return visitCheckInMapFocusPointsFromOccurrences(occurrences);
+}
+
 String visitCheckInNoGeometryMessage(VisitCheckInMapFocusRequest request) {
   if (request.talhaoName != null && request.talhaoName!.isNotEmpty) {
     return '${request.talhaoName} sem geometria no mapa.';
   }
   if (request.farmName != null && request.farmName!.isNotEmpty) {
-    return '${request.clientName} · ${request.farmName} sem geometria no mapa.';
+    return '${request.clientName} · ${request.farmName} sem geometria no mapa '
+        'nem ocorrências com localização.';
   }
-  return 'Área selecionada sem geometria no mapa.';
+  return 'Área selecionada sem geometria no mapa '
+      'nem ocorrências com localização.';
 }
 
 Future<VisitCheckInMapFocusOutcome> applyVisitCheckInMapFocusRequest({
@@ -174,9 +209,10 @@ Future<VisitCheckInMapFocusOutcome> applyVisitCheckInMapFocusRequest({
     return VisitCheckInMapFocusOutcome.missingFarmOrField;
   }
 
-  final fields = await ref.read(farmLinkedFieldsProvider(farmId).future);
-  final points = visitCheckInMapFocusPointsFromLinked(
-    fields: fields,
+  final points = await resolveVisitCheckInMapFocusPoints(
+    ref: ref,
+    clientId: request.clientId,
+    farmId: farmId,
     talhaoId: request.talhaoId,
   );
   if (points.isEmpty) {
