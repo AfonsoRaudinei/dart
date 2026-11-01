@@ -113,7 +113,13 @@ extension DrawingControllerSketch on DrawingController {
     final vertexHit = _findSketchVertexNearestPixels(camera, tap, vertexPx);
 
     if (edgeHit != null && vertexHit != null) {
-      if (edgeHit.distancePx <= vertexHit.distancePx) {
+      final nearEdgeEndpoint = _isSketchEdgeEndpointNearTap(
+        camera,
+        tap,
+        edgeHit.segment,
+        vertexPx,
+      );
+      if (!nearEdgeEndpoint && edgeHit.distancePx < vertexHit.distancePx) {
         insertSketchVertex(edgeHit.segment, edgeHit.point);
         return true;
       }
@@ -190,6 +196,12 @@ extension DrawingControllerSketch on DrawingController {
         start,
         end,
       );
+      if (DrawingUtils.vertexDistancePixels(camera, hit.point, start) <
+              DrawingUtils.editEdgeEndpointCapPx ||
+          DrawingUtils.vertexDistancePixels(camera, hit.point, end) <
+              DrawingUtils.editEdgeEndpointCapPx) {
+        continue;
+      }
       if (hit.distancePx <= closestPx) {
         closestPx = hit.distancePx;
         bestSegment = i;
@@ -198,6 +210,21 @@ extension DrawingControllerSketch on DrawingController {
     }
     if (bestSegment == null || bestPoint == null) return null;
     return (segment: bestSegment, point: bestPoint, distancePx: closestPx);
+  }
+
+  bool _isSketchEdgeEndpointNearTap(
+    MapCamera camera,
+    LatLng tap,
+    int segmentIndex,
+    double maxPx,
+  ) {
+    if (segmentIndex < 0 || segmentIndex >= _currentPoints.length) return false;
+    final start = _currentPoints[segmentIndex];
+    final end = segmentIndex == _currentPoints.length - 1
+        ? _currentPoints.first
+        : _currentPoints[segmentIndex + 1];
+    return DrawingUtils.vertexDistancePixels(camera, start, tap) <= maxPx ||
+        DrawingUtils.vertexDistancePixels(camera, end, tap) <= maxPx;
   }
 
   int? findSketchVertexIndexNear(LatLng tap, double toleranceMeters) {
