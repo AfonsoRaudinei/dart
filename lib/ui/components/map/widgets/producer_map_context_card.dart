@@ -50,7 +50,12 @@ class ProducerMapContextCard extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _ProducerLine(name: property.name),
+                _ProducerLine(
+                  name: property.name,
+                  onTap: () => unawaited(
+                    _selectProducer(context, ref, property, selectedFarm),
+                  ),
+                ),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 5),
                   child: Container(
@@ -137,6 +142,29 @@ class ProducerMapContextCard extends ConsumerWidget {
     });
   }
 
+  Future<void> _selectProducer(
+    BuildContext context,
+    WidgetRef ref,
+    ProducerOwnProperty property,
+    ProducerOwnFarm? selectedFarm,
+  ) async {
+    HapticFeedback.selectionClick();
+    final points = await resolveVisitCheckInMapFocusPoints(
+      ref: ref,
+      clientId: property.clientId,
+      farmId: selectedFarm?.id,
+      talhaoId: null,
+    );
+    if (!context.mounted) return;
+
+    if (onFocusPoints(points)) return;
+    _showMapMessage(
+      context,
+      '${property.name} sem área desenhada no mapa '
+      'nem ocorrências com localização.',
+    );
+  }
+
   Future<void> _selectFarm(
     BuildContext context,
     WidgetRef ref,
@@ -196,8 +224,11 @@ class ProducerMapContextCard extends ConsumerWidget {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.black.withValues(alpha: 0.78),
+        content: Text(
+          message,
+          style: const TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.black.withValues(alpha: 0.82),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -250,13 +281,14 @@ class _LoadingLine extends StatelessWidget {
 }
 
 class _ProducerLine extends StatelessWidget {
-  const _ProducerLine({required this.name});
+  const _ProducerLine({required this.name, this.onTap});
 
   final String name;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final row = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
@@ -289,6 +321,12 @@ class _ProducerLine extends StatelessWidget {
           ),
         ),
       ],
+    );
+    if (onTap == null) return row;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: row,
     );
   }
 }

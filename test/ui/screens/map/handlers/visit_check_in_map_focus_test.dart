@@ -18,14 +18,14 @@ void main() {
       );
     });
 
-    test('false só produtor', () {
+    test('true só produtor (permite buscar por desenhos/ocorrências)', () {
       expect(
         visitCheckInNavigateToAreaEnabled(
           clientId: 'c1',
           farmId: null,
           talhaoId: null,
         ),
-        isFalse,
+        isTrue,
       );
     });
 

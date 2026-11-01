@@ -96,9 +96,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
         : const AsyncData<List<VisitFieldSummary>>([]);
 
     final isConfirmEnabled = _selectedClient != null;
-    final isNavigateEnabled =
-        _selectedClient != null &&
-        (_selectedFarm != null || _selectedTalhao != null);
+    final isNavigateEnabled = _selectedClient != null;
     final isIos = _visitSheetIsIosBlue(context);
     final sheetBg =
         isIos ? SoloForteSheetSkinIos.background : _sheetBgDark;
@@ -257,11 +255,12 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: const Text(
-                                    'Selecione uma fazenda ou área/talhão.',
+                                    'Selecione um produtor.',
+                                    style: TextStyle(color: Colors.white),
                                   ),
-                                  backgroundColor: isIos
-                                      ? SoloForteSheetSkinIos.cardBackground
-                                      : _surfaceDark,
+                                  backgroundColor: Colors.black.withValues(
+                                    alpha: 0.82,
+                                  ),
                                 ),
                               );
                               return;

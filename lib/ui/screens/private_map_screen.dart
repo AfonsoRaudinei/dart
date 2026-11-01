@@ -201,15 +201,24 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(visitCheckInNoGeometryMessage(request)),
-          backgroundColor: Colors.black.withValues(alpha: 0.78),
+          content: Text(
+            visitCheckInNoGeometryMessage(request),
+            style: const TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.black.withValues(alpha: 0.82),
           duration: const Duration(seconds: 2),
         ),
       );
     } else if (outcome == VisitCheckInMapFocusOutcome.missingFarmOrField) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Selecione uma fazenda ou área/talhão.'),
+        SnackBar(
+          content: const Text(
+            'Selecione um produtor.',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.black.withValues(alpha: 0.82),
+          duration: const Duration(seconds: 2),
         ),
       );
     }

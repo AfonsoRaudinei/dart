@@ -37,6 +37,7 @@ import '../../../../modules/visitas/presentation/controllers/visit_controller.da
 import '../../../../modules/dashboard/domain/location_settings.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../handlers/map_location_handler.dart';
+import '../handlers/visit_check_in_map_focus.dart';
 import '../../../components/map/map_attribution_policy.dart';
 import '../../../components/map/map_ndvi_load_progress_overlay.dart';
 import '../../../components/map/widgets/map_canvas.dart';
@@ -240,6 +241,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   if (drawCtrl.currentTool != DrawingTool.freehand) {
                     final tol = DrawingUtils.vertexHitToleranceMeters(
                       mapController.camera,
+                      hitPx: DrawingUtils.editVertexHitPx,
                     );
                     if (drawCtrl.currentPoints.length >= 2 &&
                         drawCtrl.applySketchMapTap(
@@ -640,16 +642,8 @@ class _MapControlsHost extends ConsumerWidget {
       showCheckInAction: !isProdutor,
       topLeftCard: isProdutor
           ? ProducerMapContextCard(
-              onFocusPoints: (points) {
-                if (points.isEmpty) return false;
-                mapController.fitCamera(
-                  CameraFit.bounds(
-                    bounds: LatLngBounds.fromPoints(points),
-                    padding: const EdgeInsets.all(56),
-                  ),
-                );
-                return true;
-              },
+              onFocusPoints: (points) =>
+                  fitVisitFocusPointsOnMap(mapController, points),
             )
           : null,
       drawingState: drawingMetrics.state,
