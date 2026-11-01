@@ -46,8 +46,8 @@ class ActiveLayer extends _$ActiveLayer {
     try {
       final prefs = ref.read(preferencesServiceProvider);
       final saved = prefs.getString(_kLayerKey);
+      var restored = state;
       if (saved != null) {
-        final LayerType restored;
         if (saved == 'LayerType.relevo') {
           restored = LayerType.standard;
         } else {
@@ -56,10 +56,24 @@ class ActiveLayer extends _$ActiveLayer {
             orElse: () => LayerType.satellite,
           );
         }
-        if (restored != state) {
-          state = restored;
-          prefs.setString(_kLayerKey, restored.toString());
-        }
+      }
+
+      final legacyInpe = _readLegacyInpeOverlayMode(prefs);
+      if (legacyInpe.isActive) {
+        restored = LayerType.satelliteUpdated;
+        prefs.setString(
+          InpeSatelliteOverlayModeCtrl._kKey,
+          inpe_overlay.InpeSatelliteOverlayMode.off.persisted,
+        );
+        prefs.setBool(InpeSatelliteOverlayModeCtrl._kLegacyBoolKey, false);
+        ref
+            .read(inpeSatelliteOverlayModeCtrlProvider.notifier)
+            .setMode(inpe_overlay.InpeSatelliteOverlayMode.off);
+      }
+
+      if (restored != state) {
+        state = restored;
+        prefs.setString(_kLayerKey, restored.toString());
       }
     } catch (e) {
       AppLogger.warning(
@@ -74,6 +88,20 @@ class ActiveLayer extends _$ActiveLayer {
     state = type;
     final prefs = ref.read(preferencesServiceProvider);
     prefs.setString(_kLayerKey, type.toString());
+  }
+
+  inpe_overlay.InpeSatelliteOverlayMode _readLegacyInpeOverlayMode(
+    PreferencesService prefs,
+  ) {
+    final saved = prefs.getString(InpeSatelliteOverlayModeCtrl._kKey);
+    if (saved != null) {
+      return inpe_overlay.InpeSatelliteOverlayMode.fromPersisted(saved);
+    }
+    final legacyOn = prefs.getBool(InpeSatelliteOverlayModeCtrl._kLegacyBoolKey) ??
+        false;
+    return legacyOn
+        ? inpe_overlay.InpeSatelliteOverlayMode.cerradoInpe
+        : inpe_overlay.InpeSatelliteOverlayMode.off;
   }
 }
 
