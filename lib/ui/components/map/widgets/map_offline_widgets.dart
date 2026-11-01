@@ -153,6 +153,8 @@ String mapLayerLabel(LayerType layerType) {
       return 'Mapa';
     case LayerType.satellite:
       return 'Satélite';
+    case LayerType.satelliteUpdated:
+      return 'Satélite atualizado';
   }
 }
 

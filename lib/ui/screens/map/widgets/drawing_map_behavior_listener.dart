@@ -44,7 +44,7 @@ class DrawingMapBehaviorListener extends ConsumerWidget {
       if (next == DrawingState.drawing || next == DrawingState.editing) {
         // Auto-switch to Satellite
         final currentLayer = ref.read(activeLayerProvider);
-        if (currentLayer != LayerType.satellite) {
+        if (!currentLayer.usesSatelliteTiles) {
           ref.read(activeLayerProvider.notifier).setLayer(LayerType.satellite);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -58,7 +58,7 @@ class DrawingMapBehaviorListener extends ConsumerWidget {
       // 🆕 SPRINT 5: GPS Tracking → ativar satélite + centralizar no usuário
       if (next == DrawingState.gpsTracking) {
         final currentLayer = ref.read(activeLayerProvider);
-        if (currentLayer != LayerType.satellite) {
+        if (!currentLayer.usesSatelliteTiles) {
           ref.read(activeLayerProvider.notifier).setLayer(LayerType.satellite);
         }
         // Centralizar mapa na posição atual do usuário para referência
