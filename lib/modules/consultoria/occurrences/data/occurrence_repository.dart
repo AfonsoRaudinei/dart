@@ -145,6 +145,55 @@ class OccurrenceRepository {
     return List.generate(maps.length, (i) => Occurrence.fromMap(maps[i]));
   }
 
+  /// Ocorrências com pin útil para enquadrar o mapa no produtor (check-in / card).
+  ///
+  /// Inclui `client_id` direto e pins de sessão de visita sem cliente vinculado.
+  Future<List<Occurrence>> getOccurrencesForClientMapFocus(
+    String clientId,
+  ) async {
+    final normalized = clientId.trim();
+    if (normalized.isEmpty) return const [];
+
+    final direct = await getOccurrencesByClientId(normalized);
+    final fromSessions = await _getOccurrencesByVisitProducerId(normalized);
+    if (fromSessions.isEmpty) return direct;
+
+    final merged = <String, Occurrence>{
+      for (final occurrence in direct) occurrence.id: occurrence,
+    };
+    for (final occurrence in fromSessions) {
+      merged.putIfAbsent(occurrence.id, () => occurrence);
+    }
+    return merged.values.toList(growable: false);
+  }
+
+  Future<List<Occurrence>> _getOccurrencesByVisitProducerId(
+    String producerClientId,
+  ) async {
+    final db = await _databaseHelper.database;
+    final currentUserId = _scopedUserId();
+    final ownedClause =
+        "(o.user_id = ? OR o.user_id = '${OccurrenceOwnershipPolicy.orphanUserId}')";
+    final maps = await db.rawQuery(
+      '''
+      SELECT o.* FROM occurrences o
+      INNER JOIN visit_sessions v ON o.visit_session_id = v.id
+      WHERE v.producer_id = ?
+        AND (o.client_id IS NULL OR TRIM(o.client_id) = '')
+        AND ($ownedClause OR o.cached_by_user_id = ?)
+        AND o.sync_status NOT IN ('deleted', 'deleted_local')
+        AND o.deleted_at IS NULL
+      ORDER BY o.created_at DESC
+      ''',
+      [
+        producerClientId,
+        ...OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereArgs(currentUserId),
+        currentUserId,
+      ],
+    );
+    return List.generate(maps.length, (i) => Occurrence.fromMap(maps[i]));
+  }
+
   Future<List<Occurrence>> getOccurrencesBySession(String sessionId) async {
     final db = await _databaseHelper.database;
     final currentUserId = _scopedUserId();

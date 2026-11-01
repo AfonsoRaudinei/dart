@@ -172,6 +172,24 @@ void main() {
       );
       expect(points, square);
     });
+
+    test('cadastro com geometria sem desenho não bloqueia fallback', () {
+      const fields = [
+        FarmLinkedFieldSummary(
+          id: 't1',
+          name: 'Cadastro com KML',
+          areaHa: 1,
+          source: FarmLinkedFieldSource.field,
+          boundsVertices: square,
+        ),
+      ];
+
+      final points = visitCheckInMapFocusPointsFromLinked(
+        fields: fields,
+        talhaoId: null,
+      );
+      expect(points, isEmpty);
+    });
   });
 
   group('visitCheckInMapFocusPointsFromOccurrences', () {
