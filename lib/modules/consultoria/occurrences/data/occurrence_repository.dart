@@ -121,6 +121,30 @@ class OccurrenceRepository {
     );
   }
 
+  Future<List<Occurrence>> getOccurrencesByClientId(String clientId) async {
+    final normalized = clientId.trim();
+    if (normalized.isEmpty) return const [];
+
+    final db = await _databaseHelper.database;
+    final currentUserId = _scopedUserId();
+    final List<Map<String, dynamic>> maps = await db.query(
+      'occurrences',
+      where:
+          'client_id = ? AND '
+          '(${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause()} '
+          'OR cached_by_user_id = ?) '
+          "AND sync_status NOT IN ('deleted', 'deleted_local') "
+          'AND deleted_at IS NULL',
+      whereArgs: [
+        normalized,
+        ...OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereArgs(currentUserId),
+        currentUserId,
+      ],
+      orderBy: 'created_at DESC',
+    );
+    return List.generate(maps.length, (i) => Occurrence.fromMap(maps[i]));
+  }
+
   Future<List<Occurrence>> getOccurrencesBySession(String sessionId) async {
     final db = await _databaseHelper.database;
     final currentUserId = _scopedUserId();
