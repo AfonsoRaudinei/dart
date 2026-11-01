@@ -29,7 +29,6 @@ import '../../../../modules/drawing/presentation/widgets/drawing_edit_layer.dart
 import '../../../../modules/drawing/presentation/widgets/drawing_vertex_handle_overlay.dart';
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../../../modules/map/presentation/providers/map_location_mode_provider.dart';
-import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
 import '../../../../core/geo/geo_json_polygon_geometry.dart';
 import '../../../../modules/consultoria/occurrences/domain/occurrence.dart'
     as occ;
@@ -641,21 +640,7 @@ class _MapControlsHost extends ConsumerWidget {
       showCheckInAction: !isProdutor,
       topLeftCard: isProdutor
           ? ProducerMapContextCard(
-              onFocusFarm: (fields) {
-                final points = fields
-                    .expand(TalhaoMapAdapter.boundsSamplePoints)
-                    .toList(growable: false);
-                if (points.isEmpty) return false;
-                mapController.fitCamera(
-                  CameraFit.bounds(
-                    bounds: LatLngBounds.fromPoints(points),
-                    padding: const EdgeInsets.all(56),
-                  ),
-                );
-                return true;
-              },
-              onFocusField: (field) {
-                final points = TalhaoMapAdapter.boundsSamplePoints(field);
+              onFocusPoints: (points) {
                 if (points.isEmpty) return false;
                 mapController.fitCamera(
                   CameraFit.bounds(
