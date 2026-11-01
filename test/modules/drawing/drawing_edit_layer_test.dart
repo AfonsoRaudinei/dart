@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
 import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
+import 'package:soloforte_app/modules/drawing/domain/drawing_utils.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
 import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_edit_layer.dart';
@@ -926,6 +927,185 @@ void main() {
         markerRect: markerRect,
         latLng: latLng,
       );
+    },
+  );
+
+  test(
+    'sketch: novo vértice a ~32px de vértice existente não é engolido por vertexHitToleranceMeters',
+    () {
+      final controller = DrawingController(
+        repository: _UpsertDrawingRepository(_feature()),
+      );
+      addTearDown(controller.dispose);
+      controller.selectTool('polygon');
+
+      final camera = MapCamera(
+        crs: const Epsg3857(),
+        center: const LatLng(0, 0),
+        zoom: 16,
+        rotation: 0,
+        nonRotatedSize: const Point(800, 800),
+      );
+
+      const first = LatLng(0, 0);
+      controller.appendDrawingPoint(first);
+      expect(controller.currentPoints.length, 1);
+
+      // ~32px a leste do primeiro ponto (fora de editVertexHitPx=24, mas dentro dos antigos 56px).
+      final firstScreen = camera.latLngToScreenPoint(first);
+      final second = camera.pointToLatLng(
+        Point<double>(firstScreen.x + 32, firstScreen.y),
+      );
+
+      final tol = DrawingUtils.vertexHitToleranceMeters(camera);
+      expect(controller.findSketchVertexIndexNear(second, tol), isNull);
+
+      controller.appendDrawingPoint(second);
+      expect(controller.currentPoints.length, 2);
+
+      // Com 2 pontos, um 3º toque a ~32px perpendicular ao 2º vértice também não é engolido.
+      final secondScreen = camera.latLngToScreenPoint(second);
+      final third = camera.pointToLatLng(
+        Point<double>(secondScreen.x, secondScreen.y - 32),
+      );
+      expect(controller.applySketchMapTap(third, camera), isFalse);
+      expect(controller.findSketchVertexIndexNear(third, tol), isNull);
+    },
+  );
+
+  testWidgets(
+    'overlay: gota ativa de vértice superior não rouba toque da bolinha idle do vizinho abaixo',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final controller = DrawingController(
+        repository: _UpsertDrawingRepository(_feature()),
+      );
+      addTearDown(controller.dispose);
+      controller.selectTool('polygon');
+
+      final mapController = MapController();
+      await _pumpInteractiveHandles(
+        tester,
+        controller: controller,
+        mapController: mapController,
+        center: const LatLng(0, 0),
+        zoom: 17,
+      );
+
+      const p0 = LatLng(0, 0);
+      final s0 = mapController.camera.latLngToScreenPoint(p0);
+      // p1 fica 35px exatamente abaixo de p0 — dentro do corpo da gota 56×78 de p0.
+      final p1 = mapController.camera.pointToLatLng(
+        Point<double>(s0.x, s0.y + 35),
+      );
+      final p2 = mapController.camera.pointToLatLng(
+        Point<double>(s0.x + 80, s0.y + 35),
+      );
+
+      controller.appendDrawingPoint(p0);
+      controller.appendDrawingPoint(p1);
+      controller.appendDrawingPoint(p2);
+      controller.selectSketchVertex(0);
+      await tester.pumpAndSettle();
+      expect(controller.selectedSketchVertexIndex, 0);
+
+      final hit0 = find.byKey(const Key('drawing_sketch_vertex_hit_0'));
+      final hit1 = find.byKey(const Key('drawing_sketch_vertex_hit_1'));
+      final rect0 = tester.getRect(hit0);
+      final rect1 = tester.getRect(hit1);
+
+      // O centro da bolinha idle de p1 cai dentro do corpo da gota de p0.
+      final tapOnP1Idle = _vertexIdleTapCenter(rect1);
+      expect(
+        vertexGotaContainsLocal(tapOnP1Idle - rect0.topLeft, rect0.size),
+        isTrue,
+        reason: 'pré-condição: bolinha de p1 sobrepõe o corpo da gota de p0',
+      );
+
+      await tester.tapAt(tapOnP1Idle);
+      await tester.pumpAndSettle();
+      expect(controller.selectedSketchVertexIndex, 1);
+    },
+  );
+
+  test(
+    'fallback map tap: toque a ~12px do vértice sobre a direção da aresta seleciona vértice sem duplicar ponto',
+    () async {
+      final camera = MapCamera(
+        crs: const Epsg3857(),
+        center: const LatLng(0, 0),
+        zoom: 14,
+        rotation: 0,
+        nonRotatedSize: const Point(800, 800),
+      );
+
+      // 1) Edição
+      final repository = _UpsertDrawingRepository(_feature());
+      final editCtrl = DrawingController(repository: repository);
+      addTearDown(editCtrl.dispose);
+      await editCtrl.loadFeatures();
+      editCtrl.selectFeature(editCtrl.features.single);
+      editCtrl.startEditMode();
+
+      final ring =
+          (editCtrl.liveGeometry! as DrawingPolygon).coordinates.first;
+      final beforeCount = ring.length;
+      final v0 = LatLng(ring[0][1], ring[0][0]);
+      final v1 = LatLng(ring[1][1], ring[1][0]);
+      final s0 = camera.latLngToScreenPoint(v0);
+      final s1 = camera.latLngToScreenPoint(v1);
+      final dirX = s1.x - s0.x;
+      final dirY = s1.y - s0.y;
+      final len = Point<double>(dirX, dirY).magnitude;
+      // 12px de v0 exatamente sobre o segmento v0->v1 (edgeHit.distancePx ≈ 0 <= 12).
+      final tapNearV0OnEdge = camera.pointToLatLng(
+        Point<double>(s0.x + (dirX / len) * 12, s0.y + (dirY / len) * 12),
+      );
+
+      expect(
+        editCtrl.applyEditMapTap(
+          tapNearV0OnEdge,
+          vertexToleranceMeters: DrawingUtils.vertexHitToleranceMeters(
+            camera,
+            hitPx: DrawingUtils.editVertexHitPx,
+          ),
+          edgeToleranceMeters: DrawingUtils.vertexHitToleranceMeters(
+            camera,
+            hitPx: DrawingUtils.editEdgeHitPx,
+          ),
+          camera: camera,
+        ),
+        isTrue,
+      );
+      expect(
+        (editCtrl.liveGeometry! as DrawingPolygon).coordinates.first.length,
+        beforeCount,
+        reason: 'não deve inserir vértice novo a 12px do vértice existente',
+      );
+      expect(editCtrl.selectedEditRingIndex, 0);
+      expect(editCtrl.selectedEditPointIndex, 0);
+
+      // 2) Sketch
+      final sketchCtrl = DrawingController(
+        repository: _UpsertDrawingRepository(_feature()),
+      );
+      addTearDown(sketchCtrl.dispose);
+      sketchCtrl.selectTool('polygon');
+      sketchCtrl.appendDrawingPoint(v0);
+      sketchCtrl.appendDrawingPoint(v1);
+      expect(sketchCtrl.currentPoints.length, 2);
+
+      expect(sketchCtrl.applySketchMapTap(tapNearV0OnEdge, camera), isTrue);
+      expect(
+        sketchCtrl.currentPoints.length,
+        2,
+        reason: 'não deve inserir vértice no sketch a 12px do vértice 0',
+      );
+      expect(sketchCtrl.selectedSketchVertexIndex, 0);
     },
   );
 }
