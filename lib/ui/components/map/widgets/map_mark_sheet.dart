@@ -45,6 +45,7 @@ class MapMarkSheet extends ConsumerStatefulWidget {
     await showSoloForteSheet<void>(
       context: context,
       showDragHandle: false,
+      enableDrag: false,
       maxHeightFraction: 0.92,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => MapMarkSheet(
@@ -189,7 +190,6 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
       longitude: lng,
       formGuard: guard,
       compactHeader: true,
-      liftStickyActionsForKeyboard: false,
       onCancel: () async {
         final canClose = await OccurrenceCloseCoordinator.confirmDiscardIfDirty(
           context,
