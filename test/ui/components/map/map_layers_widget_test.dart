@@ -1,16 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:soloforte_app/core/config/inpe_satellite_overlay_mode.dart';
+import 'package:soloforte_app/core/config/map_config.dart';
 import 'package:soloforte_app/core/domain/map_models.dart';
 import 'package:soloforte_app/core/services/offline_tile_cache_service.dart';
 import 'package:soloforte_app/ui/components/map/widgets/map_layers.dart';
 
 void main() {
   group('shouldShowCerradoSatelliteOverlay', () {
-    test('exibe overlay quando online, satelite ativo e camera no Cerrado', () {
+    test('exibe overlay quando online, satelliteUpdated e camera no Cerrado', () {
       expect(
         shouldShowCerradoSatelliteOverlay(
-          activeLayer: LayerType.satellite,
-          overlayMode: InpeSatelliteOverlayMode.cerradoInpe,
+          activeLayer: LayerType.satelliteUpdated,
           isOnline: true,
           cameraLat: -12.54,
           cameraLng: -55.72,
@@ -19,11 +18,10 @@ void main() {
       );
     });
 
-    test('nao exibe overlay offline para nao bloquear cache local', () {
+    test('nao exibe overlay offline — base MapTiler segue via TileLayer', () {
       expect(
         shouldShowCerradoSatelliteOverlay(
-          activeLayer: LayerType.satellite,
-          overlayMode: InpeSatelliteOverlayMode.cerradoInpe,
+          activeLayer: LayerType.satelliteUpdated,
           isOnline: false,
           cameraLat: -12.54,
           cameraLng: -55.72,
@@ -35,8 +33,7 @@ void main() {
     test('nao exibe overlay fora do bbox do Cerrado', () {
       expect(
         shouldShowCerradoSatelliteOverlay(
-          activeLayer: LayerType.satellite,
-          overlayMode: InpeSatelliteOverlayMode.cerradoInpe,
+          activeLayer: LayerType.satelliteUpdated,
           isOnline: true,
           cameraLat: -25.42,
           cameraLng: -49.27,
@@ -45,21 +42,10 @@ void main() {
       );
     });
 
-    test('nao exibe overlay quando modo Brasil ou Off', () {
+    test('nao exibe overlay no modo satellite MapTiler only', () {
       expect(
         shouldShowCerradoSatelliteOverlay(
           activeLayer: LayerType.satellite,
-          overlayMode: InpeSatelliteOverlayMode.brazilMosaic,
-          isOnline: true,
-          cameraLat: -12.54,
-          cameraLng: -55.72,
-        ),
-        isFalse,
-      );
-      expect(
-        shouldShowCerradoSatelliteOverlay(
-          activeLayer: LayerType.satellite,
-          overlayMode: InpeSatelliteOverlayMode.off,
           isOnline: true,
           cameraLat: -12.54,
           cameraLng: -55.72,
@@ -70,38 +56,65 @@ void main() {
   });
 
   group('shouldShowBrazilSatelliteMosaicOverlay', () {
-    test('exibe mosaico Brasil no modo brazilMosaic online', () {
+    test('exibe mosaico Brasil fora do Cerrado com satelliteUpdated online', () {
       expect(
         shouldShowBrazilSatelliteMosaicOverlay(
-          activeLayer: LayerType.satellite,
-          overlayMode: InpeSatelliteOverlayMode.brazilMosaic,
+          activeLayer: LayerType.satelliteUpdated,
           isOnline: true,
-          cameraLat: -12.54,
-          cameraLng: -55.72,
+          cameraLat: -25.42,
+          cameraLng: -49.27,
         ),
         isTrue,
       );
     });
 
+    test('nao exibe mosaico offline', () {
+      expect(
+        shouldShowBrazilSatelliteMosaicOverlay(
+          activeLayer: LayerType.satelliteUpdated,
+          isOnline: false,
+          cameraLat: -25.42,
+          cameraLng: -49.27,
+        ),
+        isFalse,
+      );
+    });
+
     test('nao exibe Cerrado e Brasil juntos', () {
-      final lat = -12.54;
-      final lng = -55.72;
+      const lat = -12.54;
+      const lng = -55.72;
       final cerrado = shouldShowCerradoSatelliteOverlay(
-        activeLayer: LayerType.satellite,
-        overlayMode: InpeSatelliteOverlayMode.cerradoInpe,
+        activeLayer: LayerType.satelliteUpdated,
         isOnline: true,
         cameraLat: lat,
         cameraLng: lng,
       );
       final brasil = shouldShowBrazilSatelliteMosaicOverlay(
-        activeLayer: LayerType.satellite,
-        overlayMode: InpeSatelliteOverlayMode.cerradoInpe,
+        activeLayer: LayerType.satelliteUpdated,
         isOnline: true,
         cameraLat: lat,
         cameraLng: lng,
       );
       expect(cerrado, isTrue);
       expect(brasil, isFalse);
+    });
+  });
+
+  group('satelliteUpdated basemap fallback', () {
+    test('tileConfigForVisibleLayer usa MapTiler satelite como satellite', () {
+      const key = 'test-key';
+      final updated = MapConfig.tileConfigForVisibleLayer(
+        LayerType.satelliteUpdated,
+        satelliteLabelsEnabled: false,
+        mapTilerApiKey: key,
+      );
+      final satellite = MapConfig.tileConfigForVisibleLayer(
+        LayerType.satellite,
+        satelliteLabelsEnabled: false,
+        mapTilerApiKey: key,
+      );
+      expect(updated.urlTemplate, satellite.urlTemplate);
+      expect(updated.attribution, satellite.attribution);
     });
   });
 
