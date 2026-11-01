@@ -185,6 +185,8 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                 const SizedBox(width: 6),
                 _BasemapToggleButton(activeColor: activeColor),
                 const SizedBox(width: 6),
+                _PinsToggleButton(activeColor: activeColor),
+                const SizedBox(width: 6),
               ],
               // Botão de Localização com 3 estados
               _LocationButton(
@@ -671,6 +673,73 @@ class _BasemapToggleButtonState extends ConsumerState<_BasemapToggleButton> {
               ref.read(activeLayerProvider.notifier).setLayer(next);
             },
             onLongPress: _showTemporaryLabel,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PinsToggleButton extends ConsumerStatefulWidget {
+  const _PinsToggleButton({required this.activeColor});
+
+  final Color activeColor;
+
+  @override
+  ConsumerState<_PinsToggleButton> createState() => _PinsToggleButtonState();
+}
+
+class _PinsToggleButtonState extends ConsumerState<_PinsToggleButton> {
+  Timer? _labelTimer;
+  bool _showLabel = false;
+  String _labelText = 'Pinos';
+
+  @override
+  void dispose() {
+    _labelTimer?.cancel();
+    super.dispose();
+  }
+
+  void _showTemporaryLabel(String text) {
+    _labelTimer?.cancel();
+    setState(() {
+      _labelText = text;
+      _showLabel = true;
+    });
+    _labelTimer = Timer(const Duration(milliseconds: 1600), () {
+      if (mounted) setState(() => _showLabel = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final showMarkers = ref.watch(showMarkersProvider);
+    final stateDescription = showMarkers
+        ? 'Mostra marcadores de talhões, ocorrências e outros pinos.'
+        : 'Oculta todos os pinos sobre o mapa.';
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _MapButtonLabel(text: _labelText, isVisible: _showLabel),
+        const SizedBox(width: 6),
+        Semantics(
+          button: true,
+          label: 'Pinos no mapa',
+          hint: stateDescription,
+          child: _MapRoundToggleButton(
+            buttonKey: const Key('map_control_pins_toggle_btn'),
+            icon: SFIcons.pinFill,
+            iconColor: showMarkers
+                ? widget.activeColor
+                : Colors.grey.shade600,
+            isOn: showMarkers,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              ref.read(showMarkersProvider.notifier).toggle();
+              final next = !showMarkers;
+              _showTemporaryLabel(next ? 'Pinos' : 'Pinos ocultos');
+            },
           ),
         ),
       ],
