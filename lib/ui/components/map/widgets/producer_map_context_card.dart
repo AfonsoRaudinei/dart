@@ -4,10 +4,11 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 import 'package:soloforte_app/modules/produtor/data/producer_link_models.dart';
 import 'package:soloforte_app/modules/produtor/data/producer_property_repository.dart';
+import 'package:soloforte_app/ui/screens/map/handlers/visit_check_in_map_focus.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 final producerMapSelectedFarmIdProvider = StateProvider<String?>((ref) => null);
@@ -18,12 +19,10 @@ final producerMapSelectedFieldIdProvider = StateProvider<String?>(
 class ProducerMapContextCard extends ConsumerWidget {
   const ProducerMapContextCard({
     super.key,
-    required this.onFocusFarm,
-    required this.onFocusField,
+    required this.onFocusPoints,
   });
 
-  final bool Function(List<Talhao> fields) onFocusFarm;
-  final bool Function(Talhao field) onFocusField;
+  final bool Function(List<LatLng> points) onFocusPoints;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -82,7 +81,13 @@ class ProducerMapContextCard extends ConsumerWidget {
                   onSelected: selectedFarm == null
                       ? null
                       : (field) => unawaited(
-                          _selectField(context, ref, selectedFarm, field),
+                          _selectField(
+                            context,
+                            ref,
+                            property,
+                            selectedFarm,
+                            field,
+                          ),
                         ),
                 ),
               ],
@@ -144,19 +149,26 @@ class ProducerMapContextCard extends ConsumerWidget {
     ref.read(selectedFarmIdProvider.notifier).state = farm.id;
     ref.read(selectedTalhaoIdProvider.notifier).state = null;
 
-    final fields = await ref.read(farmFieldsProvider(farm.id).future);
+    final points = await resolveVisitCheckInMapFocusPoints(
+      ref: ref,
+      clientId: property.clientId,
+      farmId: farm.id,
+      talhaoId: null,
+    );
     if (!context.mounted) return;
 
-    if (onFocusFarm(fields)) return;
+    if (onFocusPoints(points)) return;
     _showMapMessage(
       context,
-      '${property.name} · ${farm.name} sem geometria no mapa.',
+      '${property.name} · ${farm.name} sem geometria no mapa '
+      'nem ocorrências com localização.',
     );
   }
 
   Future<void> _selectField(
     BuildContext context,
     WidgetRef ref,
+    ProducerOwnProperty property,
     ProducerOwnFarm farm,
     ProducerOwnField field,
   ) async {
@@ -164,12 +176,20 @@ class ProducerMapContextCard extends ConsumerWidget {
     ref.read(producerMapSelectedFieldIdProvider.notifier).state = field.id;
     ref.read(selectedTalhaoIdProvider.notifier).state = field.id;
 
-    final fields = await ref.read(farmFieldsProvider(farm.id).future);
+    final points = await resolveVisitCheckInMapFocusPoints(
+      ref: ref,
+      clientId: property.clientId,
+      farmId: farm.id,
+      talhaoId: field.id,
+    );
     if (!context.mounted) return;
 
-    final mapField = fields.where((item) => item.id == field.id).firstOrNull;
-    if (mapField != null && onFocusField(mapField)) return;
-    _showMapMessage(context, '${field.name} sem geometria no mapa.');
+    if (onFocusPoints(points)) return;
+    _showMapMessage(
+      context,
+      '${field.name} sem geometria no mapa '
+      'nem ocorrências com localização.',
+    );
   }
 
   void _showMapMessage(BuildContext context, String message) {
