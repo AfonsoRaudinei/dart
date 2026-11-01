@@ -229,8 +229,7 @@ class MapConfig {
     return tileConfigForLayer(
       type,
       mapTilerApiKey: mapTilerApiKey,
-      satelliteWithLabels:
-          type == LayerType.satellite && satelliteLabelsEnabled,
+      satelliteWithLabels: type.usesSatelliteTiles && satelliteLabelsEnabled,
     );
   }
 
@@ -241,6 +240,7 @@ class MapConfig {
   }) {
     switch (type) {
       case LayerType.satellite:
+      case LayerType.satelliteUpdated:
         if (hasMapTilerApiKey(mapTilerApiKey)) {
           final urlTemplate = satelliteWithLabels
               ? mapTilerHybridUrl(mapTilerApiKey)
