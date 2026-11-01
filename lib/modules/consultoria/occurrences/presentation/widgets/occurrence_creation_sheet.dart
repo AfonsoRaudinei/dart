@@ -620,26 +620,18 @@ class _OccurrenceCreationSheetState
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: isIos
-                            ? SoloForteSheetSkinIos.cardBackground
-                            : const Color(0xFF1C1C1E),
+                        color: v.inputFill,
                         borderRadius: BorderRadius.circular(
                           isIos ? SoloForteSheetSkinIos.cardRadius : 12,
                         ),
-                        border: Border.all(
-                          color: isIos
-                              ? SoloForteSheetSkinIos.cardBorder
-                              : Colors.white12,
-                        ),
+                        border: Border.all(color: v.cardBorder),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.calendar_today_outlined,
                             size: 18,
-                            color: isIos
-                                ? SoloForteSheetSkinIos.iconStroke
-                                : Colors.white54,
+                            color: v.inputHint,
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -722,18 +714,12 @@ class _OccurrenceCreationSheetState
                             decoration: BoxDecoration(
                               color: sel
                                   ? color.withValues(alpha: .18)
-                                  : (isIos
-                                        ? SoloForteSheetSkinIos.cardBackground
-                                        : const Color(0xFF1C1C1E)),
+                                  : v.cardBackground,
                               borderRadius: BorderRadius.circular(
                                 isIos ? SoloForteSheetSkinIos.cardRadius : 16,
                               ),
                               border: Border.all(
-                                color: sel
-                                    ? color
-                                    : (isIos
-                                          ? SoloForteSheetSkinIos.cardBorder
-                                          : Colors.white12),
+                                color: sel ? color : v.chipBorderInactive,
                                 width: sel ? 1.5 : 1,
                               ),
                             ),
@@ -741,12 +727,7 @@ class _OccurrenceCreationSheetState
                               child: Text(
                                 u,
                                 style: TextStyle(
-                                  color: sel
-                                      ? color
-                                      : (isIos
-                                            ? SoloForteSheetSkinIos
-                                                  .subtitleColor
-                                            : Colors.white38),
+                                  color: sel ? color : v.chipTextInactive,
                                   fontWeight: sel
                                       ? FontWeight.bold
                                       : FontWeight.normal,

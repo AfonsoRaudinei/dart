@@ -27,11 +27,10 @@ extension _OccurrenceCreationSheetLifecycle on _OccurrenceCreationSheetState {
 extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
   Widget _buildNutrientGrid(Color color) {
     final v = SoloForteSheetVisuals.of(context);
-    final isIos = v.isIos;
     final idleSurface = v.cardBackground;
-    final idleBorder = v.cardBorder;
-    final idleText = v.onSheetSecondary;
-    final idleSub = v.onSheetSecondary;
+    final idleBorder = v.chipBorderInactive;
+    final idleText = v.chipTextInactive;
+    final idleSub = v.chipTextInactive;
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
       child: Wrap(
