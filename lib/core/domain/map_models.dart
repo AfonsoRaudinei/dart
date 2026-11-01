@@ -1,6 +1,23 @@
 import 'package:latlong2/latlong.dart';
 
-enum LayerType { standard, satellite }
+enum LayerType { standard, satellite, satelliteUpdated }
+
+extension LayerTypeBasemap on LayerType {
+  /// MapTiler satélite/hybrid e auto-switch de desenho tratam os dois modos satélite.
+  bool get usesSatelliteTiles =>
+      this == LayerType.satellite || this == LayerType.satelliteUpdated;
+
+  LayerType cycleBasemapLayer() {
+    switch (this) {
+      case LayerType.standard:
+        return LayerType.satellite;
+      case LayerType.satellite:
+        return LayerType.satelliteUpdated;
+      case LayerType.satelliteUpdated:
+        return LayerType.standard;
+    }
+  }
+}
 
 enum SyncStatus { pending, synced, error }
 
