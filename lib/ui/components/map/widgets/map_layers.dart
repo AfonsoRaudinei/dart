@@ -10,7 +10,6 @@ import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/config/map_config.dart';
 import '../../../../core/config/cerrado_satellite_overlay.dart';
 import '../../../../core/config/brazil_satellite_mosaic_overlay.dart';
-import '../../../../core/config/inpe_satellite_overlay_mode.dart';
 import '../../../../core/domain/map_models.dart';
 import '../../../../core/utils/map_logger.dart';
 import '../../../../core/providers/connectivity_provider.dart';
@@ -18,33 +17,30 @@ import '../../../../core/providers/connectivity_provider.dart';
 /// Overlay INPE Cerrado só online — offline usa cache local sem WMS bloqueando tiles.
 bool shouldShowCerradoSatelliteOverlay({
   required LayerType activeLayer,
-  required InpeSatelliteOverlayMode overlayMode,
   required bool isOnline,
   required double? cameraLat,
   required double? cameraLng,
 }) {
-  return activeLayer == LayerType.satellite &&
-      overlayMode == InpeSatelliteOverlayMode.cerradoInpe &&
+  return activeLayer == LayerType.satelliteUpdated &&
       isOnline &&
       cameraLat != null &&
       cameraLng != null &&
       CerradoSatelliteOverlay.isWithinBounds(cameraLat, cameraLng);
 }
 
-/// Mosaico Brasil 3M — cobre todo o território nacional no WMS INPE.
+/// Mosaico Brasil 3M — cobre território nacional quando fora do bbox Cerrado.
 bool shouldShowBrazilSatelliteMosaicOverlay({
   required LayerType activeLayer,
-  required InpeSatelliteOverlayMode overlayMode,
   required bool isOnline,
   required double? cameraLat,
   required double? cameraLng,
 }) {
-  return activeLayer == LayerType.satellite &&
-      overlayMode == InpeSatelliteOverlayMode.brazilMosaic &&
-      isOnline &&
-      cameraLat != null &&
-      cameraLng != null &&
-      BrazilSatelliteMosaicOverlay.isWithinBounds(cameraLat, cameraLng);
+  if (activeLayer != LayerType.satelliteUpdated) return false;
+  if (!isOnline || cameraLat == null || cameraLng == null) return false;
+  if (CerradoSatelliteOverlay.isWithinBounds(cameraLat, cameraLng)) {
+    return false;
+  }
+  return BrazilSatelliteMosaicOverlay.isWithinBounds(cameraLat, cameraLng);
 }
 
 /// Camada base do mapa. Tile já baixado vem do disco, online ou offline.
@@ -94,7 +90,6 @@ class _MapLayersWidgetState extends ConsumerState<MapLayersWidget> {
   Widget build(BuildContext context) {
     final activeLayer = ref.watch(activeLayerProvider);
     final satelliteLabelsEnabled = ref.watch(mapSatelliteLabelsEnabledProvider);
-    final overlayMode = ref.watch(inpeSatelliteOverlayModeCtrlProvider);
     final wms = ref.watch(externalWmsLayerProvider);
     final raster = ref.watch(externalRasterLayerProvider);
     final isOnline = ref.watch(isOnlineProvider).asData?.value;
@@ -113,14 +108,12 @@ class _MapLayersWidgetState extends ConsumerState<MapLayersWidget> {
     );
     final showCerradoOverlay = shouldShowCerradoSatelliteOverlay(
       activeLayer: activeLayer,
-      overlayMode: overlayMode,
       isOnline: isOnline == true,
       cameraLat: camera?.center.latitude,
       cameraLng: camera?.center.longitude,
     );
     final showBrazilMosaicOverlay = shouldShowBrazilSatelliteMosaicOverlay(
       activeLayer: activeLayer,
-      overlayMode: overlayMode,
       isOnline: isOnline == true,
       cameraLat: camera?.center.latitude,
       cameraLng: camera?.center.longitude,
