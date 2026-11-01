@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
+import 'package:soloforte_app/modules/consultoria/occurrences/domain/occurrence.dart';
 import 'package:soloforte_app/ui/screens/map/handlers/visit_check_in_map_focus.dart';
 
 void main() {
@@ -170,6 +171,30 @@ void main() {
         talhaoId: 't1',
       );
       expect(points, square);
+    });
+  });
+
+  group('visitCheckInMapFocusPointsFromOccurrences', () {
+    test('usa lat/long das ocorrências do produtor', () {
+      final points = visitCheckInMapFocusPointsFromOccurrences([
+        Occurrence(
+          id: 'o1',
+          type: 'doenca',
+          description: 'Teste',
+          lat: -15.5,
+          long: -47.5,
+          clientId: 'c1',
+          createdAt: DateTime.utc(2026, 1, 1),
+        ),
+        Occurrence(
+          id: 'o2',
+          type: 'insetos',
+          description: 'Sem coords',
+          clientId: 'c1',
+          createdAt: DateTime.utc(2026, 1, 2),
+        ),
+      ]);
+      expect(points, [const LatLng(-15.5, -47.5)]);
     });
   });
 }
