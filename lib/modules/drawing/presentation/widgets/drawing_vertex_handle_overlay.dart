@@ -424,23 +424,29 @@ class _RenderNearestVertexHandleStack extends RenderStack {
   @override
   bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
     RenderBox? winner;
+    var winnerIsIdleHit = false;
     var bestDist = double.infinity;
     var child = firstChild;
     while (child != null) {
-      if (child is RenderBox) {
-        final box = child;
-        final parentData = box.parentData;
-        if (parentData is StackParentData) {
-          final local = position - parentData.offset;
-          if (box.size.contains(local) &&
-              box is _RenderVertexHandleHitScope &&
-              box.containsLocalHit(local)) {
-            final tip = parentData.offset + Offset(box.size.width / 2, 0);
-            final dist = (position - tip).distance;
-            if (dist < bestDist) {
-              bestDist = dist;
-              winner = box;
-            }
+      final box = child;
+      final parentData = box.parentData;
+      if (parentData is StackParentData) {
+        final local = position - parentData.offset;
+        if (box.size.contains(local) &&
+            box is _RenderVertexHandleHitScope &&
+            box.containsLocalHit(local)) {
+          final isIdleHit = box.containsIdleHit(local);
+          final anchor = isIdleHit
+              ? parentData.offset +
+                    Offset(box.size.width / 2, kVertexIdleHitDiameter / 2)
+              : parentData.offset + Offset(box.size.width / 2, 0);
+          final dist = (position - anchor).distance;
+          if (winner == null ||
+              (isIdleHit && !winnerIsIdleHit) ||
+              (isIdleHit == winnerIsIdleHit && dist < bestDist)) {
+            winner = box;
+            winnerIsIdleHit = isIdleHit;
+            bestDist = dist;
           }
         }
       }
@@ -480,6 +486,10 @@ class _RenderVertexHandleHitScope extends RenderProxyBox {
   set showGota(bool value) {
     if (_showGota == value) return;
     _showGota = value;
+  }
+
+  bool containsIdleHit(Offset local) {
+    return vertexIdleHitContainsLocal(local, size);
   }
 
   bool containsLocalHit(Offset local) {
