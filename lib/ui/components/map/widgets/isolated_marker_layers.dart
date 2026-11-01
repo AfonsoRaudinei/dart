@@ -233,10 +233,10 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
 /// Única layer que DEVE rebuildar com GPS movement
 ///
 /// Arquitetura:
-/// LocationService → locationStreamProvider → IsolatedUserLocationLayer
+/// LocationService → liveMarkerLocationProvider → IsolatedUserLocationLayer
 ///
 /// Performance:
-/// - Observa SOMENTE locationStreamProvider (stream)
+/// - Observa SOMENTE liveMarkerLocationProvider (stream filtrado)
 /// - Campo parado: 0 rebuilds
 /// - Movimento <5m: 0 rebuilds
 /// - Movimento >5m: 1 rebuild (somente este widget)
@@ -298,8 +298,8 @@ class IsolatedUserLocationLayer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 🎯 OBSERVA SOMENTE locationStreamProvider (stream reativo)
-    final locationAsync = ref.watch(locationStreamProvider);
+    // 🎯 OBSERVA liveMarkerLocationProvider (precisão filtrada para o ponto azul)
+    final locationAsync = ref.watch(liveMarkerLocationProvider);
 
     return locationAsync.when(
       data: (userFix) {
