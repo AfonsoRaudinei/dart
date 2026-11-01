@@ -142,7 +142,18 @@ extension DrawingControllerVertexEditing on DrawingController {
       final edgeHit = _findEditEdgeNearestPixels(camera, tap, edgePx);
 
       if (edgeHit != null && vertexHit != null) {
-        if (edgeHit.distancePx <= vertexHit.distancePx) {
+        final ends = _edgeEndpoints((
+          ring: edgeHit.ring,
+          segment: edgeHit.segment,
+          point: edgeHit.point,
+        ));
+        final nearEdgeEndpoint =
+            ends != null &&
+            (DrawingUtils.vertexDistancePixels(camera, ends.$1, tap) <=
+                    vertexPx ||
+                DrawingUtils.vertexDistancePixels(camera, ends.$2, tap) <=
+                    vertexPx);
+        if (!nearEdgeEndpoint && edgeHit.distancePx < vertexHit.distancePx) {
           insertVertex(
             edgeHit.ring,
             edgeHit.segment,
@@ -276,6 +287,12 @@ extension DrawingControllerVertexEditing on DrawingController {
           ring[i],
           next,
         );
+        if (DrawingUtils.vertexDistancePixels(camera, hit.point, ring[i]) <
+                DrawingUtils.editEdgeEndpointCapPx ||
+            DrawingUtils.vertexDistancePixels(camera, hit.point, next) <
+                DrawingUtils.editEdgeEndpointCapPx) {
+          continue;
+        }
         if (hit.distancePx <= closestPx) {
           closestPx = hit.distancePx;
           bestRing = ringIdx;
