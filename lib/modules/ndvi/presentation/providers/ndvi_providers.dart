@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/contracts/i_field_lookup_provider.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
+import 'package:soloforte_app/core/state/map_ndvi_overlay.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/modules/ndvi/data/datasources/ndvi_local_datasource.dart';
 import 'package:soloforte_app/modules/ndvi/data/datasources/ndvi_remote_datasource.dart';
@@ -28,13 +29,27 @@ final ndviRepositoryProvider = Provider<INdviRepository>((ref) {
   final remote = ref.watch(ndviRemoteDatasourceProvider);
   final fieldLookup = ref.watch(iFieldLookupProvider);
   final cachePolicy = ref.watch(ndviCachePolicyProvider);
-  return NdviRepositoryImpl(local, remote, fieldLookup, cachePolicy: cachePolicy);
+  return NdviRepositoryImpl(
+    local,
+    remote,
+    fieldLookup,
+    cachePolicy: cachePolicy,
+  );
 });
 
 final ndviImagesProvider = FutureProvider.family
     .autoDispose<List<NdviImage>, String>(
       (ref, fieldId) => ref.watch(ndviRepositoryProvider).getByFieldId(fieldId),
     );
+
+/// Datas do talhão com overlay NDVI no mapa. Sem overlay, não consulta o repositório.
+final mapNdviDateChoicesProvider = Provider<AsyncValue<List<NdviImage>>>((ref) {
+  final fieldId = ref.watch(mapNdviOverlayFieldIdProvider);
+  if (fieldId == null || fieldId.isEmpty) {
+    return const AsyncData(<NdviImage>[]);
+  }
+  return ref.watch(ndviImagesProvider(fieldId));
+});
 
 final ndviLatestProvider = FutureProvider.family
     .autoDispose<NdviImage?, String>(
