@@ -53,6 +53,27 @@ void main() {
     expect(container.read(activeLayerProvider), LayerType.satellite);
   });
 
+  testWidgets('toggle pinos no chrome alterna showMarkersProvider', (
+    tester,
+  ) async {
+    await _pumpOverlay(tester, themeId: 'green');
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(MapControlsOverlay)),
+    );
+    expect(container.read(showMarkersProvider), isTrue);
+
+    await tester.tap(find.byKey(const Key('map_control_pins_toggle_btn')));
+    await tester.pump();
+
+    expect(container.read(showMarkersProvider), isFalse);
+
+    await tester.tap(find.byKey(const Key('map_control_pins_toggle_btn')));
+    await tester.pump();
+
+    expect(container.read(showMarkersProvider), isTrue);
+  });
+
   for (final themeId in ['green', 'blue', 'black']) {
     testWidgets('botão basemap renderiza com tema $themeId', (tester) async {
       await _pumpOverlay(tester, themeId: themeId);
