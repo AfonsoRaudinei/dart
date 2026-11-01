@@ -34,6 +34,32 @@ void main() {
       }
     });
 
+    test('satelliteUpdated com MapTiler key usa mesmo template que satellite', () {
+      final satellite = MapConfig.tileConfigForLayer(
+        LayerType.satellite,
+        mapTilerApiKey: 'test-key',
+      );
+      final updated = MapConfig.tileConfigForLayer(
+        LayerType.satelliteUpdated,
+        mapTilerApiKey: 'test-key',
+      );
+
+      expect(updated.urlTemplate, satellite.urlTemplate);
+      expect(updated.maxZoom, satellite.maxZoom);
+      expect(updated.maxNativeZoom, satellite.maxNativeZoom);
+    });
+
+    test('satelliteUpdated com labels usa MapTiler Hybrid', () {
+      final config = MapConfig.tileConfigForLayer(
+        LayerType.satelliteUpdated,
+        mapTilerApiKey: 'test-key',
+        satelliteWithLabels: true,
+      );
+
+      expect(config.urlTemplate, contains('/maps/hybrid/256/'));
+      expect(config.urlTemplate, contains('key=test-key'));
+    });
+
     test('satellite com MapTiler key usa MapTiler oficial', () {
       final config = MapConfig.tileConfigForLayer(
         LayerType.satellite,

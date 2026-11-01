@@ -32,7 +32,7 @@ void main() {
     expect(source.contains('Icons.satellite_alt_outlined'), isTrue);
   });
 
-  testWidgets('toggle basemap no chrome alterna activeLayerProvider', (
+  testWidgets('toggle basemap no chrome cicla activeLayerProvider em 3 estados', (
     tester,
   ) async {
     await _pumpOverlay(tester, themeId: 'green');
@@ -41,6 +41,11 @@ void main() {
       tester.element(find.byType(MapControlsOverlay)),
     );
     expect(container.read(activeLayerProvider), LayerType.satellite);
+
+    await tester.tap(find.byKey(const Key('map_control_basemap_toggle_btn')));
+    await tester.pump();
+
+    expect(container.read(activeLayerProvider), LayerType.satelliteUpdated);
 
     await tester.tap(find.byKey(const Key('map_control_basemap_toggle_btn')));
     await tester.pump();
