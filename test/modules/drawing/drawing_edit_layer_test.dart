@@ -69,10 +69,10 @@ void main() {
 
     controller.selectEditVertex(0, 0);
     await tester.pumpAndSettle();
-    await tester.timedDrag(
-      handle,
+    final gotaStart = _vertexGotaDragStart(tester, handle);
+    await tester.dragFrom(
+      gotaStart,
       const Offset(36, 24),
-      const Duration(milliseconds: 300),
     );
     await tester.pumpAndSettle();
 
@@ -128,14 +128,14 @@ void main() {
     final vertex = find.byKey(const Key('drawing_sketch_vertex_1'));
     expect(vertex, findsOneWidget);
 
-    // Hitbox da alça (corpo da gota) ≥44dp — o visual idle fica dentro.
+    // Hit shaped: círculo idle 28px no topo do slot 56×78 (não o centro do retângulo).
     final hit = find.byKey(const Key('drawing_sketch_vertex_hit_1'));
     expect(hit, findsOneWidget);
-    final idleSize = tester.getSize(hit);
-    expect(idleSize.width, greaterThanOrEqualTo(44));
-    expect(idleSize.height, greaterThanOrEqualTo(44));
+    final hitRect = tester.getRect(hit);
+    expect(hitRect.width, closeTo(56, 1));
+    expect(hitRect.height, closeTo(78, 1));
 
-    await tester.tap(hit);
+    await tester.tapAt(_vertexIdleTapCenter(hitRect));
     await tester.pumpAndSettle();
     expect(controller.selectedSketchVertexIndex, 1);
 
@@ -152,10 +152,9 @@ void main() {
     expect(selectedSize.height, closeTo(78, 1));
 
     final before = controller.currentPoints[1];
-    await tester.timedDrag(
-      hit,
+    await tester.dragFrom(
+      _vertexGotaDragStart(tester, hit),
       const Offset(64, 48),
-      const Duration(milliseconds: 300),
     );
     await tester.pumpAndSettle();
 
@@ -191,15 +190,59 @@ void main() {
     );
 
     final before = controller.currentPoints[1];
-    await tester.timedDrag(
-      find.byKey(const Key('drawing_sketch_vertex_hit_1')),
+    final hit = find.byKey(const Key('drawing_sketch_vertex_hit_1'));
+    await tester.dragFrom(
+      _vertexIdleTapCenter(tester.getRect(hit)),
       const Offset(64, 48),
-      const Duration(milliseconds: 300),
     );
     await tester.pumpAndSettle();
 
     expect(controller.currentPoints[1], isNot(equals(before)));
     expect(controller.selectedSketchVertexIndex, 1);
+  });
+
+  testWidgets('mid-draw: vértices próximos selecionam o mais próximo (não z-order)', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final controller = DrawingController(
+      repository: _UpsertDrawingRepository(_feature()),
+    );
+    addTearDown(controller.dispose);
+    controller.selectTool('polygon');
+    // Dois vértices quase coincidentes — hit circles se sobrepõem no zoom alto.
+    controller.appendDrawingPoint(const LatLng(0, 0));
+    controller.appendDrawingPoint(const LatLng(0.000002, 0.000002));
+
+    final mapController = MapController();
+    await _pumpInteractiveHandles(
+      tester,
+      controller: controller,
+      mapController: mapController,
+      center: const LatLng(0, 0),
+      zoom: 16,
+    );
+
+    final hit0 = find.byKey(const Key('drawing_sketch_vertex_hit_0'));
+    final hit1 = find.byKey(const Key('drawing_sketch_vertex_hit_1'));
+    expect(hit0, findsOneWidget);
+    expect(hit1, findsOneWidget);
+
+    final tip0 = tester.getRect(hit0).topCenter;
+    final tip1 = tester.getRect(hit1).topCenter;
+    expect((tip0 - tip1).distance, lessThan(20),
+        reason: 'vértices devem sobrepor hit idle no teste');
+
+    // Toque no centro idle do vértice 0 (z-order favoreceria o índice 1).
+    final tapAt = _vertexIdleTapCenter(tester.getRect(hit0));
+    await tester.tapAt(tapAt);
+    await tester.pumpAndSettle();
+
+    expect(controller.selectedSketchVertexIndex, 0);
   });
 
   testWidgets('mid-draw: arrasta gota com mapa interativo (pan habilitado)', (
@@ -229,7 +272,7 @@ void main() {
     );
 
     final hit = find.byKey(const Key('drawing_sketch_vertex_hit_1'));
-    await tester.tap(hit);
+    await tester.tapAt(_vertexIdleTapCenter(tester.getRect(hit)));
     await tester.pumpAndSettle();
     expect(controller.selectedSketchVertexIndex, 1);
 
@@ -237,10 +280,9 @@ void main() {
     final hitBox = tester.getRect(hit);
     expect(hitBox.height, closeTo(78, 1));
     expect(hitBox.center.dy, greaterThan(hitBox.top + 20));
-    await tester.timedDrag(
-      hit,
+    await tester.dragFrom(
+      _vertexGotaDragStart(tester, hit),
       const Offset(72, 56),
-      const Duration(milliseconds: 350),
     );
     await tester.pumpAndSettle();
 
@@ -280,10 +322,9 @@ void main() {
     final hit = find.byKey(const Key('drawing_vertex_hit_0_0'));
     final hitBox = tester.getRect(hit);
     expect(hitBox.center.dy, greaterThan(hitBox.top + 20));
-    await tester.timedDrag(
-      hit,
+    await tester.dragFrom(
+      _vertexGotaDragStart(tester, hit),
       const Offset(72, 56),
-      const Duration(milliseconds: 350),
     );
     await tester.pumpAndSettle();
 
@@ -869,6 +910,16 @@ void expectMarkerTopAnchorsLatLng({
     reason:
         'topCenter no marker desloca ~78px; bottomCenter mantém topo = vértice',
   );
+}
+
+/// Centro do círculo idle 28px (topo do slot 56×78).
+Offset _vertexIdleTapCenter(Rect hitRect) =>
+    hitRect.topCenter + const Offset(0, 14);
+
+/// Corpo da gota (abaixo da ponta) — início de arraste com gota selecionada.
+Offset _vertexGotaDragStart(WidgetTester tester, Finder hit) {
+  final rect = tester.getRect(hit);
+  return rect.topCenter + const Offset(0, 40);
 }
 
 /// Mapa com pan ligado e alça da gota acima do FlutterMap.
