@@ -126,19 +126,57 @@ List<LatLng> _linkedFieldBounds(FarmLinkedFieldSummary field) {
   return field.vertices;
 }
 
-/// Cadastro da fazenda e polígonos desenhados no mapa (`drawings`).
+List<FarmLinkedFieldSummary> _drawingsWithMapBounds(
+  Iterable<FarmLinkedFieldSummary> fields,
+) {
+  return fields
+      .where((field) => field.isDrawing && farmLinkedFieldHasBounds(field))
+      .toList(growable: false);
+}
+
+List<LatLng> _boundsFromDrawingSummaries(
+  Iterable<FarmLinkedFieldSummary> fields,
+) {
+  return fields.expand(_linkedFieldBounds).toList(growable: false);
+}
+
+List<LatLng> visitCheckInMapFocusPointsFromClientDrawings(
+  Iterable<ClientDrawingFieldSummary> fields,
+) {
+  return fields
+      .where(
+        (field) => field.boundsVertices.isNotEmpty || field.vertices.isNotEmpty,
+      )
+      .expand(
+        (field) => field.boundsVertices.isNotEmpty
+            ? field.boundsVertices
+            : field.vertices,
+      )
+      .toList(growable: false);
+}
+
+/// Polígonos desenhados no mapa (`drawings`) vinculados à fazenda.
 ///
-/// O talhão escolhido sem contorno cai para o enquadramento da fazenda inteira.
+/// Geometria só de cadastro não conta — cai para desenhos avulsos do produtor
+/// e depois ocorrências em [resolveVisitCheckInMapFocusPoints].
+/// Talhão sem contorno desenhado enquadra todos os polígonos da fazenda.
 List<LatLng> visitCheckInMapFocusPointsFromLinked({
   required List<FarmLinkedFieldSummary> fields,
   required String? talhaoId,
 }) {
+  final drawings = _drawingsWithMapBounds(fields);
   if (talhaoId != null && talhaoId.isNotEmpty) {
-    final field = fields.where((item) => item.id == talhaoId).firstOrNull;
-    final selected = field == null ? const <LatLng>[] : _linkedFieldBounds(field);
-    if (selected.isNotEmpty) return selected;
+    final selectedDrawing =
+        drawings.where((item) => item.id == talhaoId).firstOrNull;
+    if (selectedDrawing != null) {
+      return _linkedFieldBounds(selectedDrawing);
+    }
+    if (drawings.isNotEmpty) {
+      return _boundsFromDrawingSummaries(drawings);
+    }
+    return const [];
   }
-  return fields.expand(_linkedFieldBounds).toList(growable: false);
+  return _boundsFromDrawingSummaries(drawings);
 }
 
 /// Pins de ocorrências registradas para o produtor (lat/long ou GeoJSON Point).
@@ -167,8 +205,16 @@ Future<List<LatLng>> resolveVisitCheckInMapFocusPoints({
   );
   if (fromFarm.isNotEmpty) return fromFarm;
 
+  final clientDrawings = await ref.read(
+    clientDrawingFieldsProvider(clientId).future,
+  );
+  final fromClientDrawings = visitCheckInMapFocusPointsFromClientDrawings(
+    clientDrawings,
+  );
+  if (fromClientDrawings.isNotEmpty) return fromClientDrawings;
+
   final repository = ref.read(occurrenceRepositoryProvider);
-  final occurrences = await repository.getOccurrencesByClientId(clientId);
+  final occurrences = await repository.getOccurrencesForClientMapFocus(clientId);
   return visitCheckInMapFocusPointsFromOccurrences(occurrences);
 }
 
