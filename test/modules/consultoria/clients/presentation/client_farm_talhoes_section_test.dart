@@ -41,8 +41,10 @@ void main() {
     totalAreaHa: 150,
   );
 
-  final talhaoNorteChipLabel =
-      buildTalhaoMapPreviewTitleChipLabel('Talhão Norte', 12.5);
+  final talhaoNorteChipLabel = buildTalhaoMapPreviewTitleChipLabel(
+    'Talhão Norte',
+    12.5,
+  );
 
   final linkedFields = [
     const FarmLinkedFieldSummary(
@@ -131,9 +133,8 @@ void main() {
         ),
         GoRoute(
           path: AppRoutes.map,
-          builder: (context, state) => Scaffold(
-            body: Text(state.uri.toString()),
-          ),
+          builder: (context, state) =>
+              Scaffold(body: Text(state.uri.toString())),
         ),
       ],
     );
@@ -180,9 +181,8 @@ void main() {
         ),
         GoRoute(
           path: AppRoutes.map,
-          builder: (context, state) => Scaffold(
-            body: Text(state.uri.toString()),
-          ),
+          builder: (context, state) =>
+              Scaffold(body: Text(state.uri.toString())),
         ),
       ],
     );
@@ -210,56 +210,57 @@ void main() {
     expect(find.textContaining('modo=desenho'), findsOneWidget);
   });
 
-  testWidgets('modo Mapa não consulta NDVI; toque em NDVI consulta e abre sheet', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(800, 1600);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'modo Mapa não consulta NDVI; toque em NDVI consulta e abre sheet',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final counter = _NdviLookupCounter();
-    final fakePresenter = _FakeNdviFieldPresenter();
+      final counter = _NdviLookupCounter();
+      final fakePresenter = _FakeNdviFieldPresenter();
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          preferencesServiceProvider.overrideWithValue(preferences),
-          farmLinkedFieldsProvider.overrideWith(
-            (ref, farmId) async => linkedFields,
-          ),
-          ndviLatestLookupProvider.overrideWithValue(
-            _CountingNdviLookup(counter),
-          ),
-          ndviFieldPresenterProvider.overrideWithValue(fakePresenter),
-        ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: ClientFarmWithTalhoesSection(client: client, farm: farm),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            preferencesServiceProvider.overrideWithValue(preferences),
+            farmLinkedFieldsProvider.overrideWith(
+              (ref, farmId) async => linkedFields,
+            ),
+            ndviLatestLookupProvider.overrideWithValue(
+              _CountingNdviLookup(counter),
+            ),
+            ndviFieldPresenterProvider.overrideWithValue(fakePresenter),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: ClientFarmWithTalhoesSection(client: client, farm: farm),
+              ),
             ),
           ),
         ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
-    expect(counter.value, 0);
-    expect(fakePresenter.shownFieldIds, isEmpty);
-    expect(find.text('Mapa'), findsNothing);
-    expect(find.text('NDVI'), findsNothing);
-    expect(find.byTooltip('Ver NDVI no card'), findsWidgets);
+      expect(counter.value, 0);
+      expect(fakePresenter.shownFieldIds, isEmpty);
+      expect(find.text('Mapa'), findsNothing);
+      expect(find.text('NDVI'), findsNothing);
+      expect(find.byTooltip('Ver NDVI no card'), findsWidgets);
 
-    await tester.tap(find.byTooltip('Ver NDVI no card').first);
-    await tester.pump();
-    await tester.pump();
+      await tester.tap(find.byTooltip('Ver NDVI no card').first);
+      await tester.pump();
+      await tester.pump();
 
-    expect(counter.value, greaterThanOrEqualTo(1));
-    expect(fakePresenter.shownFieldIds, ['drawing-1']);
-    expect(fakePresenter.lastFieldName, 'Talhão Norte');
-    expect(fakePresenter.lastAreaHa, 12.5);
-  });
+      expect(counter.value, greaterThanOrEqualTo(1));
+      expect(fakePresenter.shownFieldIds, ['drawing-1']);
+      expect(fakePresenter.lastFieldName, 'Talhão Norte');
+      expect(fakePresenter.lastAreaHa, 12.5);
+    },
+  );
 
   testWidgets('com várias fazendas inicia recolhido e expande no toque', (
     tester,
@@ -327,7 +328,10 @@ class _CountingNdviLookup implements INdviLatestLookup {
   final _NdviLookupCounter counter;
 
   @override
-  Future<NdviLatestSummary?> getLatest(String fieldId) async {
+  Future<NdviLatestSummary?> getLatest(
+    String fieldId, {
+    String? imageDate,
+  }) async {
     counter.value++;
     return NdviLatestSummary(
       imageDate: DateTime(2026, 9, 12),
