@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import '../domain/location_settings.dart';
 import '../domain/user_location_fix.dart';
 import '../services/location_service.dart';
 import '../domain/location_state.dart';
@@ -23,6 +24,27 @@ final locationStreamProvider = StreamProvider.autoDispose<UserLocationFix>((ref)
   final locationService = LocationService();
   return locationService.locationStream;
 });
+
+/// 🎯 STREAM FILTRADO PARA O PONTO AZUL AO VIVO
+///
+/// Reaproveita [LocationService.locationStream] (Geolocator real) e descarta
+/// fixes de precisão ruim, mantendo o último fix bom na tela.
+/// Não altera o stream bruto — GPS Walk, check-in e geofence continuam
+/// recebendo todas as posições via [locationStreamProvider].
+final liveMarkerLocationProvider =
+    StreamProvider.autoDispose<UserLocationFix>((ref) async* {
+      UserLocationFix? lastAccepted;
+      await for (final fix in LocationService().locationStream) {
+        final accept = shouldAcceptLiveLocationFix(
+          lastAcceptedAccuracyM: lastAccepted?.accuracyM,
+          nextAccuracyM: fix.accuracyM,
+        );
+        if (accept) {
+          lastAccepted = fix;
+          yield fix;
+        }
+      }
+    });
 
 /// 🔒 PROVIDER DE ESTADO DE LOCALIZAÇÃO
 ///
