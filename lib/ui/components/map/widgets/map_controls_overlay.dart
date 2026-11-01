@@ -13,7 +13,6 @@ import '../../../../modules/settings/presentation/providers/settings_providers.d
 import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/config/brazil_satellite_mosaic_overlay.dart';
 import '../../../../core/config/cerrado_satellite_overlay.dart';
-import '../../../../core/config/inpe_satellite_overlay_mode.dart';
 import '../../../../core/domain/map_models.dart';
 import '../../../../core/services/inpe_stac_acquisition_label_service.dart';
 import '../../../../core/state/map_state.dart';
@@ -181,8 +180,6 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (widget.drawingState != DrawingState.editing) ...[
-                _CerradoInpeToggleButton(activeColor: activeColor),
-                const SizedBox(width: 6),
                 _BasemapToggleButton(activeColor: activeColor),
                 const SizedBox(width: 6),
                 _PinsToggleButton(activeColor: activeColor),
@@ -518,22 +515,21 @@ class _MapButtonLabel extends StatelessWidget {
   }
 }
 
-/// Cicla Off → INPE Cerrado → mosaico Brasil → Off no topo direito.
-class _CerradoInpeToggleButton extends ConsumerStatefulWidget {
-  const _CerradoInpeToggleButton({required this.activeColor});
+/// Cicla Padrão → Satélite (MapTiler) → Satélite atualizado (INPE) no topo direito.
+class _BasemapToggleButton extends ConsumerStatefulWidget {
+  const _BasemapToggleButton({required this.activeColor});
 
   final Color activeColor;
 
   @override
-  ConsumerState<_CerradoInpeToggleButton> createState() =>
-      _CerradoInpeToggleButtonState();
+  ConsumerState<_BasemapToggleButton> createState() =>
+      _BasemapToggleButtonState();
 }
 
-class _CerradoInpeToggleButtonState
-    extends ConsumerState<_CerradoInpeToggleButton> {
+class _BasemapToggleButtonState extends ConsumerState<_BasemapToggleButton> {
   Timer? _labelTimer;
   bool _showLabel = false;
-  String _labelText = 'INPE';
+  String _labelText = 'Mapa';
   final _stacLabels = InpeStacAcquisitionLabelService();
   String? _cerradoDateLabel;
 
@@ -565,22 +561,47 @@ class _CerradoInpeToggleButtonState
     });
   }
 
-  String _hintForMode(InpeSatelliteOverlayMode mode) {
-    switch (mode) {
-      case InpeSatelliteOverlayMode.off:
-        return 'Off';
-      case InpeSatelliteOverlayMode.cerradoInpe:
-        final dates = _cerradoDateLabel ?? CerradoSatelliteOverlay.acquisitionLabel;
-        return 'INPE · $dates';
-      case InpeSatelliteOverlayMode.brazilMosaic:
-        return 'Brasil · ${BrazilSatelliteMosaicOverlay.acquisitionLabel}';
+  String _shortLabelFor(LayerType layer) {
+    switch (layer) {
+      case LayerType.standard:
+        return 'Mapa';
+      case LayerType.satellite:
+        return 'Satélite';
+      case LayerType.satelliteUpdated:
+        return 'Satélite atualizado';
+    }
+  }
+
+  String _hintFor(LayerType layer) {
+    switch (layer) {
+      case LayerType.standard:
+        return 'Mapa padrão';
+      case LayerType.satellite:
+        return 'Satélite MapTiler';
+      case LayerType.satelliteUpdated:
+        final dates =
+            _cerradoDateLabel ?? CerradoSatelliteOverlay.acquisitionLabel;
+        return 'INPE · composição trimestral · $dates / '
+            '${BrazilSatelliteMosaicOverlay.acquisitionLabel}';
+    }
+  }
+
+  IconData _iconFor(LayerType layer) {
+    switch (layer) {
+      case LayerType.standard:
+        return SFIcons.mapOutlined;
+      case LayerType.satellite:
+        return SFIcons.satellite;
+      case LayerType.satelliteUpdated:
+        return SFIcons.layersFill;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final mode = ref.watch(inpeSatelliteOverlayModeCtrlProvider);
-    final isOn = mode.isActive;
+    final layer = ref.watch(activeLayerProvider);
+    final isHighlighted = layer != LayerType.standard;
+    final semanticsLabel = _hintFor(layer);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -589,90 +610,21 @@ class _CerradoInpeToggleButtonState
         const SizedBox(width: 6),
         Semantics(
           button: true,
-          label: mode.accessibilityLabel,
-          child: _MapRoundToggleButton(
-            buttonKey: const Key('map_control_cerrado_inpe_toggle_btn'),
-            icon: isOn ? SFIcons.layersFill : SFIcons.layers,
-            iconColor: isOn ? widget.activeColor : Colors.grey.shade600,
-            isOn: isOn,
-            onTap: () {
-              HapticFeedback.selectionClick();
-              ref.read(inpeSatelliteOverlayModeCtrlProvider.notifier).cycleMode();
-              final next = ref.read(inpeSatelliteOverlayModeCtrlProvider);
-              if (next != InpeSatelliteOverlayMode.off) {
-                final currentLayer = ref.read(activeLayerProvider);
-                if (currentLayer != LayerType.satellite) {
-                  ref
-                      .read(activeLayerProvider.notifier)
-                      .setLayer(LayerType.satellite);
-                }
-              }
-              _showTemporaryLabel(_hintForMode(next));
-            },
-            onLongPress: () => _showTemporaryLabel(_hintForMode(mode)),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Alterna mapa padrão / satélite no topo direito (estilo circular).
-class _BasemapToggleButton extends ConsumerStatefulWidget {
-  const _BasemapToggleButton({required this.activeColor});
-
-  final Color activeColor;
-
-  @override
-  ConsumerState<_BasemapToggleButton> createState() =>
-      _BasemapToggleButtonState();
-}
-
-class _BasemapToggleButtonState extends ConsumerState<_BasemapToggleButton> {
-  Timer? _labelTimer;
-  bool _showLabel = false;
-
-  @override
-  void dispose() {
-    _labelTimer?.cancel();
-    super.dispose();
-  }
-
-  void _showTemporaryLabel() {
-    _labelTimer?.cancel();
-    setState(() => _showLabel = true);
-    _labelTimer = Timer(const Duration(milliseconds: 1600), () {
-      if (mounted) setState(() => _showLabel = false);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isSatellite = ref.watch(activeLayerProvider) == LayerType.satellite;
-    final label = isSatellite ? 'Satélite' : 'Mapa';
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _MapButtonLabel(text: label, isVisible: _showLabel),
-        const SizedBox(width: 6),
-        Semantics(
-          button: true,
-          label: label,
+          label: semanticsLabel,
           child: _MapRoundToggleButton(
             buttonKey: const Key('map_control_basemap_toggle_btn'),
-            icon: isSatellite ? SFIcons.satellite : SFIcons.mapOutlined,
-            iconColor: isSatellite ? widget.activeColor : Colors.grey.shade600,
-            isOn: isSatellite,
+            icon: _iconFor(layer),
+            iconColor:
+                isHighlighted ? widget.activeColor : Colors.grey.shade600,
+            isOn: isHighlighted,
             showSlash: false,
             onTap: () {
               HapticFeedback.selectionClick();
-              final next = isSatellite
-                  ? LayerType.standard
-                  : LayerType.satellite;
+              final next = layer.cycleBasemapLayer();
               ref.read(activeLayerProvider.notifier).setLayer(next);
+              _showTemporaryLabel(_shortLabelFor(next));
             },
-            onLongPress: _showTemporaryLabel,
+            onLongPress: () => _showTemporaryLabel(_hintFor(layer)),
           ),
         ),
       ],
