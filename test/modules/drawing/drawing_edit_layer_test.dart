@@ -201,7 +201,7 @@ void main() {
     expect(controller.selectedSketchVertexIndex, 1);
   });
 
-  testWidgets('mid-draw: vértices próximos selecionam o mais próximo (não z-order)', (
+  testWidgets('mid-draw: vértices próximos selecionam o mais próximo', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 800);
@@ -214,9 +214,10 @@ void main() {
     );
     addTearDown(controller.dispose);
     controller.selectTool('polygon');
-    // Dois vértices quase coincidentes — hit circles se sobrepõem no zoom alto.
+    // ~10 px na tela (zoom 17), separação horizontal — idle center não fica
+    // mais perto da ponta do outro vértice.
     controller.appendDrawingPoint(const LatLng(0, 0));
-    controller.appendDrawingPoint(const LatLng(0.000002, 0.000002));
+    controller.appendDrawingPoint(const LatLng(0, 0.000107));
 
     final mapController = MapController();
     await _pumpInteractiveHandles(
@@ -224,7 +225,7 @@ void main() {
       controller: controller,
       mapController: mapController,
       center: const LatLng(0, 0),
-      zoom: 16,
+      zoom: 17,
     );
 
     final hit0 = find.byKey(const Key('drawing_sketch_vertex_hit_0'));
@@ -234,15 +235,17 @@ void main() {
 
     final tip0 = tester.getRect(hit0).topCenter;
     final tip1 = tester.getRect(hit1).topCenter;
-    expect((tip0 - tip1).distance, lessThan(20),
-        reason: 'vértices devem sobrepor hit idle no teste');
+    final screenSeparation = (tip0 - tip1).distance;
+    expect(screenSeparation, inInclusiveRange(8, 12),
+        reason: 'distância em px prova métrica nearest, não z-order');
 
-    // Toque no centro idle do vértice 0 (z-order favoreceria o índice 1).
-    final tapAt = _vertexIdleTapCenter(tester.getRect(hit0));
-    await tester.tapAt(tapAt);
+    await tester.tapAt(_vertexIdleTapCenter(tester.getRect(hit0)));
     await tester.pumpAndSettle();
-
     expect(controller.selectedSketchVertexIndex, 0);
+
+    await tester.tapAt(_vertexIdleTapCenter(tester.getRect(hit1)));
+    await tester.pumpAndSettle();
+    expect(controller.selectedSketchVertexIndex, 1);
   });
 
   testWidgets('mid-draw: arrasta gota com mapa interativo (pan habilitado)', (
@@ -593,6 +596,37 @@ void main() {
     expect(vertexGotaContainsLocal(const Offset(28, 39), size), isTrue);
     expect(vertexGotaContainsLocal(const Offset(1, 1), size), isFalse);
     expect(vertexGotaContainsLocal(const Offset(2, 76), size), isFalse);
+  });
+
+  test('idle hit: círculo 28px no topo do slot 56×78', () {
+    const size = Size(56, 78);
+    expect(vertexIdleHitContainsLocal(const Offset(28, 14), size), isTrue);
+    expect(vertexIdleHitContainsLocal(const Offset(1, 1), size), isFalse);
+    expect(vertexIdleHitContainsLocal(const Offset(28, 39), size), isFalse);
+  });
+
+  test('alça idle/gota: vertexHandleHitContainsLocal', () {
+    const size = Size(56, 78);
+    expect(
+      vertexHandleHitContainsLocal(const Offset(28, 14), size, showGota: false),
+      isTrue,
+    );
+    expect(
+      vertexHandleHitContainsLocal(const Offset(1, 1), size, showGota: false),
+      isFalse,
+    );
+    expect(
+      vertexHandleHitContainsLocal(const Offset(28, 39), size, showGota: false),
+      isFalse,
+    );
+    expect(
+      vertexHandleHitContainsLocal(const Offset(28, 39), size, showGota: true),
+      isTrue,
+    );
+    expect(
+      vertexHandleHitContainsLocal(const Offset(1, 1), size, showGota: true),
+      isFalse,
+    );
   });
 
   test(
