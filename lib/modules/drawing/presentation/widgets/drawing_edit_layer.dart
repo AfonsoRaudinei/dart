@@ -453,6 +453,34 @@ ui.Path vertexGotaPath(Size size) {
   return path;
 }
 
+/// Bolinha idle na edição/sketch overlay (28px, topo do hitbox 56×78).
+const double kVertexIdleHitDiameter = 28;
+
+/// Hit idle: círculo 28px com centro em (width/2, radius) — ponta do vértice em y=0.
+bool vertexIdleHitContainsLocal(Offset local, Size size) {
+  if (local.dx < 0 ||
+      local.dy < 0 ||
+      local.dx > size.width ||
+      local.dy > size.height) {
+    return false;
+  }
+  final radius = kVertexIdleHitDiameter / 2;
+  final center = Offset(size.width / 2, radius);
+  return (local - center).distance <= radius;
+}
+
+/// Alça idle (bolinha) ou gota selecionada.
+bool vertexHandleHitContainsLocal(
+  Offset local,
+  Size size, {
+  required bool showGota,
+}) {
+  if (showGota) {
+    return vertexGotaContainsLocal(local, size);
+  }
+  return vertexIdleHitContainsLocal(local, size);
+}
+
 /// Cantos transparentes do retângulo 56×78 não capturam o dedo.
 bool vertexGotaContainsLocal(Offset local, Size size) {
   if (local.dx < 0 ||
