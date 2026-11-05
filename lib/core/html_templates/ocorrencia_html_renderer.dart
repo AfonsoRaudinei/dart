@@ -81,6 +81,8 @@ class OcorrenciaHtmlRenderer {
       'urgencia_class': urgenciaClass,
       'urgencia_label':
           'Urgência ${_urgenciaValor(urgenciaClass).toLowerCase()}',
+      'andamento_label': _andamentoStatusLine(data),
+      'andamento_class': _andamentoCssClass(data),
       'consultant_nome': RelatorioHtmlRenderer.escapeHtml(consultantNome),
       'consultant_role': RelatorioHtmlRenderer.escapeHtml(
         consultantRole?.trim(),
@@ -452,6 +454,32 @@ class OcorrenciaHtmlRenderer {
       sb.write('</div>');
     }
     return sb.toString();
+  }
+
+  static String _andamentoStatusLine(Map<String, dynamic> data) {
+    if ((data['status'] as String?) == 'draft') return '';
+    final step =
+        (data['andamento'] as String?)?.trim().toLowerCase() ?? 'aberta';
+    final label = switch (step) {
+      'em_atendimento' => 'Em atendimento',
+      'resolvida' => 'Resolvida',
+      _ => 'Aberta',
+    };
+    final responsavel = (data['responsavel_nome'] as String?)?.trim() ?? '';
+    final base = 'Andamento $label';
+    if (responsavel.isEmpty) return base;
+    return '$base · ${RelatorioHtmlRenderer.escapeHtml(responsavel)}';
+  }
+
+  static String _andamentoCssClass(Map<String, dynamic> data) {
+    if ((data['status'] as String?) == 'draft') return '';
+    final step =
+        (data['andamento'] as String?)?.trim().toLowerCase() ?? 'aberta';
+    return switch (step) {
+      'em_atendimento' => 'media',
+      'resolvida' => 'baixa',
+      _ => 'alta',
+    };
   }
 
   static String _renderUrgenciaStatus(Object? type) {
