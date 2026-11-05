@@ -15,6 +15,8 @@ import '../../../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/occurrence.dart';
 import '../controllers/occurrence_controller.dart';
 import '../occurrence_detail_report_actions.dart';
+import 'occurrence_detail_close_button.dart';
+import 'occurrence_andamento_section.dart';
 import 'occurrence_creation_sheet.dart';
 import 'occurrence_detail_pin_correction.dart';
 import 'occurrence_detail_photo_section.dart';
@@ -533,6 +535,10 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                 isIos: isIos,
                 isDark: isDark,
               ),
+              OccurrenceAndamentoSection(
+                occurrence: occurrence,
+                readOnly: _isReadOnly,
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Container(
@@ -662,7 +668,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                 child: SizedBox(
                   width: double.infinity,
                   height: 50,
-                  child: CupertinoCloseButton(
+                  child: OccurrenceDetailCloseButton(
                     isDark: isDark,
                     isIos: isIos,
                     onTap: () => Navigator.of(context).pop(),
@@ -816,81 +822,6 @@ class _DetailRow extends StatelessWidget {
             ),
           ),
       ],
-    );
-  }
-}
-
-class CupertinoCloseButton extends StatefulWidget {
-  final bool isDark;
-  final bool isIos;
-  final VoidCallback onTap;
-
-  const CupertinoCloseButton({
-    super.key,
-    required this.isDark,
-    this.isIos = false,
-    required this.onTap,
-  });
-
-  @override
-  State<CupertinoCloseButton> createState() => _CupertinoCloseButtonState();
-}
-
-class _CupertinoCloseButtonState extends State<CupertinoCloseButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = widget.isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : (widget.isDark
-            ? const Color(0xFF2C2C2E)
-            : context.premiumBackground);
-    final textColor = widget.isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : (widget.isDark
-            ? PremiumTokens.textPrimaryDark
-            : context.premiumTextPrimary);
-
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        HapticFeedback.lightImpact();
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedOpacity(
-        opacity: _pressed ? 0.6 : 1.0,
-        duration: const Duration(milliseconds: 80),
-        child: AnimatedScale(
-          scale: _pressed ? 0.97 : 1.0,
-          duration: const Duration(milliseconds: 80),
-          child: Container(
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(
-                widget.isIos
-                    ? SoloForteSheetSkinIos.ctaRadius
-                    : PremiumTokens.borderRadiusMd,
-              ),
-              border: widget.isIos
-                  ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
-                  : null,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              'Fechar',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.4,
-                color: textColor,
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
