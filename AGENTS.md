@@ -17,7 +17,7 @@
 | Arquitetura | Map-First + Clean Architecture + Bounded Contexts |
 | Estado | Riverpod `@riverpod` / `AsyncNotifier` (ADR-008) |
 | Navegação | `context.go()` / `context.push()` — **nunca** `pop()` |
-| Persistência | SQLite offline-first — schema **v46** (`database_helper.dart`) |
+| Persistência | SQLite offline-first — schema **v48** (`database_helper.dart`) |
 | Mapa | `flutter_map` — nunca `google_maps_flutter` |
 | CI gate | `./tool/arch_check.sh` → Exit 0 |
 | Coverage mínimo CI | 36.46% |
