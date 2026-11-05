@@ -20,6 +20,9 @@ class ClientDrawingFieldSummary {
     this.crop,
     this.material,
     this.harvest,
+    this.dataPlantio,
+    this.dataEmergencia,
+    this.cicloDias,
     this.updatedAt,
     this.syncStatus,
   });
@@ -35,6 +38,9 @@ class ClientDrawingFieldSummary {
   final String? crop;
   final String? material;
   final String? harvest;
+  final String? dataPlantio;
+  final String? dataEmergencia;
+  final int? cicloDias;
   final DateTime? updatedAt;
   final int? syncStatus;
 }
@@ -52,6 +58,9 @@ class FarmLinkedFieldSummary {
     this.crop,
     this.material,
     this.harvest,
+    this.dataPlantio,
+    this.dataEmergencia,
+    this.cicloDias,
     this.updatedAt,
     this.syncStatus,
     this.perimeter,
@@ -67,6 +76,9 @@ class FarmLinkedFieldSummary {
   final String? crop;
   final String? material;
   final String? harvest;
+  final String? dataPlantio;
+  final String? dataEmergencia;
+  final int? cicloDias;
   final DateTime? updatedAt;
   final int? syncStatus;
   final double? perimeter;
@@ -139,6 +151,9 @@ final clientDrawingFieldsProvider = FutureProvider.family
           'cultura',
           'material',
           'safra',
+          'data_plantio',
+          'data_emergencia',
+          'ciclo_dias',
         ],
         where:
             'user_id = ? AND cliente_id = ? AND deleted_at IS NULL AND ativo = 1 AND (fazenda_id IS NULL OR fazenda_id = \'\')',
@@ -158,6 +173,9 @@ final clientDrawingFieldsProvider = FutureProvider.family
           crop: _nullableNonEmptyString(row['cultura']),
           material: _nullableNonEmptyString(row['material']),
           harvest: _nullableNonEmptyString(row['safra']),
+          dataPlantio: _nullableNonEmptyString(row['data_plantio']),
+          dataEmergencia: _nullableNonEmptyString(row['data_emergencia']),
+          cicloDias: _nullableCicloDias(row['ciclo_dias']),
           updatedAt: row['updated_at'] != null
               ? DateTime.tryParse(row['updated_at'] as String)
               : null,
@@ -189,6 +207,9 @@ final clientAllDrawingFieldsProvider = FutureProvider.family
           'cultura',
           'material',
           'safra',
+          'data_plantio',
+          'data_emergencia',
+          'ciclo_dias',
         ],
         where:
             'user_id = ? AND cliente_id = ? AND deleted_at IS NULL AND ativo = 1',
@@ -208,6 +229,9 @@ final clientAllDrawingFieldsProvider = FutureProvider.family
           crop: _nullableNonEmptyString(row['cultura']),
           material: _nullableNonEmptyString(row['material']),
           harvest: _nullableNonEmptyString(row['safra']),
+          dataPlantio: _nullableNonEmptyString(row['data_plantio']),
+          dataEmergencia: _nullableNonEmptyString(row['data_emergencia']),
+          cicloDias: _nullableCicloDias(row['ciclo_dias']),
           updatedAt: row['updated_at'] != null
               ? DateTime.tryParse(row['updated_at'] as String)
               : null,
@@ -284,6 +308,9 @@ Future<List<FarmLinkedFieldSummary>> _loadDrawingFieldsByFarmId(
       'cultura',
       'material',
       'safra',
+      'data_plantio',
+      'data_emergencia',
+      'ciclo_dias',
     ],
     where:
         'user_id = ? AND fazenda_id = ? AND deleted_at IS NULL AND ativo = 1',
@@ -302,6 +329,9 @@ Future<List<FarmLinkedFieldSummary>> _loadDrawingFieldsByFarmId(
       crop: row['cultura'] as String?,
       material: row['material'] as String?,
       harvest: row['safra'] as String?,
+      dataPlantio: _nullableNonEmptyString(row['data_plantio']),
+      dataEmergencia: _nullableNonEmptyString(row['data_emergencia']),
+      cicloDias: _nullableCicloDias(row['ciclo_dias']),
       updatedAt: row['updated_at'] != null
           ? DateTime.tryParse(row['updated_at'] as String)
           : null,
@@ -319,6 +349,13 @@ int? _syncStatusFromValue(Object? value) {
 String? _nullableNonEmptyString(Object? value) {
   if (value is! String) return null;
   return value.isEmpty ? null : value;
+}
+
+int? _nullableCicloDias(Object? value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value);
+  return null;
 }
 
 List<LatLng> _verticesFromGeometry(Map<String, dynamic>? geometry) {
