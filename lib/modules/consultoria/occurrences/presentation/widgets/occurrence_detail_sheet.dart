@@ -15,10 +15,12 @@ import '../../../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/occurrence.dart';
 import '../controllers/occurrence_controller.dart';
 import '../occurrence_detail_report_actions.dart';
+import '../occurrence_form_apply.dart';
 import 'occurrence_andamento_section.dart';
 import 'occurrence_detail_close_button.dart';
 import 'occurrence_creation_sheet.dart';
 import 'occurrence_detail_pin_correction.dart';
+import 'occurrence_detail_audio_section.dart';
 import 'occurrence_detail_photo_section.dart';
 
 /// Aplica os campos do formulário de edição sobre [current], preservando
@@ -27,12 +29,7 @@ Occurrence applyOccurrenceFormEdit(
   Occurrence current,
   OccurrenceFormData data,
 ) {
-  return current.copyWith(
-    type: data.type,
-    description: data.description,
-    clientId: data.clientId,
-    photoPath: data.photoPath,
-    category: data.category,
+  return occurrenceWithFormData(current, data).copyWith(
     status: current.status,
     lat: data.latitude,
     long: data.longitude,
@@ -40,22 +37,6 @@ Occurrence applyOccurrenceFormEdit(
       'type': 'Point',
       'coordinates': [data.longitude, data.latitude],
     }),
-    cultivar: data.cultivar,
-    dataPlantio: data.dataPlantio,
-    estadioFenologico: data.estadioFenologico,
-    tipoOcorrencia: data.tipoOcorrencia,
-    amostraSolo: data.amostraSolo,
-    recomendacoes: data.recomendacoes,
-    metricasJson: data.metricasJson,
-    nutrientesJson: data.nutrientesJson,
-    categoriasJson: data.categoriasJson,
-    notasCategoriasJson: data.notasCategoriasJson,
-    fotosCategoriasJson: data.fotosCategoriasJson,
-    dataEmergencia: data.dataEmergencia,
-    sementesPorMetro: data.sementesPorMetro,
-    estandePlantas: data.estandePlantas,
-    avaliacaoPlantio: data.avaliacaoPlantio,
-    objetivoPlantio: data.objetivoPlantio,
   );
 }
 
@@ -551,6 +532,13 @@ class OccurrenceDetailSheet extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               OccurrenceDetailPhotoSection(
+                occurrence: live,
+                cardBg: cardBg,
+                cardRadius: cardRadius,
+                isIos: isIos,
+                isDark: isDark,
+              ),
+              OccurrenceDetailAudioSection(
                 occurrence: live,
                 cardBg: cardBg,
                 cardRadius: cardRadius,

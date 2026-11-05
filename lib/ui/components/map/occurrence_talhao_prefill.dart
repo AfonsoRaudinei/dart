@@ -102,6 +102,8 @@ Widget buildMapOccurrenceCreationSheet({
             estandePlantas: data.estandePlantas,
             avaliacaoPlantio: data.avaliacaoPlantio,
             objetivoPlantio: data.objetivoPlantio,
+            audioPath: data.audioPath,
+            audioDurationSec: data.audioDurationSec,
           );
       if (!isMounted()) return;
       clearOccurrenceDraft(ref, data.latitude, data.longitude);

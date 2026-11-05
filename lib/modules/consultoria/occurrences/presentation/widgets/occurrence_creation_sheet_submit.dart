@@ -143,6 +143,8 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
           categoriasJson: _encodeCategorias(),
           notasCategoriasJson: _encodeNotas(),
           fotosCategoriasJson: _encodeFotos(),
+          audioPath: _audioPath,
+          audioDurationSec: _audioDurationSec,
         ),
       );
       if (talhaoWriter != null && talhaoPrefill != null) {

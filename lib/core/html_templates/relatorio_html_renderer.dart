@@ -200,6 +200,34 @@ abstract class RelatorioHtmlRenderer {
     return 'data:$mime;base64,$b64';
   }
 
+  /// Converte áudio local (m4a/aac) para data URI — relatório offline.
+  static Future<String?> audioPathToBase64(
+    String? path, {
+    int maxBytes = 2 * 1024 * 1024,
+  }) async {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    final resolved = await LocalMediaPathResolver.resolveLocalPath(path);
+    if (resolved == null) return null;
+    final file = File(resolved);
+    if (!await file.exists()) return null;
+    final bytes = await file.readAsBytes();
+    if (bytes.lengthInBytes > maxBytes) return null;
+    final mime = _audioMimeFromPath(path);
+    final b64 = base64Encode(bytes);
+    return 'data:$mime;base64,$b64';
+  }
+
+  static String _audioMimeFromPath(String path) {
+    final lower = path.toLowerCase();
+    if (lower.endsWith('.mp3')) return 'audio/mpeg';
+    if (lower.endsWith('.wav')) return 'audio/wav';
+    if (lower.endsWith('.aac')) return 'audio/aac';
+    return 'audio/mp4';
+  }
+
   /// Aceita apenas `data:image/*` gerado internamente ou URLs `https` válidas.
   static String sanitizePhotoSrc(String? src) {
     if (src == null || src.isEmpty) return '';

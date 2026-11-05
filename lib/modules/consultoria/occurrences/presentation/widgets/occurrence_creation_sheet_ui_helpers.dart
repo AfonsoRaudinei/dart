@@ -17,6 +17,7 @@ extension _OccurrenceCreationSheetLifecycle on _OccurrenceCreationSheetState {
     if (_metrics.isNotEmpty) return true;
     if (_nutrientes.isNotEmpty) return true;
     if (_fotos.isNotEmpty) return true;
+    if (_audioPath?.trim().isNotEmpty == true) return true;
     if (_urgency != 'Média') return true;
     for (final controller in _notasCtrls.values) {
       if (controller.text.trim().isNotEmpty) return true;

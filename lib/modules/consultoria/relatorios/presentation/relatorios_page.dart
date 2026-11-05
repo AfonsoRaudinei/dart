@@ -45,6 +45,7 @@ import '../../../settings/presentation/providers/settings_providers.dart';
 import '../../../settings/presentation/providers/user_profile_provider.dart';
 
 // Ocorrências — mesmo bounded context (consultoria/)
+import '../../occurrences/presentation/occurrence_form_apply.dart';
 import '../../occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../occurrences/presentation/widgets/occurrence_creation_sheet.dart';
 import '../../occurrences/presentation/widgets/occurrence_photo_gallery.dart';
@@ -760,31 +761,10 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
           onCancel: () => Navigator.of(sheetContext).pop(),
           onConfirm: (data) async {
             await repository.updateOccurrence(
-                  occurrence.copyWith(
-                    type: data.type,
-                    description: data.description,
-                    clientId: data.clientId,
-                    photoPath: data.photoPath,
-                    category: data.category,
-                    status: occurrence.status,
-                    cultivar: data.cultivar,
-                    dataPlantio: data.dataPlantio,
-                    estadioFenologico: data.estadioFenologico,
-                    tipoOcorrencia: data.tipoOcorrencia,
-                    amostraSolo: data.amostraSolo,
-                    recomendacoes: data.recomendacoes,
-                    metricasJson: data.metricasJson,
-                    nutrientesJson: data.nutrientesJson,
-                    categoriasJson: data.categoriasJson,
-                    notasCategoriasJson: data.notasCategoriasJson,
-                    fotosCategoriasJson: data.fotosCategoriasJson,
-                    dataEmergencia: data.dataEmergencia,
-                    sementesPorMetro: data.sementesPorMetro,
-                    estandePlantas: data.estandePlantas,
-                    avaliacaoPlantio: data.avaliacaoPlantio,
-                    objetivoPlantio: data.objetivoPlantio,
-                  ),
-                );
+              occurrenceWithFormData(occurrence, data).copyWith(
+                status: occurrence.status,
+              ),
+            );
             container.invalidate(occurrencesListProvider);
             if (sheetContext.mounted) Navigator.of(sheetContext).pop();
           },
