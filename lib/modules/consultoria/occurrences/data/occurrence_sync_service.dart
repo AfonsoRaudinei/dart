@@ -11,6 +11,7 @@ import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 
 import '../domain/occurrence.dart';
+import '../domain/occurrence_andamento.dart';
 
 class OccurrenceSyncService {
   OccurrenceSyncService(this._supabase, this._accessReader);
@@ -351,6 +352,8 @@ class OccurrenceRemoteMapper {
       'estande_plantas': occurrence.estandePlantas,
       'avaliacao_plantio': occurrence.avaliacaoPlantio,
       'objetivo_plantio': occurrence.objetivoPlantio,
+      'andamento': occurrence.andamento ?? OccurrenceAndamento.aberta.storageValue,
+      'responsavel_nome': occurrence.responsavelNome,
       'external_source': occurrence.externalSource,
       'external_analysis_id': occurrence.externalAnalysisId,
       'analysis_payload': _decodeJson(occurrence.analysisPayloadJson),
@@ -403,6 +406,9 @@ class OccurrenceRemoteMapper {
       'estande_plantas': (remote['estande_plantas'] as num?)?.toInt(),
       'avaliacao_plantio': remote['avaliacao_plantio'] as String?,
       'objetivo_plantio': remote['objetivo_plantio'] as String?,
+      'andamento': remote['andamento'] as String? ??
+          OccurrenceAndamento.aberta.storageValue,
+      'responsavel_nome': remote['responsavel_nome'] as String?,
       'external_source': remote['external_source'],
       'external_analysis_id': remote['external_analysis_id'],
       'analysis_payload_json': _encodeJson(remote['analysis_payload']),
