@@ -100,6 +100,9 @@ class DrawingFieldWriterAdapter implements IDrawingFieldWriter {
     String? cultura,
     String? material,
     String? safra,
+    String? dataPlantio,
+    String? dataEmergencia,
+    String? cicloDias,
   }) async {
     if (fieldId.isEmpty) {
       throw ArgumentError('fieldId é obrigatório para atualizar metadados.');
@@ -142,6 +145,12 @@ class DrawingFieldWriterAdapter implements IDrawingFieldWriter {
         cultura: _resolveMetadataField(cultura, base.cultura),
         material: _resolveMetadataField(material, base.material),
         safra: _resolveMetadataField(safra, base.safra),
+        dataPlantio: _resolveMetadataField(dataPlantio, base.dataPlantio),
+        dataEmergencia: _resolveMetadataField(
+          dataEmergencia,
+          base.dataEmergencia,
+        ),
+        cicloDias: _resolveCicloDias(cicloDias, base.cicloDias),
         soilSamplingScheme: base.soilSamplingScheme,
         recByNutrient: base.recByNutrient,
       ),
@@ -230,5 +239,19 @@ class DrawingFieldWriterAdapter implements IDrawingFieldWriter {
     if (value == null) return current;
     final trimmed = value.trim();
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  int? _resolveCicloDias(String? value, int? current) {
+    if (value == null) return current;
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return null;
+    if (!RegExp(r'^\d+$').hasMatch(trimmed)) {
+      throw StateError('Ciclo inválido.');
+    }
+    final parsed = int.tryParse(trimmed);
+    if (parsed == null) {
+      throw StateError('Ciclo inválido.');
+    }
+    return parsed;
   }
 }
