@@ -108,6 +108,7 @@ Widget buildMapOccurrenceCreationSheet({
             amostraColetor: data.amostraColetor,
             amostraTramite: data.amostraTramite,
             amostraLaudoTexto: data.amostraLaudoTexto,
+            fieldId: data.fieldId,
           );
       if (!isMounted()) return;
       clearOccurrenceDraft(ref, data.latitude, data.longitude);
