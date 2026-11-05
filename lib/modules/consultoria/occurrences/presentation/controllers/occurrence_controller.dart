@@ -100,6 +100,7 @@ class OccurrenceController {
     String? amostraColetor,
     String? amostraTramite,
     String? amostraLaudoTexto,
+    String? fieldId,
   }) async {
     final visitLookup = ref.read(visitSessionLookupProvider);
     final activeSession = await visitLookup.getActiveSession();
@@ -158,6 +159,7 @@ class OccurrenceController {
       amostraColetor: amostraColetor,
       amostraTramite: amostraTramite,
       amostraLaudoTexto: amostraLaudoTexto,
+      fieldId: _nonEmpty(fieldId),
     );
 
     await _repository.saveOccurrence(occurrence);
@@ -165,6 +167,11 @@ class OccurrenceController {
     ref.invalidate(occurrencesListProvider);
     return occurrence.id;
   }
+}
+
+String? _nonEmpty(String? value) {
+  final trimmed = value?.trim() ?? '';
+  return trimmed.isEmpty ? null : trimmed;
 }
 
 final occurrenceControllerProvider = Provider<OccurrenceController>((ref) {
