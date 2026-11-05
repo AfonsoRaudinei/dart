@@ -61,9 +61,9 @@ class _ClientFarmWithTalhoesSectionState
       onFarmUpdated: (_) {
         ref.invalidate(clientDetailProvider(client.id));
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Fazenda atualizada.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Fazenda atualizada.')));
       },
     );
   }
@@ -99,18 +99,18 @@ class _ClientFarmWithTalhoesSectionState
       ensureFarmDeletable(linkedFieldCount: fields.length);
     } on StateError catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
       return;
     }
 
     await FarmRepository().deleteFarm(farm.id);
     ref.invalidate(clientDetailProvider(client.id));
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Fazenda excluída.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Fazenda excluída.')));
   }
 
   @override
@@ -242,10 +242,13 @@ class _ClientFarmWithTalhoesSectionState
                   farmMapCreateUri(clientId: client.id, farmId: farm.id),
                 ),
                 icon: Icon(Icons.add, color: context.themeAccent),
-                label: Text('Novo', style: TextStyle(
+                label: Text(
+                  'Novo',
+                  style: TextStyle(
                     color: context.themeAccent,
                     fontWeight: FontWeight.bold,
-                  )),
+                  ),
+                ),
               ),
             ],
           ),
@@ -301,10 +304,13 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
                 ),
                 TextButton.icon(
                   icon: Icon(Icons.add, color: context.themeAccent),
-                  label: Text('Talhão', style: TextStyle(
+                  label: Text(
+                    'Talhão',
+                    style: TextStyle(
                       color: context.themeAccent,
                       fontWeight: FontWeight.bold,
-                    )),
+                    ),
+                  ),
                   onPressed: () => showAdicionarTalhaoModal(context, client),
                 ),
               ],
@@ -364,21 +370,23 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
                       size: 20,
                       color: Colors.red,
                     ),
-                    onPressed: () =>
-                        _confirmDeleteDrawing(context, ref, field),
+                    onPressed: () => _confirmDeleteDrawing(context, ref, field),
                   ),
                 ];
 
                 void onOpenField() => showTalhaoDadosSheet(
-                      context,
-                      clientId: client.id,
-                      farmId: field.farmId,
-                      fieldId: field.id,
-                      initialName: field.name,
-                      initialCultura: field.crop,
-                      initialMaterial: field.material,
-                      initialSafra: field.harvest,
-                    );
+                  context,
+                  clientId: client.id,
+                  farmId: field.farmId,
+                  fieldId: field.id,
+                  initialName: field.name,
+                  initialCultura: field.crop,
+                  initialMaterial: field.material,
+                  initialSafra: field.harvest,
+                  initialDataPlantio: field.dataPlantio,
+                  initialDataEmergencia: field.dataEmergencia,
+                  initialCicloDias: field.cicloDias,
+                );
 
                 if (showNdvi) {
                   return _DrawingTalhaoNdviCard(
@@ -386,7 +394,9 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
                     onOpenField: onOpenField,
                     actions: actions,
                     onNdviImageTap: () async {
-                      await ref.read(ndviFieldPresenterProvider).showTalhaoSheet(
+                      await ref
+                          .read(ndviFieldPresenterProvider)
+                          .showTalhaoSheet(
                             context,
                             fieldId: field.id,
                             fieldName: field.name,
@@ -518,13 +528,9 @@ class _DrawingTalhaoNdviCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final latestAsync = ref.watch(talhaoCardNdviLatestProvider(field.id));
     return latestAsync.when(
-      loading: () => _preview(
-        ndviLoading: true,
-        onNdviImageTap: onNdviImageTap,
-      ),
-      error: (_, _) => _preview(
-        onNdviImageTap: onNdviImageTap,
-      ),
+      loading: () =>
+          _preview(ndviLoading: true, onNdviImageTap: onNdviImageTap),
+      error: (_, _) => _preview(onNdviImageTap: onNdviImageTap),
       data: (summary) => _preview(
         ndviIsColormap: summary?.isColormap ?? false,
         ndviLocalPath: summary?.localPath,
