@@ -48,6 +48,11 @@ class OccurrenceController {
     String? categoriasJson,
     String? notasCategoriasJson,
     String? fotosCategoriasJson,
+    String? dataEmergencia,
+    double? sementesPorMetro,
+    int? estandePlantas,
+    String? avaliacaoPlantio,
+    String? objetivoPlantio,
   }) async {
     final visitLookup = ref.read(visitSessionLookupProvider);
     final activeSession = await visitLookup.getActiveSession();
@@ -95,6 +100,11 @@ class OccurrenceController {
       categoriasJson: categoriasJson,
       notasCategoriasJson: notasCategoriasJson,
       fotosCategoriasJson: fotosCategoriasJson,
+      dataEmergencia: dataEmergencia,
+      sementesPorMetro: sementesPorMetro,
+      estandePlantas: estandePlantas,
+      avaliacaoPlantio: avaliacaoPlantio,
+      objetivoPlantio: objetivoPlantio,
     );
 
     await _repository.saveOccurrence(occurrence);

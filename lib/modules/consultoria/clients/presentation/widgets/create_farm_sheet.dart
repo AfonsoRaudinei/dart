@@ -11,15 +11,21 @@ import 'package:uuid/uuid.dart';
 /// Sheet de cadastro de fazenda por nome (sem forçar abertura do mapa).
 class CreateFarmSheet extends StatefulWidget {
   final Client client;
-  final Future<Farm> Function(String clientId, FarmDraftData draft) createFarm;
-  final ValueChanged<Farm> onCreated;
+  final Future<Farm> Function(String clientId, FarmDraftData draft) saveFarm;
+  final ValueChanged<Farm> onSaved;
+  final Farm? existingFarm;
+  final bool areaFromLinkedFields;
 
   const CreateFarmSheet({
     super.key,
     required this.client,
-    required this.createFarm,
-    required this.onCreated,
+    required this.saveFarm,
+    required this.onSaved,
+    this.existingFarm,
+    this.areaFromLinkedFields = false,
   });
+
+  bool get _isEditing => existingFarm != null;
 
   @override
   State<CreateFarmSheet> createState() => _CreateFarmSheetState();
@@ -36,8 +42,18 @@ class _CreateFarmSheetState extends State<CreateFarmSheet> {
   @override
   void initState() {
     super.initState();
-    _cityController.text = widget.client.city;
-    _selectedUf = BrazilianStateDropdown.resolveInitialUf(widget.client.state);
+    final existing = widget.existingFarm;
+    if (existing != null) {
+      _nameController.text = existing.name;
+      _cityController.text = existing.city;
+      _selectedUf = BrazilianStateDropdown.resolveInitialUf(existing.state);
+      if (!widget.areaFromLinkedFields && existing.totalAreaHa > 0) {
+        _areaController.text = existing.totalAreaHa.toString();
+      }
+    } else {
+      _cityController.text = widget.client.city;
+      _selectedUf = BrazilianStateDropdown.resolveInitialUf(widget.client.state);
+    }
   }
 
   @override
@@ -60,17 +76,19 @@ class _CreateFarmSheetState extends State<CreateFarmSheet> {
 
     setState(() => _isSaving = true);
     try {
-      final farm = await widget.createFarm(
+      final farm = await widget.saveFarm(
         widget.client.id,
         FarmDraftData(
           name: _nameController.text.trim(),
           city: _cityController.text.trim(),
           state: _selectedUf!.toUpperCase(),
-          areaHa: _parseArea(_areaController.text),
+          areaHa: widget.areaFromLinkedFields
+              ? (widget.existingFarm?.totalAreaHa ?? 0)
+              : _parseArea(_areaController.text),
         ),
       );
       if (!mounted) return;
-      widget.onCreated(farm);
+      widget.onSaved(farm);
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -78,9 +96,13 @@ class _CreateFarmSheetState extends State<CreateFarmSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final showAreaField = !widget.areaFromLinkedFields;
+
     return ClientSheetScaffold(
-      title: 'Nova fazenda',
-      subtitle: 'Cadastre a fazenda por nome. Você pode vincular talhões depois.',
+      title: widget._isEditing ? 'Editar fazenda' : 'Nova fazenda',
+      subtitle: widget._isEditing
+          ? 'Atualize os dados da fazenda.'
+          : 'Cadastre a fazenda por nome. Você pode vincular talhões depois.',
       child: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -123,26 +145,39 @@ class _CreateFarmSheetState extends State<CreateFarmSheet> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
-              ClientSheetFormField(
-                controller: _areaController,
-                label: 'Área total (ha) — opcional',
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
+              if (widget.areaFromLinkedFields) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'A área total vem da soma dos talhões vinculados.',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
-                validator: (value) {
-                  final trimmed = (value ?? '').trim();
-                  if (trimmed.isEmpty) return null;
-                  final area = _parseArea(trimmed);
-                  if (area < 0) {
-                    return 'Informe uma área válida';
-                  }
-                  return null;
-                },
-              ),
+              ],
+              if (showAreaField) ...[
+                const SizedBox(height: 16),
+                ClientSheetFormField(
+                  controller: _areaController,
+                  label: 'Área total (ha) — opcional',
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  validator: (value) {
+                    final trimmed = (value ?? '').trim();
+                    if (trimmed.isEmpty) return null;
+                    final area = _parseArea(trimmed);
+                    if (area < 0) {
+                      return 'Informe uma área válida';
+                    }
+                    return null;
+                  },
+                ),
+              ],
               const SizedBox(height: 20),
               ClientSheetPrimaryButton(
-                label: _isSaving ? 'Salvando...' : 'Salvar fazenda',
+                label: _isSaving
+                    ? 'Salvando...'
+                    : (widget._isEditing
+                          ? 'Salvar alterações'
+                          : 'Salvar fazenda'),
                 isSaving: _isSaving,
                 onPressed: _submit,
               ),
@@ -170,7 +205,7 @@ Future<void> showCreateFarmSheet(
     clipBehavior: Clip.none,
     builder: (_) => CreateFarmSheet(
       client: client,
-      createFarm: (clientId, draft) async {
+      saveFarm: (clientId, draft) async {
         final farm = Farm(
           id: const Uuid().v4(),
           name: draft.name,
@@ -182,9 +217,49 @@ Future<void> showCreateFarmSheet(
         await repository.saveFarm(farm, clientId);
         return farm;
       },
-      onCreated: (farm) {
+      onSaved: (farm) {
         Navigator.of(context, rootNavigator: false).pop();
         onFarmCreated(farm);
+      },
+    ),
+  );
+}
+
+Future<void> showEditFarmSheet(
+  BuildContext context, {
+  required Client client,
+  required Farm farm,
+  required bool areaFromLinkedFields,
+  required ValueChanged<Farm> onFarmUpdated,
+}) {
+  final repository = FarmRepository();
+
+  return showSoloForteSheet<void>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    showDragHandle: false,
+    useSafeArea: false,
+    shape: const RoundedRectangleBorder(),
+    clipBehavior: Clip.none,
+    builder: (_) => CreateFarmSheet(
+      client: client,
+      existingFarm: farm,
+      areaFromLinkedFields: areaFromLinkedFields,
+      saveFarm: (clientId, draft) async {
+        final updated = Farm(
+          id: farm.id,
+          name: draft.name,
+          city: draft.city,
+          state: draft.state,
+          totalAreaHa: draft.areaHa,
+          fields: const [],
+        );
+        await repository.saveFarm(updated, clientId);
+        return updated;
+      },
+      onSaved: (updated) {
+        Navigator.of(context, rootNavigator: false).pop();
+        onFarmUpdated(updated);
       },
     ),
   );

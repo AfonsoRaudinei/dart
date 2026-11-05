@@ -34,6 +34,8 @@ IconData _relatoriosOccurrenceCategoryIcon(String? category) {
       return SFIcons.waterDrop;
     case OccurrenceCategory.amostraSolo:
       return Icons.biotech_outlined;
+    case OccurrenceCategory.plantio:
+      return SFIcons.agriculture;
     case OccurrenceCategory.areaVisitada:
       return SFIcons.pin;
   }

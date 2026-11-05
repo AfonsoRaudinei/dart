@@ -27,6 +27,33 @@ void main() {
       expect(draft.isEffectivelyEmpty, isFalse);
     });
 
+    test('isEffectivelyEmpty detecta campos de plantio', () {
+      expect(
+        const OccurrenceFormDraft(
+          dataEmergenciaIso: '2026-11-01',
+        ).isEffectivelyEmpty,
+        isFalse,
+      );
+      expect(
+        const OccurrenceFormDraft(sementesPorMetro: '14.5').isEffectivelyEmpty,
+        isFalse,
+      );
+      expect(
+        const OccurrenceFormDraft(estandePlantas: '12').isEffectivelyEmpty,
+        isFalse,
+      );
+      expect(
+        const OccurrenceFormDraft(avaliacaoPlantio: 'boa').isEffectivelyEmpty,
+        isFalse,
+      );
+      expect(
+        const OccurrenceFormDraft(
+          objetivoPlantio: 'Stand uniforme',
+        ).isEffectivelyEmpty,
+        isFalse,
+      );
+    });
+
     test('copyWith preserva legendas de foto', () {
       const draft = OccurrenceFormDraft(
         fotos: {

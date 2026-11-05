@@ -5,6 +5,11 @@ class OccurrenceFormDraft {
   final String? clientId;
   final String cultivar;
   final String? dataPlantioIso;
+  final String? dataEmergenciaIso;
+  final String sementesPorMetro;
+  final String estandePlantas;
+  final String? avaliacaoPlantio;
+  final String objetivoPlantio;
   final String? estadioCode;
   final String? selectedCategoryValue;
   final List<String> categoryNames;
@@ -21,6 +26,11 @@ class OccurrenceFormDraft {
     this.clientId,
     this.cultivar = '',
     this.dataPlantioIso,
+    this.dataEmergenciaIso,
+    this.sementesPorMetro = '',
+    this.estandePlantas = '',
+    this.avaliacaoPlantio,
+    this.objetivoPlantio = '',
     this.estadioCode,
     this.selectedCategoryValue,
     this.categoryNames = const [],
@@ -40,6 +50,11 @@ class OccurrenceFormDraft {
   bool get isEffectivelyEmpty {
     if (cultivar.trim().isNotEmpty) return false;
     if (dataPlantioIso != null && dataPlantioIso!.isNotEmpty) return false;
+    if (dataEmergenciaIso != null && dataEmergenciaIso!.isNotEmpty) return false;
+    if (sementesPorMetro.trim().isNotEmpty) return false;
+    if (estandePlantas.trim().isNotEmpty) return false;
+    if (avaliacaoPlantio != null && avaliacaoPlantio!.isNotEmpty) return false;
+    if (objetivoPlantio.trim().isNotEmpty) return false;
     if (estadioCode != null && estadioCode!.isNotEmpty) return false;
     if (selectedCategoryValue != null) return false;
     if (categoryNames.isNotEmpty) return false;
@@ -57,6 +72,11 @@ class OccurrenceFormDraft {
     String? clientId,
     String? cultivar,
     String? dataPlantioIso,
+    String? dataEmergenciaIso,
+    String? sementesPorMetro,
+    String? estandePlantas,
+    String? avaliacaoPlantio,
+    String? objetivoPlantio,
     String? estadioCode,
     String? selectedCategoryValue,
     List<String>? categoryNames,
@@ -73,6 +93,11 @@ class OccurrenceFormDraft {
       clientId: clientId ?? this.clientId,
       cultivar: cultivar ?? this.cultivar,
       dataPlantioIso: dataPlantioIso ?? this.dataPlantioIso,
+      dataEmergenciaIso: dataEmergenciaIso ?? this.dataEmergenciaIso,
+      sementesPorMetro: sementesPorMetro ?? this.sementesPorMetro,
+      estandePlantas: estandePlantas ?? this.estandePlantas,
+      avaliacaoPlantio: avaliacaoPlantio ?? this.avaliacaoPlantio,
+      objetivoPlantio: objetivoPlantio ?? this.objetivoPlantio,
       estadioCode: estadioCode ?? this.estadioCode,
       selectedCategoryValue:
           selectedCategoryValue ?? this.selectedCategoryValue,
