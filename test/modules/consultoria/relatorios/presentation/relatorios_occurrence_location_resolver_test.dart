@@ -205,6 +205,39 @@ void main() {
       expect(comErro.talhao, isEmpty);
     });
 
+    test('resolveFieldIdForOccurrence devolve o talhão da posição', () async {
+      final id = await resolveFieldIdForOccurrence(
+        clientId: 'cli-1',
+        lat: -10.2,
+        lng: -48.2,
+        visitSessionId: null,
+        farmLookup: farms,
+        fieldLookup: fields,
+      );
+      expect(id, 'field-2');
+    });
+
+    test('sem ponto no talhão usa areaId da sessão', () async {
+      final id = await resolveFieldIdForOccurrence(
+        clientId: 'cli-1',
+        lat: 5,
+        lng: 5,
+        visitSessionId: 'sess-1',
+        farmLookup: farms,
+        fieldLookup: fields,
+        visitSessionLookup: _FakeVisitSessionLookup(
+          VisitSessionSummary(
+            id: 'sess-1',
+            producerId: 'cli-1',
+            status: 'finished',
+            startTime: DateTime.utc(2026, 6, 1),
+            areaId: 'field-1',
+          ),
+        ),
+      );
+      expect(id, 'field-1');
+    });
+
     test('lat/long 0/0 não tenta resolver por posição', () async {
       final names = await resolveOccurrenceLocationNames(
         clientId: 'cli-1',
