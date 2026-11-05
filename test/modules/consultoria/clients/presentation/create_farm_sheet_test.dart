@@ -20,14 +20,14 @@ void main() {
         home: Scaffold(
           body: CreateFarmSheet(
             client: client,
-            createFarm: (_, draft) async => Farm(
+            saveFarm: (_, draft) async => Farm(
               id: 'farm-1',
               name: draft.name,
               city: draft.city,
               state: draft.state,
               totalAreaHa: draft.areaHa,
             ),
-            onCreated: (_) {},
+            onSaved: (_) {},
           ),
         ),
       ),
@@ -37,5 +37,45 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Informe o nome da fazenda'), findsOneWidget);
+  });
+
+  testWidgets('CreateFarmSheet em modo editar mostra título e oculta área', (
+    tester,
+  ) async {
+    final existing = Farm(
+      id: 'farm-edit',
+      name: 'Retiro',
+      city: 'Pugmil',
+      state: 'TO',
+      totalAreaHa: 80,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CreateFarmSheet(
+            client: client,
+            existingFarm: existing,
+            areaFromLinkedFields: true,
+            saveFarm: (_, draft) async => Farm(
+              id: existing.id,
+              name: draft.name,
+              city: draft.city,
+              state: draft.state,
+              totalAreaHa: draft.areaHa,
+            ),
+            onSaved: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Editar fazenda'), findsOneWidget);
+    expect(find.text('Retiro'), findsOneWidget);
+    expect(
+      find.text('A área total vem da soma dos talhões vinculados.'),
+      findsOneWidget,
+    );
+    expect(find.text('Área total (ha) — opcional'), findsNothing);
   });
 }

@@ -5,15 +5,18 @@ import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dar
 import 'package:soloforte_app/core/contracts/i_ndvi_field_presenter_provider.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/core/utils/area_display_format.dart';
+import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_repository.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/agronomic_models.dart';
 import '../../domain/client.dart';
 import '../farm_map_download.dart';
+import '../farm_delete_guard.dart';
 import '../providers/clients_providers.dart';
 import '../providers/field_providers.dart';
 import '../providers/talhao_card_ndvi_provider.dart';
 import '../widgets/client_detail_sub_widgets.dart';
+import '../widgets/create_farm_sheet.dart';
 import '../widgets/farm_linked_field_list.dart';
 import '../widgets/link_drawing_to_farm_sheet.dart';
 import '../widgets/talhao_actions_sheet.dart';
@@ -42,6 +45,72 @@ class _ClientFarmWithTalhoesSectionState
 
   void _toggleExpanded() {
     setState(() => _expanded = !_expanded);
+  }
+
+  Future<void> _editFarm(BuildContext context) async {
+    final client = widget.client;
+    final farm = widget.farm;
+    final fields = await ref.read(farmLinkedFieldsProvider(farm.id).future);
+    if (!context.mounted) return;
+
+    await showEditFarmSheet(
+      context,
+      client: client,
+      farm: farm,
+      areaFromLinkedFields: fields.isNotEmpty,
+      onFarmUpdated: (_) {
+        ref.invalidate(clientDetailProvider(client.id));
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Fazenda atualizada.')),
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteFarm(BuildContext context) async {
+    final client = widget.client;
+    final farm = widget.farm;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Excluir fazenda?'),
+        content: Text(
+          'A fazenda "${farm.name}" será removida da lista deste cliente.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    final fields = await ref.read(farmLinkedFieldsProvider(farm.id).future);
+    try {
+      ensureFarmDeletable(linkedFieldCount: fields.length);
+    } on StateError catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+      return;
+    }
+
+    await FarmRepository().deleteFarm(farm.id);
+    ref.invalidate(clientDetailProvider(client.id));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Fazenda excluída.')),
+    );
   }
 
   @override
@@ -78,6 +147,43 @@ class _ClientFarmWithTalhoesSectionState
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                    ),
+                    PopupMenuButton<String>(
+                      tooltip: 'Opções da fazenda',
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'edit':
+                            _editFarm(context);
+                          case 'delete':
+                            _deleteFarm(context);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: ListTile(
+                            leading: Icon(Icons.edit_outlined),
+                            title: Text('Editar fazenda'),
+                            contentPadding: EdgeInsets.zero,
+                            dense: true,
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: ListTile(
+                            leading: Icon(
+                              Icons.delete_outline,
+                              color: Colors.red,
+                            ),
+                            title: Text(
+                              'Excluir fazenda',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                            contentPadding: EdgeInsets.zero,
+                            dense: true,
+                          ),
+                        ),
+                      ],
                     ),
                     Tooltip(
                       message: toggleTooltip,
