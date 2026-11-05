@@ -119,6 +119,19 @@ class OcorrenciaHtmlRenderer {
       'created_at_formatado': RelatorioHtmlRenderer.formatDateTime(createdAt),
       'id_curto': RelatorioHtmlRenderer.shortId(data['id'] as String? ?? ''),
       'sync_status': data['sync_status'] as String? ?? '',
+      'amostra_codigo': RelatorioHtmlRenderer.escapeHtml(
+        data['amostra_codigo'] as String?,
+      ),
+      'amostra_coletor': RelatorioHtmlRenderer.escapeHtml(
+        data['amostra_coletor'] as String?,
+      ),
+      'amostra_tramite_label': RelatorioHtmlRenderer.escapeHtml(
+        data['amostra_tramite_label'] as String? ??
+            _amostraTramiteLabel(data['amostra_tramite'] as String?),
+      ),
+      'amostra_laudo_texto': RelatorioHtmlRenderer.escapeHtml(
+        data['amostra_laudo_texto'] as String?,
+      ),
     });
 
     final galeria = await _renderGaleria(
@@ -172,6 +185,30 @@ class OcorrenciaHtmlRenderer {
       (data['data_plantio'] as String?)?.isNotEmpty == true,
     );
     tpl = _resolveRepeatedIf(tpl, 'amostra_solo', _isAmostraSolo(data));
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'amostra_codigo',
+      _isAmostraSolo(data) &&
+          (data['amostra_codigo'] as String?)?.isNotEmpty == true,
+    );
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'amostra_coletor',
+      _isAmostraSolo(data) &&
+          (data['amostra_coletor'] as String?)?.isNotEmpty == true,
+    );
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'amostra_tramite_label',
+      _isAmostraSolo(data) &&
+          (data['amostra_tramite_label'] as String?)?.isNotEmpty == true,
+    );
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'amostra_laudo_texto',
+      _isAmostraSolo(data) &&
+          (data['amostra_laudo_texto'] as String?)?.isNotEmpty == true,
+    );
     tpl = _resolveRepeatedIf(
       tpl,
       'description',
@@ -804,9 +841,23 @@ class OcorrenciaHtmlRenderer {
 
   static bool _isAmostraSolo(Map<String, dynamic> data) {
     final value = data['amostra_solo'];
-    if (value is bool) return value;
-    if (value is num) return value != 0;
-    return false;
+    if (value is bool && value) return true;
+    if (value is num && value != 0) return true;
+    final cat = (data['category'] as String?)?.toLowerCase().trim() ?? '';
+    return cat == 'amostra_solo' ||
+        cat == 'amostra solo' ||
+        cat == 'amostra de solo';
+  }
+
+  static String? _amostraTramiteLabel(String? storage) {
+    final v = storage?.trim() ?? '';
+    if (v.isEmpty) return null;
+    return switch (v) {
+      'coletada' => 'Coletada',
+      'laboratorio' => 'No laboratório',
+      'laudo_pronto' => 'Laudo pronto',
+      _ => null,
+    };
   }
 
   static _CatInfo _categoriaInfo(String? cat) {

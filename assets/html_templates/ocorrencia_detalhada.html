@@ -44,7 +44,18 @@
         <div class="sf-row"><span class="sf-row-label">Plantio</span><span class="sf-row-value">{{data_plantio_formatado}}</span></div>
         <!-- {{/if}} -->
         <!-- {{#if amostra_solo}} -->
-        <div class="sf-row"><span class="sf-row-label">Amostra de solo</span><span class="sf-row-value">Coletada</span></div>
+        <!-- {{#if amostra_codigo}} -->
+        <div class="sf-row"><span class="sf-row-label">Código da amostra</span><span class="sf-row-value">{{amostra_codigo}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if amostra_coletor}} -->
+        <div class="sf-row"><span class="sf-row-label">Coletor</span><span class="sf-row-value">{{amostra_coletor}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if amostra_tramite_label}} -->
+        <div class="sf-row"><span class="sf-row-label">Trâmite</span><span class="sf-row-value">{{amostra_tramite_label}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if amostra_laudo_texto}} -->
+        <div class="sf-row"><span class="sf-row-label">Resumo do laudo</span><span class="sf-row-value">{{amostra_laudo_texto}}</span></div>
+        <!-- {{/if}} -->
         <!-- {{/if}} -->
         <!-- {{#if lat && long}} -->
         <div class="sf-row localizacao-inline"><span class="sf-row-label">Localização</span><span class="sf-row-value">{{localizacao_mapa}}</span></div>
