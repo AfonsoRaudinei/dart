@@ -250,6 +250,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
               amostraColetor: data.amostraColetor,
               amostraTramite: data.amostraTramite,
               amostraLaudoTexto: data.amostraLaudoTexto,
+              fieldId: data.fieldId,
             );
         await widget.onOccurrenceCreated?.call(occurrenceId);
         if (!mounted) return;
