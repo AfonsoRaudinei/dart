@@ -27,6 +27,10 @@ void main() {
         OccurrenceCategory.areaVisitada,
       );
       expect(isAreaVisitadaCategory('areaVisitada'), isTrue);
+      expect(
+        OccurrenceCategory.fromString('plantio'),
+        OccurrenceCategory.plantio,
+      );
     });
   });
 
@@ -98,6 +102,45 @@ void main() {
       );
 
       expect(occurrence.toMap()['amostra_solo'], 1);
+    });
+
+    test('fromMap/toMap round-trip dos campos de plantio', () {
+      final occurrence = Occurrence(
+        id: 'occ-plantio',
+        type: 'Média',
+        description: 'Stand',
+        category: 'plantio',
+        createdAt: createdAt,
+        dataEmergencia: '2026-11-01',
+        sementesPorMetro: 14.5,
+        estandePlantas: 12,
+        avaliacaoPlantio: 'boa',
+        objetivoPlantio: 'Stand uniforme',
+      );
+
+      final mapped = Occurrence.fromMap(occurrence.toMap());
+      expect(mapped.category, 'plantio');
+      expect(mapped.dataEmergencia, '2026-11-01');
+      expect(mapped.sementesPorMetro, 14.5);
+      expect(mapped.estandePlantas, 12);
+      expect(mapped.avaliacaoPlantio, 'boa');
+      expect(mapped.objetivoPlantio, 'Stand uniforme');
+    });
+
+    test('sanitizeAvaliacaoPlantio rejeita valor inválido', () {
+      expect(sanitizeAvaliacaoPlantio('boa'), 'boa');
+      expect(sanitizeAvaliacaoPlantio('ruim'), 'ruim');
+      expect(sanitizeAvaliacaoPlantio('media'), isNull);
+      expect(sanitizeAvaliacaoPlantio(null), isNull);
+
+      final occurrence = Occurrence.fromMap({
+        'id': 'occ-6',
+        'type': 'Média',
+        'description': 'Plantio',
+        'created_at': createdAt.toIso8601String(),
+        'avaliacao_plantio': 'ok',
+      });
+      expect(occurrence.avaliacaoPlantio, isNull);
     });
   });
 }
