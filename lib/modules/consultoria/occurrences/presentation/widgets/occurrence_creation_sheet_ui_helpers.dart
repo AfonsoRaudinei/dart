@@ -4,6 +4,11 @@ extension _OccurrenceCreationSheetLifecycle on _OccurrenceCreationSheetState {
   bool _hasUnsavedChanges() {
     if (_cultivarCtrl.text.trim().isNotEmpty) return true;
     if (_dataPlantio != null) return true;
+    if (_dataEmergencia != null) return true;
+    if (_sementesPorMetroCtrl.text.trim().isNotEmpty) return true;
+    if (_estandePlantasCtrl.text.trim().isNotEmpty) return true;
+    if (_avaliacaoPlantio != null) return true;
+    if (_objetivoPlantioCtrl.text.trim().isNotEmpty) return true;
     if (_estadio != null) return true;
     if (_selectedCategoryValue != null) return true;
     if (_descCtrl.text.trim().isNotEmpty) return true;
@@ -141,6 +146,138 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
             ),
           );
         }),
+      ),
+    );
+  }
+
+  Widget _buildPlantioSection(Color color) {
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = occurrenceFormIsIos(context);
+    final titleColor = v.onSheetPrimary;
+    final muted = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : const Color(0xFF8E8E93);
+    final idleSurface = v.cardBackground;
+    final idleBorder = v.cardBorder;
+    final idleText = v.onSheetSecondary;
+    const avaliacoes = [('Boa', 'boa'), ('Ruim', 'ruim')];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          GestureDetector(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _dataEmergencia ?? DateTime.now(),
+                firstDate: DateTime(2010),
+                lastDate: DateTime.now().add(const Duration(days: 365)),
+                helpText: 'Data de emergência',
+              );
+              if (picked != null) {
+                _patchForm(() => _dataEmergencia = picked);
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: v.inputFill,
+                borderRadius: BorderRadius.circular(
+                  isIos ? SoloForteSheetSkinIos.cardRadius : 12,
+                ),
+                border: Border.all(color: v.cardBorder),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 18,
+                    color: v.inputHint,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _dataEmergencia != null
+                          ? _formatDate(_dataEmergencia!)
+                          : 'Data de emergência (opcional)',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _dataEmergencia != null ? titleColor : muted,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  if (_dataEmergencia != null) ...[
+                    GestureDetector(
+                      onTap: () => _patchForm(() => _dataEmergencia = null),
+                      child: Icon(Icons.clear, size: 16, color: muted),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          OccurrenceDarkField(
+            controller: _sementesPorMetroCtrl,
+            label: 'Sementes por metro',
+            hint: 'ex.: 14.5',
+          ),
+          const SizedBox(height: 10),
+          OccurrenceDarkField(
+            controller: _estandePlantasCtrl,
+            label: 'Estande de plantas',
+            hint: 'ex.: 12',
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: List.generate(avaliacoes.length, (i) {
+              final label = avaliacoes[i].$1;
+              final value = avaliacoes[i].$2;
+              final sel = _avaliacaoPlantio == value;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    _patchForm(() {
+                      _avaliacaoPlantio = sel ? null : value;
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    margin: EdgeInsets.only(right: i == 0 ? 6 : 0),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: sel ? color.withValues(alpha: .2) : idleSurface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: sel ? color : idleBorder,
+                        width: sel ? 1.5 : 1,
+                      ),
+                    ),
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: sel ? color : idleText,
+                        fontWeight: sel ? FontWeight.bold : FontWeight.normal,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 10),
+          OccurrenceDarkField(
+            controller: _objetivoPlantioCtrl,
+            label: 'Objetivo',
+            hint: 'Objetivo do plantio…',
+            maxLines: 2,
+          ),
+        ],
       ),
     );
   }
@@ -319,6 +456,8 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
               _buildNutrientGrid(color)
             else if (cat == OccurrenceCategory.agua)
               _buildAguaSection(color)
+            else if (cat == OccurrenceCategory.plantio)
+              _buildPlantioSection(color)
             else
               ...metrics.map(
                 (metric) => OccurrenceSliderRow(
