@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -203,6 +202,11 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                 categoriasJson: data.categoriasJson,
                 notasCategoriasJson: data.notasCategoriasJson,
                 fotosCategoriasJson: data.fotosCategoriasJson,
+                dataEmergencia: data.dataEmergencia,
+                sementesPorMetro: data.sementesPorMetro,
+                estandePlantas: data.estandePlantas,
+                avaliacaoPlantio: data.avaliacaoPlantio,
+                objetivoPlantio: data.objetivoPlantio,
               ),
             );
             container.invalidate(occurrencesListProvider);
@@ -345,6 +349,27 @@ class OccurrenceDetailSheet extends ConsumerWidget {
           label: 'Data de plantio',
           value: occurrence.dataPlantio!,
         ),
+      if (occurrence.dataEmergencia?.isNotEmpty == true)
+        _DetailRowData(
+          icon: SFIcons.calendar, label: 'Data de emergência',
+          value: occurrence.dataEmergencia!),
+      if (occurrence.sementesPorMetro != null)
+        _DetailRowData(
+          icon: SFIcons.agriculture, label: 'Sementes por metro',
+          value: '${occurrence.sementesPorMetro}'),
+      if (occurrence.estandePlantas != null)
+        _DetailRowData(
+          icon: SFIcons.agriculture, label: 'Estande de plantas',
+          value: '${occurrence.estandePlantas}'),
+      if (occurrence.avaliacaoPlantio == 'boa' ||
+          occurrence.avaliacaoPlantio == 'ruim')
+        _DetailRowData(
+          icon: SFIcons.agriculture, label: 'Avaliação do plantio',
+          value: occurrence.avaliacaoPlantio == 'boa' ? 'Boa' : 'Ruim'),
+      if (occurrence.objetivoPlantio?.isNotEmpty == true)
+        _DetailRowData(
+          icon: SFIcons.agriculture, label: 'Objetivo',
+          value: occurrence.objetivoPlantio!),
       if (occurrence.externalSource != null)
         _DetailRowData(
           icon: SFIcons.science,
