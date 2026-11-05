@@ -62,6 +62,10 @@ class OcorrenciaSnapshot {
   final String? categoriasJson;
   final String? notasCategoriasJson;
   final String? fotosCategoriasJson;
+  final String? amostraCodigo;
+  final String? amostraColetor;
+  final String? amostraTramite;
+  final String? amostraLaudoTexto;
 
   const OcorrenciaSnapshot({
     required this.id,
@@ -85,6 +89,10 @@ class OcorrenciaSnapshot {
     this.categoriasJson,
     this.notasCategoriasJson,
     this.fotosCategoriasJson,
+    this.amostraCodigo,
+    this.amostraColetor,
+    this.amostraTramite,
+    this.amostraLaudoTexto,
   });
 
   OcorrenciaSnapshot copyWith({
@@ -109,6 +117,10 @@ class OcorrenciaSnapshot {
     String? categoriasJson,
     String? notasCategoriasJson,
     String? fotosCategoriasJson,
+    String? amostraCodigo,
+    String? amostraColetor,
+    String? amostraTramite,
+    String? amostraLaudoTexto,
   }) {
     return OcorrenciaSnapshot(
       id: id ?? this.id,
@@ -132,6 +144,10 @@ class OcorrenciaSnapshot {
       categoriasJson: categoriasJson ?? this.categoriasJson,
       notasCategoriasJson: notasCategoriasJson ?? this.notasCategoriasJson,
       fotosCategoriasJson: fotosCategoriasJson ?? this.fotosCategoriasJson,
+      amostraCodigo: amostraCodigo ?? this.amostraCodigo,
+      amostraColetor: amostraColetor ?? this.amostraColetor,
+      amostraTramite: amostraTramite ?? this.amostraTramite,
+      amostraLaudoTexto: amostraLaudoTexto ?? this.amostraLaudoTexto,
     );
   }
 
@@ -157,6 +173,10 @@ class OcorrenciaSnapshot {
     'categoriasJson': categoriasJson,
     'notasCategoriasJson': notasCategoriasJson,
     'fotosCategoriasJson': fotosCategoriasJson,
+    'amostraCodigo': amostraCodigo,
+    'amostraColetor': amostraColetor,
+    'amostraTramite': amostraTramite,
+    'amostraLaudoTexto': amostraLaudoTexto,
   };
 
   factory OcorrenciaSnapshot.fromJson(Map<String, dynamic> json) =>
@@ -182,6 +202,10 @@ class OcorrenciaSnapshot {
         categoriasJson: json['categoriasJson'] as String?,
         notasCategoriasJson: json['notasCategoriasJson'] as String?,
         fotosCategoriasJson: json['fotosCategoriasJson'] as String?,
+        amostraCodigo: json['amostraCodigo'] as String?,
+        amostraColetor: json['amostraColetor'] as String?,
+        amostraTramite: json['amostraTramite'] as String?,
+        amostraLaudoTexto: json['amostraLaudoTexto'] as String?,
       );
 }
 

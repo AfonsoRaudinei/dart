@@ -71,6 +71,10 @@ class ReportWriterAdapter implements IReportWriter {
       categoriasJson: o.categoriasJson,
       notasCategoriasJson: o.notasCategoriasJson,
       fotosCategoriasJson: o.fotosCategoriasJson,
+      amostraCodigo: o.amostraCodigo,
+      amostraColetor: o.amostraColetor,
+      amostraTramite: o.amostraTramite,
+      amostraLaudoTexto: o.amostraLaudoTexto,
     );
   }
 

@@ -8,6 +8,7 @@ import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 import '../../../../core/html_templates/ocorrencia_html_renderer.dart';
 import '../../../../core/html_templates/relatorio_html_renderer.dart';
 import '../../occurrences/domain/occurrence.dart';
+import '../../occurrences/domain/occurrence_amostra_solo.dart';
 import '../../occurrences/domain/occurrence_photo_paths.dart';
 import '../../occurrences/presentation/widgets/occurrence_fenologia_data.dart';
 import '../../relatorio_visita/data/image_storage_service.dart';
@@ -97,6 +98,12 @@ Future<String> buildOccurrenceReportHtml(
   if (estadio != null) {
     data['estadio_fenologico_label'] = estadio.name;
     data['estadio_atencao'] = estadio.attention;
+  }
+  if (occurrenceIsAmostraSolo(occurrence)) {
+    final tramite = OccurrenceAmostraTramite.fromStorage(
+      occurrence.amostraTramite,
+    );
+    data['amostra_tramite_label'] = tramite?.label;
   }
   final branding = await resolveReportBrandingContext(
     ref,
