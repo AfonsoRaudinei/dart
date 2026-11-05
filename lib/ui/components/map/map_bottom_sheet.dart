@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/premium/design_tokens.dart';
 import '../premium/premium_glass_panel.dart';
 import 'package:latlong2/latlong.dart';
-import '../../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import 'map_layers_sheet.dart';
 import '../../../modules/drawing/presentation/widgets/drawing_sheet.dart';
 import '../../../modules/drawing/presentation/controllers/drawing_controller.dart';
@@ -16,9 +15,8 @@ import '../../../modules/drawing/domain/models/drawing_models.dart';
 import '../../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_list_sheet.dart';
-import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart';
-import 'map_occurrence_post_create.dart';
 import '../../../../modules/consultoria/occurrences/presentation/providers/occurrence_draft_provider.dart';
+import 'occurrence_talhao_prefill.dart';
 import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_close_coordinator.dart';
 import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_form_guard.dart';
 import '../../screens/map/providers/occurrence_form_guard_provider.dart';
@@ -181,7 +179,8 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       }
     }
 
-    if (widget.state.isCreatingOccurrence != oldWidget.state.isCreatingOccurrence &&
+    if (widget.state.isCreatingOccurrence !=
+            oldWidget.state.isCreatingOccurrence &&
         widget.state.isCreatingOccurrence) {
       if (_currentDetent != SheetDetent.expanded) {
         _animateToDetent(SheetDetent.expanded);
@@ -270,10 +269,14 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         (areaId == null || areaId.isEmpty)) {
       final farmId = feature.properties.fazendaId;
       unawaited(
-        ref.read(visitControllerProvider.notifier).updateArea(
-          feature.id,
-          farmId: (farmId == null || farmId.isEmpty) ? session.farmId : farmId,
-        ),
+        ref
+            .read(visitControllerProvider.notifier)
+            .updateArea(
+              feature.id,
+              farmId: (farmId == null || farmId.isEmpty)
+                  ? session.farmId
+                  : farmId,
+            ),
       );
     }
     _closeDrawingSheetChrome();
@@ -286,11 +289,10 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     setState(() => _currentDetent = targetDetent);
     final endHeight = _getSheetHeight();
 
-    _heightAnimation = Tween<double>(begin: startHeight, end: endHeight)
-        .animate(
+    _heightAnimation =
+        Tween<double>(begin: startHeight, end: endHeight).animate(
           CurvedAnimation(parent: _heightController, curve: Curves.easeOut),
-        )
-      ..addListener(_onHeightTick);
+        )..addListener(_onHeightTick);
 
     _heightController.forward(from: 0).whenComplete(() {
       _heightAnimation.removeListener(_onHeightTick);
@@ -445,13 +447,15 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     return LayoutBuilder(
       builder: (context, constraints) {
         final isIos = soloForteSheetIsIos(context);
-        final titleColor =
-            isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+        final titleColor = isIos
+            ? SoloForteSheetSkinIos.titleColor
+            : Colors.white;
         final bodyColor = isIos
             ? SoloForteSheetSkinIos.subtitleColor
             : const Color(0xFF8E8E93);
-        final buttonFg =
-            isIos ? SoloForteSheetSkinIos.ghostText : Colors.white70;
+        final buttonFg = isIos
+            ? SoloForteSheetSkinIos.ghostText
+            : Colors.white70;
         final buttonSide = isIos
             ? SoloForteSheetSkinIos.ghostBorder
             : Colors.white24;
@@ -699,7 +703,6 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     );
   }
 
-  // Criação de ocorrência: OccurrenceCreationSheet (pin = ponto do mapa).
   Widget _buildOccurrenceForm() {
     final creationLocation = widget.creationLocation;
     if (!_hasValidOccurrencePin(creationLocation)) {
@@ -709,69 +712,18 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     }
 
     _ensureOccurrenceFormGuard();
-    final lat = creationLocation!.latitude;
-    final lng = creationLocation.longitude;
-
-    return OccurrenceCreationSheet(
-      latitude: lat,
-      longitude: lng,
+    return buildMapOccurrenceCreationSheet(
+      context: context,
+      ref: ref,
+      isMounted: () => mounted,
+      latitude: creationLocation!.latitude,
+      longitude: creationLocation.longitude,
       scrollController: _scrollController,
       formGuard: _occurrenceFormGuard,
-      initialCategoryValue: widget.state.initialOccurrenceCategory,
-      liftStickyActionsForKeyboard: false,
-      onCancel: () async {
-        final canClose = await OccurrenceCloseCoordinator.confirmDiscardIfDirty(
-          context,
-          guard: _occurrenceFormGuard,
-        );
-        if (!canClose || !mounted) return;
-        _clearOccurrenceDraftAtCurrentPin();
-        ref.read(occurrenceFormGuardProvider.notifier).state = null;
-        widget.onClose();
-      },
-      onConfirm: (data) async {
-        if (!data.hasValidMapPin) {
-          throw StateError(
-            'Ponto do mapa inválido. Toque novamente no mapa para marcar a ocorrência.',
-          );
-        }
-        await ref
-            .read(occurrenceControllerProvider)
-            .createOccurrence(
-              type: data.type,
-              description: data.description,
-              clientId: data.clientId,
-              photoPath: data.photoPath,
-              lat: data.latitude,
-              long: data.longitude,
-              category: data.category,
-              status: 'draft',
-              cultivar: data.cultivar,
-              dataPlantio: data.dataPlantio,
-              estadioFenologico: data.estadioFenologico,
-              tipoOcorrencia: data.tipoOcorrencia,
-              amostraSolo: data.amostraSolo,
-              recomendacoes: data.recomendacoes,
-              metricasJson: data.metricasJson,
-              nutrientesJson: data.nutrientesJson,
-              categoriasJson: data.categoriasJson,
-              notasCategoriasJson: data.notasCategoriasJson,
-              fotosCategoriasJson: data.fotosCategoriasJson,
-              dataEmergencia: data.dataEmergencia,
-              sementesPorMetro: data.sementesPorMetro,
-              estandePlantas: data.estandePlantas,
-              avaliacaoPlantio: data.avaliacaoPlantio,
-              objetivoPlantio: data.objetivoPlantio,
-            );
-        if (!mounted) return;
-        clearOccurrenceDraft(ref, data.latitude, data.longitude);
-        if (!mounted) return;
-        await handleMapOccurrencePostCreate(
-          context: context,
-          data: data,
-          onClose: widget.onClose,
-        );
-      },
+      initialCategory: widget.state.initialOccurrenceCategory,
+      drawingController: widget.drawingController,
+      onClose: widget.onClose,
+      clearDraft: _clearOccurrenceDraftAtCurrentPin,
     );
   }
 
