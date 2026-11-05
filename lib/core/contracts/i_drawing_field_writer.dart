@@ -19,20 +19,21 @@ abstract interface class IDrawingFieldWriter {
   });
 
   /// Renomeia um talhão do mapa (`drawings`) sem alterar a geometria.
-  Future<void> updateFieldName({
-    required String fieldId,
-    required String name,
-  });
+  Future<void> updateFieldName({required String fieldId, required String name});
 
-  /// Atualiza cultura, material e safra de um talhão do mapa sem alterar a geometria.
+  /// Atualiza cultura, material, safra e plantio de um talhão do mapa sem alterar a geometria.
   ///
-  /// Strings vazias são normalizadas para `null`. Feature inexistente ou inativa
-  /// lança [StateError]. Ver ADR-038.
+  /// Null mantém o valor atual. String vazia limpa. [cicloDias] aceita dígitos
+  /// (vira int); vazio limpa; inválido lança [StateError]. Feature inexistente
+  /// ou inativa lança [StateError]. Ver ADR-038.
   Future<void> updateFieldMetadata({
     required String fieldId,
     String? cultura,
     String? material,
     String? safra,
+    String? dataPlantio,
+    String? dataEmergencia,
+    String? cicloDias,
   });
 
   /// Combina dois talhões do mapa em um único polígono.
