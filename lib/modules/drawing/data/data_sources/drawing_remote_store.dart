@@ -30,7 +30,11 @@ class DrawingRemoteStore {
           .from('drawings')
           .upsert(_toRemoteRow(feature, userId: userId), onConflict: 'id');
     } catch (e, st) {
-      AppLogger.error('DrawingRemoteStore.push error [id=${feature.id}]', error: e, stackTrace: st);
+      AppLogger.error(
+        'DrawingRemoteStore.push error [id=${feature.id}]',
+        error: e,
+        stackTrace: st,
+      );
       rethrow;
     }
   }
@@ -60,7 +64,11 @@ class DrawingRemoteStore {
 
       return rows.map((row) => _fromRemoteRow(row)).toList();
     } catch (e, st) {
-      AppLogger.error('DrawingRemoteStore.fetchUpdates error', error: e, stackTrace: st);
+      AppLogger.error(
+        'DrawingRemoteStore.fetchUpdates error',
+        error: e,
+        stackTrace: st,
+      );
       rethrow;
     }
   }
@@ -106,6 +114,9 @@ class DrawingRemoteStore {
         'cultura': p.cultura,
         'material': p.material,
         'safra': p.safra,
+        'data_plantio': p.dataPlantio,
+        'data_emergencia': p.dataEmergencia,
+        'ciclo_dias': p.cicloDias,
         'soil_sampling_scheme': p.soilSamplingScheme,
         'rec_by_nutrient': p.recByNutrient,
       },
@@ -165,6 +176,9 @@ class DrawingRemoteStore {
         cultura: props['cultura'] as String?,
         material: props['material'] as String?,
         safra: props['safra'] as String?,
+        dataPlantio: props['data_plantio'] as String?,
+        dataEmergencia: props['data_emergencia'] as String?,
+        cicloDias: _cicloDiasFromRemote(props['ciclo_dias']),
         soilSamplingScheme: props['soil_sampling_scheme'] as String?,
         recByNutrient: recByNutrient,
         syncStatus: SyncStatus.synced, // vindo do remoto = sempre synced
@@ -190,4 +204,11 @@ class DrawingRemoteStore {
       );
     }
   }
+}
+
+int? _cicloDiasFromRemote(Object? value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return null;
 }
