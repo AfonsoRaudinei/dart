@@ -34,6 +34,10 @@ class OccurrenceSummary {
     this.categoriasJson,
     this.notasCategoriasJson,
     this.fotosCategoriasJson,
+    this.amostraCodigo,
+    this.amostraColetor,
+    this.amostraTramite,
+    this.amostraLaudoTexto,
   });
 
   final String id;
@@ -81,6 +85,10 @@ class OccurrenceSummary {
   final String? categoriasJson;
   final String? notasCategoriasJson;
   final String? fotosCategoriasJson;
+  final String? amostraCodigo;
+  final String? amostraColetor;
+  final String? amostraTramite;
+  final String? amostraLaudoTexto;
 }
 
 /// Contrato de leitura de ocorrências vinculadas a uma sessão de visita.
