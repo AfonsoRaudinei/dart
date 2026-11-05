@@ -9,6 +9,7 @@ import '../../../../core/html_templates/ocorrencia_html_renderer.dart';
 import '../../../../core/html_templates/relatorio_html_renderer.dart';
 import '../../occurrences/domain/occurrence.dart';
 import '../../occurrences/domain/occurrence_photo_paths.dart';
+import '../../occurrences/presentation/widgets/occurrence_fenologia_data.dart';
 import '../../relatorio_visita/data/image_storage_service.dart';
 import '../presentation/relatorios_occurrence_location_resolver.dart';
 import 'relatorio_visit_html_builder.dart';
@@ -21,7 +22,10 @@ T? _tryReadContract<T>(T Function() read) {
   }
 }
 
-Future<String> _resolveClienteNome(IClientLookup lookup, String clientId) async {
+Future<String> _resolveClienteNome(
+  IClientLookup lookup,
+  String clientId,
+) async {
   try {
     final client = await lookup.findById(clientId);
     final name = client?.name.trim();
@@ -40,6 +44,15 @@ Future<String> _occurrenceClienteNome(WidgetRef ref, String? clientId) async {
   if (lookup == null) return '';
   final name = await _resolveClienteNome(lookup, id);
   return name == id ? '' : name;
+}
+
+EstadioData? _findEstadio(String? code) {
+  final value = code?.trim() ?? '';
+  if (value.isEmpty) return null;
+  for (final estadio in kEstadios) {
+    if (estadio.code == value) return estadio;
+  }
+  return null;
 }
 
 Future<String> buildOccurrenceReportHtml(
@@ -74,6 +87,11 @@ Future<String> buildOccurrenceReportHtml(
   );
   data['fazenda_nome'] = location.fazenda;
   data['talhao_nome'] = location.talhao;
+  final estadio = _findEstadio(occurrence.estadioFenologico);
+  if (estadio != null) {
+    data['estadio_fenologico_label'] = estadio.name;
+    data['estadio_atencao'] = estadio.attention;
+  }
   final branding = await resolveReportBrandingContext(
     ref,
     fallbackConsultantName: 'Equipe técnica',
