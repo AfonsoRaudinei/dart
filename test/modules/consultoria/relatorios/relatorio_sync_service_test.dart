@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/modules/consultoria/relatorios/data/relatorio_sync_service.dart';
+import 'package:soloforte_app/modules/consultoria/relatorios/models/relatorio_clima_manual.dart';
 import 'package:soloforte_app/modules/consultoria/relatorios/models/relatorio_status.dart';
 import 'package:soloforte_app/modules/consultoria/relatorios/models/relatorio_tecnico.dart';
 import 'package:soloforte_app/modules/consultoria/relatorios/models/visit_session_snapshot.dart';
@@ -29,6 +30,7 @@ void main() {
     List<TalhaoVisitado> talhoes = const [],
     List<String> fotos = const [],
     List<MonitoramentoSnapshot> monitoramentos = const [],
+    RelatorioClimaManual? climaManual,
   }) {
     return RelatorioTecnico(
       id: id,
@@ -49,6 +51,7 @@ void main() {
       talhoes: talhoes,
       fotos: fotos,
       monitoramentos: monitoramentos,
+      climaManual: climaManual,
     );
   }
 
@@ -284,6 +287,41 @@ void main() {
       expect(merged.fotos, ['file:///foto.jpg']);
       expect(merged.farmName, 'Fazenda Boa Vista');
     });
+
+    test(
+      'remoto mais novo preserva climaManual local sem outros snapshots',
+      () {
+        const clima = RelatorioClimaManual(
+          dias: [RelatorioClimaDiaManual(resumo: 'Chuva à tarde')],
+          pulverizacaoNota: 'Evitar vento',
+        );
+        final local = localRelatorio(
+          localUpdatedAt: older,
+          climaManual: clima,
+        );
+        final pulled = RelatorioSyncService.fromRemoteRow({
+          'id': 'rel-1',
+          'client_id': _kClientId,
+          'titulo': 'Título remoto',
+          'descricao': 'Nota remota',
+          'created_by': _kAuthUser,
+          'created_at': '2026-06-12T10:00:00.000Z',
+          'updated_at': newer.toIso8601String(),
+        });
+
+        expect(RelatorioSyncService.shouldKeepLocalSnapshots(local), isTrue);
+        expect(RelatorioSyncService.shouldReplace(local, pulled), isFalse);
+
+        final merged = RelatorioSyncService.mergePulled(
+          local: local,
+          pulled: pulled,
+        );
+        expect(merged.climaManual, clima);
+        expect(merged.title, 'Título remoto');
+        expect(merged.customNotes, 'Nota remota');
+        expect(merged.ocorrencias, isEmpty);
+      },
+    );
 
     test('remoto mais novo sem snapshots locais substitui (lossy)', () {
       final local = localRelatorio(localUpdatedAt: older);
