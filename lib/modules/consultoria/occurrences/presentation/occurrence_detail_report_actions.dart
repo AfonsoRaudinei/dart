@@ -20,6 +20,7 @@ import '../../relatorios/presentation/relatorios_occurrence_location_resolver.da
 import 'controllers/occurrence_controller.dart';
 import '../domain/occurrence.dart';
 import '../domain/occurrence_andamento.dart';
+import 'occurrence_form_apply.dart';
 import 'widgets/occurrence_creation_sheet.dart';
 
 HtmlReportViewerActions occurrenceReportHtmlViewerActions(
@@ -133,29 +134,8 @@ Future<void> _showOccurrenceEditSheet(
           final list = await container.read(occurrencesListProvider.future);
           final live = resolveLiveOccurrence(list, occurrence);
           await repository.updateOccurrence(
-            live.copyWith(
-              type: data.type,
-              description: data.description,
-              clientId: data.clientId,
-              photoPath: data.photoPath,
-              category: data.category,
+            occurrenceWithFormData(live, data).copyWith(
               status: live.status,
-              cultivar: data.cultivar,
-              dataPlantio: data.dataPlantio,
-              estadioFenologico: data.estadioFenologico,
-              tipoOcorrencia: data.tipoOcorrencia,
-              amostraSolo: data.amostraSolo,
-              recomendacoes: data.recomendacoes,
-              metricasJson: data.metricasJson,
-              nutrientesJson: data.nutrientesJson,
-              categoriasJson: data.categoriasJson,
-              notasCategoriasJson: data.notasCategoriasJson,
-              fotosCategoriasJson: data.fotosCategoriasJson,
-              dataEmergencia: data.dataEmergencia,
-              sementesPorMetro: data.sementesPorMetro,
-              estandePlantas: data.estandePlantas,
-              avaliacaoPlantio: data.avaliacaoPlantio,
-              objetivoPlantio: data.objetivoPlantio,
             ),
           );
           container.invalidate(occurrencesListProvider);

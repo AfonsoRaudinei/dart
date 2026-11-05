@@ -73,6 +73,12 @@ Future<String> buildOccurrenceReportHtml(
   if (cover != null) {
     data['photo_path'] = ImageStorageService().toStoredPath(cover);
   }
+  data['audio_base64'] =
+      await RelatorioHtmlRenderer.audioPathToBase64(occurrence.audioPath) ?? '';
+  final audioSec = occurrence.audioDurationSec;
+  if (audioSec != null && audioSec > 0) {
+    data['audio_duration_label'] = 'Duração: ${audioSec}s';
+  }
   data['cliente_nome'] = await _occurrenceClienteNome(ref, occurrence.clientId);
   final location = await resolveOccurrenceLocationNames(
     clientId: occurrence.clientId,

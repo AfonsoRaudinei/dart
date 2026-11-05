@@ -62,6 +62,18 @@
     </section>
     <!-- {{/if}} -->
 
+    <!-- {{#if audio_base64}} -->
+    <section class="sf-section">
+      <h2 class="sf-section-title"><span class="sf-section-num"></span>Áudio de campo</h2>
+      <audio controls preload="metadata" style="width:100%;max-width:420px">
+        <source src="{{audio_base64}}" type="audio/mp4">
+      </audio>
+      <!-- {{#if audio_duration_label}} -->
+      <p class="sf-caption">{{audio_duration_label}}</p>
+      <!-- {{/if}} -->
+    </section>
+    <!-- {{/if}} -->
+
     <!-- {{#if registro_fotografico}} -->
     <section class="sf-section">
       <h2 class="sf-section-title"><span class="sf-section-num"></span>Registro fotográfico</h2>

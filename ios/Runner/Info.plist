@@ -77,6 +77,8 @@
 	<!-- Câmera -->
 	<key>NSCameraUsageDescription</key>
 	<string>O SoloForte usa a câmera para registrar fotos de campo, documentar ocorrências e comparativos Antes/Depois das culturas.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>O SoloForte usa o microfone para gravar até 30 segundos de áudio no ponto da ocorrência, no relatório de campo.</string>
 	<!-- Galeria (escrita) -->
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>O SoloForte salva fotos de campo diretamente na sua galeria para facilitar o compartilhamento de relatórios.</string>

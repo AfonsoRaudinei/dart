@@ -32,6 +32,7 @@ import '../models/occurrence_form_draft.dart';
 import 'occurrence_client_selector.dart';
 import 'occurrence_fenologia_data.dart';
 import 'occurrence_form_widgets.dart';
+import 'occurrence_audio_field.dart';
 import 'occurrence_photo_gallery.dart';
 
 part 'occurrence_creation_sheet_models.dart';
@@ -105,6 +106,8 @@ class _OccurrenceCreationSheetState
   final _recomCtrl = TextEditingController();
   bool _isSaving = false;
   String? _submitError;
+  String? _audioPath;
+  int? _audioDurationSec;
 
   /// Pin imutável da abertura — ignora rebuild do pendingOccurrenceLocation.
   late final double _pinLatitude;
@@ -211,6 +214,8 @@ class _OccurrenceCreationSheetState
       parseFotosCategoriasByCategory(occurrence.fotosCategoriasJson),
     );
     _photoCaptions.addAll(parseFotosCaptions(occurrence.fotosCategoriasJson));
+    _audioPath = occurrence.audioPath;
+    _audioDurationSec = occurrence.audioDurationSec;
     if (_fotos.isEmpty &&
         occurrence.photoPath != null &&
         occurrence.photoPath!.isNotEmpty) {
@@ -759,6 +764,18 @@ class _OccurrenceCreationSheetState
                       ? 'Ex.: trecho da estrada, entrada do talhão…'
                       : 'Descreva a ocorrência…',
                   maxLines: 4,
+                ),
+                const SizedBox(height: 16),
+                OccurrenceAudioField(
+                  storedPath: _audioPath,
+                  durationSec: _audioDurationSec,
+                  enabled: !_isSaving,
+                  onChanged: (value) {
+                    _patchForm(() {
+                      _audioPath = value.path;
+                      _audioDurationSec = value.durationSec;
+                    });
+                  },
                 ),
                 if (!_isAreaVisitada) ...[
                   const SizedBox(height: 20),

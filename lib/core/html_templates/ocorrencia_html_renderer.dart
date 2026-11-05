@@ -109,6 +109,10 @@ class OcorrenciaHtmlRenderer {
       'recomendacoes': RelatorioHtmlRenderer.escapeHtml(
         data['recomendacoes'] as String?,
       ),
+      'audio_base64': data['audio_base64'] as String? ?? '',
+      'audio_duration_label': RelatorioHtmlRenderer.escapeHtml(
+        data['audio_duration_label'] as String?,
+      ),
       'lat': data['lat']?.toString() ?? '',
       'long': data['long']?.toString() ?? '',
       'localizacao_mapa': _localizacaoMapa(data),
@@ -172,6 +176,16 @@ class OcorrenciaHtmlRenderer {
       tpl,
       'description',
       (data['description'] as String?)?.isNotEmpty == true,
+    );
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'audio_base64',
+      (data['audio_base64'] as String?)?.isNotEmpty == true,
+    );
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'audio_duration_label',
+      (data['audio_duration_label'] as String?)?.isNotEmpty == true,
     );
     tpl = _resolveRepeatedIf(
       tpl,
