@@ -181,6 +181,9 @@ Future<bool> showTalhaoDadosSheet(
   String? initialCultura,
   String? initialMaterial,
   String? initialSafra,
+  String? initialDataPlantio,
+  String? initialDataEmergencia,
+  int? initialCicloDias,
 }) async {
   final saved = await showSoloForteSheet<bool>(
     context: context,
@@ -197,6 +200,9 @@ Future<bool> showTalhaoDadosSheet(
       initialCultura: initialCultura,
       initialMaterial: initialMaterial,
       initialSafra: initialSafra,
+      initialDataPlantio: initialDataPlantio,
+      initialDataEmergencia: initialDataEmergencia,
+      initialCicloDias: initialCicloDias,
     ),
   );
 
@@ -213,6 +219,9 @@ class TalhaoDadosSheet extends ConsumerStatefulWidget {
     this.initialCultura,
     this.initialMaterial,
     this.initialSafra,
+    this.initialDataPlantio,
+    this.initialDataEmergencia,
+    this.initialCicloDias,
   });
 
   final String clientId;
@@ -222,6 +231,9 @@ class TalhaoDadosSheet extends ConsumerStatefulWidget {
   final String? initialCultura;
   final String? initialMaterial;
   final String? initialSafra;
+  final String? initialDataPlantio;
+  final String? initialDataEmergencia;
+  final int? initialCicloDias;
 
   @override
   ConsumerState<TalhaoDadosSheet> createState() => _TalhaoDadosSheetState();
@@ -233,6 +245,9 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
   late final TextEditingController _culturaLivreController;
   late final TextEditingController _materialController;
   late final TextEditingController _safraController;
+  late final TextEditingController _cicloController;
+  DateTime? _dataPlantio;
+  DateTime? _dataEmergencia;
   final _repository = FarmRepository();
   List<Farm> _farms = const [];
   bool _isLoadingFarms = true;
@@ -254,6 +269,11 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
       text: widget.initialMaterial ?? '',
     );
     _safraController = TextEditingController(text: widget.initialSafra ?? '');
+    _cicloController = TextEditingController(
+      text: widget.initialCicloDias?.toString() ?? '',
+    );
+    _dataPlantio = _parseIsoDate(widget.initialDataPlantio);
+    _dataEmergencia = _parseIsoDate(widget.initialDataEmergencia);
     _selectedFarmId = widget.farmId;
     _loadFarms();
   }
@@ -264,7 +284,26 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
     _culturaLivreController.dispose();
     _materialController.dispose();
     _safraController.dispose();
+    _cicloController.dispose();
     super.dispose();
+  }
+
+  DateTime? _parseIsoDate(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    return DateTime.tryParse(raw.trim());
+  }
+
+  String _isoDateOrEmpty(DateTime? date) {
+    if (date == null) return '';
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
+  }
+
+  String _formatDate(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
   }
 
   Future<void> _loadFarms() async {
@@ -294,6 +333,15 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
   Future<void> _submit() async {
     if (_isSaving) return;
     if (_formKey.currentState?.validate() != true) return;
+    final cicloText = _cicloController.text.trim();
+    if (cicloText.isNotEmpty && int.tryParse(cicloText) == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Informe o ciclo em dias, só com números.'),
+        ),
+      );
+      return;
+    }
 
     setState(() => _isSaving = true);
     try {
@@ -311,6 +359,9 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
         ),
         material: _materialController.text,
         safra: _safraController.text,
+        dataPlantio: _isoDateOrEmpty(_dataPlantio),
+        dataEmergencia: _isoDateOrEmpty(_dataEmergencia),
+        cicloDias: _cicloController.text,
       );
 
       final nextFarmId = _selectedFarmId;
@@ -353,6 +404,66 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  Widget _buildOptionalDateField({
+    required TalhaoSheetVisuals visuals,
+    required String label,
+    required DateTime? value,
+    required ValueChanged<DateTime?> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TalhaoSheetSectionLabel(label: label),
+        GestureDetector(
+          onTap: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: value ?? DateTime.now(),
+              firstDate: DateTime(2000),
+              lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+              helpText: label,
+            );
+            if (picked != null) onChanged(picked);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: visuals.inputFill,
+              borderRadius: BorderRadius.circular(visuals.inputRadius),
+              border: Border.all(color: visuals.cardBorder),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.calendar_today_outlined,
+                  size: 18,
+                  color: visuals.inputHint,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    value == null ? 'Selecionar' : _formatDate(value),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: value == null
+                          ? visuals.inputHint
+                          : visuals.inputText,
+                    ),
+                  ),
+                ),
+                if (value != null)
+                  GestureDetector(
+                    onTap: () => onChanged(null),
+                    child: Icon(Icons.clear, size: 16, color: visuals.muted),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildFarmPicker(TalhaoSheetVisuals visuals) {
@@ -491,7 +602,8 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
               fieldTextColor: visuals.inputText,
               fieldHintColor: visuals.inputHint,
               materialSuggestions: materialSuggestionsForCultura(
-                ref.watch(clientDrawingCropRowsProvider(widget.clientId))
+                ref
+                        .watch(clientDrawingCropRowsProvider(widget.clientId))
                         .valueOrNull ??
                     const [],
                 persistCulturaValue(
@@ -502,9 +614,27 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
               onTipoSelected: (tipo) => setState(() => _selectedCultura = tipo),
             ),
             const SizedBox(height: 16),
+            TalhaoSheetFormField(controller: _safraController, label: 'Safra'),
+            const SizedBox(height: 16),
+            _buildOptionalDateField(
+              visuals: visuals,
+              label: 'Data de plantio (opcional)',
+              value: _dataPlantio,
+              onChanged: (picked) => setState(() => _dataPlantio = picked),
+            ),
+            const SizedBox(height: 16),
+            _buildOptionalDateField(
+              visuals: visuals,
+              label: 'Data de emergência (opcional)',
+              value: _dataEmergencia,
+              onChanged: (picked) => setState(() => _dataEmergencia = picked),
+            ),
+            const SizedBox(height: 16),
             TalhaoSheetFormField(
-              controller: _safraController,
-              label: 'Safra',
+              controller: _cicloController,
+              label: 'Ciclo (dias)',
+              hintText: 'ex.: 115',
+              keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
             _buildFarmPicker(visuals),
