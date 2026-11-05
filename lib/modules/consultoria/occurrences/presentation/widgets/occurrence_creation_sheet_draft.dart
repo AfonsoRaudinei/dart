@@ -18,6 +18,13 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
     _dataPlantio = draft.dataPlantioIso != null
         ? DateTime.tryParse(draft.dataPlantioIso!)
         : null;
+    _dataEmergencia = draft.dataEmergenciaIso != null
+        ? DateTime.tryParse(draft.dataEmergenciaIso!)
+        : null;
+    _sementesPorMetroCtrl.text = draft.sementesPorMetro;
+    _estandePlantasCtrl.text = draft.estandePlantas;
+    _avaliacaoPlantio = draft.avaliacaoPlantio;
+    _objetivoPlantioCtrl.text = draft.objetivoPlantio;
     _estadio = _findEstadio(draft.estadioCode);
 
     _cats
@@ -86,6 +93,11 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
       clientId: _selectedClient?.id,
       cultivar: _cultivarCtrl.text,
       dataPlantioIso: _isoDate(_dataPlantio),
+      dataEmergenciaIso: _isoDate(_dataEmergencia),
+      sementesPorMetro: _sementesPorMetroCtrl.text,
+      estandePlantas: _estandePlantasCtrl.text,
+      avaliacaoPlantio: _avaliacaoPlantio,
+      objetivoPlantio: _objetivoPlantioCtrl.text,
       estadioCode: _estadio?.code,
       selectedCategoryValue: _selectedCategoryValue,
       categoryNames: _cats.map((cat) => cat.name).toList(),

@@ -113,6 +113,15 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
               ? null
               : _cultivarCtrl.text.trim(),
           dataPlantio: _isoDate(_dataPlantio),
+          dataEmergencia: _isoDate(_dataEmergencia),
+          sementesPorMetro: double.tryParse(
+            _sementesPorMetroCtrl.text.trim().replaceAll(',', '.'),
+          ),
+          estandePlantas: int.tryParse(_estandePlantasCtrl.text.trim()),
+          avaliacaoPlantio: sanitizeAvaliacaoPlantio(_avaliacaoPlantio),
+          objetivoPlantio: _objetivoPlantioCtrl.text.trim().isEmpty
+              ? null
+              : _objetivoPlantioCtrl.text.trim(),
           estadioFenologico: _estadio?.code,
           tipoOcorrencia: null,
           amostraSolo: _selectedCategoryValue == 'amostra_solo',
