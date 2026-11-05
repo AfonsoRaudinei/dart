@@ -246,6 +246,10 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
               objetivoPlantio: data.objetivoPlantio,
               audioPath: data.audioPath,
               audioDurationSec: data.audioDurationSec,
+              amostraCodigo: data.amostraCodigo,
+              amostraColetor: data.amostraColetor,
+              amostraTramite: data.amostraTramite,
+              amostraLaudoTexto: data.amostraLaudoTexto,
             );
         await widget.onOccurrenceCreated?.call(occurrenceId);
         if (!mounted) return;
