@@ -248,6 +248,7 @@ Future<void> openOccurrenceReportHtml(
           csvData: ConsultoriaReportExportData.occurrenceCsv(occurrence),
           bodyBuilder: bodyBuilder,
           whatsAppPhoneDigits: whatsAppPhoneDigits,
+          enableWhatsAppShareLink: true,
           actions: occurrenceReportHtmlViewerActions(
             container,
             occurrence,

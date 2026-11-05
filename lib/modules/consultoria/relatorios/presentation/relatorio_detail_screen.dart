@@ -520,6 +520,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
             jsonData: ConsultoriaReportExportData.reportJson(relatorio),
             csvData: ConsultoriaReportExportData.reportCsv(relatorio),
             whatsAppPhoneDigits: whatsAppPhoneDigits,
+            enableWhatsAppShareLink: true,
           ),
         ),
       );
