@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/network/network_policy.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 
+import '../models/relatorio_clima_manual.dart';
 import '../models/relatorio_status.dart';
 import '../models/relatorio_tecnico.dart';
 import '../repositories/i_relatorio_repository.dart';
@@ -146,7 +147,8 @@ class RelatorioSyncService {
     return local.ocorrencias.isNotEmpty ||
         local.talhoes.isNotEmpty ||
         local.fotos.isNotEmpty ||
-        local.monitoramentos.isNotEmpty;
+        local.monitoramentos.isNotEmpty ||
+        RelatorioClimaManual.hasContent(local.climaManual);
   }
 
   @visibleForTesting
@@ -185,6 +187,7 @@ class RelatorioSyncService {
       talhoes: local.talhoes,
       fotos: local.fotos,
       monitoramentos: local.monitoramentos,
+      climaManual: local.climaManual,
     );
   }
 
