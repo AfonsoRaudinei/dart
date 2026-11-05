@@ -104,6 +104,10 @@ Widget buildMapOccurrenceCreationSheet({
             objetivoPlantio: data.objetivoPlantio,
             audioPath: data.audioPath,
             audioDurationSec: data.audioDurationSec,
+            amostraCodigo: data.amostraCodigo,
+            amostraColetor: data.amostraColetor,
+            amostraTramite: data.amostraTramite,
+            amostraLaudoTexto: data.amostraLaudoTexto,
           );
       if (!isMounted()) return;
       clearOccurrenceDraft(ref, data.latitude, data.longitude);
