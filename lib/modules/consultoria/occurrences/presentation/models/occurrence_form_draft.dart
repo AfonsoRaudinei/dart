@@ -22,6 +22,8 @@ class OccurrenceFormDraft {
   final Map<String, List<String>> fotos;
   final Map<String, String> photoCaptions;
   final Map<String, String> notas;
+  final String? audioPath;
+  final int? audioDurationSec;
 
   const OccurrenceFormDraft({
     this.clientId,
@@ -44,6 +46,8 @@ class OccurrenceFormDraft {
     this.fotos = const {},
     this.photoCaptions = const {},
     this.notas = const {},
+    this.audioPath,
+    this.audioDurationSec,
   });
 
   static String pinKeyFor(double latitude, double longitude) =>
@@ -68,6 +72,7 @@ class OccurrenceFormDraft {
     if (metrics.isNotEmpty) return false;
     if (nutrientes.isNotEmpty) return false;
     if (fotos.isNotEmpty) return false;
+    if (audioPath != null && audioPath!.trim().isNotEmpty) return false;
     if (notas.values.any((value) => value.trim().isNotEmpty)) return false;
     if (urgency != 'Média') return false;
     return true;
@@ -94,6 +99,10 @@ class OccurrenceFormDraft {
     Map<String, List<String>>? fotos,
     Map<String, String>? photoCaptions,
     Map<String, String>? notas,
+    String? audioPath,
+    bool clearAudioPath = false,
+    int? audioDurationSec,
+    bool clearAudioDurationSec = false,
   }) {
     return OccurrenceFormDraft(
       clientId: clientId ?? this.clientId,
@@ -117,6 +126,10 @@ class OccurrenceFormDraft {
       fotos: fotos ?? this.fotos,
       photoCaptions: photoCaptions ?? this.photoCaptions,
       notas: notas ?? this.notas,
+      audioPath: clearAudioPath ? null : (audioPath ?? this.audioPath),
+      audioDurationSec: clearAudioDurationSec
+          ? null
+          : (audioDurationSec ?? this.audioDurationSec),
     );
   }
 }

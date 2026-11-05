@@ -56,6 +56,8 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
     _photoCaptions
       ..clear()
       ..addAll(Map<String, String>.from(draft.photoCaptions));
+    _audioPath = draft.audioPath;
+    _audioDurationSec = draft.audioDurationSec;
 
     for (final entry in draft.notas.entries) {
       _notaCtrl(entry.key).text = entry.value;
@@ -116,6 +118,8 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
       ),
       photoCaptions: Map<String, String>.from(_photoCaptions),
       notas: _notasCtrls.map((key, ctrl) => MapEntry(key, ctrl.text)),
+      audioPath: _audioPath,
+      audioDurationSec: _audioDurationSec,
     );
 
     if (draft.isEffectivelyEmpty) {
