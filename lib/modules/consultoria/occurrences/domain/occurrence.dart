@@ -33,6 +33,7 @@ enum OccurrenceCategory {
   nutricional('Nutrientes', '⚗️'),
   agua('Água', '💧'),
   amostraSolo('Amostra de Solo', '🧪'),
+  plantio('Plantio', '🌾'),
   areaVisitada('Área Visitada', '📍');
 
   final String label;
@@ -63,6 +64,8 @@ enum OccurrenceCategory {
       case 'amostra solo':
       case 'amostra de solo':
         return OccurrenceCategory.amostraSolo;
+      case 'plantio':
+        return OccurrenceCategory.plantio;
       case 'area_visitada':
       case 'area visitada':
       case 'areavisitada':
@@ -93,11 +96,20 @@ extension OccurrenceCategoryColor on OccurrenceCategory {
     if (this == OccurrenceCategory.amostraSolo) {
       return const Color(0xFF8B5CF6);
     }
+    if (this == OccurrenceCategory.plantio) {
+      return const Color(0xFF795548);
+    }
     if (this == OccurrenceCategory.areaVisitada) {
       return const Color(0xFF607D8B);
     }
     return const Color(0xFF616161);
   }
+}
+
+/// Avaliação de plantio persistida em [Occurrence.avaliacaoPlantio].
+String? sanitizeAvaliacaoPlantio(String? value) {
+  if (value == 'boa' || value == 'ruim') return value;
+  return null;
 }
 
 /// Valor persistido em [Occurrence.category] para pins de área visitada (A1).
@@ -163,6 +175,13 @@ class Occurrence {
   final String? notasCategoriasJson; // {cat: texto}
   final String? fotosCategoriasJson; // {cat: [paths]}
 
+  // ── Campos de plantio (Schema v47) ──────────────────────────────────
+  final String? dataEmergencia; // ISO "yyyy-MM-dd"
+  final double? sementesPorMetro;
+  final int? estandePlantas;
+  final String? avaliacaoPlantio; // "boa" | "ruim"
+  final String? objetivoPlantio;
+
   Occurrence({
     required this.id,
     this.visitSessionId,
@@ -197,6 +216,11 @@ class Occurrence {
     this.categoriasJson,
     this.notasCategoriasJson,
     this.fotosCategoriasJson,
+    this.dataEmergencia,
+    this.sementesPorMetro,
+    this.estandePlantas,
+    this.avaliacaoPlantio,
+    this.objetivoPlantio,
   }) : updatedAt = updatedAt ?? DateTime.now();
 
   factory Occurrence.fromMap(Map<String, dynamic> map) {
@@ -245,6 +269,13 @@ class Occurrence {
       categoriasJson: map['categorias_json'],
       notasCategoriasJson: map['notas_categorias_json'],
       fotosCategoriasJson: map['fotos_categorias_json'],
+      dataEmergencia: map['data_emergencia'] as String?,
+      sementesPorMetro: (map['sementes_por_metro'] as num?)?.toDouble(),
+      estandePlantas: (map['estande_plantas'] as num?)?.toInt(),
+      avaliacaoPlantio: sanitizeAvaliacaoPlantio(
+        map['avaliacao_plantio'] as String?,
+      ),
+      objetivoPlantio: map['objetivo_plantio'] as String?,
     );
   }
 
@@ -290,6 +321,11 @@ class Occurrence {
       'categorias_json': categoriasJson,
       'notas_categorias_json': notasCategoriasJson,
       'fotos_categorias_json': fotosCategoriasJson,
+      'data_emergencia': dataEmergencia,
+      'sementes_por_metro': sementesPorMetro,
+      'estande_plantas': estandePlantas,
+      'avaliacao_plantio': avaliacaoPlantio,
+      'objetivo_plantio': objetivoPlantio,
     };
   }
 
@@ -328,6 +364,11 @@ class Occurrence {
     String? categoriasJson,
     String? notasCategoriasJson,
     String? fotosCategoriasJson,
+    String? dataEmergencia,
+    double? sementesPorMetro,
+    int? estandePlantas,
+    String? avaliacaoPlantio,
+    String? objetivoPlantio,
   }) {
     return Occurrence(
       id: id ?? this.id,
@@ -363,6 +404,11 @@ class Occurrence {
       categoriasJson: categoriasJson ?? this.categoriasJson,
       notasCategoriasJson: notasCategoriasJson ?? this.notasCategoriasJson,
       fotosCategoriasJson: fotosCategoriasJson ?? this.fotosCategoriasJson,
+      dataEmergencia: dataEmergencia ?? this.dataEmergencia,
+      sementesPorMetro: sementesPorMetro ?? this.sementesPorMetro,
+      estandePlantas: estandePlantas ?? this.estandePlantas,
+      avaliacaoPlantio: avaliacaoPlantio ?? this.avaliacaoPlantio,
+      objetivoPlantio: objetivoPlantio ?? this.objetivoPlantio,
     );
   }
 
