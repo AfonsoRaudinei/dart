@@ -5,6 +5,7 @@ extension _OccurrenceCreationSheetLifecycle on _OccurrenceCreationSheetState {
     if (_cultivarCtrl.text.trim().isNotEmpty) return true;
     if (_dataPlantio != null) return true;
     if (_dataEmergencia != null) return true;
+    if (_cicloDiasCtrl.text.trim().isNotEmpty) return true;
     if (_sementesPorMetroCtrl.text.trim().isNotEmpty) return true;
     if (_estandePlantasCtrl.text.trim().isNotEmpty) return true;
     if (_avaliacaoPlantio != null) return true;
@@ -55,9 +56,7 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: sel
-                    ? color.withValues(alpha: .25)
-                    : idleSurface,
+                color: sel ? color.withValues(alpha: .25) : idleSurface,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: sel ? color : idleBorder,
@@ -112,9 +111,7 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
                 margin: const EdgeInsets.only(right: 6),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: sel
-                      ? color.withValues(alpha: .2)
-                      : idleSurface,
+                  color: sel ? color.withValues(alpha: .2) : idleSurface,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: sel ? color : idleBorder,
@@ -218,6 +215,23 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
               ),
             ),
           ),
+          const SizedBox(height: 10),
+          OccurrenceDarkField(
+            controller: _cicloDiasCtrl,
+            label: 'Ciclo (dias)',
+            hint: 'ex.: 115',
+          ),
+          if (occurrenceCicloLabel(
+                parseOccurrenceCicloDias(_cicloDiasCtrl.text),
+              )
+              case final cicloLabel?)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                cicloLabel,
+                style: TextStyle(color: muted, fontSize: 12),
+              ),
+            ),
           const SizedBox(height: 10),
           OccurrenceDarkField(
             controller: _sementesPorMetroCtrl,
@@ -332,9 +346,7 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
     );
   }
 
-  Future<void> _onPhotoOriginSelected(
-    SoloFortePhotoPickerOrigin origin,
-  ) async {
+  Future<void> _onPhotoOriginSelected(SoloFortePhotoPickerOrigin origin) async {
     HapticFeedback.selectionClick();
     final cat = await _resolveCategoryForPhoto();
     if (cat == null || !mounted) return;
@@ -373,10 +385,7 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
         borderRadius: BorderRadius.circular(
           isIos ? SoloForteSheetSkinIos.cardRadius : 14,
         ),
-        border: Border.all(
-          color: accent.withValues(alpha: 0.55),
-          width: 1.2,
-        ),
+        border: Border.all(color: accent.withValues(alpha: 0.55), width: 1.2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -508,44 +517,88 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
 
 extension _OccurrenceCreationSheetAreaVisitadaUi
     on _OccurrenceCreationSheetState {
+  String? get _talhaoNomeReadonly {
+    if (widget.initialOccurrence != null) return null;
+    final nome = widget.talhaoPrefill?.talhaoNome.trim();
+    if (nome == null || nome.isEmpty) return null;
+    return nome;
+  }
+
+  Widget _buildCultivarAgeLines(Color muted) {
+    final dap = occurrenceDapLabel(_dataPlantio);
+    final soja = occurrenceSoyAgeLabel(_dataEmergencia);
+    if (dap == null && soja == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (dap != null)
+            Row(
+              children: [
+                Icon(Icons.grass, size: 14, color: muted),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    dap,
+                    style: TextStyle(color: muted, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          if (soja != null)
+            Padding(
+              padding: EdgeInsets.only(top: dap != null ? 4 : 0),
+              child: Text(soja, style: TextStyle(color: muted, fontSize: 12)),
+            ),
+        ],
+      ),
+    );
+  }
+
   String get _primarySaveButtonLabel {
     if (widget.initialOccurrence != null) return 'Salvar Alterações';
     if (_isAreaVisitada) return 'Salvar localização';
     return 'Salvar';
   }
 
-  Widget _compactMapHeader({
-    required Color muted,
-    required Color titleColor,
-  }) {
+  Widget _compactMapHeader({required Color muted, required Color titleColor}) {
+    final nome = _talhaoNomeReadonly;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: _isAreaVisitada
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Área visitada',
-                      style: TextStyle(
-                        color: titleColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Ponto marcado no mapa',
-                      style: TextStyle(color: muted, fontSize: 13),
-                    ),
-                  ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_isAreaVisitada)
+                Text(
+                  'Área visitada',
+                  style: TextStyle(
+                    color: titleColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.3,
+                  ),
                 )
-              : Text(
+              else
+                Text(
                   'Ponto definido no mapa',
                   style: TextStyle(color: muted, fontSize: 13),
                 ),
+              if (_isAreaVisitada) ...[
+                const SizedBox(height: 2),
+                Text(
+                  'Ponto marcado no mapa',
+                  style: TextStyle(color: muted, fontSize: 13),
+                ),
+              ],
+              if (nome != null) ...[
+                const SizedBox(height: 2),
+                Text(nome, style: TextStyle(color: muted, fontSize: 13)),
+              ],
+            ],
+          ),
         ),
         if (widget.onCancel != null)
           IconButton(
