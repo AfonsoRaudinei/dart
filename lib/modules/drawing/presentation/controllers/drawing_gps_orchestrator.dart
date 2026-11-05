@@ -47,12 +47,16 @@ class DrawingGpsOrchestrator extends ChangeNotifier {
   List<LatLng> _gpsVertices = [];
   double _gpsLastAccuracyM = 0.0;
   bool _gpsIsPaused = false;
+  bool _gpsStoppedOpen = false;
   bool _gpsOriginReview = false;
   StreamSubscription<Position>? _gpsSub;
 
   List<LatLng> get gpsVertices => List.unmodifiable(_gpsVertices);
   double get gpsLastAccuracyM => _gpsLastAccuracyM;
   bool get gpsIsPaused => _gpsIsPaused;
+
+  /// Stream encerrado com os vértices preservados. O anel continua aberto.
+  bool get gpsStoppedOpen => _gpsStoppedOpen;
   bool get gpsOriginReview => _gpsOriginReview;
 
   GpsQuality get gpsAccuracyQuality =>
@@ -78,6 +82,7 @@ class DrawingGpsOrchestrator extends ChangeNotifier {
     _gpsVertices = [];
     _gpsLastAccuracyM = 0.0;
     _gpsIsPaused = false;
+    _gpsStoppedOpen = false;
 
     final ok = _startGpsTrackingState();
     if (!ok) {
@@ -96,7 +101,7 @@ class DrawingGpsOrchestrator extends ChangeNotifier {
     _gpsSub = Geolocator.getPositionStream(locationSettings: settings).listen(
       (Position pos) {
         if (_isDisposed()) return;
-        if (_gpsIsPaused) return;
+        if (_gpsIsPaused || _gpsStoppedOpen) return;
         if (_currentState() != DrawingState.gpsTracking) {
           _gpsSub?.cancel();
           return;
@@ -177,6 +182,24 @@ class DrawingGpsOrchestrator extends ChangeNotifier {
 
     _gpsVertices = [];
     _gpsIsPaused = false;
+    _gpsStoppedOpen = false;
+    _notifyHost();
+  }
+
+  /// Encerra o stream GPS e mantém os vértices.
+  ///
+  /// Não monta polígono, não transiciona para reviewing e não apaga o traço.
+  /// Exige pelo menos 2 pontos. O estado do desenho permanece `gpsTracking`.
+  void stopGpsStreamKeepingVertices() {
+    if (_isDisposed()) return;
+    if (_currentState() != DrawingState.gpsTracking) return;
+    if (_gpsStoppedOpen) return;
+    if (_gpsVertices.length < 2) return;
+
+    _gpsSub?.cancel();
+    _gpsSub = null;
+    _gpsIsPaused = false;
+    _gpsStoppedOpen = true;
     _notifyHost();
   }
 
@@ -189,6 +212,7 @@ class DrawingGpsOrchestrator extends ChangeNotifier {
       );
       return;
     }
+    if (_gpsStoppedOpen) return;
 
     final result = _gpsTrackingService.processPosition(
       vertices: _gpsVertices,
@@ -209,6 +233,7 @@ class DrawingGpsOrchestrator extends ChangeNotifier {
     _gpsSub = null;
     _gpsVertices = [];
     _gpsIsPaused = false;
+    _gpsStoppedOpen = false;
   }
 
   void clearReviewOrigin() {
