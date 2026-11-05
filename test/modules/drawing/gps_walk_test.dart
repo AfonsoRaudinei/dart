@@ -44,9 +44,10 @@ void main() {
         equals(0.0),
       );
       expect(
-        GeoCalculatorService.calculateAreaSquareMeters(
-          [const LatLng(0, 0), const LatLng(1, 0)],
-        ),
+        GeoCalculatorService.calculateAreaSquareMeters([
+          const LatLng(0, 0),
+          const LatLng(1, 0),
+        ]),
         equals(0.0),
       );
     });
@@ -59,6 +60,26 @@ void main() {
       expect(perim, greaterThan(420.0)); // 444 × 0.95
       expect(perim, lessThan(470.0)); // 444 × 1.06
     });
+
+    test(
+      'calculateOpenPathMeters — 2 segmentos não incluem a volta ao início',
+      () {
+        final path = [
+          const LatLng(_lat, _lng),
+          const LatLng(_lat + _d, _lng),
+          const LatLng(_lat + _d, _lng + _d),
+        ];
+        final open = GeoCalculatorService.calculateOpenPathMeters(path);
+        final closed = GeoCalculatorService.calculatePerimeterMeters(path);
+        expect(path.length, greaterThanOrEqualTo(3));
+        expect(open, greaterThan(0));
+        expect(open, lessThan(closed));
+        expect(
+          GeoCalculatorService.calculateOpenPathMeters(const [LatLng(0, 0)]),
+          equals(0.0),
+        );
+      },
+    );
 
     test('calculateAreaSquareMeters — quadrado ≈ 12.340 m²', () {
       final area = GeoCalculatorService.calculateAreaSquareMeters(_square);
@@ -82,8 +103,9 @@ void main() {
         const LatLng(_lat + _d, _lng),
         const LatLng(_lat + _d / 2, _lng + _d),
       ];
-      final periTriangle =
-          GeoCalculatorService.calculatePerimeterMeters(triangle);
+      final periTriangle = GeoCalculatorService.calculatePerimeterMeters(
+        triangle,
+      );
       final periSquare = GeoCalculatorService.calculatePerimeterMeters(_square);
       // Quadrado com 4 lados de ~111 m > triângulo com base ~111 m
       expect(periSquare, greaterThan(periTriangle));
@@ -111,7 +133,9 @@ void main() {
 
     test('canFinish — false com < 3 pontos', () {
       expect(GpsWalkSession.initial().canFinish, isFalse);
-      final s1 = GpsWalkSession.initial().copyWith(points: [const LatLng(0, 0)]);
+      final s1 = GpsWalkSession.initial().copyWith(
+        points: [const LatLng(0, 0)],
+      );
       expect(s1.canFinish, isFalse);
       final s2 = s1.copyWith(points: [const LatLng(0, 0), const LatLng(1, 0)]);
       expect(s2.canFinish, isFalse);
@@ -122,6 +146,24 @@ void main() {
         points: [const LatLng(0, 0), const LatLng(1, 0), const LatLng(0, 1)],
       );
       expect(s.canFinish, isTrue);
+    });
+
+    test('parar exige ≥ 2 pontos; fechar exige ≥ 3', () {
+      final one = GpsWalkSession.initial().copyWith(
+        points: const [LatLng(0, 0)],
+      );
+      expect(one.canStopOpen, isFalse);
+      expect(one.canFinish, isFalse);
+
+      final two = one.copyWith(points: const [LatLng(0, 0), LatLng(1, 0)]);
+      expect(two.canStopOpen, isTrue);
+      expect(two.canFinish, isFalse);
+
+      final three = two.copyWith(
+        points: const [LatLng(0, 0), LatLng(1, 0), LatLng(0, 1)],
+      );
+      expect(three.canStopOpen, isTrue);
+      expect(three.canFinish, isTrue);
     });
 
     test('areaHectares converte corretamente', () {
@@ -217,6 +259,13 @@ void main() {
       expect(s.points.length, equals(4));
       expect(s.perimeterMeters, greaterThan(0.0));
       expect(s.areaSquareMeters, greaterThan(0.0));
+      final closed = GeoCalculatorService.calculatePerimeterMeters(_square);
+      expect(s.distanceMeters, lessThan(closed));
+      expect(
+        s.distanceMeters,
+        GeoCalculatorService.calculateOpenPathMeters(_square),
+      );
+      expect(s.perimeterMeters, s.distanceMeters);
     });
 
     test('syncFromController com lista vazia → métricas zeradas', () {
@@ -237,14 +286,17 @@ void main() {
       // Com 0 pontos, canFinish deve ser false
       expect(s.canFinish, isFalse);
       // Sincronizar 2 pontos — ainda insuficiente
-      container
-          .read(gpsWalkProvider.notifier)
-          .syncFromController([const LatLng(0, 0), const LatLng(1, 1)]);
+      container.read(gpsWalkProvider.notifier).syncFromController([
+        const LatLng(0, 0),
+        const LatLng(1, 1),
+      ]);
       expect(container.read(gpsWalkProvider)!.canFinish, isFalse);
       // Sincronizar 3 pontos — suficiente para concluir
-      container
-          .read(gpsWalkProvider.notifier)
-          .syncFromController([const LatLng(0, 0), const LatLng(1, 1), const LatLng(1, 0)]);
+      container.read(gpsWalkProvider.notifier).syncFromController([
+        const LatLng(0, 0),
+        const LatLng(1, 1),
+        const LatLng(1, 0),
+      ]);
       expect(container.read(gpsWalkProvider)!.canFinish, isTrue);
     });
   });
