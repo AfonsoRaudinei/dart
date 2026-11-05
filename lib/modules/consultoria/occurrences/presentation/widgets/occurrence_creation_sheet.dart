@@ -11,6 +11,7 @@ import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_keyboard_inset.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/i_active_visit_context_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/i_producer_property_gateway_provider.dart';
@@ -21,6 +22,8 @@ import 'package:soloforte_app/modules/settings/presentation/providers/user_profi
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/occurrence.dart';
+import '../../domain/occurrence_soy_age.dart';
+import '../models/occurrence_talhao_prefill.dart';
 import '../../domain/occurrence_photo_paths.dart';
 import '../../../relatorio_visita/data/image_storage_service.dart';
 import '../coordinators/occurrence_form_guard.dart';
@@ -47,6 +50,7 @@ class OccurrenceCreationSheet extends ConsumerStatefulWidget {
 
   /// Pré-seleciona categoria na criação (ex.: `area_visitada` via ações rápidas).
   final String? initialCategoryValue;
+  final OccurrenceTalhaoPrefill? talhaoPrefill;
   final bool compactHeader;
 
   /// Sobe a barra Cancelar/Salvar acima do teclado.
@@ -65,6 +69,7 @@ class OccurrenceCreationSheet extends ConsumerStatefulWidget {
     this.initialOccurrence,
     this.formGuard,
     this.initialCategoryValue,
+    this.talhaoPrefill,
     this.compactHeader = false,
     this.liftStickyActionsForKeyboard = true,
   });
@@ -83,6 +88,7 @@ class _OccurrenceCreationSheetState
   final _estandePlantasCtrl = TextEditingController();
   String? _avaliacaoPlantio;
   final _objetivoPlantioCtrl = TextEditingController();
+  final _cicloDiasCtrl = TextEditingController();
   EstadioData? _estadio;
   bool _estadioCardExpanded = false;
   final Set<OccurrenceCategory> _cats = {};
@@ -114,12 +120,14 @@ class _OccurrenceCreationSheetState
     _hydrateInitialOccurrence();
     _applyInitialCategoryValue();
     _restoreDraftIfAny();
+    _applyTalhaoPrefillFields();
     _cultivarCtrl.addListener(_persistDraft);
     _descCtrl.addListener(_persistDraft);
     _recomCtrl.addListener(_persistDraft);
     _sementesPorMetroCtrl.addListener(_persistDraft);
     _estandePlantasCtrl.addListener(_persistDraft);
     _objetivoPlantioCtrl.addListener(_persistDraft);
+    _cicloDiasCtrl.addListener(_onCicloDiasChanged);
     if (widget.initialOccurrence != null) {
       _prefillInitialClient();
     } else if (_selectedClient == null && !_isAreaVisitada) {
@@ -135,6 +143,15 @@ class _OccurrenceCreationSheetState
     final value = widget.initialCategoryValue;
     if (value == null || value.isEmpty) return;
 
+    if (value == kOccurrenceAreaVisitadaCategory) {
+      _selectedCategoryValue = value;
+      _cats
+        ..clear()
+        ..add(OccurrenceCategory.areaVisitada);
+      _selectedClient = null;
+      return;
+    }
+
     final cat = _categories.where((item) => item.value == value).firstOrNull;
     if (cat == null) return;
 
@@ -142,9 +159,6 @@ class _OccurrenceCreationSheetState
     _cats.clear();
     if (cat.enumValue != null) {
       _cats.add(cat.enumValue!);
-    }
-    if (value == kOccurrenceAreaVisitadaCategory) {
-      _selectedClient = null;
     }
   }
 
@@ -224,35 +238,6 @@ class _OccurrenceCreationSheetState
     }
   }
 
-  Future<void> _prefillActiveVisitClient() async {
-    try {
-      final activeContext = await ref
-          .read(activeVisitContextLookupProvider)
-          .getActiveContext();
-      if (!mounted || _selectedClient != null) return;
-
-      final clients = await _clientsFuture;
-      if (!mounted || _selectedClient != null) return;
-
-      if (activeContext != null) {
-        final selected = clients
-            .where((client) => client.id == activeContext.clientId)
-            .firstOrNull;
-        if (selected != null) {
-          setState(() => _selectedClient = selected);
-          return;
-        }
-      }
-
-      final role = ref.read(currentUserRoleProvider);
-      if (role.isProdutor && clients.isNotEmpty) {
-        setState(() => _selectedClient = clients.first);
-      }
-    } catch (_) {
-      // Ocorrências continuam disponíveis fora de uma visita ativa.
-    }
-  }
-
   @override
   void dispose() {
     // Sem gravação de rascunho aqui: mexer em provider durante dispose/deactivate
@@ -264,6 +249,7 @@ class _OccurrenceCreationSheetState
     _sementesPorMetroCtrl.removeListener(_persistDraft);
     _estandePlantasCtrl.removeListener(_persistDraft);
     _objetivoPlantioCtrl.removeListener(_persistDraft);
+    _cicloDiasCtrl.removeListener(_onCicloDiasChanged);
     if (widget.formGuard?.readIsDirty == _hasUnsavedChanges) {
       widget.formGuard?.readIsDirty = null;
     }
@@ -273,6 +259,7 @@ class _OccurrenceCreationSheetState
     _sementesPorMetroCtrl.dispose();
     _estandePlantasCtrl.dispose();
     _objetivoPlantioCtrl.dispose();
+    _cicloDiasCtrl.dispose();
     for (final c in _notasCtrls.values) {
       c.dispose();
     }
@@ -486,6 +473,11 @@ class _OccurrenceCreationSheetState
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
+                            if (_talhaoNomeReadonly case final talhaoNome?)
+                              Text(
+                                talhaoNome,
+                                style: TextStyle(color: muted, fontSize: 12),
+                              ),
                             Text(
                               'Ponto definido no mapa',
                               style: TextStyle(color: muted, fontSize: 12),
@@ -682,20 +674,7 @@ class _OccurrenceCreationSheetState
                       ),
                     ),
                   ),
-                  if (_dataPlantio != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Row(
-                        children: [
-                          Icon(Icons.grass, size: 14, color: muted),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${DateTime.now().difference(_dataPlantio!).inDays} dias desde o plantio (DAP real)',
-                            style: TextStyle(color: muted, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
+                  _buildCultivarAgeLines(muted),
                   const SizedBox(height: 20),
 
                   const OccurrenceSectionHeader(
