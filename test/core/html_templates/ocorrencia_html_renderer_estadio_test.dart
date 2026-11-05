@@ -23,29 +23,33 @@ void main() {
     await initializeDateFormatting('pt_BR');
   });
 
-  test(
-    'com label e atenção exibe nome do estádio e seção de atenção',
-    () async {
-      final data = ocorrencia()
-        ..['estadio_fenologico_label'] = 'V3 - 3ª Trifoliolada'
-        ..['estadio_atencao'] = [
-          'Período crítico para competição com daninhas',
-          'Crescimento radicular ativo',
-        ];
+  test('com label e atenção exibe nome do estádio e seção de atenção', () async {
+    final data = ocorrencia()
+      ..['estadio_fenologico_label'] = 'V3 - 3ª Trifoliolada'
+      ..['estadio_atencao'] = [
+        'Período crítico para competição com daninhas',
+        'Crescimento radicular ativo',
+      ];
 
-      final html = await OcorrenciaHtmlRenderer.renderDetalhe(data);
+    final html = await OcorrenciaHtmlRenderer.renderDetalhe(data);
 
-      expect(html, contains('V3 - 3ª Trifoliolada'));
-      expect(html, contains('Atenção neste estádio'));
-      expect(
-        html,
-        contains('<li>Período crítico para competição com daninhas</li>'),
-      );
-      expect(html, contains('<li>Crescimento radicular ativo</li>'));
-      expect(html, isNot(contains('⚠')));
-      expect(html, isNot(contains(RegExp(r'\{\{[^}]+\}\}'))));
-    },
-  );
+    expect(html, contains('V3 - 3ª Trifoliolada'));
+    expect(html, contains('Atenção neste estádio'));
+    expect(
+      html,
+      contains(
+        '<p class="sf-prose">Período crítico para competição com daninhas</p>',
+      ),
+    );
+    expect(
+      html,
+      contains('<p class="sf-prose">Crescimento radicular ativo</p>'),
+    );
+    expect(html, isNot(contains('<ul')));
+    expect(html, isNot(contains('<li>')));
+    expect(html, isNot(contains('⚠')));
+    expect(html, isNot(contains(RegExp(r'\{\{[^}]+\}\}'))));
+  });
 
   test('aceita lista de atenção como String JSON', () async {
     final data = ocorrencia()
@@ -54,7 +58,10 @@ void main() {
     final html = await OcorrenciaHtmlRenderer.renderDetalhe(data);
 
     expect(html, contains('Atenção neste estádio'));
-    expect(html, contains('<li>Demanda hídrica aumentando</li>'));
+    expect(
+      html,
+      contains('<p class="sf-prose">Demanda hídrica aumentando</p>'),
+    );
   });
 
   test('sem atenção a seção fica ausente e o código é mantido', () async {
