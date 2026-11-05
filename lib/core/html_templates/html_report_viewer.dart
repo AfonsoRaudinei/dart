@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
@@ -82,6 +83,9 @@ class HtmlReportViewer extends ConsumerStatefulWidget {
   /// Dígitos do telefone do cliente (sem +55) para abrir wa.me com destinatário.
   final String? whatsAppPhoneDigits;
 
+  /// Exibe botão de publicar link + WhatsApp (opt-in; ocorrência e visita).
+  final bool enableWhatsAppShareLink;
+
   const HtmlReportViewer({
     super.key,
     required this.title,
@@ -94,6 +98,7 @@ class HtmlReportViewer extends ConsumerStatefulWidget {
     this.bodyBuilder,
     this.actions,
     this.whatsAppPhoneDigits,
+    this.enableWhatsAppShareLink = false,
   });
 
   @override
@@ -361,6 +366,13 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
       }
       return;
     }
+    final confirmed = await _confirmAction(
+      title: 'Enviar link público?',
+      message: 'Este link fica público na internet. Continuar?',
+      actionLabel: 'Continuar',
+    );
+    if (confirmed != true || !mounted) return;
+
     setState(() => _actionBusy = true);
     try {
       final publisher = ref.read(reportShareLinkPublisherProvider);
@@ -369,14 +381,34 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
         html: widget.htmlContent,
       );
       final message = 'Relatório SoloForte: ${result.publicUrl}';
-      await launchWhatsAppShare(
-        phoneDigitsBrazil: widget.whatsAppPhoneDigits,
-        message: message,
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Link publicado. WhatsApp aberto.')),
+      final publicUrl = result.publicUrl;
+      try {
+        await launchWhatsAppShare(
+          phoneDigitsBrazil: widget.whatsAppPhoneDigits,
+          message: message,
         );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Link publicado. WhatsApp aberto.')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Link publicado (copie se o WhatsApp não abriu): $publicUrl',
+              ),
+              duration: const Duration(seconds: 10),
+              action: SnackBarAction(
+                label: 'Copiar',
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: publicUrl));
+                },
+              ),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -424,11 +456,12 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
               ),
             ),
           ...actionIcons,
-          IconButton(
-            tooltip: 'Enviar link (WhatsApp)',
-            onPressed: _actionBusy ? null : _shareLinkViaWhatsApp,
-            icon: const Icon(Icons.chat_outlined),
-          ),
+          if (widget.enableWhatsAppShareLink)
+            IconButton(
+              tooltip: 'Enviar link (WhatsApp)',
+              onPressed: _actionBusy ? null : _shareLinkViaWhatsApp,
+              icon: const Icon(Icons.chat_outlined),
+            ),
           if (widget.pdfBytesProvider != null)
             PopupMenuButton<String>(
               key: _exportButtonKey,
