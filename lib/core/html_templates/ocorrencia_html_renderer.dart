@@ -75,11 +75,16 @@ class OcorrenciaHtmlRenderer {
             .map(RelatorioHtmlRenderer.escapeHtml)
             .followedBy([if (dataRegistro.isNotEmpty) dataRegistro])
             .join(' · ');
+    final historicoTalhao =
+        (data['historico_talhao_linha'] as String?)?.trim() ?? '';
 
     tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
       ...branding,
       'categoria_label': categoriaLabel,
       'contexto_linha': contextoLinha,
+      'historico_talhao_linha': RelatorioHtmlRenderer.escapeHtml(
+        historicoTalhao,
+      ),
       'cliente_nome': RelatorioHtmlRenderer.escapeHtml(
         data['cliente_nome'] as String?,
       ),
@@ -155,6 +160,11 @@ class OcorrenciaHtmlRenderer {
       tpl,
       'andamento_label',
       _andamentoStatusLine(data).isNotEmpty,
+    );
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'historico_talhao_linha',
+      historicoTalhao.isNotEmpty,
     );
     tpl = _resolveRepeatedIf(tpl, 'type', type.isNotEmpty);
     tpl = _resolveRepeatedIf(tpl, 'consultant_nome', consultantNome.isNotEmpty);
