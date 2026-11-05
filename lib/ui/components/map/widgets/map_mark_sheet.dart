@@ -227,6 +227,11 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
               categoriasJson: data.categoriasJson,
               notasCategoriasJson: data.notasCategoriasJson,
               fotosCategoriasJson: data.fotosCategoriasJson,
+              dataEmergencia: data.dataEmergencia,
+              sementesPorMetro: data.sementesPorMetro,
+              estandePlantas: data.estandePlantas,
+              avaliacaoPlantio: data.avaliacaoPlantio,
+              objetivoPlantio: data.objetivoPlantio,
             );
         if (!mounted) return;
         clearOccurrenceDraft(ref, data.latitude, data.longitude);

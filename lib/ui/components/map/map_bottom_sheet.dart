@@ -445,7 +445,6 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     return LayoutBuilder(
       builder: (context, constraints) {
         final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
         final titleColor =
             isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
         final bodyColor = isIos
@@ -736,7 +735,6 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
             'Ponto do mapa inválido. Toque novamente no mapa para marcar a ocorrência.',
           );
         }
-
         await ref
             .read(occurrenceControllerProvider)
             .createOccurrence(
@@ -759,14 +757,15 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
               categoriasJson: data.categoriasJson,
               notasCategoriasJson: data.notasCategoriasJson,
               fotosCategoriasJson: data.fotosCategoriasJson,
+              dataEmergencia: data.dataEmergencia,
+              sementesPorMetro: data.sementesPorMetro,
+              estandePlantas: data.estandePlantas,
+              avaliacaoPlantio: data.avaliacaoPlantio,
+              objetivoPlantio: data.objetivoPlantio,
             );
-
         if (!mounted) return;
-
         clearOccurrenceDraft(ref, data.latitude, data.longitude);
-
         if (!mounted) return;
-
         await handleMapOccurrencePostCreate(
           context: context,
           data: data,
