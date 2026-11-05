@@ -33,6 +33,7 @@ class RelatorioTable {
   static const String colTalhoes = 'talhoes';
   static const String colFotos = 'fotos';
   static const String colMonitoramentos = 'monitoramentos';
+  static const String colClimaManualJson = 'clima_manual_json';
 
   // ── DDL (referência — migração em DatabaseHelper._migrateToV11) ──────
 
@@ -57,7 +58,8 @@ class RelatorioTable {
       ocorrencias TEXT NOT NULL DEFAULT '[]',
       talhoes TEXT NOT NULL DEFAULT '[]',
       fotos TEXT NOT NULL DEFAULT '[]',
-      monitoramentos TEXT NOT NULL DEFAULT '[]'
+      monitoramentos TEXT NOT NULL DEFAULT '[]',
+      clima_manual_json TEXT
     )
   ''';
 }
