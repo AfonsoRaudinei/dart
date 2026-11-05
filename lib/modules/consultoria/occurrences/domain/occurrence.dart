@@ -190,6 +190,14 @@ class Occurrence {
 
   /// Duração gravada em segundos (1–30).
   final int? audioDurationSec;
+  // ── Amostra de solo (Schema v49 — GeoData-style) ────────────────────
+  final String? amostraCodigo;
+  final String? amostraColetor;
+  final String? amostraTramite;
+  final String? amostraLaudoTexto;
+
+  /// JSON reservado para resultados analíticos (fase 2).
+  final String? amostraAnalisesJson;
 
   Occurrence({
     required this.id,
@@ -234,6 +242,11 @@ class Occurrence {
     this.responsavelNome,
     this.audioPath,
     this.audioDurationSec,
+    this.amostraCodigo,
+    this.amostraColetor,
+    this.amostraTramite,
+    this.amostraLaudoTexto,
+    this.amostraAnalisesJson,
   }) : updatedAt = updatedAt ?? DateTime.now();
 
   factory Occurrence.fromMap(Map<String, dynamic> map) {
@@ -296,6 +309,11 @@ class Occurrence {
       responsavelNome: map['responsavel_nome'] as String?,
       audioPath: map['audio_path'] as String?,
       audioDurationSec: (map['audio_duration_sec'] as num?)?.toInt(),
+      amostraCodigo: map['amostra_codigo'] as String?,
+      amostraColetor: map['amostra_coletor'] as String?,
+      amostraTramite: map['amostra_tramite'] as String?,
+      amostraLaudoTexto: map['amostra_laudo_texto'] as String?,
+      amostraAnalisesJson: map['amostra_analises_json'] as String?,
     );
   }
 
@@ -350,6 +368,11 @@ class Occurrence {
       'responsavel_nome': responsavelNome,
       'audio_path': audioPath,
       'audio_duration_sec': audioDurationSec,
+      'amostra_codigo': amostraCodigo,
+      'amostra_coletor': amostraColetor,
+      'amostra_tramite': amostraTramite,
+      'amostra_laudo_texto': amostraLaudoTexto,
+      'amostra_analises_json': amostraAnalisesJson,
     };
   }
 
@@ -400,6 +423,11 @@ class Occurrence {
     bool clearAudioPath = false,
     int? audioDurationSec,
     bool clearAudioDurationSec = false,
+    String? amostraCodigo,
+    String? amostraColetor,
+    String? amostraTramite,
+    String? amostraLaudoTexto,
+    String? amostraAnalisesJson,
   }) {
     return Occurrence(
       id: id ?? this.id,
@@ -448,6 +476,11 @@ class Occurrence {
       audioDurationSec: clearAudioDurationSec
           ? null
           : (audioDurationSec ?? this.audioDurationSec),
+      amostraCodigo: amostraCodigo ?? this.amostraCodigo,
+      amostraColetor: amostraColetor ?? this.amostraColetor,
+      amostraTramite: amostraTramite ?? this.amostraTramite,
+      amostraLaudoTexto: amostraLaudoTexto ?? this.amostraLaudoTexto,
+      amostraAnalisesJson: amostraAnalisesJson ?? this.amostraAnalisesJson,
     );
   }
 
