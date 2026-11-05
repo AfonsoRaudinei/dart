@@ -187,6 +187,9 @@ class DrawingProperties {
   final String? cultura; // ex: soja, milho, café
   final String? material; // cultivar / material, ex: Olimpo RR
   final String? safra; // ex: 2025/2026
+  final String? dataPlantio; // yyyy-MM-dd
+  final String? dataEmergencia; // yyyy-MM-dd
+  final int? cicloDias;
   final String? soilSamplingScheme; // grade | zona | dirigido
   final Map<String, double>? recByNutrient; // N, P, K, S, Ca, Mg …
 
@@ -214,6 +217,9 @@ class DrawingProperties {
     this.cultura,
     this.material,
     this.safra,
+    this.dataPlantio,
+    this.dataEmergencia,
+    this.cicloDias,
     this.soilSamplingScheme,
     this.recByNutrient,
   });
@@ -243,6 +249,9 @@ class DrawingProperties {
     'cultura': cultura,
     'material': material,
     'safra': safra,
+    'data_plantio': dataPlantio,
+    'data_emergencia': dataEmergencia,
+    'ciclo_dias': cicloDias,
     'soil_sampling_scheme': soilSamplingScheme,
     'rec_by_nutrient': recByNutrient,
   };
@@ -275,6 +284,9 @@ class DrawingProperties {
       cultura: json['cultura'] as String?,
       material: json['material'] as String?,
       safra: json['safra'] as String?,
+      dataPlantio: json['data_plantio'] as String?,
+      dataEmergencia: json['data_emergencia'] as String?,
+      cicloDias: _cicloDiasFromJson(json['ciclo_dias']),
       soilSamplingScheme: json['soil_sampling_scheme'] as String?,
       recByNutrient: json['rec_by_nutrient'] != null
           ? Map<String, double>.from(
@@ -310,6 +322,12 @@ class DrawingProperties {
     String? cultura,
     String? material,
     String? safra,
+    String? dataPlantio,
+    String? dataEmergencia,
+
+    /// null mantém. Para limpar, passe [clearCicloDias]: true.
+    int? cicloDias,
+    bool clearCicloDias = false,
     String? soilSamplingScheme,
     Map<String, double>? recByNutrient,
   }) {
@@ -337,6 +355,9 @@ class DrawingProperties {
       cultura: _copyNullableText(cultura, this.cultura),
       material: _copyNullableText(material, this.material),
       safra: _copyNullableText(safra, this.safra),
+      dataPlantio: _copyNullableText(dataPlantio, this.dataPlantio),
+      dataEmergencia: _copyNullableText(dataEmergencia, this.dataEmergencia),
+      cicloDias: clearCicloDias ? null : (cicloDias ?? this.cicloDias),
       soilSamplingScheme: soilSamplingScheme ?? this.soilSamplingScheme,
       recByNutrient: recByNutrient ?? this.recByNutrient,
     );
@@ -415,4 +436,11 @@ String? _copyNullableText(String? incoming, String? current) {
   if (incoming == null) return current;
   final trimmed = incoming.trim();
   return trimmed.isEmpty ? null : trimmed;
+}
+
+int? _cicloDiasFromJson(Object? value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return null;
 }
