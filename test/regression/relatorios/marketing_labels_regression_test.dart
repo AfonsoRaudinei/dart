@@ -6,16 +6,16 @@ import 'package:flutter_test/flutter_test.dart';
 /// no badge de status nem no chip de filtro de cases publicados.
 void main() {
   group('BUG-007 marketing_labels_regression', () {
-    test('status publicado e chip de filtro usam Marketing (não Gerado/Gerados)', () {
+    test('status publicado e chip de filtro usam Publicado/Publicados (não Gerado/Gerados)', () {
       final source = File(
         'lib/modules/consultoria/relatorios/presentation/relatorios_marketing_reports.dart',
       ).readAsStringSync();
 
-      expect(source.contains("return 'Marketing';"), isTrue);
-      expect(source.contains("return 'Não gerado';"), isTrue);
+      expect(source.contains("return 'Publicado';"), isTrue);
+      expect(source.contains("return 'Rascunho';"), isTrue);
       expect(
         RegExp(
-          r"_statusChip\(\s*context,\s*'Marketing',\s*"
+          r"_statusChip\(\s*context,\s*'Publicados',\s*"
           r"_MarketingCaseStatusFilter\.published,",
         ).hasMatch(source),
         isTrue,
@@ -26,6 +26,7 @@ void main() {
         ),
         isFalse,
       );
+      expect(source.contains("return 'Gerado'"), isFalse);
       expect(source.contains("case 'published':\n      return 'Gerado';"), isFalse);
       expect(source.contains('showPackShare: false'), isTrue);
     });

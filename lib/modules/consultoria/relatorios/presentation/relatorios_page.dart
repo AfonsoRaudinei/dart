@@ -140,7 +140,7 @@ Future<_ReportBrandingContext> _resolveReportBrandingContext(
 ///
 /// Segmentos: Visitas | Ocorrências | Marketing | Consolidados
 /// (Mídia oculta 17/08/2026 — reativar com o relatório HTML de marketing)
-/// Marketing = publicações/cases (ADR-050), incl. não gerados (rascunho).
+/// Abre em Visitas. Marketing = publicações/cases (ADR-050).
 class RelatoriosScreen extends ConsumerStatefulWidget {
   const RelatoriosScreen({super.key});
 
@@ -150,7 +150,7 @@ class RelatoriosScreen extends ConsumerStatefulWidget {
 
 class _RelatoriosScreenState extends ConsumerState<RelatoriosScreen> {
   static final _dateFormat = DateFormat('dd/MM/yyyy', 'pt_BR');
-  _RelatoriosSegment _segment = _RelatoriosSegment.gerados;
+  _RelatoriosSegment _segment = _RelatoriosSegment.visitas;
   String? _selectedProducerClientId;
 
   void _selectSegment(_RelatoriosSegment value) {
@@ -280,8 +280,7 @@ class _RelatoriosSection extends ConsumerWidget {
             children: [
               const _InsetGroupHeader(title: 'Relatórios de Visita', count: 0),
               _PremiumEmptyState(
-                message:
-                    'Nenhum relatório de visita ainda. Finalize uma visita no mapa para gerar o relatório técnico.',
+                message: 'Nenhuma visita ainda.',
                 ctaLabel: 'Abrir mapa',
                 onCta: () => context.go(AppRoutes.map),
               ),
@@ -307,13 +306,11 @@ class _RelatoriosSection extends ConsumerWidget {
             ),
             if (needsProducerPick)
               const _PremiumEmptyState(
-                message:
-                    'Selecione um produtor para ver os relatórios de visita deste cliente.',
+                message: 'Escolha o produtor.',
               )
             else if (visible.isEmpty)
               _PremiumEmptyState(
-                message:
-                    'Nenhum relatório de visita para este produtor. Finalize uma visita no mapa.',
+                message: 'Nenhuma visita para este produtor.',
                 ctaLabel: 'Abrir mapa',
                 onCta: () => context.go(AppRoutes.map),
               )
@@ -381,7 +378,7 @@ class _RelatorioCardState extends ConsumerState<_RelatorioCard> {
             }
           : null,
       publishDialogTitle: 'Publicar relatório?',
-      publishDialogMessage: 'O relatório ficará marcado como publicado.',
+      publishDialogMessage: 'O produtor passa a ver este relatório.',
       onDelete: (viewerContext) async {
         await repository.softDelete(relatorio.id);
         container.invalidate(_relatoriosTecnicosListProvider);
@@ -528,7 +525,6 @@ class _OccurrenciasSection extends ConsumerWidget {
                 itemCounts: producerCounts,
                 effectiveClientId: effectiveClientId,
                 onSelected: onProducerSelected,
-                label: 'Produtor (exportação)',
               ),
               if (exportEnabled) ...[
                 _GeneratedReportCard(
@@ -552,15 +548,13 @@ class _OccurrenciasSection extends ConsumerWidget {
             ],
             if (list.isEmpty)
               _PremiumEmptyState(
-                message:
-                    'Nenhuma ocorrência registrada. Crie ocorrências no mapa para listar e exportar aqui.',
+                message: 'Nenhuma ocorrência ainda.',
                 ctaLabel: 'Abrir mapa',
                 onCta: () => context.go(AppRoutes.map),
               )
             else if (needsProducerPick)
               const _PremiumEmptyState(
-                message:
-                    'Selecione um produtor para ver as ocorrências deste cliente.',
+                message: 'Escolha o produtor.',
               )
             else if (displayList.isEmpty)
               _PremiumEmptyState(

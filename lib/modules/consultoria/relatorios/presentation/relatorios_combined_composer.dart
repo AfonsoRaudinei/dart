@@ -529,7 +529,7 @@ class _CombinedReportsComposerState
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
               const Text(
-                'Capítulos',
+                'Sumário',
                 style: TextStyle(
                   color: SoloForteSheetTokens.titleColor,
                   fontSize: SoloForteSheetTokens.titleFontSize,

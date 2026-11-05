@@ -402,7 +402,7 @@ class _DataCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (subtitle != null) ...[
+                if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
                   const SizedBox(height: 3),
                   Text(
                     subtitle!,

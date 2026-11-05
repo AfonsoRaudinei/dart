@@ -604,7 +604,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Publicar relatório'),
         content: const Text(
-          'O relatório será enviado ao produtor e ao agrônomo. Esta ação não pode ser desfeita.',
+          'O produtor passa a ver este relatório.',
         ),
         actions: [
           TextButton(
@@ -694,7 +694,7 @@ class _StatusChip extends StatelessWidget {
         return {
           'bg': const Color(0xFFFFF3CD),
           'fg': const Color(0xFF92400E),
-          'label': 'Pendente',
+          'label': 'Rascunho',
         };
       case RelatorioStatus.publicado:
         return {

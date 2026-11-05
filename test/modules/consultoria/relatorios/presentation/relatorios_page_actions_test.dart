@@ -153,7 +153,7 @@ void main() {
 
     expect(occurrenceRepository.get('occ-1')?.syncStatus, 'deleted');
     expect(
-      find.textContaining('Nenhuma ocorrência registrada'),
+      find.textContaining('Nenhuma ocorrência ainda.'),
       findsOneWidget,
     );
   });
@@ -205,8 +205,8 @@ void main() {
     expect(find.text('Exportar lista'), findsOneWidget);
 
     await _selectSegment(tester, 'Marketing');
-    expect(find.text('Relatórios do produtor'), findsOneWidget);
-    expect(find.text('Ocorrências'), findsWidgets);
+    expect(find.text('Relatórios do produtor'), findsNothing);
+    expect(find.text('Lista de Ocorrências'), findsNothing);
     expect(find.text('Resultado'), findsWidgets);
     expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
     expect(find.text('Relatórios Consolidados'), findsNothing);
@@ -218,7 +218,7 @@ void main() {
     expect(find.textContaining('Combinar relatórios'), findsOneWidget);
     expect(find.text('Combinar'), findsOneWidget);
     expect(find.text('Relatório combinado'), findsNothing);
-    expect(find.text('Gerado sob demanda'), findsWidgets);
+    expect(find.text('Toque para abrir'), findsWidgets);
     expect(find.text('Lista de Ocorrências'), findsNothing);
 
     // OCULTO — 17/08/2026
@@ -358,7 +358,7 @@ void main() {
       await _selectSegment(tester, 'Consolidados');
 
       expect(find.text('Resumo da Propriedade'), findsOneWidget);
-      expect(find.text('1 propriedade(s), 0 talhão(ões)'), findsOneWidget);
+      expect(find.text('1 propriedade, 0 talhões'), findsOneWidget);
       expect(find.text('Disponível'), findsNWidgets(2));
       expect(find.text('Vazio'), findsNothing);
     },
@@ -540,7 +540,7 @@ void main() {
 
     expect(
       find.text(
-        'Selecione um produtor para consolidar visitas e combinar relatórios.',
+        'Escolha o produtor.',
       ),
       findsOneWidget,
     );
@@ -665,8 +665,8 @@ void main() {
     await tester.pumpAndSettle();
     await _openSavedCombined(tester);
 
-    expect(find.byTooltip('Capítulos'), findsOneWidget);
-    await _tapViewerToolbar(tester, 'Capítulos');
+    expect(find.byTooltip('Sumário'), findsOneWidget);
+    await _tapViewerToolbar(tester, 'Sumário');
     await tester.pump(const Duration(milliseconds: 400));
 
     await tester.tap(find.byKey(const ValueKey('tirar-ocorrencia:occ-combo')));
@@ -827,7 +827,7 @@ void main() {
       await _selectSegment(tester, 'Marketing');
 
       expect(
-        find.text('Selecione um produtor para ver os relatórios deste cliente.'),
+        find.text('Escolha o produtor.'),
         findsOneWidget,
       );
       expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
@@ -838,10 +838,9 @@ void main() {
       await tester.tap(find.text('Produtor A · 1').last);
       await tester.pumpAndSettle();
 
-      expect(find.text('Relatórios do produtor'), findsOneWidget);
-      expect(find.text('Lista de Ocorrências'), findsOneWidget);
-      expect(find.text('1 ocorrência(s)'), findsOneWidget);
-      expect(find.text('Ervas Daninhas'), findsOneWidget);
+      expect(find.text('Nenhum case para este produtor.'), findsOneWidget);
+      expect(find.text('Lista de Ocorrências'), findsNothing);
+      expect(find.text('Ervas Daninhas'), findsNothing);
       expect(find.text('Insetos'), findsNothing);
     },
   );
@@ -867,8 +866,8 @@ void main() {
 
     expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
     expect(find.text('Case não gerado'), findsOneWidget);
-    expect(find.text('Não gerado'), findsWidgets);
-    expect(find.text('Marketing'), findsWidgets);
+    expect(find.text('Rascunho'), findsWidgets);
+    expect(find.text('Publicado'), findsWidgets);
   });
 
   testWidgets('publicação em Marketing: Publicar draft exibe snackbar de sucesso', (
@@ -924,7 +923,7 @@ void main() {
     expect(find.byTooltip('Editar'), findsOneWidget);
   });
 
-  testWidgets('filtro status Marketing oculta rascunhos e Não gerados oculta publicados', (
+  testWidgets('filtro status Publicados oculta rascunhos e Rascunhos oculta publicados', (
     tester,
   ) async {
     await _pumpScreen(
@@ -945,17 +944,17 @@ void main() {
     expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
     expect(find.text('Somente rascunho'), findsOneWidget);
 
-    await tester.tap(find.text('Não gerados'));
+    await tester.tap(find.text('Rascunhos'));
     await tester.pumpAndSettle();
     expect(find.text('Somente rascunho'), findsOneWidget);
     expect(find.text('Produtor Teste - Fazenda Marketing'), findsNothing);
 
     final statusBar = find.ancestor(
-      of: find.text('Não gerados'),
+      of: find.text('Rascunhos'),
       matching: find.byWidgetPredicate((widget) => widget is Wrap),
     );
     await tester.tap(
-      find.descendant(of: statusBar, matching: find.text('Marketing')),
+      find.descendant(of: statusBar, matching: find.text('Publicados')),
     );
     await tester.pumpAndSettle();
     expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
@@ -987,7 +986,7 @@ void main() {
       );
 
       await _selectSegment(tester, 'Marketing');
-      await tester.tap(find.text('Não gerados'));
+      await tester.tap(find.text('Rascunhos'));
       await tester.pumpAndSettle();
       await _openReportCardByTitle(tester, 'Draft no limite');
       await _tapViewerToolbar(tester, 'Publicar');

@@ -314,7 +314,7 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
     if (actions.onManageChapters != null) {
       icons.add(
         IconButton(
-          tooltip: 'Capítulos',
+          tooltip: 'Sumário',
           onPressed: _actionBusy
               ? null
               : () => _runVoidAction(actions.onManageChapters!),
@@ -390,12 +390,12 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
               },
               itemBuilder: (context) => const [
                 PopupMenuItem(
-                  value: 'html',
-                  child: Text('Compartilhar HTML'),
+                  value: 'pdf',
+                  child: Text('Enviar PDF'),
                 ),
                 PopupMenuItem(
-                  value: 'pdf',
-                  child: Text('Compartilhar PDF'),
+                  value: 'html',
+                  child: Text('Enviar página'),
                 ),
               ],
             )
