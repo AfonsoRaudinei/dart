@@ -662,14 +662,14 @@ class OcorrenciaHtmlRenderer {
     final itens = items
         .map((item) => item?.toString().trim() ?? '')
         .where((item) => item.isNotEmpty)
-        .map((item) => '<li>${RelatorioHtmlRenderer.escapeHtml(item)}</li>')
+        .map(
+          (item) =>
+              '<p class="sf-prose">${RelatorioHtmlRenderer.escapeHtml(item)}</p>',
+        )
         .toList();
     if (itens.isEmpty) return '';
 
-    return _section(
-      'Atenção neste estádio',
-      '<ul class="sf-prose">${itens.join()}</ul>',
-    );
+    return _section('Atenção neste estádio', itens.join());
   }
 
   static Map<String, dynamic> _decodeMap(String json) {
