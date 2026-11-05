@@ -187,22 +187,12 @@ class _MarketingCasesReportsSectionState
         final statusFiltered = _applyStatusFilter(byProducer);
         final filtered = _applyTypeFilter(statusFiltered);
         final grouped = _groupByFarm(filtered);
-        final clientOccurrences = effectiveClientId == null
-            ? const <Occurrence>[]
-            : _sortOccurrencesByCreatedAt(
-                allOccurrences
-                    .where((o) => o.clientId == effectiveClientId)
-                    .toList(),
-              );
-        final showClientHub =
-            !needsProducerPick && effectiveClientId != null;
-        final totalHubItems = clientOccurrences.length + filtered.length;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _InsetGroupHeader(
-              title: showClientHub ? 'Relatórios do produtor' : 'Marketing',
-              count: showClientHub ? totalHubItems : filtered.length,
+              title: 'Marketing',
+              count: filtered.length,
             ),
             _relatoriosProducerSelectorBlock(
               context: context,
@@ -229,46 +219,26 @@ class _MarketingCasesReportsSectionState
             ],
             if (visible.isEmpty && allOccurrences.isEmpty)
               _PremiumEmptyState(
-                message:
-                    'Nenhuma publicação ainda. Crie um case de marketing no mapa (toque longo).',
+                message: 'No mapa, toque longo no ponto para criar um case.',
                 ctaLabel: 'Abrir mapa',
                 onCta: () => context.go(AppRoutes.map),
               )
             else if (needsProducerPick)
               const _PremiumEmptyState(
-                message:
-                    'Selecione um produtor para ver os relatórios deste cliente.',
+                message: 'Escolha o produtor.',
               )
-            else if (showClientHub) ...[
-              if (clientOccurrences.isEmpty &&
-                  filtered.isEmpty &&
-                  byProducer.isNotEmpty)
-                _PremiumEmptyState(
-                  message: 'Nenhuma publicação neste filtro.',
-                  ctaLabel: 'Mostrar todas',
-                  onCta: () {
-                    _selectFilter(_MarketingCaseFilter.all);
-                    _selectStatusFilter(_MarketingCaseStatusFilter.all);
-                  },
-                )
-              else
-                ..._buildProducerReportHub(
-                  context: context,
-                  ref: ref,
-                  dateFormat: dateFormat,
-                  effectiveClientId: effectiveClientId,
-                  occurrences: clientOccurrences,
-                  marketingItems: filtered,
-                ),
-            ]
-            else if (filtered.isEmpty)
+            else if (filtered.isEmpty && byProducer.isNotEmpty)
               _PremiumEmptyState(
-                message: 'Nenhuma publicação neste filtro.',
+                message: 'Nenhum case neste filtro.',
                 ctaLabel: 'Mostrar todas',
                 onCta: () {
                   _selectFilter(_MarketingCaseFilter.all);
                   _selectStatusFilter(_MarketingCaseStatusFilter.all);
                 },
+              )
+            else if (filtered.isEmpty)
+              const _PremiumEmptyState(
+                message: 'Nenhum case para este produtor.',
               )
             else
               ...grouped.entries.expand((entry) {
@@ -325,7 +295,7 @@ Widget _marketingReportCard(
 ) {
   final tipoColor = _relatoriosMarketingTipoColor(item.tipo);
   final mapHidden = item.pinOcultoNoMapa;
-  final statusLabel = _marketingStatusLabel(item.statusValue);
+  final statusText = _marketingStatusLabel(item.statusValue);
   return _GeneratedReportCard(
     leading: _relatoriosReportIconBadge(
       icon: _relatoriosMarketingTipoIcon(item.tipo),
@@ -333,10 +303,10 @@ Widget _marketingReportCard(
     ),
     eyebrow: _relatoriosMarketingTipoSectionTitle(item.tipo),
     title: item.produtorFazenda,
-    subtitle: mapHidden ? 'Oculto no mapa' : statusLabel,
+    subtitle: mapHidden ? '' : statusText,
     date: dateFormat.format(item.criadoEm.toLocal()),
     enabled: true,
-    statusLabel: mapHidden ? 'Oculto no mapa' : statusLabel,
+    statusLabel: mapHidden ? 'Oculto no mapa' : statusText,
     statusColor: mapHidden
         ? const Color(0xFFFF9500)
         : _marketingStatusColor(context, item.statusValue),
@@ -348,96 +318,18 @@ Widget _marketingReportCard(
   );
 }
 
-List<Widget> _buildProducerReportHub({
-  required BuildContext context,
-  required WidgetRef ref,
-  required DateFormat dateFormat,
-  required String effectiveClientId,
-  required List<Occurrence> occurrences,
-  required List<MarketingCaseReportSnapshot> marketingItems,
-}) {
-  final widgets = <Widget>[];
-  final nowLabel = dateFormat.format(DateTime.now());
-
-  if (occurrences.isEmpty && marketingItems.isEmpty) {
-    widgets.add(
-      const _PremiumEmptyState(
-        message: 'Nenhum relatório para este produtor ainda.',
-      ),
-    );
-    return widgets;
-  }
-
-  if (occurrences.isNotEmpty) {
-    widgets.add(
-      _RelatoriosSectionLabel(
-        icon: SFIcons.assignment,
-        iconColor: const Color(0xFF2C5564),
-        title: 'Ocorrências',
-        count: occurrences.length,
-      ),
-    );
-    widgets.add(
-      _GeneratedReportCard(
-        leading: _relatoriosReportIconBadge(
-          icon: SFIcons.assignment,
-          accent: const Color(0xFF2C5564),
-        ),
-        eyebrow: 'Exportar lista',
-        title: 'Lista de Ocorrências',
-        subtitle: '${occurrences.length} ocorrência(s)',
-        date: nowLabel,
-        enabled: true,
-        buildPayload: () => _buildOccurrenceListPayload(
-          ref,
-          occurrences,
-          effectiveClientId,
-        ),
-      ),
-    );
-    widgets.addAll(
-      occurrences.map(
-        (occurrence) => _OccurrenciaCard(
-          occurrence: occurrence,
-          dateFormat: dateFormat,
-        ),
-      ),
-    );
-  }
-
-  const tipos = ['resultado', 'antes_depois', 'avaliacao'];
-  for (final tipo in tipos) {
-    final items = marketingItems.where((item) => item.tipo == tipo).toList();
-    if (items.isEmpty) continue;
-    final color = _relatoriosMarketingTipoColor(tipo);
-    widgets.add(
-      _RelatoriosSectionLabel(
-        icon: _relatoriosMarketingTipoIcon(tipo),
-        iconColor: color,
-        title: _relatoriosMarketingTipoSectionTitle(tipo),
-        count: items.length,
-      ),
-    );
-    widgets.addAll(
-      items.map((item) => _marketingReportCard(context, ref, dateFormat, item)),
-    );
-  }
-
-  return widgets;
-}
-
 String _marketingStatusLabel(String statusValue) {
   switch (statusValue.toLowerCase()) {
     case 'published':
-      return 'Marketing';
+      return 'Publicado';
     case 'draft':
-      return 'Não gerado';
+      return 'Rascunho';
     case 'pending_sync':
-      return 'Pendente sync';
+      return 'Aguardando envio';
     case 'archived':
       return 'Arquivado';
     default:
-      return statusValue;
+      return 'Publicado';
   }
 }
 
@@ -479,13 +371,13 @@ class _MarketingCaseStatusFilterBar extends StatelessWidget {
         ),
         _statusChip(
           context,
-          'Marketing',
+          'Publicados',
           _MarketingCaseStatusFilter.published,
           SFIcons.campaign,
         ),
         _statusChip(
           context,
-          'Não gerados',
+          'Rascunhos',
           _MarketingCaseStatusFilter.draft,
           SFIcons.edit,
         ),

@@ -90,11 +90,21 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       children: [
-        const _InsetGroupHeader(title: 'Relatórios Consolidados', count: 3),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 4, 4, 10),
+          child: Text(
+            'Relatórios Consolidados',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.1,
+              color: context.premiumTextSecondary,
+            ),
+          ),
+        ),
         if (!hasAnySource)
           _PremiumEmptyState(
-            message:
-                'Sem dados para consolidar. Gere relatórios de visita, ocorrência ou marketing no mapa.',
+            message: 'Nada para consolidar ainda.',
             ctaLabel: 'Abrir mapa',
             onCta: () => context.go(AppRoutes.map),
           )
@@ -108,12 +118,11 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
           ),
           if (needsProducerPick)
             const _PremiumEmptyState(
-              message:
-                  'Selecione um produtor para consolidar visitas e combinar relatórios.',
+              message: 'Escolha o produtor.',
             )
           else if (effectiveClientId == null)
             const _PremiumEmptyState(
-              message: 'Nenhum relatório vinculado a produtor para consolidar.',
+              message: 'Nada vinculado a um produtor.',
             )
           else ...[
             _GeneratedReportCard(
@@ -121,7 +130,7 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
                 icon: SFIcons.business,
                 accent: const Color(0xFF2C5564),
               ),
-              eyebrow: 'Gerado sob demanda',
+              eyebrow: 'Toque para abrir',
               title: 'Resumo da Propriedade',
               subtitle: _propertySubtitle(scopedVisits),
               date: nowLabel,
@@ -137,7 +146,7 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
                 icon: SFIcons.calendar,
                 accent: context.themeAccent,
               ),
-              eyebrow: 'Gerado sob demanda',
+              eyebrow: 'Toque para abrir',
               title: 'Histórico de Visitas',
               subtitle: '${scopedVisits.length} visita(s)',
               date: nowLabel,
@@ -168,6 +177,8 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
         .expand((report) => report.talhoes)
         .map((talhao) => talhao.talhaoId)
         .toSet();
-    return '${farms.length} propriedade(s), ${talhoes.length} talhão(ões)';
+    final farmLabel = farms.length == 1 ? 'propriedade' : 'propriedades';
+    final talhaoLabel = talhoes.length == 1 ? 'talhão' : 'talhões';
+    return '${farms.length} $farmLabel, ${talhoes.length} $talhaoLabel';
   }
 }

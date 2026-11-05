@@ -149,7 +149,7 @@ class _RelatorioFormScreenState extends ConsumerState<RelatorioFormScreen> {
                     maxLines: 6,
                     style: theme.textTheme.bodyLarge,
                     decoration: InputDecoration(
-                      labelText: 'Observações (Notas customizadas)',
+                      labelText: 'Observações',
                       filled: true,
                       fillColor: context.premiumSurface,
                       border: OutlineInputBorder(
