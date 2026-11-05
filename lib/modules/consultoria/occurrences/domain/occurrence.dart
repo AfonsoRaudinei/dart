@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/painting.dart';
 import '../../../../core/services/sync_status_contract.dart';
 import '../../../../core/utils/app_logger.dart';
+import 'occurrence_andamento.dart';
 
 enum SyncStatus {
   local,
@@ -182,6 +183,9 @@ class Occurrence {
   final String? avaliacaoPlantio; // "boa" | "ruim"
   final String? objetivoPlantio;
 
+  final String? andamento;
+  final String? responsavelNome;
+
   Occurrence({
     required this.id,
     this.visitSessionId,
@@ -221,6 +225,8 @@ class Occurrence {
     this.estandePlantas,
     this.avaliacaoPlantio,
     this.objetivoPlantio,
+    this.andamento = 'aberta',
+    this.responsavelNome,
   }) : updatedAt = updatedAt ?? DateTime.now();
 
   factory Occurrence.fromMap(Map<String, dynamic> map) {
@@ -276,6 +282,11 @@ class Occurrence {
         map['avaliacao_plantio'] as String?,
       ),
       objetivoPlantio: map['objetivo_plantio'] as String?,
+      andamento: OccurrenceAndamento.normalizeStorage(
+            map['andamento'] as String?,
+          ) ??
+          OccurrenceAndamento.aberta.storageValue,
+      responsavelNome: map['responsavel_nome'] as String?,
     );
   }
 
@@ -326,6 +337,8 @@ class Occurrence {
       'estande_plantas': estandePlantas,
       'avaliacao_plantio': avaliacaoPlantio,
       'objetivo_plantio': objetivoPlantio,
+      'andamento': andamento ?? OccurrenceAndamento.aberta.storageValue,
+      'responsavel_nome': responsavelNome,
     };
   }
 
@@ -369,6 +382,9 @@ class Occurrence {
     int? estandePlantas,
     String? avaliacaoPlantio,
     String? objetivoPlantio,
+    String? andamento,
+    String? responsavelNome,
+    bool clearResponsavelNome = false,
   }) {
     return Occurrence(
       id: id ?? this.id,
@@ -409,8 +425,17 @@ class Occurrence {
       estandePlantas: estandePlantas ?? this.estandePlantas,
       avaliacaoPlantio: avaliacaoPlantio ?? this.avaliacaoPlantio,
       objetivoPlantio: objetivoPlantio ?? this.objetivoPlantio,
+      andamento: andamento ?? this.andamento,
+      responsavelNome: clearResponsavelNome
+          ? null
+          : (responsavelNome ?? this.responsavelNome),
     );
   }
+
+  OccurrenceAndamento get andamentoEnum =>
+      OccurrenceAndamento.fromStorage(andamento);
+
+  String get andamentoLabel => andamentoEnum.label;
 
   Map<String, double>? getCoordinates() {
     if (_validCoordinates(lat, long)) {
