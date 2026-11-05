@@ -51,6 +51,8 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
   TalhaoMapLabelPrefs? _lastLabelPrefs;
   String? _lastNdviOverlayId;
   bool _lastNdviCover = false;
+  DrawingState? _lastDrawingState;
+  List<LatLng>? _lastGpsVertices;
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +80,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
         final intersectingIndices =
             widget.controller.intersectingSegmentIndices;
         final currentState = widget.controller.currentState;
+        final gpsVertices = widget.controller.gpsVertices;
         final holeCutActive = widget.controller.isCuttingHole;
         final holeCutFeatureId = widget.controller.holeCutFeatureId;
         final sketchVerticesOwnedByEditLayer =
@@ -105,7 +108,9 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
             _lastAreaUnit != areaUnit ||
             _lastLabelPrefs != labelPrefs ||
             _lastNdviOverlayId != ndviOverlayId ||
-            _lastNdviCover != ndviCover;
+            _lastNdviCover != ndviCover ||
+            _lastDrawingState != currentState ||
+            !_samePoints(_lastGpsVertices, gpsVertices);
 
         if (!needsRebuild &&
             _cachedPolygons != null &&
@@ -137,6 +142,8 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
         _lastLabelPrefs = labelPrefs;
         _lastNdviOverlayId = ndviOverlayId;
         _lastNdviCover = ndviCover;
+        _lastDrawingState = currentState;
+        _lastGpsVertices = List.of(gpsVertices);
 
         final polygons = <Polygon>[];
         final polylines = <Polyline>[];
@@ -235,9 +242,28 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
           );
         }
 
-        if (liveGeo is DrawingPolygon || liveGeo is DrawingMultiPolygon) {
-          final isGpsWalk =
-              widget.controller.currentState == DrawingState.gpsTracking;
+        if (currentState == DrawingState.gpsTracking &&
+            gpsVertices.isNotEmpty) {
+          if (gpsVertices.length >= 2) {
+            polylines.add(
+              Polyline(
+                points: gpsVertices,
+                color: _gpsOutlineHalo,
+                strokeWidth: 7,
+              ),
+            );
+            polylines.add(
+              Polyline(points: gpsVertices, color: Colors.red, strokeWidth: 3),
+            );
+          }
+          markers.add(_gpsTipMarker(gpsVertices.first, isStart: true));
+          if (gpsVertices.length >= 2) {
+            markers.add(_gpsTipMarker(gpsVertices.last, isStart: false));
+          }
+        }
+
+        if ((liveGeo is DrawingPolygon || liveGeo is DrawingMultiPolygon) &&
+            currentState != DrawingState.gpsTracking) {
           final isImportPreview =
               widget.controller.currentState == DrawingState.importPreview ||
               widget.controller.interactionMode ==
@@ -250,40 +276,29 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
             if (rings.isEmpty) continue;
             final outerRing = _toLatLngRing(rings.first);
             if (outerRing.length >= 2) {
-              final outlineColor = isGpsWalk ? Colors.red : _manualOutlineColor;
-              final haloColor = isGpsWalk
-                  ? _gpsOutlineHalo
-                  : _manualOutlineHalo;
-
               polylines.add(
                 Polyline(
                   points: outerRing,
-                  color: haloColor,
-                  strokeWidth: isGpsWalk ? 7 : 8,
+                  color: _manualOutlineHalo,
+                  strokeWidth: 8,
                 ),
               );
               polylines.add(
                 Polyline(
                   points: outerRing,
-                  color: outlineColor,
-                  strokeWidth: isGpsWalk ? 3 : 4,
-                  pattern: isGpsWalk
-                      ? const StrokePattern.solid()
-                      : const StrokePattern.dotted(),
+                  color: _manualOutlineColor,
+                  strokeWidth: 4,
+                  pattern: const StrokePattern.dotted(),
                 ),
               );
             }
             polygons.add(
               _polygonFromRings(
                 rings,
-                color: isGpsWalk
-                    ? Colors.red.withValues(alpha: 0.18)
-                    : Colors.white.withValues(alpha: 0.2),
-                borderColor: isGpsWalk ? Colors.red : Colors.white,
-                borderStrokeWidth: isGpsWalk ? 2.0 : 3,
-                pattern: isGpsWalk
-                    ? const StrokePattern.solid()
-                    : const StrokePattern.dotted(),
+                color: Colors.white.withValues(alpha: 0.2),
+                borderColor: Colors.white,
+                borderStrokeWidth: 3,
+                pattern: const StrokePattern.dotted(),
               ),
             );
           }
@@ -345,6 +360,26 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
       if (previous[i] != current[i]) return false;
     }
     return true;
+  }
+
+  Marker _gpsTipMarker(LatLng point, {required bool isStart}) {
+    final size = isStart ? 18.0 : 16.0;
+    return Marker(
+      point: point,
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isStart ? const Color(0xFF30D158) : Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isStart ? Colors.white : Colors.red,
+            width: 2,
+          ),
+        ),
+      ),
+    );
   }
 
   Marker _pivotCenterMarker(LatLng point) {
