@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:soloforte_app/core/contracts/i_occurrence_access_reader.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
+import 'package:soloforte_app/core/database/database_schema_utils.dart';
 import 'package:soloforte_app/core/services/sync_retry_runner.dart';
 import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
@@ -213,11 +214,36 @@ class OccurrenceSyncService {
       localId: localId,
       cachedByUserId: isOwned ? null : currentUserId,
     );
+    final preservedFieldId = await _preservedFieldId(db, localId);
+    if (preservedFieldId != null) {
+      localData['field_id'] = preservedFieldId;
+    }
     await db.insert(
       'occurrences',
       localData,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+  }
+
+  /// `field_id` é só local (v49). O replace do pull não pode apagá-lo.
+  Future<String?> _preservedFieldId(DatabaseExecutor db, String localId) async {
+    if (!await DatabaseSchemaUtils.columnExists(
+      db,
+      'occurrences',
+      'field_id',
+    )) {
+      return null;
+    }
+    final prior = await db.query(
+      'occurrences',
+      columns: ['field_id'],
+      where: 'id = ?',
+      whereArgs: [localId],
+      limit: 1,
+    );
+    if (prior.isEmpty) return null;
+    final value = prior.single['field_id']?.toString().trim() ?? '';
+    return value.isEmpty ? null : value;
   }
 
   Future<void> _removeLegacySharedCache(
