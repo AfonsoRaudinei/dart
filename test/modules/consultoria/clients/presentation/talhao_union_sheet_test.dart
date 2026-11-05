@@ -35,6 +35,9 @@ class _FakeDrawingFieldWriter implements IDrawingFieldWriter {
     String? cultura,
     String? material,
     String? safra,
+    String? dataPlantio,
+    String? dataEmergencia,
+    String? cicloDias,
   }) async {}
 
   @override
@@ -51,16 +54,8 @@ class _FakeDrawingFieldWriter implements IDrawingFieldWriter {
 
 void main() {
   const candidates = [
-    TalhaoUnionCandidate(
-      id: 'field-b',
-      name: 'Talhão Sul',
-      areaHa: 4.5,
-    ),
-    TalhaoUnionCandidate(
-      id: 'field-c',
-      name: 'Talhão Leste',
-      areaHa: 2.1,
-    ),
+    TalhaoUnionCandidate(id: 'field-b', name: 'Talhão Sul', areaHa: 4.5),
+    TalhaoUnionCandidate(id: 'field-c', name: 'Talhão Leste', areaHa: 2.1),
   ];
 
   testWidgets('TalhaoUnionSheet confirma união via writer', (tester) async {
@@ -73,9 +68,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          iDrawingFieldWriterProvider.overrideWithValue(writer),
-        ],
+        overrides: [iDrawingFieldWriterProvider.overrideWithValue(writer)],
         child: const MaterialApp(
           home: Scaffold(
             body: TalhaoUnionSheet(
@@ -97,7 +90,10 @@ void main() {
     expect(find.text('Talhão Sul'), findsOneWidget);
 
     expect(find.text('Talhão principal'), findsOneWidget);
-    expect(find.text('A segunda área será removida após a união.'), findsOneWidget);
+    expect(
+      find.text('A segunda área será removida após a união.'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('Talhão Sul'));
     await tester.pumpAndSettle();
