@@ -29,22 +29,6 @@ class _EmptyVisitLookup implements IActiveVisitContextLookup {
   Future<ActiveVisitContext?> getActiveContext() async => null;
 }
 
-Future<void> _tapAreaVisitadaCategory(WidgetTester tester) async {
-  final target = find.text('Área\nVisitada');
-  if (target.evaluate().isEmpty) {
-    await tester.dragUntilVisible(
-      target,
-      find.byType(ListView).first,
-      const Offset(0, -150),
-    );
-  } else {
-    await tester.ensureVisible(target);
-  }
-  await tester.pumpAndSettle();
-  await tester.tap(target);
-  await tester.pumpAndSettle();
-}
-
 Future<void> _tapSave(WidgetTester tester) async {
   final save = find.text('Salvar localização');
   if (save.evaluate().isEmpty) {
@@ -139,44 +123,47 @@ void main() {
       expect(find.text('Cultivar & Plantio'), findsNothing);
     });
 
-    testWidgets('salva sem cliente e sem descrição quando categoria selecionada', (
-      tester,
-    ) async {
-      OccurrenceFormData? captured;
+    testWidgets(
+      'salva sem cliente e sem descrição quando categoria selecionada',
+      (tester) async {
+        OccurrenceFormData? captured;
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            currentUserRoleProvider.overrideWithValue(UserRole.consultor),
-            clientLookupProvider.overrideWithValue(_FakeClientLookup(const [])),
-            activeVisitContextLookupProvider.overrideWithValue(
-              _EmptyVisitLookup(),
-            ),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: OccurrenceCreationSheet(
-                latitude: -10.5,
-                longitude: -48.2,
-                onConfirm: (data) async {
-                  captured = data;
-                },
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              currentUserRoleProvider.overrideWithValue(UserRole.consultor),
+              clientLookupProvider.overrideWithValue(
+                _FakeClientLookup(const []),
+              ),
+              activeVisitContextLookupProvider.overrideWithValue(
+                _EmptyVisitLookup(),
+              ),
+            ],
+            child: MaterialApp(
+              home: Scaffold(
+                body: OccurrenceCreationSheet(
+                  latitude: -10.5,
+                  longitude: -48.2,
+                  initialCategoryValue: kOccurrenceAreaVisitadaCategory,
+                  onConfirm: (data) async {
+                    captured = data;
+                  },
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      await _tapAreaVisitadaCategory(tester);
-      await _tapSave(tester);
+        await _tapSave(tester);
 
-      expect(captured, isNotNull);
-      expect(captured!.category, kOccurrenceAreaVisitadaCategory);
-      expect(captured!.clientId, isNull);
-      expect(captured!.description, isEmpty);
-      expect(captured!.hasValidMapPin, isTrue);
-    });
+        expect(captured, isNotNull);
+        expect(captured!.category, kOccurrenceAreaVisitadaCategory);
+        expect(captured!.clientId, isNull);
+        expect(captured!.description, isEmpty);
+        expect(captured!.hasValidMapPin, isTrue);
+      },
+    );
 
     test('vínculo posterior remove pendingClientLink', () {
       final created = Occurrence(
