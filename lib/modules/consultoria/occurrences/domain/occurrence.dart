@@ -198,6 +198,8 @@ class Occurrence {
 
   /// JSON reservado para resultados analíticos (fase 2).
   final String? amostraAnalisesJson;
+  /// Talhão resolvido na criação (SQLite v49). Nulo em registros legados.
+  final String? fieldId;
 
   Occurrence({
     required this.id,
@@ -247,6 +249,7 @@ class Occurrence {
     this.amostraTramite,
     this.amostraLaudoTexto,
     this.amostraAnalisesJson,
+    this.fieldId,
   }) : updatedAt = updatedAt ?? DateTime.now();
 
   factory Occurrence.fromMap(Map<String, dynamic> map) {
@@ -314,6 +317,7 @@ class Occurrence {
       amostraTramite: map['amostra_tramite'] as String?,
       amostraLaudoTexto: map['amostra_laudo_texto'] as String?,
       amostraAnalisesJson: map['amostra_analises_json'] as String?,
+      fieldId: map['field_id'] as String?,
     );
   }
 
@@ -373,6 +377,7 @@ class Occurrence {
       'amostra_tramite': amostraTramite,
       'amostra_laudo_texto': amostraLaudoTexto,
       'amostra_analises_json': amostraAnalisesJson,
+      'field_id': fieldId,
     };
   }
 
@@ -432,6 +437,7 @@ class Occurrence {
     String? amostraLaudoTexto,
     bool clearAmostraLaudoTexto = false,
     String? amostraAnalisesJson,
+    String? fieldId,
   }) {
     return Occurrence(
       id: id ?? this.id,
@@ -490,6 +496,7 @@ class Occurrence {
           ? null
           : (amostraLaudoTexto ?? this.amostraLaudoTexto),
       amostraAnalisesJson: amostraAnalisesJson ?? this.amostraAnalisesJson,
+      fieldId: fieldId ?? this.fieldId,
     );
   }
 
