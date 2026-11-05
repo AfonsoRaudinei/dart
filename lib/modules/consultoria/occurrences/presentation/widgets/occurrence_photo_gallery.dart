@@ -157,8 +157,9 @@ class _OccurrencePhotoGalleryState extends State<OccurrencePhotoGallery> {
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final storedPath = widget.paths[index];
-          final resolved =
-              index < _resolvedPaths.length ? _resolvedPaths[index] : null;
+          final resolved = index < _resolvedPaths.length
+              ? _resolvedPaths[index]
+              : null;
           final caption = widget.captions[storedPath] ?? '';
           return _PhotoThumbnail(
             storedPath: storedPath,
@@ -172,11 +173,11 @@ class _OccurrencePhotoGalleryState extends State<OccurrencePhotoGallery> {
             onTap: resolved == null
                 ? null
                 : () => _openPreview(
-                      context,
-                      index: index,
-                      resolvedPath: resolved,
-                      caption: caption,
-                    ),
+                    context,
+                    index: index,
+                    resolvedPath: resolved,
+                    caption: caption,
+                  ),
           );
         },
       ),
@@ -402,11 +403,7 @@ class _PhotoThumbnail extends StatelessWidget {
                     color: Colors.black87,
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Icon(
-                    Icons.close,
-                    size: 12,
-                    color: Colors.white,
-                  ),
+                  child: const Icon(Icons.close, size: 12, color: Colors.white),
                 ),
               ),
             ),
@@ -450,6 +447,7 @@ class _PhotoPreviewScreen extends StatefulWidget {
 
 class _PhotoPreviewScreenState extends State<_PhotoPreviewScreen> {
   late final TextEditingController _captionCtrl;
+  bool _canPop = false;
 
   @override
   void initState() {
@@ -464,89 +462,94 @@ class _PhotoPreviewScreenState extends State<_PhotoPreviewScreen> {
   }
 
   void _close() {
-    Navigator.of(context).pop(widget.readOnly ? null : _captionCtrl.text);
+    if (_canPop) return;
+    setState(() => _canPop = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.of(context).pop(widget.readOnly ? null : _captionCtrl.text);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     return PopScope(
-      canPop: false,
+      canPop: _canPop,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
         _close();
       },
       child: Scaffold(
         backgroundColor: Colors.black,
+        resizeToAvoidBottomInset: true,
         body: SafeArea(
-          child: Stack(
+          child: Column(
             children: [
-              Positioned.fill(
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: widget.readOnly ? 72 : 128),
-                  child: Center(
-                    child: InteractiveViewer(
-                      minScale: 0.5,
-                      maxScale: 4,
-                      child: Image.file(
-                        File(widget.path),
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.broken_image_outlined,
-                          color: Colors.white54,
-                          size: 64,
-                        ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: Row(
+                  children: [
+                    IconButton.filled(
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white24,
+                        foregroundColor: Colors.white,
+                      ),
+                      tooltip: 'Fechar',
+                      onPressed: _close,
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: _close,
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text(
+                        'Fechar',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Center(
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4,
+                    child: Image.file(
+                      File(widget.path),
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.broken_image_outlined,
+                        color: Colors.white54,
+                        size: 64,
                       ),
                     ),
                   ),
                 ),
               ),
-              Positioned(
-                top: 8,
-                left: 8,
-                child: IconButton.filled(
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.white24,
-                    foregroundColor: Colors.white,
-                  ),
-                  tooltip: 'Fechar',
-                  onPressed: _close,
-                  icon: const Icon(Icons.close_rounded),
-                ),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: TextButton(
-                  onPressed: _close,
-                  style: TextButton.styleFrom(foregroundColor: Colors.white),
-                  child: const Text(
-                    'Fechar',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 16,
-                right: 16,
-                bottom: 16 + keyboard,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 child: widget.readOnly
                     ? (_captionCtrl.text.trim().isEmpty
-                        ? const SizedBox.shrink()
-                        : Text(
-                            _captionCtrl.text.trim(),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              height: 1.3,
-                            ),
-                          ))
+                          ? const SizedBox.shrink()
+                          : Text(
+                              _captionCtrl.text.trim(),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                height: 1.3,
+                              ),
+                            ))
                     : TextField(
                         key: const Key('occurrence_photo_caption_field'),
                         controller: _captionCtrl,
                         maxLines: 2,
                         maxLength: kOccurrencePhotoCaptionMaxLength,
+                        onTapOutside: (_) {
+                          FocusManager.instance.primaryFocus?.unfocus();
+                        },
                         style: const TextStyle(color: Colors.white),
                         cursorColor: Colors.white,
                         decoration: InputDecoration(
