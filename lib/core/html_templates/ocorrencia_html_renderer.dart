@@ -95,7 +95,7 @@ class OcorrenciaHtmlRenderer {
       ].join(' · '),
       'cultivar': RelatorioHtmlRenderer.escapeHtml(data['cultivar'] as String?),
       'estadio_fenologico': RelatorioHtmlRenderer.escapeHtml(
-        data['estadio_fenologico'] as String?,
+        _estadioLabel(data),
       ),
       'data_plantio_formatado': _formatDataPlantio(
         data['data_plantio'] as String?,
@@ -123,6 +123,7 @@ class OcorrenciaHtmlRenderer {
     final notas = _renderNotas(data['notas_categorias_json'] as String?);
     final metricas = _renderMetricas(data['metricas_json'] as String?);
     final nutrientes = _renderNutrientes(data['nutrientes_json'] as String?);
+    final estadioAtencao = _renderEstadioAtencao(data['estadio_atencao']);
 
     tpl = _resolveRepeatedIf(tpl, 'contexto_linha', contextoLinha.isNotEmpty);
     tpl = _resolveRepeatedIf(tpl, 'type', type.isNotEmpty);
@@ -147,6 +148,12 @@ class OcorrenciaHtmlRenderer {
       tpl,
       'estadio_fenologico',
       (data['estadio_fenologico'] as String?)?.isNotEmpty == true,
+    );
+    tpl = RelatorioHtmlRenderer.resolveIfBlock(
+      tpl,
+      'estadio_atencao',
+      include: estadioAtencao.isNotEmpty,
+      truthyHtml: estadioAtencao,
     );
     tpl = _resolveRepeatedIf(
       tpl,
@@ -634,6 +641,34 @@ class OcorrenciaHtmlRenderer {
     return _section(
       'Nutrientes identificados',
       '<p class="sf-prose">${nutrientes.join(', ')}</p>',
+    );
+  }
+
+  static String? _estadioLabel(Map<String, dynamic> data) {
+    final label = (data['estadio_fenologico_label'] as String?)?.trim() ?? '';
+    if (label.isNotEmpty) return label;
+    return data['estadio_fenologico'] as String?;
+  }
+
+  static String _renderEstadioAtencao(Object? raw) {
+    final List<dynamic> items;
+    if (raw is List) {
+      items = raw;
+    } else if (raw is String && raw.trim().isNotEmpty) {
+      items = _decodeList(raw);
+    } else {
+      return '';
+    }
+    final itens = items
+        .map((item) => item?.toString().trim() ?? '')
+        .where((item) => item.isNotEmpty)
+        .map((item) => '<li>${RelatorioHtmlRenderer.escapeHtml(item)}</li>')
+        .toList();
+    if (itens.isEmpty) return '';
+
+    return _section(
+      'Atenção neste estádio',
+      '<ul class="sf-prose">${itens.join()}</ul>',
     );
   }
 
