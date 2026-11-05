@@ -7,9 +7,12 @@ import '../../../../core/contracts/i_field_lookup_provider.dart';
 import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 import '../../../../core/html_templates/ocorrencia_html_renderer.dart';
 import '../../../../core/html_templates/relatorio_html_renderer.dart';
+import '../../../../core/contracts/i_field_lookup.dart';
 import '../../occurrences/domain/occurrence.dart';
 import '../../occurrences/domain/occurrence_amostra_solo.dart';
+import '../../occurrences/domain/occurrence_historico_talhao.dart';
 import '../../occurrences/domain/occurrence_photo_paths.dart';
+import '../../occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../occurrences/presentation/widgets/occurrence_fenologia_data.dart';
 import '../../relatorio_visita/data/image_storage_service.dart';
 import '../presentation/relatorios_occurrence_location_resolver.dart';
@@ -45,6 +48,62 @@ Future<String> _occurrenceClienteNome(WidgetRef ref, String? clientId) async {
   if (lookup == null) return '';
   final name = await _resolveClienteNome(lookup, id);
   return name == id ? '' : name;
+}
+
+Future<String> _historicoTalhaoLinha(
+  WidgetRef ref,
+  Occurrence occurrence,
+) async {
+  try {
+    if (isHistoricoExcludedOccurrence(occurrence)) return '';
+    if (occurrencePragaKey(occurrence) == null) return '';
+    final clientId = occurrence.clientId?.trim() ?? '';
+    if (clientId.isEmpty) return '';
+
+    final fieldLookup = _tryReadContract(() => ref.read(iFieldLookupProvider));
+    var fieldId = occurrence.fieldId?.trim() ?? '';
+    if (fieldId.isEmpty) {
+      fieldId =
+          (await resolveFieldIdForOccurrence(
+            clientId: occurrence.clientId,
+            lat: occurrence.lat,
+            lng: occurrence.long,
+            visitSessionId: occurrence.visitSessionId,
+            farmLookup: _tryReadContract(() => ref.read(iFarmLookupProvider)),
+            fieldLookup: fieldLookup,
+            visitSessionLookup: _tryReadContract(
+              () => ref.read(visitSessionLookupProvider),
+            ),
+          ))?.trim() ??
+          '';
+    }
+    if (fieldId.isEmpty) return '';
+
+    final repo = _tryReadContract(() => ref.read(occurrenceRepositoryProvider));
+    if (repo == null) return '';
+    final rows = await repo.getOccurrencesByClientId(clientId);
+    return buildOccurrenceHistoricoTalhaoLinha(
+          current: occurrence,
+          candidates: rows,
+          fieldId: fieldId,
+          field: await _fieldForHistorico(fieldLookup, fieldId),
+        ) ??
+        '';
+  } catch (_) {
+    return '';
+  }
+}
+
+Future<FieldSummary?> _fieldForHistorico(
+  IFieldLookup? fieldLookup,
+  String fieldId,
+) async {
+  if (fieldLookup == null) return null;
+  try {
+    return await fieldLookup.findById(fieldId);
+  } catch (_) {
+    return null;
+  }
 }
 
 EstadioData? _findEstadio(String? code) {
@@ -94,6 +153,7 @@ Future<String> buildOccurrenceReportHtml(
   );
   data['fazenda_nome'] = location.fazenda;
   data['talhao_nome'] = location.talhao;
+  data['historico_talhao_linha'] = await _historicoTalhaoLinha(ref, occurrence);
   final estadio = _findEstadio(occurrence.estadioFenologico);
   if (estadio != null) {
     data['estadio_fenologico_label'] = estadio.name;
