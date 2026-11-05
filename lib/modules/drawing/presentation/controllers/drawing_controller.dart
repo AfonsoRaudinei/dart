@@ -178,6 +178,9 @@ class DrawingController extends ChangeNotifier {
   /// Indica se o rastreamento GPS está pausado.
   bool get gpsIsPaused => _gpsOrchestrator.gpsIsPaused;
 
+  /// Stream GPS encerrado com o traço aberto ainda no mapa.
+  bool get gpsStoppedOpen => _gpsOrchestrator.gpsStoppedOpen;
+
   /// Qualidade atual do sinal GPS para o overlay.
   GpsQuality get gpsAccuracyQuality => _gpsOrchestrator.gpsAccuracyQuality;
 
@@ -407,15 +410,11 @@ class DrawingController extends ChangeNotifier {
 
   // Retorna a geometria sendo desenhada ou o preview de importação
   DrawingGeometry? get liveGeometry {
-    // GPS Tracking — exibe polígono parcial em tempo real
-    if (_stateMachine.currentState == DrawingState.gpsTracking &&
-        _gpsOrchestrator.gpsVertices.length >= 2) {
-      final ring = _gpsOrchestrator.gpsVertices
-          .map((p) => <double>[p.longitude, p.latitude])
-          .toList();
-      // Fecha visualmente o anel para o usuário ver o polígono se formando
-      ring.add(List<double>.from(ring.first));
-      return DrawingPolygon(coordinates: [ring]);
+    // GPS: o anel fica aberto em [gpsVertices].
+    // DrawingPolygon fecha o anel no construtor (duplica o primeiro ponto).
+    // O fechamento só acontece em finalizeGpsTracking().
+    if (_stateMachine.currentState == DrawingState.gpsTracking) {
+      return null;
     }
 
     final isEditing =
@@ -1602,6 +1601,10 @@ class DrawingController extends ChangeNotifier {
 
   void finalizeGpsTracking() => _gpsOrchestrator.finalizeGpsTracking();
 
+  /// Para o stream GPS e mantém os vértices. Não fecha o anel.
+  void stopGpsStreamKeepingVertices() =>
+      _gpsOrchestrator.stopGpsStreamKeepingVertices();
+
   void addManualGpsPoint(LatLng point) =>
       _gpsOrchestrator.addManualGpsPoint(point);
 
@@ -1946,7 +1949,9 @@ class DrawingController extends ChangeNotifier {
   int get editHoleRingCount {
     final geometry = _editGeometry;
     if (geometry is! DrawingPolygon) return 0;
-    return geometry.coordinates.length > 1 ? geometry.coordinates.length - 1 : 0;
+    return geometry.coordinates.length > 1
+        ? geometry.coordinates.length - 1
+        : 0;
   }
 
   /// Indica se o usuário pode excluir um furo na edição atual.
