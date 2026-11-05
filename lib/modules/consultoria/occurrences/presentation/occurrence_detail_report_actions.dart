@@ -19,6 +19,7 @@ import '../../relatorios/infra/occurrence_report_html_builder.dart';
 import '../../relatorios/presentation/relatorios_occurrence_location_resolver.dart';
 import 'controllers/occurrence_controller.dart';
 import '../domain/occurrence.dart';
+import '../domain/occurrence_andamento.dart';
 import 'widgets/occurrence_creation_sheet.dart';
 
 HtmlReportViewerActions occurrenceReportHtmlViewerActions(
@@ -88,7 +89,11 @@ HtmlReportViewerActions occurrenceReportHtmlViewerActions(
     onConfirm: occurrence.status != 'confirmed'
         ? (viewerContext) async {
             await repository.updateOccurrence(
-              occurrence.copyWith(status: 'confirmed'),
+              occurrence.copyWith(
+                status: 'confirmed',
+                andamento: occurrence.andamento ??
+                    OccurrenceAndamento.aberta.storageValue,
+              ),
             );
             container.invalidate(occurrencesListProvider);
             schedulePopParentSheetAfterViewer();

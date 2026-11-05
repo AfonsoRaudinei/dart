@@ -5,30 +5,38 @@ import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/occurrence.dart';
+import '../../domain/occurrence_andamento.dart';
 
 /// Filtros minimalistas para ocorrências
 class OccurrenceFilters {
   final Set<OccurrenceCategory> categories;
   final Set<String> statuses; // 'draft', 'confirmed'
+  final Set<String> andamentos;
   final bool onlyActiveVisit;
 
   const OccurrenceFilters({
     this.categories = const {},
     this.statuses = const {},
+    this.andamentos = const {},
     this.onlyActiveVisit = false,
   });
 
   bool get hasAnyFilter =>
-      categories.isNotEmpty || statuses.isNotEmpty || onlyActiveVisit;
+      categories.isNotEmpty ||
+      statuses.isNotEmpty ||
+      andamentos.isNotEmpty ||
+      onlyActiveVisit;
 
   OccurrenceFilters copyWith({
     Set<OccurrenceCategory>? categories,
     Set<String>? statuses,
+    Set<String>? andamentos,
     bool? onlyActiveVisit,
   }) {
     return OccurrenceFilters(
       categories: categories ?? this.categories,
       statuses: statuses ?? this.statuses,
+      andamentos: andamentos ?? this.andamentos,
       onlyActiveVisit: onlyActiveVisit ?? this.onlyActiveVisit,
     );
   }
@@ -45,6 +53,12 @@ class OccurrenceFilters {
     if (statuses.isNotEmpty) {
       final occStatus = occurrence.status ?? 'draft';
       if (!statuses.contains(occStatus)) return false;
+    }
+
+    if (andamentos.isNotEmpty) {
+      final value = occurrence.andamento ??
+          OccurrenceAndamento.aberta.storageValue;
+      if (!andamentos.contains(value)) return false;
     }
 
     // Filtro de visita ativa
@@ -229,6 +243,49 @@ class OccurrenceFilterSelector extends StatelessWidget {
                   onChanged(filters.copyWith(statuses: newStatuses));
                 },
               ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Andamento',
+            style: Theme.of(context).textTheme.labelSmall!.copyWith(
+              color: sectionLabel,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final step in OccurrenceAndamento.values)
+                FilterChip(
+                  selected: filters.andamentos.contains(step.storageValue),
+                  label: Text(
+                    step.label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: filters.andamentos.contains(step.storageValue)
+                          ? selectedLabel
+                          : unselectedLabel,
+                    ),
+                  ),
+                  selectedColor: occurrenceAndamentoChipColor(step),
+                  backgroundColor: chipBg,
+                  checkmarkColor: selectedLabel,
+                  side: isIos
+                      ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+                      : null,
+                  onSelected: (selected) {
+                    final next = Set<String>.from(filters.andamentos);
+                    if (selected) {
+                      next.add(step.storageValue);
+                    } else {
+                      next.remove(step.storageValue);
+                    }
+                    onChanged(filters.copyWith(andamentos: next));
+                  },
+                ),
             ],
           ),
           if (activeVisitId != null) ...[

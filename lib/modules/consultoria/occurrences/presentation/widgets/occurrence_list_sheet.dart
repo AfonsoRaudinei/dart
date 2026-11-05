@@ -15,6 +15,7 @@ import 'package:soloforte_app/core/contracts/i_visit_session_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_visit_session_lookup_provider.dart';
 import './occurrence_filters.dart';
 import './occurrence_fenologia_data.dart';
+import '../../domain/occurrence_andamento.dart';
 import './occurrence_photo_gallery.dart';
 import '../../domain/occurrence_photo_paths.dart';
 
@@ -523,6 +524,13 @@ class _OccurrenceListItem extends StatelessWidget {
                           const _MiniChip(
                             label: 'Rascunho',
                             color: Color(0xFFFF9500),
+                          )
+                        else
+                          _MiniChip(
+                            label: occurrence.andamentoLabel,
+                            color: occurrenceAndamentoChipColor(
+                              occurrence.andamentoEnum,
+                            ),
                           ),
                         if (occurrence.pendingClientLink)
                           const _MiniChip(
@@ -570,6 +578,20 @@ class _OccurrenceListItem extends StatelessWidget {
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    if (!isDraft &&
+                        (occurrence.responsavelNome?.trim().isNotEmpty ??
+                            false)) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Resp.: ${occurrence.responsavelNome!.trim()}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: mutedText,
+                          fontSize: 11,
+                        ),
                       ),
                     ],
 
