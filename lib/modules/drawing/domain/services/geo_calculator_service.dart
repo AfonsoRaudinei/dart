@@ -41,6 +41,20 @@ class GeoCalculatorService {
     return total;
   }
 
+  /// Distância do caminho aberto, em metros.
+  ///
+  /// Soma cada segmento i → i+1. Não inclui a volta ao início.
+  /// Retorna `0.0` se [points] tiver menos de 2 elementos.
+  static double calculateOpenPathMeters(List<LatLng> points) {
+    if (points.length < 2) return 0.0;
+
+    double total = 0.0;
+    for (int i = 0; i < points.length - 1; i++) {
+      total += _haversineM(points[i], points[i + 1]);
+    }
+    return total;
+  }
+
   /// Calcula a área do polígono em metros quadrados.
   ///
   /// Usa a fórmula de Gauss (Shoelace) com projeção local plana.
@@ -61,10 +75,12 @@ class GeoCalculatorService {
         _earthRadiusM * math.cos(lat0 * degToRad) * degToRad;
 
     // Projetar pontos em coordenadas locais (metros)
-    final xs =
-        points.map((p) => (p.longitude - lng0) * metersPerDegLng).toList();
-    final ys =
-        points.map((p) => (p.latitude - lat0) * metersPerDegLat).toList();
+    final xs = points
+        .map((p) => (p.longitude - lng0) * metersPerDegLng)
+        .toList();
+    final ys = points
+        .map((p) => (p.latitude - lat0) * metersPerDegLat)
+        .toList();
 
     // Shoelace (Gauss)
     double area = 0.0;
@@ -90,7 +106,8 @@ class GeoCalculatorService {
     final sinHalfDLat = math.sin(dLat / 2);
     final sinHalfDLng = math.sin(dLng / 2);
 
-    final h = sinHalfDLat * sinHalfDLat +
+    final h =
+        sinHalfDLat * sinHalfDLat +
         math.cos(lat1) * math.cos(lat2) * sinHalfDLng * sinHalfDLng;
 
     return 2 * _earthRadiusM * math.asin(math.sqrt(h.clamp(0.0, 1.0)));
