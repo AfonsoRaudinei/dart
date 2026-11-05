@@ -35,6 +35,9 @@ class _FakeDrawingFieldWriter implements IDrawingFieldWriter {
     String? cultura,
     String? material,
     String? safra,
+    String? dataPlantio,
+    String? dataEmergencia,
+    String? cicloDias,
   }) async {}
 
   @override
