@@ -11,6 +11,9 @@ enum GpsWalkStatus {
   /// Coleta suspensa temporariamente; pontos preservados.
   paused,
 
+  /// GPS parado com o traço aberto. Nada foi salvo.
+  stoppedOpen,
+
   /// Sessão concluída; geometria enviada ao DrawingController.
   finished,
 }
@@ -18,11 +21,11 @@ enum GpsWalkStatus {
 /// Estado imutável de uma sessão de medição GPS Walk.
 ///
 /// Representa o ciclo completo de coleta de pontos GPS em campo:
-/// idle → measuring → paused → measuring → finished
+/// idle → measuring → paused → measuring → stoppedOpen | finished
 ///
 /// ### Responsabilidades
 /// - Armazenar pontos coletados (espelho de DrawingController.gpsVertices)
-/// - Armazenar métricas calculadas em tempo real (perímetro + área)
+/// - Armazenar a distância do caminho aberto (sem volta ao início)
 /// - Rastrear modo de coleta (automático vs manual)
 ///
 /// ### Imutabilidade
@@ -31,7 +34,7 @@ enum GpsWalkStatus {
 /// Ao finalizar, geometria é transferida ao DrawingController.
 ///
 /// ### Validação
-/// Mínimo de 3 pontos para habilitar conclusão (checado no notifier/UI).
+/// Fechar o desenho exige 3 pontos. Parar sem fechar exige 2.
 class GpsWalkSession {
   /// Pontos GPS aceitos durante a sessão.
   final List<LatLng> points;
@@ -39,10 +42,18 @@ class GpsWalkSession {
   /// Status atual da sessão.
   final GpsWalkStatus status;
 
-  /// Perímetro calculado em tempo real (metros).
+  /// Distância do caminho aberto, em metros (sem volta ao início).
+  ///
+  /// [perimeterMeters] recebe o mesmo valor enquanto o traço está aberto,
+  /// para leituras antigas não somarem a aresta de fechamento.
+  final double distanceMeters;
+
+  /// Espelho de [distanceMeters] enquanto o traço está aberto.
   final double perimeterMeters;
 
   /// Área calculada em tempo real (metros quadrados).
+  ///
+  /// Não é exibida enquanto o traço está aberto.
   final double areaSquareMeters;
 
   /// Modo de coleta: `true` = GPS automático, `false` = toque manual.
@@ -59,6 +70,7 @@ class GpsWalkSession {
     required this.status,
     required this.perimeterMeters,
     required this.areaSquareMeters,
+    this.distanceMeters = 0,
     this.isAutoMode = true,
     this.startedAt,
     this.finishedAt,
@@ -66,15 +78,19 @@ class GpsWalkSession {
 
   /// Estado inicial: nenhum ponto, modo idle, coleta automática.
   factory GpsWalkSession.initial() => const GpsWalkSession(
-        points: [],
-        status: GpsWalkStatus.idle,
-        perimeterMeters: 0,
-        areaSquareMeters: 0,
-        isAutoMode: true,
-      );
+    points: [],
+    status: GpsWalkStatus.idle,
+    distanceMeters: 0,
+    perimeterMeters: 0,
+    areaSquareMeters: 0,
+    isAutoMode: true,
+  );
 
-  /// `true` se há pontos suficientes para concluir o polígono.
+  /// Alias de pode fechar: liga o início ao fim (≥ 3 pontos).
   bool get canFinish => points.length >= 3;
+
+  /// `true` se há pontos suficientes para parar sem fechar (≥ 2).
+  bool get canStopOpen => points.length >= 2;
 
   /// Área em hectares (conveniência de exibição).
   double get areaHectares => areaSquareMeters / 10000.0;
@@ -82,6 +98,7 @@ class GpsWalkSession {
   GpsWalkSession copyWith({
     List<LatLng>? points,
     GpsWalkStatus? status,
+    double? distanceMeters,
     double? perimeterMeters,
     double? areaSquareMeters,
     bool? isAutoMode,
@@ -91,6 +108,7 @@ class GpsWalkSession {
     return GpsWalkSession(
       points: points ?? this.points,
       status: status ?? this.status,
+      distanceMeters: distanceMeters ?? this.distanceMeters,
       perimeterMeters: perimeterMeters ?? this.perimeterMeters,
       areaSquareMeters: areaSquareMeters ?? this.areaSquareMeters,
       isAutoMode: isAutoMode ?? this.isAutoMode,
@@ -102,7 +120,7 @@ class GpsWalkSession {
   @override
   String toString() =>
       'GpsWalkSession(status: $status, points: ${points.length}, '
-      'perimeter: ${perimeterMeters.toStringAsFixed(1)}m, '
+      'distance: ${distanceMeters.toStringAsFixed(1)}m, '
       'area: ${areaSquareMeters.toStringAsFixed(1)}m², '
       'autoMode: $isAutoMode)';
 }
