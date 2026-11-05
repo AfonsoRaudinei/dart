@@ -185,6 +185,11 @@ class Occurrence {
 
   final String? andamento;
   final String? responsavelNome;
+  /// Path local (`media/audio_….m4a`) — gravação de até 30 s.
+  final String? audioPath;
+
+  /// Duração gravada em segundos (1–30).
+  final int? audioDurationSec;
 
   Occurrence({
     required this.id,
@@ -227,6 +232,8 @@ class Occurrence {
     this.objetivoPlantio,
     this.andamento = 'aberta',
     this.responsavelNome,
+    this.audioPath,
+    this.audioDurationSec,
   }) : updatedAt = updatedAt ?? DateTime.now();
 
   factory Occurrence.fromMap(Map<String, dynamic> map) {
@@ -287,6 +294,8 @@ class Occurrence {
           ) ??
           OccurrenceAndamento.aberta.storageValue,
       responsavelNome: map['responsavel_nome'] as String?,
+      audioPath: map['audio_path'] as String?,
+      audioDurationSec: (map['audio_duration_sec'] as num?)?.toInt(),
     );
   }
 
@@ -339,6 +348,8 @@ class Occurrence {
       'objetivo_plantio': objetivoPlantio,
       'andamento': andamento ?? OccurrenceAndamento.aberta.storageValue,
       'responsavel_nome': responsavelNome,
+      'audio_path': audioPath,
+      'audio_duration_sec': audioDurationSec,
     };
   }
 
@@ -385,6 +396,10 @@ class Occurrence {
     String? andamento,
     String? responsavelNome,
     bool clearResponsavelNome = false,
+    String? audioPath,
+    bool clearAudioPath = false,
+    int? audioDurationSec,
+    bool clearAudioDurationSec = false,
   }) {
     return Occurrence(
       id: id ?? this.id,
@@ -429,6 +444,10 @@ class Occurrence {
       responsavelNome: clearResponsavelNome
           ? null
           : (responsavelNome ?? this.responsavelNome),
+      audioPath: clearAudioPath ? null : (audioPath ?? this.audioPath),
+      audioDurationSec: clearAudioDurationSec
+          ? null
+          : (audioDurationSec ?? this.audioDurationSec),
     );
   }
 
