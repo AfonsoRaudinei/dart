@@ -7,6 +7,7 @@ import '../../../settings/domain/entities/user_profile.dart';
 import '../../../settings/presentation/providers/settings_providers.dart';
 import '../../../settings/presentation/providers/user_profile_provider.dart';
 import '../../publicacoes/providers/publicacao_providers.dart';
+import '../infra/relatorio_visit_ndvi_enrichment.dart';
 import '../models/relatorio_tecnico.dart';
 
 class ReportBrandingContext {
@@ -65,8 +66,14 @@ Future<String> buildRelatorioVisitHtml(
     fallbackConsultantRole: 'Consultoria',
   );
 
+  final relatorioJson = relatorio.toJson();
+  relatorioJson['talhoes'] = await enrichRelatorioTalhoesWithNdvi(
+    ref,
+    relatorio.talhoes,
+  );
+
   return VisitaHtmlRenderer.render(
-    relatorio: relatorio.toJson(),
+    relatorio: relatorioJson,
     agronomistNome: branding.consultantName,
     clienteNome: clienteNome,
     publicacoesTitulos: publicacoesTitulos,
