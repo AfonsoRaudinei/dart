@@ -12,6 +12,7 @@ import '../../../../core/utils/share_position.dart';
 import '../../../../core/router/app_routes.dart';
 import '../infra/consultoria_report_export_data.dart';
 import '../infra/relatorio_visit_html_builder.dart';
+import '../models/relatorio_clima_manual.dart';
 import '../models/relatorio_status.dart';
 import '../models/relatorio_tecnico.dart';
 import '../providers/relatorio_providers.dart';
@@ -47,6 +48,10 @@ class RelatorioDetailScreen extends ConsumerStatefulWidget {
 class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
   late TextEditingController _titleController;
   late TextEditingController _notesController;
+  late TextEditingController _climaDia1Controller;
+  late TextEditingController _climaDia2Controller;
+  late TextEditingController _climaDia3Controller;
+  late TextEditingController _pulverizacaoController;
   bool _isDirty = false;
   bool _isPublishing = false;
   bool _fieldsSynced = false;
@@ -56,15 +61,27 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
     super.initState();
     _titleController = TextEditingController();
     _notesController = TextEditingController();
+    _climaDia1Controller = TextEditingController();
+    _climaDia2Controller = TextEditingController();
+    _climaDia3Controller = TextEditingController();
+    _pulverizacaoController = TextEditingController();
 
     _titleController.addListener(_markDirty);
     _notesController.addListener(_markDirty);
+    _climaDia1Controller.addListener(_markDirty);
+    _climaDia2Controller.addListener(_markDirty);
+    _climaDia3Controller.addListener(_markDirty);
+    _pulverizacaoController.addListener(_markDirty);
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _notesController.dispose();
+    _climaDia1Controller.dispose();
+    _climaDia2Controller.dispose();
+    _climaDia3Controller.dispose();
+    _pulverizacaoController.dispose();
     super.dispose();
   }
 
@@ -78,6 +95,15 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
     if (_fieldsSynced) return;
     _titleController.text = relatorio.title ?? '';
     _notesController.text = relatorio.customNotes ?? '';
+    final dias = relatorio.climaManual?.dias ?? const [];
+    _climaDia1Controller.text =
+        dias.isNotEmpty ? (dias[0].resumo ?? '') : '';
+    _climaDia2Controller.text =
+        dias.length > 1 ? (dias[1].resumo ?? '') : '';
+    _climaDia3Controller.text =
+        dias.length > 2 ? (dias[2].resumo ?? '') : '';
+    _pulverizacaoController.text =
+        relatorio.climaManual?.pulverizacaoNota ?? '';
     _fieldsSynced = true;
   }
 
@@ -352,6 +378,55 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 16),
+            Text(
+              'Clima (opcional)',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: context.premiumTextSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _climaDia1Controller,
+              decoration: InputDecoration(
+                labelText: 'Dia 1 — resumo',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _climaDia2Controller,
+              decoration: InputDecoration(
+                labelText: 'Dia 2 — resumo',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _climaDia3Controller,
+              decoration: InputDecoration(
+                labelText: 'Dia 3 — resumo',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _pulverizacaoController,
+              decoration: InputDecoration(
+                labelText: 'Pulverização',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
             if (_isDirty) ...[
               const SizedBox(height: 16),
               OutlinedButton(
@@ -568,13 +643,30 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
     }
   }
 
+  RelatorioClimaManual? _climaManualFromFields() {
+    final dias = [
+      RelatorioClimaDiaManual(resumo: _climaDia1Controller.text.trim()),
+      RelatorioClimaDiaManual(resumo: _climaDia2Controller.text.trim()),
+      RelatorioClimaDiaManual(resumo: _climaDia3Controller.text.trim()),
+    ];
+    final pulver = _pulverizacaoController.text.trim();
+    final clima = RelatorioClimaManual(
+      dias: dias,
+      pulverizacaoNota: pulver.isEmpty ? null : pulver,
+    );
+    return RelatorioClimaManual.hasContent(clima) ? clima : null;
+  }
+
   Future<void> _saveChanges(RelatorioTecnico relatorio) async {
     HapticFeedback.mediumImpact();
     try {
       final repository = ref.read(relatorioRepositoryProvider);
+      final clima = _climaManualFromFields();
       final updated = relatorio.copyWith(
         title: _titleController.text.trim(),
         customNotes: _notesController.text.trim(),
+        climaManual: clima,
+        clearClimaManual: clima == null,
         updatedAt: DateTime.now().toUtc(),
       );
 
