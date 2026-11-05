@@ -13,9 +13,11 @@ permanece inalterado.
 
 ## Decisão
 
-1. **Storage** — bucket Supabase `report-shares` (leitura pública, `text/html`,
-   limite ~15 MB). Objetos em `{auth.uid()}/{token}.html`; policies de escrita
-   só para o dono da pasta.
+1. **Storage** — bucket Supabase `report-shares` (flag `public: true` para GET
+   anônimo em `/object/public/...`; **sem** policy SELECT anônima em
+   `storage.objects`, evitando `list()` no bucket). Objetos em
+   `{auth.uid()}/{token}.html`; escrita/leitura via API autenticada só na pasta
+   do usuário.
 2. **Metadados** — tabela `report_share_links` (token único, título, paths, kind).
    RLS: usuário autenticado CRUD apenas nas próprias linhas. Anon não lê a tabela;
    segurança do link = URL pública do objeto + token imprevisível (UUID v4).

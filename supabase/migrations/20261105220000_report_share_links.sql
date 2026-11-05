@@ -14,9 +14,14 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 DROP POLICY IF EXISTS "public read report shares" ON storage.objects;
-CREATE POLICY "public read report shares"
-  ON storage.objects FOR SELECT
-  USING (bucket_id = 'report-shares');
+
+DROP POLICY IF EXISTS "authenticated read own report shares" ON storage.objects;
+CREATE POLICY "authenticated read own report shares"
+  ON storage.objects FOR SELECT TO authenticated
+  USING (
+    bucket_id = 'report-shares'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
 
 DROP POLICY IF EXISTS "authenticated upload own report shares" ON storage.objects;
 CREATE POLICY "authenticated upload own report shares"
