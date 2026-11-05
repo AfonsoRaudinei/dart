@@ -130,14 +130,16 @@ Future<void> _showOccurrenceEditSheet(
         initialOccurrence: occurrence,
         onCancel: () => Navigator.of(sheetContext).pop(),
         onConfirm: (data) async {
+          final list = await container.read(occurrencesListProvider.future);
+          final live = resolveLiveOccurrence(list, occurrence);
           await repository.updateOccurrence(
-            occurrence.copyWith(
+            live.copyWith(
               type: data.type,
               description: data.description,
               clientId: data.clientId,
               photoPath: data.photoPath,
               category: data.category,
-              status: occurrence.status,
+              status: live.status,
               cultivar: data.cultivar,
               dataPlantio: data.dataPlantio,
               estadioFenologico: data.estadioFenologico,

@@ -46,6 +46,14 @@ class _OccurrenceAndamentoSectionState
     if (oldWidget.occurrence.id != widget.occurrence.id) {
       _andamento = widget.occurrence.andamentoEnum;
       _responsavelCtrl.text = widget.occurrence.responsavelNome ?? '';
+      return;
+    }
+    if (oldWidget.occurrence.andamento != widget.occurrence.andamento) {
+      _andamento = widget.occurrence.andamentoEnum;
+    }
+    if (oldWidget.occurrence.responsavelNome !=
+        widget.occurrence.responsavelNome) {
+      _responsavelCtrl.text = widget.occurrence.responsavelNome ?? '';
     }
   }
 

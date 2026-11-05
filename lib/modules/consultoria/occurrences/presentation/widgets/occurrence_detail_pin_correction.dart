@@ -30,8 +30,10 @@ void launchOccurrencePinCorrectionSession(
       entityId: occurrence.id,
       position: LatLng(lat, lng),
       onConfirm: (newLat, newLng) async {
+        final list = await container.read(occurrencesListProvider.future);
+        final live = resolveLiveOccurrence(list, occurrence);
         await repository.updateOccurrence(
-          occurrence.copyWith(
+          live.copyWith(
             lat: newLat,
             long: newLng,
             geometry: jsonEncode({

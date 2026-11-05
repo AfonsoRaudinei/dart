@@ -21,6 +21,15 @@ final occurrencesListProvider = FutureProvider.autoDispose<List<Occurrence>>((
   return repo.getAllAuthorizedOccurrences(authorizedClientIds: activeClientIds);
 });
 
+/// Ocorrência atualizada na lista (evita snapshot stale no detalhe).
+Occurrence resolveLiveOccurrence(List<Occurrence>? list, Occurrence seed) {
+  if (list == null) return seed;
+  for (final item in list) {
+    if (item.id == seed.id) return item;
+  }
+  return seed;
+}
+
 class OccurrenceController {
   final Ref ref;
   final OccurrenceRepository _repository;

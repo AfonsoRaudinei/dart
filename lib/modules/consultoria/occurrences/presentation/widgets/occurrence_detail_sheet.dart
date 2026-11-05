@@ -15,8 +15,8 @@ import '../../../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/occurrence.dart';
 import '../controllers/occurrence_controller.dart';
 import '../occurrence_detail_report_actions.dart';
-import 'occurrence_detail_close_button.dart';
 import 'occurrence_andamento_section.dart';
+import 'occurrence_detail_close_button.dart';
 import 'occurrence_creation_sheet.dart';
 import 'occurrence_detail_pin_correction.dart';
 import 'occurrence_detail_photo_section.dart';
@@ -152,8 +152,12 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     return null;
   }
 
-  Future<void> _openEditSheet(BuildContext context, WidgetRef ref) async {
-    final coords = occurrence.getCoordinates();
+  Future<void> _openEditSheet(
+    BuildContext context,
+    WidgetRef ref,
+    Occurrence live,
+  ) async {
+    final coords = live.getCoordinates();
     if (coords == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Sem ponto no mapa para editar.')),
@@ -176,17 +180,17 @@ class OccurrenceDetailSheet extends ConsumerWidget {
         child: OccurrenceCreationSheet(
           latitude: coords['lat']!,
           longitude: coords['long']!,
-          initialOccurrence: occurrence,
+          initialOccurrence: live,
           onCancel: () => Navigator.of(sheetContext).pop(),
           onConfirm: (data) async {
             await repository.updateOccurrence(
-              occurrence.copyWith(
+              live.copyWith(
                 type: data.type,
                 description: data.description,
                 clientId: data.clientId,
                 photoPath: data.photoPath,
                 category: data.category,
-                status: occurrence.status,
+                status: live.status,
                 lat: data.latitude,
                 long: data.longitude,
                 geometry: jsonEncode({
@@ -219,7 +223,11 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    Occurrence live,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -244,7 +252,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
 
     await ref
         .read(occurrenceRepositoryProvider)
-        .softDeleteOccurrence(occurrence.id);
+        .softDeleteOccurrence(live.id);
     ref.invalidate(occurrencesListProvider);
     if (!context.mounted) return;
     Navigator.of(context).pop();
@@ -257,16 +265,21 @@ class OccurrenceDetailSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final live = resolveLiveOccurrence(
+      ref.watch(occurrencesListProvider).valueOrNull,
+      occurrence,
+    );
+    final isReadOnly = live.cachedByUserId != null;
     final isIos = soloForteSheetIsIos(context);
     final isDark =
         !isIos && Theme.of(context).brightness == Brightness.dark;
-    final categoryColor = _colorForCategory(occurrence.category);
-    final urgencyColor = _colorForUrgency(occurrence.type);
-    final categoryLabel = _labelForCategory(occurrence.category);
-    final urgencyLabel = _labelForUrgency(occurrence.type);
-    final category = OccurrenceCategory.fromString(occurrence.category);
-    final metricLabel = _firstMetricLabel(occurrence);
-    final hasMapPin = occurrence.getCoordinates() != null;
+    final categoryColor = _colorForCategory(live.category);
+    final urgencyColor = _colorForUrgency(live.type);
+    final categoryLabel = _labelForCategory(live.category);
+    final urgencyLabel = _labelForUrgency(live.type);
+    final category = OccurrenceCategory.fromString(live.category);
+    final metricLabel = _firstMetricLabel(live);
+    final hasMapPin = live.getCoordinates() != null;
 
     final sheetBg = isIos
         ? SoloForteSheetSkinIos.background
@@ -295,16 +308,16 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     final formattedDate = DateFormat(
       "dd 'de' MMMM 'de' yyyy 'às' HH:mm",
       'pt_BR',
-    ).format(occurrence.createdAt);
+    ).format(live.createdAt);
     final detailRows = <_DetailRowData>[
-      if (occurrence.clientId != null && occurrence.clientId!.isNotEmpty)
+      if (live.clientId != null && live.clientId!.isNotEmpty)
         _DetailRowData(
           icon: SFIcons.person,
           label: 'Cliente',
           valueBuilder: (context) => FutureBuilder(
             future: ref
                 .read(clientLookupProvider)
-                .findById(occurrence.clientId!),
+                .findById(live.clientId!),
             builder: (context, snapshot) => Text(
               snapshot.data?.name ?? 'Cliente não encontrado',
               style: _DetailRow.valueStyle(isDark, isIos: isIos),
@@ -314,16 +327,16 @@ class OccurrenceDetailSheet extends ConsumerWidget {
       _DetailRowData(
         icon: SFIcons.description,
         label: 'Descrição',
-        value: occurrence.description.isNotEmpty
-            ? occurrence.description
+        value: live.description.isNotEmpty
+            ? live.description
             : 'Sem descrição — toque em Editar para preencher',
       ),
-      if (occurrence.recomendacoes != null &&
-          occurrence.recomendacoes!.trim().isNotEmpty)
+      if (live.recomendacoes != null &&
+          live.recomendacoes!.trim().isNotEmpty)
         _DetailRowData(
           icon: Icons.lightbulb_outline,
           label: 'Recomendações',
-          value: occurrence.recomendacoes!,
+          value: live.recomendacoes!,
         ),
       if (metricLabel != null)
         _DetailRowData(
@@ -331,64 +344,64 @@ class OccurrenceDetailSheet extends ConsumerWidget {
           label: 'Indicador',
           value: metricLabel,
         ),
-      if (occurrence.estadioFenologico != null &&
-          occurrence.estadioFenologico!.isNotEmpty)
+      if (live.estadioFenologico != null &&
+          live.estadioFenologico!.isNotEmpty)
         _DetailRowData(
           icon: SFIcons.leaf,
           label: 'Estádio fenológico',
-          value: occurrence.estadioFenologico!,
+          value: live.estadioFenologico!,
         ),
-      if (occurrence.cultivar != null && occurrence.cultivar!.isNotEmpty)
+      if (live.cultivar != null && live.cultivar!.isNotEmpty)
         _DetailRowData(
           icon: SFIcons.agriculture,
           label: 'Cultivar',
-          value: occurrence.cultivar!,
+          value: live.cultivar!,
         ),
-      if (occurrence.dataPlantio != null &&
-          occurrence.dataPlantio!.isNotEmpty)
+      if (live.dataPlantio != null &&
+          live.dataPlantio!.isNotEmpty)
         _DetailRowData(
           icon: SFIcons.calendar,
           label: 'Data de plantio',
-          value: occurrence.dataPlantio!,
+          value: live.dataPlantio!,
         ),
-      if (occurrence.dataEmergencia?.isNotEmpty == true)
+      if (live.dataEmergencia?.isNotEmpty == true)
         _DetailRowData(
           icon: SFIcons.calendar, label: 'Data de emergência',
-          value: occurrence.dataEmergencia!),
-      if (occurrence.sementesPorMetro != null)
+          value: live.dataEmergencia!),
+      if (live.sementesPorMetro != null)
         _DetailRowData(
           icon: SFIcons.agriculture, label: 'Sementes por metro',
-          value: '${occurrence.sementesPorMetro}'),
-      if (occurrence.estandePlantas != null)
+          value: '${live.sementesPorMetro}'),
+      if (live.estandePlantas != null)
         _DetailRowData(
           icon: SFIcons.agriculture, label: 'Estande de plantas',
-          value: '${occurrence.estandePlantas}'),
-      if (occurrence.avaliacaoPlantio == 'boa' ||
-          occurrence.avaliacaoPlantio == 'ruim')
+          value: '${live.estandePlantas}'),
+      if (live.avaliacaoPlantio == 'boa' ||
+          live.avaliacaoPlantio == 'ruim')
         _DetailRowData(
           icon: SFIcons.agriculture, label: 'Avaliação do plantio',
-          value: occurrence.avaliacaoPlantio == 'boa' ? 'Boa' : 'Ruim'),
-      if (occurrence.objetivoPlantio?.isNotEmpty == true)
+          value: live.avaliacaoPlantio == 'boa' ? 'Boa' : 'Ruim'),
+      if (live.objetivoPlantio?.isNotEmpty == true)
         _DetailRowData(
           icon: SFIcons.agriculture, label: 'Objetivo',
-          value: occurrence.objetivoPlantio!),
-      if (occurrence.externalSource != null)
+          value: live.objetivoPlantio!),
+      if (live.externalSource != null)
         _DetailRowData(
           icon: SFIcons.science,
           label: 'Origem externa',
-          value: occurrence.externalSource!,
+          value: live.externalSource!,
         ),
-      if (occurrence.externalAnalysisId != null)
+      if (live.externalAnalysisId != null)
         _DetailRowData(
           icon: SFIcons.description,
           label: 'ID da análise',
-          value: occurrence.externalAnalysisId!,
+          value: live.externalAnalysisId!,
         ),
-      if (_formatPayload(occurrence.analysisPayloadJson) != null)
+      if (_formatPayload(live.analysisPayloadJson) != null)
         _DetailRowData(
           icon: SFIcons.barChart,
           label: 'Dados da análise',
-          value: _formatPayload(occurrence.analysisPayloadJson)!,
+          value: _formatPayload(live.analysisPayloadJson)!,
         ),
       _DetailRowData(
         icon: SFIcons.calendar,
@@ -492,7 +505,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                             ),
                           ),
                           if (!isAreaVisitadaCategory(
-                            occurrence.category,
+                            live.category,
                           )) ...[
                             const SizedBox(height: 4),
                             _HeaderChip(
@@ -529,15 +542,15 @@ class OccurrenceDetailSheet extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               OccurrenceDetailPhotoSection(
-                occurrence: occurrence,
+                occurrence: live,
                 cardBg: cardBg,
                 cardRadius: cardRadius,
                 isIos: isIos,
                 isDark: isDark,
               ),
               OccurrenceAndamentoSection(
-                occurrence: occurrence,
-                readOnly: _isReadOnly,
+                occurrence: live,
+                readOnly: isReadOnly,
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -566,12 +579,12 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                 ),
               ),
               if (OccurrenceDetailExportLocationButton.eligible(
-                occurrence,
+                live,
                 onExportLocation,
               )) ...[
                 const SizedBox(height: 12),
                 OccurrenceDetailExportLocationButton(
-                  occurrence: occurrence,
+                  occurrence: live,
                   isIos: isIos,
                   accentColor: categoryColor,
                   onExportLocation: onExportLocation!,
@@ -579,11 +592,11 @@ class OccurrenceDetailSheet extends ConsumerWidget {
               ],
               const SizedBox(height: 12),
               OccurrenceDetailReportActionsRow(
-                occurrence: occurrence,
+                occurrence: live,
                 isIos: isIos,
               ),
               if (allowPinCorrection &&
-                  occurrencePinCorrectionEligible(occurrence)) ...[
+                  occurrencePinCorrectionEligible(live)) ...[
                 const SizedBox(height: 12),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -594,7 +607,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                       onPressed: () => launchOccurrencePinCorrectionSession(
                         context,
                         ref,
-                        occurrence,
+                        live,
                       ),
                       style: isIos
                           ? OutlinedButton.styleFrom(
@@ -622,14 +635,14 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                 ),
               ],
               const SizedBox(height: 20),
-              if (!_isReadOnly)
+              if (!isReadOnly)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () => _openEditSheet(context, ref),
+                          onPressed: () => _openEditSheet(context, ref, live),
                           style: isIos
                               ? OutlinedButton.styleFrom(
                                   foregroundColor:
@@ -654,7 +667,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                           style: FilledButton.styleFrom(
                             backgroundColor: Colors.red.shade700,
                           ),
-                          onPressed: () => _confirmDelete(context, ref),
+                          onPressed: () => _confirmDelete(context, ref, live),
                           icon: const Icon(Icons.delete_outline, size: 18),
                           label: const Text('Excluir'),
                         ),
@@ -662,7 +675,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                     ],
                   ),
                 ),
-              if (!_isReadOnly) const SizedBox(height: 12),
+              if (!isReadOnly) const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: SizedBox(
