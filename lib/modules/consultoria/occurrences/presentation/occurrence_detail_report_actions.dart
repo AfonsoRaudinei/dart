@@ -185,6 +185,22 @@ T? _tryReadContract<T>(T Function() read) {
   }
 }
 
+Future<String?> _clientPhoneDigitsForWhatsApp(
+  WidgetRef ref,
+  String? clientId,
+) async {
+  final id = clientId?.trim() ?? '';
+  if (id.isEmpty) return null;
+  final lookup = _tryReadContract(() => ref.read(clientLookupProvider));
+  if (lookup == null) return null;
+  try {
+    final client = await lookup.findById(id);
+    final phone = client?.phone?.replaceAll(RegExp(r'[^0-9]'), '');
+    if (phone != null && phone.isNotEmpty) return phone;
+  } catch (_) {}
+  return null;
+}
+
 Future<String> _occurrenceClienteNomeForExport(
   WidgetRef ref,
   String? clientId,
@@ -219,6 +235,9 @@ Future<void> openOccurrenceReportHtml(
       farmName: ctx.location.fazenda,
     );
     if (!context.mounted) return;
+    final whatsAppPhoneDigits =
+        await _clientPhoneDigitsForWhatsApp(ref, occurrence.clientId);
+    if (!context.mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => HtmlReportViewer(
@@ -228,6 +247,7 @@ Future<void> openOccurrenceReportHtml(
           jsonData: ConsultoriaReportExportData.occurrenceJson(occurrence),
           csvData: ConsultoriaReportExportData.occurrenceCsv(occurrence),
           bodyBuilder: bodyBuilder,
+          whatsAppPhoneDigits: whatsAppPhoneDigits,
           actions: occurrenceReportHtmlViewerActions(
             container,
             occurrence,

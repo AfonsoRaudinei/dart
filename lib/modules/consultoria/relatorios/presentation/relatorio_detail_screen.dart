@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/contracts/i_client_lookup_provider.dart';
 import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/html_templates/html_report_viewer.dart';
 import '../../../../core/html_templates/report_export_service.dart';
@@ -505,6 +506,9 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
     try {
       final html = await buildRelatorioVisitHtml(ref, relatorio);
       if (!context.mounted) return;
+      final whatsAppPhoneDigits =
+          await _clientPhoneDigitsForWhatsApp(ref, relatorio.clientId);
+      if (!context.mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => HtmlReportViewer(
@@ -515,6 +519,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
             ),
             jsonData: ConsultoriaReportExportData.reportJson(relatorio),
             csvData: ConsultoriaReportExportData.reportCsv(relatorio),
+            whatsAppPhoneDigits: whatsAppPhoneDigits,
           ),
         ),
       );
@@ -710,6 +715,21 @@ class _StatusChip extends StatelessWidget {
         };
     }
   }
+}
+
+Future<String?> _clientPhoneDigitsForWhatsApp(
+  WidgetRef ref,
+  String clientId,
+) async {
+  final id = clientId.trim();
+  if (id.isEmpty) return null;
+  try {
+    final lookup = ref.read(clientLookupProvider);
+    final client = await lookup.findById(id);
+    final phone = client?.phone?.replaceAll(RegExp(r'[^0-9]'), '');
+    if (phone != null && phone.isNotEmpty) return phone;
+  } catch (_) {}
+  return null;
 }
 
 class _InfoRow extends StatelessWidget {
