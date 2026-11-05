@@ -1,0 +1,33 @@
+# ADR-053 — Link público de relatório + WhatsApp
+
+**Data:** 05/11/2026  
+**Status:** APROVADO  
+**Módulos:** `consultoria/relatorios/`, `core/html_templates/`, `core/utils/`
+
+## Contexto
+
+Consultores precisam enviar relatório HTML ao produtor via WhatsApp (padrão TBDC):
+um toque publica o documento e abre o WhatsApp com o link. O produtor abre no
+browser mobile, sem instalar o app. Export nativo (share HTML/PDF no viewer)
+permanece inalterado.
+
+## Decisão
+
+1. **Storage** — bucket Supabase `report-shares` (leitura pública, `text/html`,
+   limite ~15 MB). Objetos em `{auth.uid()}/{token}.html`; policies de escrita
+   só para o dono da pasta.
+2. **Metadados** — tabela `report_share_links` (token único, título, paths, kind).
+   RLS: usuário autenticado CRUD apenas nas próprias linhas. Anon não lê a tabela;
+   segurança do link = URL pública do objeto + token imprevisível (UUID v4).
+3. **App** — `ReportShareLinkService.publishHtml` exige sessão JWT + online;
+   HTML recebe viewport mobile e stub desabilitado “Gerar PDF (em breve)” no rodapé
+   hospedado (Fase 2: PDF no browser na página).
+4. **UX** — `HtmlReportViewer`: botão “Enviar link (WhatsApp)” chama publish +
+   `launchWhatsAppShare`. Telefone do cliente (IClientLookup) opcional nos fluxos
+   ocorrência e relatório de visita.
+
+## Consequências
+
+- Migration `20261105220000_report_share_links.sql` deve ser aplicada no projeto live.
+- Demais entry points do viewer podem omitir telefone (`wa.me/?text=`).
+- PDF server-side ou geração ativa na página fica fora do MVP.
