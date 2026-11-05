@@ -135,6 +135,7 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
           objetivoPlantio: _objetivoPlantioCtrl.text.trim().isEmpty
               ? null
               : _objetivoPlantioCtrl.text.trim(),
+          fieldId: talhaoPrefill?.fieldId,
           estadioFenologico: _estadio?.code,
           tipoOcorrencia: null,
           amostraSolo: isAmostra,
