@@ -6,14 +6,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../design/sf_icons.dart';
 import '../utils/share_position.dart';
+import '../utils/whatsapp_share.dart';
 import 'report_export_service.dart';
 import 'report_photo_links.dart';
 import 'report_photo_viewer.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/core/contracts/i_report_share_link_publisher_provider.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 /// Testes injetam corpo fake via override; produção permanece `null` (WebView).
@@ -61,7 +64,7 @@ class HtmlReportViewerActions {
 }
 
 /// Widget genérico para exibir qualquer relatório HTML gerado pelos renderers.
-class HtmlReportViewer extends StatefulWidget {
+class HtmlReportViewer extends ConsumerStatefulWidget {
   final String title;
   final String htmlContent;
   final String? fileBaseName;
@@ -76,6 +79,9 @@ class HtmlReportViewer extends StatefulWidget {
   /// Substitui o corpo WebView (somente testes). Produção: omitir (`null`).
   final WidgetBuilder? bodyBuilder;
 
+  /// Dígitos do telefone do cliente (sem +55) para abrir wa.me com destinatário.
+  final String? whatsAppPhoneDigits;
+
   const HtmlReportViewer({
     super.key,
     required this.title,
@@ -87,13 +93,14 @@ class HtmlReportViewer extends StatefulWidget {
     this.pdfBytesProvider,
     this.bodyBuilder,
     this.actions,
+    this.whatsAppPhoneDigits,
   });
 
   @override
-  State<HtmlReportViewer> createState() => _HtmlReportViewerState();
+  ConsumerState<HtmlReportViewer> createState() => _HtmlReportViewerState();
 }
 
-class _HtmlReportViewerState extends State<HtmlReportViewer> {
+class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
   WebViewController? _controller;
   List<ReportPhoto> _photos = const [];
   bool _loading = true;
@@ -344,6 +351,47 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
     return icons;
   }
 
+  Future<void> _shareLinkViaWhatsApp() async {
+    if (_actionBusy) return;
+    if (Supabase.instance.client.auth.currentUser == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Faça login para enviar link')),
+        );
+      }
+      return;
+    }
+    setState(() => _actionBusy = true);
+    try {
+      final publisher = ref.read(reportShareLinkPublisherProvider);
+      final result = await publisher.publishHtml(
+        title: widget.title,
+        html: widget.htmlContent,
+      );
+      final message = 'Relatório SoloForte: ${result.publicUrl}';
+      await launchWhatsAppShare(
+        phoneDigitsBrazil: widget.whatsAppPhoneDigits,
+        message: message,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Link publicado. WhatsApp aberto.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        final text = e is StateError
+            ? e.message
+            : userFacingError(e, action: 'Erro ao enviar link');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(text)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _actionBusy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final actionIcons = _buildActionIcons();
@@ -376,6 +424,11 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
               ),
             ),
           ...actionIcons,
+          IconButton(
+            tooltip: 'Enviar link (WhatsApp)',
+            onPressed: _actionBusy ? null : _shareLinkViaWhatsApp,
+            icon: const Icon(Icons.chat_outlined),
+          ),
           if (widget.pdfBytesProvider != null)
             PopupMenuButton<String>(
               key: _exportButtonKey,

@@ -28,6 +28,7 @@ import 'core/contracts/i_opportunity_lookup_provider.dart';
 import 'core/contracts/i_agenda_observable.dart';
 import 'core/contracts/i_agenda_observable_provider.dart';
 import 'core/contracts/i_report_writer_provider.dart';
+import 'core/contracts/i_report_share_link_publisher_provider.dart';
 import 'core/contracts/i_marketing_case_reports_lookup_provider.dart';
 import 'core/contracts/marketing_case_reports_list_provider.dart';
 import 'core/database/database_helper.dart';
@@ -66,6 +67,7 @@ import 'app/sync_registration.dart';
 import 'modules/agenda/presentation/providers/agenda_provider.dart';
 import 'modules/agenda_ai/infra/agenda_ai_launcher_adapter.dart';
 import 'modules/consultoria/relatorios/infra/report_writer_adapter.dart';
+import 'modules/consultoria/relatorios/data/report_share_link_service.dart';
 import 'modules/carteira/data/opportunity_lookup_impl.dart';
 import 'modules/carteira/data/repositories/carteira_repository_impl.dart';
 import 'modules/visitas/data/repositories/visit_repository.dart';
@@ -287,6 +289,9 @@ Future<void> main() async {
               // ADR-025: IReportWriter para visit_completion_observer (DT-025-7)
               reportWriterProvider.overrideWith(
                 (ref) => ReportWriterAdapter(ref),
+              ),
+              reportShareLinkPublisherProvider.overrideWithValue(
+                ReportShareLinkService(Supabase.instance.client),
               ),
               // ADR-050: Marketing Cases em Relatórios via contrato neutro
               marketingCaseReportsLookupProvider.overrideWith(
