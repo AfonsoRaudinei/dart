@@ -105,6 +105,71 @@ void main() {
       expect(remote.containsKey('sync_status'), isFalse);
     });
 
+    test('toRemote/fromRemote round-trip dos campos de plantio preenchidos', () {
+      final occurrence = Occurrence(
+        id: 'local-plantio',
+        type: 'Média',
+        description: 'Stand',
+        category: 'plantio',
+        lat: -10.25,
+        long: -48.32,
+        createdAt: DateTime.utc(2026, 6, 21),
+        dataEmergencia: '2026-11-01',
+        sementesPorMetro: 14.5,
+        estandePlantas: 12,
+        avaliacaoPlantio: 'boa',
+        objetivoPlantio: 'Stand uniforme',
+      );
+
+      final remote = OccurrenceRemoteMapper.toRemote(occurrence, 'owner-1');
+      expect(remote['data_emergencia'], '2026-11-01');
+      expect(remote['sementes_por_metro'], 14.5);
+      expect(remote['estande_plantas'], 12);
+      expect(remote['avaliacao_plantio'], 'boa');
+      expect(remote['objetivo_plantio'], 'Stand uniforme');
+
+      final local = OccurrenceRemoteMapper.fromRemote(
+        remote,
+        localId: 'local-plantio',
+        cachedByUserId: null,
+      );
+      final mapped = Occurrence.fromMap(local);
+      expect(mapped.dataEmergencia, '2026-11-01');
+      expect(mapped.sementesPorMetro, 14.5);
+      expect(mapped.estandePlantas, 12);
+      expect(mapped.avaliacaoPlantio, 'boa');
+      expect(mapped.objetivoPlantio, 'Stand uniforme');
+    });
+
+    test('toRemote/fromRemote preserva campos de plantio nulos', () {
+      final occurrence = Occurrence(
+        id: 'local-plantio-null',
+        type: 'Média',
+        description: 'Stand vazio',
+        category: 'plantio',
+        createdAt: DateTime.utc(2026, 6, 21),
+      );
+
+      final remote = OccurrenceRemoteMapper.toRemote(occurrence, 'owner-1');
+      expect(remote['data_emergencia'], isNull);
+      expect(remote['sementes_por_metro'], isNull);
+      expect(remote['estande_plantas'], isNull);
+      expect(remote['avaliacao_plantio'], isNull);
+      expect(remote['objetivo_plantio'], isNull);
+
+      final local = OccurrenceRemoteMapper.fromRemote(
+        remote,
+        localId: 'local-plantio-null',
+        cachedByUserId: null,
+      );
+      final mapped = Occurrence.fromMap(local);
+      expect(mapped.dataEmergencia, isNull);
+      expect(mapped.sementesPorMetro, isNull);
+      expect(mapped.estandePlantas, isNull);
+      expect(mapped.avaliacaoPlantio, isNull);
+      expect(mapped.objetivoPlantio, isNull);
+    });
+
     test('preserva owner, identidade externa e payload completo no cache', () {
       final local = OccurrenceRemoteMapper.fromRemote(
         {
