@@ -56,12 +56,6 @@ const _categories = [
     value: 'plantio',
     enumValue: OccurrenceCategory.plantio,
   ),
-  _OccurrenceCategory(
-    label: 'Área\nVisitada',
-    icon: Icons.place_outlined,
-    value: kOccurrenceAreaVisitadaCategory,
-    enumValue: OccurrenceCategory.areaVisitada,
-  ),
 ];
 
 /// Empacota todos os campos coletados pelo formulário agronômico v14.
