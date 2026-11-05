@@ -2,26 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/ui/sheets/solo_forte_sheet_visuals.dart';
 import '../../domain/models/gps_walk_session.dart';
 import '../providers/gps_walk_providers.dart';
 
-/// Barra de ações inferior para o modo GPS Walk.
+/// Ações do GPS Walk.
 ///
-/// Adapta os botões exibidos conforme o [GpsWalkStatus]:
-///
-/// **idle:**
-///   `[▶ Começar a medir]  [○ Adicionar ponto — desabilitado]`
-///
-/// **measuring (auto):**
-///   `[⏸ Pausar]  [○ Adicionar ponto]  [✓ Concluído — se ≥ 3 pontos]`
-///
-/// **measuring (manual):**
-///   `[○ Adicionar ponto]  [✓ Concluído — se ≥ 3 pontos]`
-///
-/// **paused:**
-///   `[▶ Retomar]  [○ Adicionar ponto]  [✓ Concluído — se ≥ 3 pontos]`
-///
-/// Design: iOS Premium — botões pill, opacidade on-press.
+/// Fechar desenho liga o início ao fim. Parar sem fechar só encerra o GPS.
 class GpsWalkBottomBar extends ConsumerWidget {
   const GpsWalkBottomBar({super.key});
 
@@ -34,317 +21,250 @@ class GpsWalkBottomBar extends ConsumerWidget {
 
     final notifier = ref.read(gpsWalkProvider.notifier);
     final status = session.status;
-    final isAutoMode = session.isAutoMode;
-    final canFinish = session.canFinish;
+    final v = SoloForteSheetVisuals.of(context);
+
+    if (status == GpsWalkStatus.idle) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _FilledAction(
+            label: 'Começar a medir',
+            detail: 'O GPS marca o caminho enquanto você caminha.',
+            visuals: v,
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              notifier.startMeasuring();
+            },
+          ),
+          const SizedBox(height: 8),
+          _TextAction(
+            label: 'Cancelar medição',
+            color: Theme.of(context).colorScheme.error,
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              notifier.cancel();
+            },
+          ),
+        ],
+      );
+    }
+
+    final stopped = status == GpsWalkStatus.stoppedOpen;
+    final canClose = session.canFinish;
+    final canStop = session.canStopOpen;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── Toggle Auto/Manual ──────────────────────────────────────────────
-        if (status != GpsWalkStatus.idle) ...[
-          _AutoModeToggle(
-            isAutoMode: isAutoMode,
-            onToggle: () {
-              HapticFeedback.selectionClick();
-              notifier.toggleAutoMode();
-            },
-          ),
+        _FilledAction(
+          label: 'Fechar desenho',
+          detail: 'Liga o ponto inicial ao ponto final e salva a área.',
+          visuals: v,
+          enabled: canClose,
+          onPressed: canClose
+              ? () {
+                  HapticFeedback.mediumImpact();
+                  notifier.finish();
+                }
+              : null,
+        ),
+        if (!stopped) ...[
           const SizedBox(height: 10),
+          _OutlineAction(
+            label: 'Parar sem fechar',
+            detail: 'Para o GPS e mantém o traço aberto. Nada é salvo.',
+            visuals: v,
+            enabled: canStop,
+            onPressed: canStop
+                ? () {
+                    HapticFeedback.lightImpact();
+                    notifier.stopWithoutClosing();
+                  }
+                : null,
+          ),
         ],
-
-        // ── Botões de ação ──────────────────────────────────────────────────
+        const SizedBox(height: 8),
         Row(
           children: [
-            // Começar / Pausar / Retomar
-            if (status == GpsWalkStatus.idle)
-              Expanded(
-                child: _PrimaryButton(
-                  icon: Icons.play_arrow_rounded,
-                  label: 'Começar a medir',
-                  color: const Color(0xFF30D158),
-                  onPressed: () {
-                    HapticFeedback.mediumImpact();
-                    notifier.startMeasuring();
-                  },
-                ),
-              )
-            else if (status == GpsWalkStatus.measuring && isAutoMode)
-              _IconActionButton(
-                icon: Icons.pause_rounded,
+            if (status == GpsWalkStatus.measuring)
+              _TextAction(
                 label: 'Pausar',
+                color: v.subtitleColor,
                 onPressed: () {
                   HapticFeedback.lightImpact();
                   notifier.pause();
                 },
               )
             else if (status == GpsWalkStatus.paused)
-              _IconActionButton(
-                icon: Icons.play_arrow_rounded,
+              _TextAction(
                 label: 'Retomar',
+                color: v.subtitleColor,
                 onPressed: () {
                   HapticFeedback.lightImpact();
                   notifier.resume();
                 },
               ),
-
-            if (status != GpsWalkStatus.idle) ...[
-              const SizedBox(width: 8),
-
-              // Adicionar ponto
-              _IconActionButton(
-                icon: Icons.add_location_alt_rounded,
-                label: 'Add ponto',
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  notifier.addManualPoint();
-                },
-              ),
-
-              const SizedBox(width: 8),
-
-              // Concluído
-              Expanded(
-                child: _PrimaryButton(
-                  icon: Icons.check_circle_outline_rounded,
-                  label: 'Concluído',
-                  color: canFinish
-                      ? const Color(0xFF34C759)
-                      : Colors.white.withValues(alpha: 0.18),
-                  enabled: canFinish,
-                  onPressed: canFinish
-                      ? () {
-                          HapticFeedback.mediumImpact();
-                          notifier.finish();
-                        }
-                      : null,
-                ),
-              ),
-            ],
-
-            if (status == GpsWalkStatus.idle) ...[
-              const SizedBox(width: 8),
-              const _IconActionButton(
-                icon: Icons.add_location_alt_rounded,
-                label: 'Add ponto',
-                enabled: false,
-                onPressed: null,
-              ),
-            ],
-          ],
-        ),
-
-        const SizedBox(height: 8),
-
-        // ── Cancelar ───────────────────────────────────────────────────────
-        GestureDetector(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            notifier.cancel();
-          },
-          child: const Text(
-            'Cancelar medição',
-            style: TextStyle(
-              color: Color(0xFFFF453A),
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+            const Spacer(),
+            _TextAction(
+              label: stopped ? 'Descartar' : 'Cancelar medição',
+              color: Theme.of(context).colorScheme.error,
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                notifier.cancel();
+              },
             ),
-          ),
+          ],
         ),
       ],
     );
   }
 }
 
-// ─── Componentes privados ─────────────────────────────────────────────────────
+class _FilledAction extends StatelessWidget {
+  const _FilledAction({
+    required this.label,
+    required this.detail,
+    required this.visuals,
+    required this.onPressed,
+    this.enabled = true,
+  });
 
-class _AutoModeToggle extends StatelessWidget {
-  final bool isAutoMode;
-  final VoidCallback onToggle;
-
-  const _AutoModeToggle({required this.isAutoMode, required this.onToggle});
+  final String label;
+  final String detail;
+  final SoloForteSheetVisuals visuals;
+  final VoidCallback? onPressed;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onToggle,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.14),
-            width: 0.8,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isAutoMode
-                  ? Icons.gps_fixed_rounded
-                  : Icons.touch_app_rounded,
-              color: isAutoMode
-                  ? const Color(0xFF30D158)
-                  : const Color(0xFFFFD60A),
-              size: 16,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              isAutoMode ? 'Modo GPS automático' : 'Modo manual (toque)',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const Spacer(),
-            // Pill toggle
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 36,
-              height: 20,
-              decoration: BoxDecoration(
-                color: isAutoMode
-                    ? const Color(0xFF30D158)
-                    : Colors.white.withValues(alpha: 0.25),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Align(
-                alignment:
-                    isAutoMode ? Alignment.centerRight : Alignment.centerLeft,
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  margin: const EdgeInsets.symmetric(horizontal: 2),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
+    final v = visuals;
+    return Opacity(
+      opacity: enabled ? 1 : 0.4,
+      child: Material(
+        color: v.ctaBackground,
+        borderRadius: BorderRadius.circular(v.ctaRadius),
+        child: InkWell(
+          onTap: enabled ? onPressed : null,
+          borderRadius: BorderRadius.circular(v.ctaRadius),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: v.ctaText,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.3,
                   ),
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _IconActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool enabled;
-  final VoidCallback? onPressed;
-
-  const _IconActionButton({
-    required this.icon,
-    required this.label,
-    this.enabled = true,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: enabled ? 1.0 : 0.38,
-      child: GestureDetector(
-        onTap: enabled ? onPressed : null,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: Colors.white, size: 22),
-              const SizedBox(height: 3),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PrimaryButton extends StatefulWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool enabled;
-  final VoidCallback? onPressed;
-
-  const _PrimaryButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    this.enabled = true,
-    required this.onPressed,
-  });
-
-  @override
-  State<_PrimaryButton> createState() => _PrimaryButtonState();
-}
-
-class _PrimaryButtonState extends State<_PrimaryButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: widget.enabled ? (_) => setState(() => _pressed = true) : null,
-      onTapUp: widget.enabled ? (_) => setState(() => _pressed = false) : null,
-      onTapCancel: () => setState(() => _pressed = false),
-      onTap: widget.enabled ? widget.onPressed : null,
-      child: AnimatedOpacity(
-        opacity: _pressed ? 0.62 : (widget.enabled ? 1.0 : 0.38),
-        duration: const Duration(milliseconds: 80),
-        child: AnimatedScale(
-          scale: _pressed ? 0.97 : 1.0,
-          duration: const Duration(milliseconds: 80),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(
-              color: widget.color,
-              borderRadius: BorderRadius.circular(50),
-              boxShadow: widget.enabled
-                  ? [
-                      BoxShadow(
-                        color: widget.color.withValues(alpha: 0.35),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(widget.icon, color: Colors.white, size: 18),
-                const SizedBox(width: 7),
+                const SizedBox(height: 2),
                 Text(
-                  widget.label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
+                  detail,
+                  style: TextStyle(
+                    color: v.ctaText.withValues(alpha: 0.82),
+                    fontSize: 13,
+                    height: 1.3,
                   ),
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _OutlineAction extends StatelessWidget {
+  const _OutlineAction({
+    required this.label,
+    required this.detail,
+    required this.visuals,
+    required this.onPressed,
+    this.enabled = true,
+  });
+
+  final String label;
+  final String detail;
+  final SoloForteSheetVisuals visuals;
+  final VoidCallback? onPressed;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final v = visuals;
+    return Opacity(
+      opacity: enabled ? 1 : 0.4,
+      child: Material(
+        color: v.cardBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(v.cardRadius),
+          side: BorderSide(color: v.cardBorder),
+        ),
+        child: InkWell(
+          onTap: enabled ? onPressed : null,
+          borderRadius: BorderRadius.circular(v.cardRadius),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: v.titleColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  detail,
+                  style: TextStyle(
+                    color: v.subtitleColor,
+                    fontSize: 13,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TextAction extends StatelessWidget {
+  const _TextAction({
+    required this.label,
+    required this.color,
+    required this.onPressed,
+  });
+
+  final String label;
+  final Color color;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        foregroundColor: color,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
       ),
     );
   }
