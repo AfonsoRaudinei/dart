@@ -88,6 +88,16 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
       return;
     }
 
+    final talhaoPrefill = widget.initialOccurrence == null
+        ? widget.talhaoPrefill
+        : null;
+    final talhaoWriter = talhaoPrefill == null
+        ? null
+        : ref.read(iDrawingFieldWriterProvider);
+    final talhaoDataPlantio = _isoDate(_dataPlantio);
+    final talhaoDataEmergencia = _isoDate(_dataEmergencia);
+    final talhaoCicloDias = _cicloDiasCtrl.text;
+
     _notifyStateChanged(() {
       _submitError = null;
       _isSaving = true;
@@ -135,6 +145,15 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
           fotosCategoriasJson: _encodeFotos(),
         ),
       );
+      if (talhaoWriter != null && talhaoPrefill != null) {
+        await writeBackTalhaoPlantioIfEmpty(
+          writer: talhaoWriter,
+          prefill: talhaoPrefill,
+          formDataPlantio: talhaoDataPlantio,
+          formDataEmergencia: talhaoDataEmergencia,
+          formCicloDias: talhaoCicloDias,
+        );
+      }
     } catch (error) {
       if (!mounted) return;
       _showSubmitError(
