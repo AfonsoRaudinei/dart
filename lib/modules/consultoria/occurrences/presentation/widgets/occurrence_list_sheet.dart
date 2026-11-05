@@ -9,6 +9,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../domain/occurrence.dart';
+import '../../domain/occurrence_campo_nivel.dart';
 import '../../presentation/controllers/occurrence_controller.dart';
 import 'package:soloforte_app/core/contracts/i_visit_session_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_visit_session_lookup_provider.dart';
@@ -353,6 +354,7 @@ class _OccurrenceListItem extends StatelessWidget {
       for (final catEntry in map.entries) {
         final metrics = catEntry.value as Map<String, dynamic>;
         for (final m in metrics.entries) {
+          if (m.key == 'incidencia' || m.key == 'severidade') continue;
           final v = m.value as int;
           if (v > 0) {
             return '${_metricDisplayName(m.key)}: ${kSliderLabels[v.clamp(0, 3)]}';
@@ -430,6 +432,9 @@ class _OccurrenceListItem extends StatelessWidget {
     final isFromVisit =
         occurrence.visitSessionId == activeVisitId && activeVisitId != null;
     final firstMetric = _firstMetricLabel();
+    final campoNivel = resolveCampoNivelLista(occurrence);
+    final campoSliderMax = maxIncidenciaSeveridadeSlider(occurrence);
+    final campoAcimaLimite = occurrenceCampoNivelAcimaDoLimite(occurrence);
     final syncColor = _syncColor();
     final hasPhoto = allPhotoPaths(occurrence).isNotEmpty;
     final isIos = soloForteSheetIsIos(context);
@@ -568,8 +573,39 @@ class _OccurrenceListItem extends StatelessWidget {
                       ),
                     ],
 
-                    // Linha 4: primeira métrica
-                    if (firstMetric != null) ...[
+                    // Linha 4: nível de campo (incidência/severidade) ou outra métrica
+                    if (campoNivel != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          _MiniChip(
+                            label: campoNivel.displayLabel,
+                            color: campoSliderMax != null &&
+                                    campoSliderMax >= 1 &&
+                                    campoSliderMax <= 3
+                                ? kSliderColors[campoSliderMax]
+                                : color,
+                          ),
+                          if (campoAcimaLimite) ...[
+                            const SizedBox(width: 6),
+                            const Icon(
+                              Icons.warning_amber_rounded,
+                              size: 16,
+                              color: PremiumTokens.alertError,
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Acima do limite',
+                              style: TextStyle(
+                                color: PremiumTokens.alertError,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ] else if (firstMetric != null) ...[
                       const SizedBox(height: 4),
                       Text(
                         firstMetric,
