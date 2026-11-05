@@ -26,7 +26,9 @@ void main() {
   setUpAll(() async {
     databaseFactory = databaseFactoryFfi;
     SharedPreferences.setMockInitialValues({});
-    tempDir = await Directory.systemTemp.createTemp('field_writer_adapter_test');
+    tempDir = await Directory.systemTemp.createTemp(
+      'field_writer_adapter_test',
+    );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async {
           if (call.method == 'getApplicationDocumentsDirectory' ||
@@ -146,10 +148,7 @@ void main() {
       final feature = _feature(fieldId, syncStatus: SyncStatus.synced);
       await repository.saveFeature(feature);
 
-      await adapter.updateFieldName(
-        fieldId: fieldId,
-        name: 'Talhão Renomeado',
-      );
+      await adapter.updateFieldName(fieldId: fieldId, name: 'Talhão Renomeado');
 
       final updated = await repository.getFeatureById(fieldId);
       expect(updated, isNotNull);
@@ -166,10 +165,7 @@ void main() {
 
     test('feature inexistente lança StateError', () async {
       expect(
-        () => adapter.updateFieldName(
-          fieldId: 'missing-id',
-          name: 'Novo nome',
-        ),
+        () => adapter.updateFieldName(fieldId: 'missing-id', name: 'Novo nome'),
         throwsA(isA<StateError>()),
       );
     });
@@ -274,11 +270,7 @@ void main() {
 
     test('strings vazias normalizam para null', () async {
       const fieldId = 'drawing-metadata-clear';
-      final feature = _feature(
-        fieldId,
-        cultura: 'Milho',
-        safra: '2024/2025',
-      );
+      final feature = _feature(fieldId, cultura: 'Milho', safra: '2024/2025');
       await repository.saveFeature(feature);
 
       await adapter.updateFieldMetadata(
@@ -297,12 +289,69 @@ void main() {
 
     test('feature inexistente lança StateError', () async {
       expect(
-        () => adapter.updateFieldMetadata(
-          fieldId: 'missing-id',
-          cultura: 'Soja',
-        ),
+        () =>
+            adapter.updateFieldMetadata(fieldId: 'missing-id', cultura: 'Soja'),
         throwsA(isA<StateError>()),
       );
+    });
+
+    test('define data e ciclo; null não apaga; string vazia limpa', () async {
+      const fieldId = 'drawing-plantio-1';
+      await repository.saveFeature(_feature(fieldId, cultura: 'Soja'));
+
+      await adapter.updateFieldMetadata(
+        fieldId: fieldId,
+        dataPlantio: '2026-01-10',
+        dataEmergencia: '2026-01-18',
+        cicloDias: '115',
+      );
+
+      var updated = await repository.getFeatureById(fieldId);
+      expect(updated!.properties.dataPlantio, '2026-01-10');
+      expect(updated.properties.dataEmergencia, '2026-01-18');
+      expect(updated.properties.cicloDias, 115);
+      expect(updated.properties.cultura, 'Soja');
+
+      await adapter.updateFieldMetadata(fieldId: fieldId, cultura: 'Milho');
+      updated = await repository.getFeatureById(fieldId);
+      expect(updated!.properties.cultura, 'Milho');
+      expect(updated.properties.dataPlantio, '2026-01-10');
+      expect(updated.properties.dataEmergencia, '2026-01-18');
+      expect(updated.properties.cicloDias, 115);
+
+      await adapter.updateFieldMetadata(
+        fieldId: fieldId,
+        dataPlantio: '',
+        dataEmergencia: '   ',
+        cicloDias: '',
+      );
+      updated = await repository.getFeatureById(fieldId);
+      expect(updated!.properties.dataPlantio, isNull);
+      expect(updated.properties.dataEmergencia, isNull);
+      expect(updated.properties.cicloDias, isNull);
+      expect(updated.properties.cultura, 'Milho');
+    });
+
+    test('ciclo inválido lança StateError', () async {
+      const fieldId = 'drawing-ciclo-invalido';
+      await repository.saveFeature(_feature(fieldId));
+      expect(
+        () => adapter.updateFieldMetadata(fieldId: fieldId, cicloDias: 'abc'),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test('copyWith de área preserva plantio e ciclo', () {
+      final original = _feature('drawing-copy').properties.copyWith(
+        dataPlantio: '2026-01-01',
+        dataEmergencia: '2026-01-08',
+        cicloDias: 115,
+      );
+      final copied = original.copyWith(areaHa: 3);
+      expect(copied.areaHa, 3);
+      expect(copied.dataPlantio, '2026-01-01');
+      expect(copied.dataEmergencia, '2026-01-08');
+      expect(copied.cicloDias, 115);
     });
   });
 }
