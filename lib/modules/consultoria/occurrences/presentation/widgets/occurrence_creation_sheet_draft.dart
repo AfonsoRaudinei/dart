@@ -21,6 +21,7 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
     _dataEmergencia = draft.dataEmergenciaIso != null
         ? DateTime.tryParse(draft.dataEmergenciaIso!)
         : null;
+    _cicloDiasCtrl.text = draft.cicloDias;
     _sementesPorMetroCtrl.text = draft.sementesPorMetro;
     _estandePlantasCtrl.text = draft.estandePlantas;
     _avaliacaoPlantio = draft.avaliacaoPlantio;
@@ -76,8 +77,9 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
     try {
       final clients = await _clientsFuture;
       if (!mounted) return;
-      final selected =
-          clients.where((client) => client.id == clientId).firstOrNull;
+      final selected = clients
+          .where((client) => client.id == clientId)
+          .firstOrNull;
       if (selected != null) {
         _notifyStateChanged(() => _selectedClient = selected);
       }
@@ -94,6 +96,7 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
       cultivar: _cultivarCtrl.text,
       dataPlantioIso: _isoDate(_dataPlantio),
       dataEmergenciaIso: _isoDate(_dataEmergencia),
+      cicloDias: _cicloDiasCtrl.text,
       sementesPorMetro: _sementesPorMetroCtrl.text,
       estandePlantas: _estandePlantasCtrl.text,
       avaliacaoPlantio: _avaliacaoPlantio,
@@ -126,5 +129,80 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
   void _patchForm(VoidCallback fn) {
     _notifyStateChanged(fn);
     _persistDraft();
+  }
+
+  void _onCicloDiasChanged() => _patchForm(() {});
+
+  void _applyTalhaoPrefillFields() {
+    if (widget.initialOccurrence != null) return;
+    final draft = ref.read(occurrenceDraftProvider(_draftPinKey));
+    final patch = applyTalhaoPrefill(
+      prefill: widget.talhaoPrefill,
+      isEditing: false,
+      currentCultivar: _cultivarCtrl.text,
+      currentDataPlantio: _isoDate(_dataPlantio),
+      currentDataEmergencia: _isoDate(_dataEmergencia),
+      currentCicloDias: _cicloDiasCtrl.text,
+      draftHasClient: draft?.clientId?.trim().isNotEmpty == true,
+    );
+    if (patch.cultivar != null) _cultivarCtrl.text = patch.cultivar!;
+    if (patch.dataPlantio != null) {
+      _dataPlantio = DateTime.tryParse(patch.dataPlantio!);
+    }
+    if (patch.dataEmergencia != null) {
+      _dataEmergencia = DateTime.tryParse(patch.dataEmergencia!);
+    }
+    if (patch.cicloDias != null) _cicloDiasCtrl.text = patch.cicloDias!;
+  }
+
+  Future<void> _prefillActiveVisitClient() async {
+    final draft = ref.read(occurrenceDraftProvider(_draftPinKey));
+    if (draft?.clientId?.trim().isNotEmpty == true) return;
+
+    try {
+      final clients = await _clientsFuture;
+      if (!mounted || _selectedClient != null) return;
+
+      final patch = applyTalhaoPrefill(
+        prefill: widget.talhaoPrefill,
+        isEditing: widget.initialOccurrence != null,
+        currentCultivar: _cultivarCtrl.text,
+        currentDataPlantio: _isoDate(_dataPlantio),
+        currentDataEmergencia: _isoDate(_dataEmergencia),
+        currentCicloDias: _cicloDiasCtrl.text,
+        draftHasClient: false,
+      );
+      if (patch.applyClient) {
+        final selected = clients
+            .where((client) => client.id == widget.talhaoPrefill!.clientId)
+            .firstOrNull;
+        if (selected != null) {
+          _notifyStateChanged(() => _selectedClient = selected);
+          return;
+        }
+      }
+
+      final activeContext = await ref
+          .read(activeVisitContextLookupProvider)
+          .getActiveContext();
+      if (!mounted || _selectedClient != null) return;
+
+      if (activeContext != null) {
+        final selected = clients
+            .where((client) => client.id == activeContext.clientId)
+            .firstOrNull;
+        if (selected != null) {
+          _notifyStateChanged(() => _selectedClient = selected);
+          return;
+        }
+      }
+
+      final role = ref.read(currentUserRoleProvider);
+      if (role.isProdutor && clients.isNotEmpty) {
+        _notifyStateChanged(() => _selectedClient = clients.first);
+      }
+    } catch (_) {
+      // Ocorrências continuam disponíveis fora de uma visita ativa.
+    }
   }
 }
