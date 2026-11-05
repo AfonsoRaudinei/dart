@@ -106,6 +106,9 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
 
     final primaryCat = _cats.isNotEmpty ? _cats.first.name : null;
     final firstPhoto = _fotos.values.firstOrNull?.firstOrNull;
+    final isAmostra = _isAmostraSolo;
+    final tramite = _amostraTramite ?? OccurrenceAmostraTramite.coletada;
+    final laudoTrim = _amostraLaudoCtrl.text.trim();
 
     try {
       await widget.onConfirm(
@@ -134,7 +137,19 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
               : _objetivoPlantioCtrl.text.trim(),
           estadioFenologico: _estadio?.code,
           tipoOcorrencia: null,
-          amostraSolo: _selectedCategoryValue == 'amostra_solo',
+          amostraSolo: isAmostra,
+          amostraCodigo: isAmostra && _amostraCodigoCtrl.text.trim().isNotEmpty
+              ? _amostraCodigoCtrl.text.trim()
+              : null,
+          amostraColetor: isAmostra && _amostraColetorCtrl.text.trim().isNotEmpty
+              ? _amostraColetorCtrl.text.trim()
+              : null,
+          amostraTramite: isAmostra ? tramite.storageValue : null,
+          amostraLaudoTexto: isAmostra &&
+                  tramite == OccurrenceAmostraTramite.laudoPronto &&
+                  laudoTrim.isNotEmpty
+              ? laudoTrim
+              : null,
           recomendacoes: _recomCtrl.text.trim().isEmpty
               ? null
               : _recomCtrl.text.trim(),

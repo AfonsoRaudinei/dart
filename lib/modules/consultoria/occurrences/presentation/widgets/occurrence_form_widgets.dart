@@ -66,6 +66,7 @@ class OccurrenceDarkField extends StatelessWidget {
   final String label;
   final String hint;
   final int maxLines;
+  final bool enabled;
 
   const OccurrenceDarkField({
     super.key,
@@ -73,6 +74,7 @@ class OccurrenceDarkField extends StatelessWidget {
     required this.label,
     required this.hint,
     this.maxLines = 1,
+    this.enabled = true,
   });
 
   @override
@@ -90,6 +92,8 @@ class OccurrenceDarkField extends StatelessWidget {
     return TextField(
       controller: controller,
       maxLines: maxLines,
+      enabled: enabled,
+      readOnly: !enabled,
       onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       style: TextStyle(color: textColor, fontSize: 14),
       decoration: InputDecoration(

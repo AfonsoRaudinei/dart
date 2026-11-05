@@ -26,6 +26,12 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
     _estandePlantasCtrl.text = draft.estandePlantas;
     _avaliacaoPlantio = draft.avaliacaoPlantio;
     _objetivoPlantioCtrl.text = draft.objetivoPlantio;
+    _amostraCodigoCtrl.text = draft.amostraCodigo;
+    _amostraColetorCtrl.text = draft.amostraColetor;
+    _amostraLaudoCtrl.text = draft.amostraLaudo;
+    _amostraTramite = OccurrenceAmostraTramite.fromStorage(
+      draft.amostraTramiteStorage,
+    );
     _estadio = _findEstadio(draft.estadioCode);
 
     _cats
@@ -120,6 +126,10 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
       notas: _notasCtrls.map((key, ctrl) => MapEntry(key, ctrl.text)),
       audioPath: _audioPath,
       audioDurationSec: _audioDurationSec,
+      amostraCodigo: _amostraCodigoCtrl.text,
+      amostraColetor: _amostraColetorCtrl.text,
+      amostraLaudo: _amostraLaudoCtrl.text,
+      amostraTramiteStorage: _amostraTramite?.storageValue,
     );
 
     if (draft.isEffectivelyEmpty) {

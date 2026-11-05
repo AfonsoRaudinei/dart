@@ -424,9 +424,13 @@ class Occurrence {
     int? audioDurationSec,
     bool clearAudioDurationSec = false,
     String? amostraCodigo,
+    bool clearAmostraCodigo = false,
     String? amostraColetor,
+    bool clearAmostraColetor = false,
     String? amostraTramite,
+    bool clearAmostraTramite = false,
     String? amostraLaudoTexto,
+    bool clearAmostraLaudoTexto = false,
     String? amostraAnalisesJson,
   }) {
     return Occurrence(
@@ -476,10 +480,15 @@ class Occurrence {
       audioDurationSec: clearAudioDurationSec
           ? null
           : (audioDurationSec ?? this.audioDurationSec),
-      amostraCodigo: amostraCodigo ?? this.amostraCodigo,
-      amostraColetor: amostraColetor ?? this.amostraColetor,
-      amostraTramite: amostraTramite ?? this.amostraTramite,
-      amostraLaudoTexto: amostraLaudoTexto ?? this.amostraLaudoTexto,
+      amostraCodigo:
+          clearAmostraCodigo ? null : (amostraCodigo ?? this.amostraCodigo),
+      amostraColetor:
+          clearAmostraColetor ? null : (amostraColetor ?? this.amostraColetor),
+      amostraTramite:
+          clearAmostraTramite ? null : (amostraTramite ?? this.amostraTramite),
+      amostraLaudoTexto: clearAmostraLaudoTexto
+          ? null
+          : (amostraLaudoTexto ?? this.amostraLaudoTexto),
       amostraAnalisesJson: amostraAnalisesJson ?? this.amostraAnalisesJson,
     );
   }

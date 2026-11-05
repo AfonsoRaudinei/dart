@@ -24,6 +24,10 @@ class OccurrenceFormDraft {
   final Map<String, String> notas;
   final String? audioPath;
   final int? audioDurationSec;
+  final String amostraCodigo;
+  final String amostraColetor;
+  final String amostraLaudo;
+  final String? amostraTramiteStorage;
 
   const OccurrenceFormDraft({
     this.clientId,
@@ -48,6 +52,10 @@ class OccurrenceFormDraft {
     this.notas = const {},
     this.audioPath,
     this.audioDurationSec,
+    this.amostraCodigo = '',
+    this.amostraColetor = '',
+    this.amostraLaudo = '',
+    this.amostraTramiteStorage,
   });
 
   static String pinKeyFor(double latitude, double longitude) =>
@@ -74,6 +82,12 @@ class OccurrenceFormDraft {
     if (fotos.isNotEmpty) return false;
     if (audioPath != null && audioPath!.trim().isNotEmpty) return false;
     if (notas.values.any((value) => value.trim().isNotEmpty)) return false;
+    if (amostraCodigo.trim().isNotEmpty) return false;
+    if (amostraColetor.trim().isNotEmpty) return false;
+    if (amostraLaudo.trim().isNotEmpty) return false;
+    if (amostraTramiteStorage != null && amostraTramiteStorage!.isNotEmpty) {
+      return false;
+    }
     if (urgency != 'Média') return false;
     return true;
   }
@@ -103,6 +117,10 @@ class OccurrenceFormDraft {
     bool clearAudioPath = false,
     int? audioDurationSec,
     bool clearAudioDurationSec = false,
+    String? amostraCodigo,
+    String? amostraColetor,
+    String? amostraLaudo,
+    String? amostraTramiteStorage,
   }) {
     return OccurrenceFormDraft(
       clientId: clientId ?? this.clientId,
@@ -130,6 +148,11 @@ class OccurrenceFormDraft {
       audioDurationSec: clearAudioDurationSec
           ? null
           : (audioDurationSec ?? this.audioDurationSec),
+      amostraCodigo: amostraCodigo ?? this.amostraCodigo,
+      amostraColetor: amostraColetor ?? this.amostraColetor,
+      amostraLaudo: amostraLaudo ?? this.amostraLaudo,
+      amostraTramiteStorage:
+          amostraTramiteStorage ?? this.amostraTramiteStorage,
     );
   }
 }

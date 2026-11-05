@@ -22,6 +22,7 @@ import 'package:soloforte_app/modules/settings/presentation/providers/user_profi
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/occurrence.dart';
+import '../../domain/occurrence_amostra_solo.dart';
 import '../../domain/occurrence_soy_age.dart';
 import '../models/occurrence_talhao_prefill.dart';
 import '../../domain/occurrence_photo_paths.dart';
@@ -29,6 +30,7 @@ import '../../../relatorio_visita/data/image_storage_service.dart';
 import '../coordinators/occurrence_form_guard.dart';
 import '../providers/occurrence_draft_provider.dart';
 import '../models/occurrence_form_draft.dart';
+import 'occurrence_amostra_solo_section.dart';
 import 'occurrence_client_selector.dart';
 import 'occurrence_fenologia_data.dart';
 import 'occurrence_form_widgets.dart';
@@ -89,6 +91,10 @@ class _OccurrenceCreationSheetState
   final _estandePlantasCtrl = TextEditingController();
   String? _avaliacaoPlantio;
   final _objetivoPlantioCtrl = TextEditingController();
+  final _amostraCodigoCtrl = TextEditingController();
+  final _amostraColetorCtrl = TextEditingController();
+  final _amostraLaudoCtrl = TextEditingController();
+  OccurrenceAmostraTramite? _amostraTramite;
   final _cicloDiasCtrl = TextEditingController();
   EstadioData? _estadio;
   bool _estadioCardExpanded = false;
@@ -130,6 +136,9 @@ class _OccurrenceCreationSheetState
     _sementesPorMetroCtrl.addListener(_persistDraft);
     _estandePlantasCtrl.addListener(_persistDraft);
     _objetivoPlantioCtrl.addListener(_persistDraft);
+    _amostraCodigoCtrl.addListener(_persistDraft);
+    _amostraColetorCtrl.addListener(_persistDraft);
+    _amostraLaudoCtrl.addListener(_persistDraft);
     _cicloDiasCtrl.addListener(_onCicloDiasChanged);
     if (widget.initialOccurrence != null) {
       _prefillInitialClient();
@@ -200,6 +209,12 @@ class _OccurrenceCreationSheetState
     _estandePlantasCtrl.text = occurrence.estandePlantas?.toString() ?? '';
     _avaliacaoPlantio = occurrence.avaliacaoPlantio;
     _objetivoPlantioCtrl.text = occurrence.objetivoPlantio ?? '';
+    _amostraCodigoCtrl.text = occurrence.amostraCodigo ?? '';
+    _amostraColetorCtrl.text = occurrence.amostraColetor ?? '';
+    _amostraLaudoCtrl.text = occurrence.amostraLaudoTexto ?? '';
+    _amostraTramite = OccurrenceAmostraTramite.fromStorage(
+      occurrence.amostraTramite,
+    );
     _estadio = _findEstadio(occurrence.estadioFenologico);
 
     final cat = _categories
@@ -254,6 +269,9 @@ class _OccurrenceCreationSheetState
     _sementesPorMetroCtrl.removeListener(_persistDraft);
     _estandePlantasCtrl.removeListener(_persistDraft);
     _objetivoPlantioCtrl.removeListener(_persistDraft);
+    _amostraCodigoCtrl.removeListener(_persistDraft);
+    _amostraColetorCtrl.removeListener(_persistDraft);
+    _amostraLaudoCtrl.removeListener(_persistDraft);
     _cicloDiasCtrl.removeListener(_onCicloDiasChanged);
     if (widget.formGuard?.readIsDirty == _hasUnsavedChanges) {
       widget.formGuard?.readIsDirty = null;
@@ -264,6 +282,9 @@ class _OccurrenceCreationSheetState
     _sementesPorMetroCtrl.dispose();
     _estandePlantasCtrl.dispose();
     _objetivoPlantioCtrl.dispose();
+    _amostraCodigoCtrl.dispose();
+    _amostraColetorCtrl.dispose();
+    _amostraLaudoCtrl.dispose();
     _cicloDiasCtrl.dispose();
     for (final c in _notasCtrls.values) {
       c.dispose();
@@ -276,6 +297,8 @@ class _OccurrenceCreationSheetState
 
   bool get _isAreaVisitada =>
       _selectedCategoryValue == kOccurrenceAreaVisitadaCategory;
+
+  bool get _isAmostraSolo => _selectedCategoryValue == 'amostra_solo';
 
   Color _catColor(OccurrenceCategory cat) {
     switch (cat) {

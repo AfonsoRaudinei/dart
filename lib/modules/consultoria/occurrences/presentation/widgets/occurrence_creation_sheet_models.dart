@@ -88,6 +88,10 @@ class OccurrenceFormData {
   final String? objetivoPlantio;
   final String? audioPath;
   final int? audioDurationSec;
+  final String? amostraCodigo;
+  final String? amostraColetor;
+  final String? amostraTramite;
+  final String? amostraLaudoTexto;
 
   const OccurrenceFormData({
     required this.type,
@@ -115,6 +119,10 @@ class OccurrenceFormData {
     this.objetivoPlantio,
     this.audioPath,
     this.audioDurationSec,
+    this.amostraCodigo,
+    this.amostraColetor,
+    this.amostraTramite,
+    this.amostraLaudoTexto,
   });
 
   /// Coordenadas válidas para pin no mapa (rejeita NaN/∞/(0,0)).
