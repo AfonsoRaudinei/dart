@@ -6,6 +6,7 @@ class OccurrenceFormDraft {
   final String cultivar;
   final String? dataPlantioIso;
   final String? dataEmergenciaIso;
+  final String cicloDias;
   final String sementesPorMetro;
   final String estandePlantas;
   final String? avaliacaoPlantio;
@@ -27,6 +28,7 @@ class OccurrenceFormDraft {
     this.cultivar = '',
     this.dataPlantioIso,
     this.dataEmergenciaIso,
+    this.cicloDias = '',
     this.sementesPorMetro = '',
     this.estandePlantas = '',
     this.avaliacaoPlantio,
@@ -50,7 +52,10 @@ class OccurrenceFormDraft {
   bool get isEffectivelyEmpty {
     if (cultivar.trim().isNotEmpty) return false;
     if (dataPlantioIso != null && dataPlantioIso!.isNotEmpty) return false;
-    if (dataEmergenciaIso != null && dataEmergenciaIso!.isNotEmpty) return false;
+    if (dataEmergenciaIso != null && dataEmergenciaIso!.isNotEmpty) {
+      return false;
+    }
+    if (cicloDias.trim().isNotEmpty) return false;
     if (sementesPorMetro.trim().isNotEmpty) return false;
     if (estandePlantas.trim().isNotEmpty) return false;
     if (avaliacaoPlantio != null && avaliacaoPlantio!.isNotEmpty) return false;
@@ -73,6 +78,7 @@ class OccurrenceFormDraft {
     String? cultivar,
     String? dataPlantioIso,
     String? dataEmergenciaIso,
+    String? cicloDias,
     String? sementesPorMetro,
     String? estandePlantas,
     String? avaliacaoPlantio,
@@ -94,6 +100,7 @@ class OccurrenceFormDraft {
       cultivar: cultivar ?? this.cultivar,
       dataPlantioIso: dataPlantioIso ?? this.dataPlantioIso,
       dataEmergenciaIso: dataEmergenciaIso ?? this.dataEmergenciaIso,
+      cicloDias: cicloDias ?? this.cicloDias,
       sementesPorMetro: sementesPorMetro ?? this.sementesPorMetro,
       estandePlantas: estandePlantas ?? this.estandePlantas,
       avaliacaoPlantio: avaliacaoPlantio ?? this.avaliacaoPlantio,
