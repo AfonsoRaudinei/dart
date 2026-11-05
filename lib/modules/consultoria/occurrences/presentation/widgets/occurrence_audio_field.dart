@@ -56,8 +56,14 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField> {
   @override
   void dispose() {
     _tick?.cancel();
+    _tick = null;
+    final temp = _pendingTempPath;
+    _pendingTempPath = null;
     if (_recording) {
-      _recorder.stop();
+      _recording = false;
+      unawaited(_recorder.stop().then((p) => _deleteFile(p ?? temp)));
+    } else {
+      unawaited(_deleteFile(temp));
     }
     _player.dispose();
     _recorder.dispose();
@@ -78,9 +84,11 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField> {
     }
 
     await _player.stop();
-    if (mounted) setState(() => _playing = false);
+    if (!mounted) return;
+    setState(() => _playing = false);
 
     final dir = await getTemporaryDirectory();
+    if (!mounted) return;
     final path = '${dir.path}/occ_audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
     _pendingTempPath = path;
 
@@ -92,6 +100,12 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField> {
       ),
       path: path,
     );
+    if (!mounted) {
+      await _recorder.stop();
+      await _deleteFile(path);
+      _pendingTempPath = null;
+      return;
+    }
 
     HapticFeedback.mediumImpact();
     setState(() {
@@ -104,6 +118,7 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField> {
       if (!mounted) return;
       final next = _elapsedSec + 1;
       if (next >= OccurrenceAudioField.maxDurationSec) {
+        setState(() => _elapsedSec = OccurrenceAudioField.maxDurationSec);
         await _stopRecording(save: true);
         return;
       }
@@ -125,14 +140,15 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField> {
 
     if (!save || source == null || source.isEmpty) {
       await _deleteFile(source);
+      if (!mounted) return;
       setState(() => _elapsedSec = 0);
       return;
     }
 
     final stored = await OccurrenceAudioStorage.instance.persistLocalCopy(source);
     await _deleteFile(source);
+    if (!mounted) return;
     if (stored == null) {
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Não foi possível salvar o áudio.')),
       );
