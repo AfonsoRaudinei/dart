@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:http/http.dart' show ClientException;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -13,6 +16,7 @@ class ReportShareLinkService implements IReportShareLinkPublisher {
   static const bucket = 'report-shares';
   static const _uuid = Uuid();
   static const tag = 'ReportShareLink';
+  static const offlineMessage = 'Sem conexão para publicar o link.';
 
   final SupabaseClient _supabase;
 
@@ -75,6 +79,7 @@ class ReportShareLinkService implements IReportShareLinkPublisher {
     final body = ensureMobileReadyHtml(html);
     final bytes = utf8.encode(body);
 
+    var objectUploaded = false;
     try {
       await _supabase.storage.from(bucket).uploadBinary(
             storagePath,
@@ -84,35 +89,64 @@ class ReportShareLinkService implements IReportShareLinkPublisher {
               upsert: false,
             ),
           );
-    } on StorageException catch (e, st) {
-      AppLogger.error('ReportShareLink upload failed', error: e, stackTrace: st);
-      final msg = e.message.toLowerCase();
-      if (msg.contains('network') || msg.contains('fetch')) {
-        throw StateError(
-          'Sem conexão. Conecte-se à internet para publicar o link.',
-        );
+      objectUploaded = true;
+
+      final publicUrl =
+          _supabase.storage.from(bucket).getPublicUrl(storagePath);
+
+      await _supabase.from('report_share_links').insert({
+        'user_id': userId,
+        'token': token,
+        'title': title.trim().isEmpty ? 'Relatório SoloForte' : title.trim(),
+        'storage_path': storagePath,
+        'public_url': publicUrl,
+        if (reportKind != null && reportKind.trim().isNotEmpty)
+          'report_kind': reportKind.trim(),
+      });
+
+      AppLogger.debug('Report share published token=$token', tag: tag);
+
+      return ReportShareLinkPublished(
+        publicUrl: publicUrl,
+        token: token,
+        storagePath: storagePath,
+      );
+    } catch (e, st) {
+      if (objectUploaded) {
+        await _removeStorageObject(storagePath);
+      }
+      AppLogger.error('ReportShareLink publish failed', error: e, stackTrace: st);
+      if (e is StateError) rethrow;
+      if (_isOfflineError(e)) {
+        throw StateError(offlineMessage);
       }
       rethrow;
     }
+  }
 
-    final publicUrl = _supabase.storage.from(bucket).getPublicUrl(storagePath);
+  Future<void> _removeStorageObject(String storagePath) async {
+    try {
+      await _supabase.storage.from(bucket).remove([storagePath]);
+    } catch (e, st) {
+      AppLogger.error(
+        'ReportShareLink cleanup remove failed',
+        tag: tag,
+        error: e,
+        stackTrace: st,
+      );
+    }
+  }
 
-    await _supabase.from('report_share_links').insert({
-      'user_id': userId,
-      'token': token,
-      'title': title.trim().isEmpty ? 'Relatório SoloForte' : title.trim(),
-      'storage_path': storagePath,
-      'public_url': publicUrl,
-      if (reportKind != null && reportKind.trim().isNotEmpty)
-        'report_kind': reportKind.trim(),
-    });
-
-    AppLogger.debug('Report share published token=$token', tag: tag);
-
-    return ReportShareLinkPublished(
-      publicUrl: publicUrl,
-      token: token,
-      storagePath: storagePath,
-    );
+  static bool _isOfflineError(Object error) {
+    if (error is SocketException ||
+        error is TimeoutException ||
+        error is ClientException) {
+      return true;
+    }
+    if (error is StorageException) {
+      final msg = error.message.toLowerCase();
+      return msg.contains('network') || msg.contains('fetch');
+    }
+    return false;
   }
 }
