@@ -1,3 +1,4 @@
+import 'relatorio_clima_manual.dart';
 import 'relatorio_status.dart';
 import 'visit_session_snapshot.dart';
 
@@ -76,6 +77,9 @@ class RelatorioTecnico {
   /// Dados de monitoramento coletados na sessão.
   final List<MonitoramentoSnapshot> monitoramentos;
 
+  /// Clima manual opcional (próximos dias + pulverização). Local-only SQLite.
+  final RelatorioClimaManual? climaManual;
+
   const RelatorioTecnico({
     required this.id,
     required this.visitSessionId,
@@ -96,6 +100,7 @@ class RelatorioTecnico {
     this.talhoes = const [],
     this.fotos = const [],
     this.monitoramentos = const [],
+    this.climaManual,
   });
 
   // ── Factory ──────────────────────────────────────────────────────────
@@ -152,6 +157,8 @@ class RelatorioTecnico {
     List<TalhaoVisitado>? talhoes,
     List<String>? fotos,
     List<MonitoramentoSnapshot>? monitoramentos,
+    RelatorioClimaManual? climaManual,
+    bool clearClimaManual = false,
   }) {
     return RelatorioTecnico(
       id: id ?? this.id,
@@ -173,6 +180,9 @@ class RelatorioTecnico {
       talhoes: talhoes ?? this.talhoes,
       fotos: fotos ?? this.fotos,
       monitoramentos: monitoramentos ?? this.monitoramentos,
+      climaManual: clearClimaManual
+          ? null
+          : (climaManual ?? this.climaManual),
     );
   }
 
@@ -198,6 +208,8 @@ class RelatorioTecnico {
     'talhoes': talhoes.map((e) => e.toJson()).toList(),
     'fotos': fotos,
     'monitoramentos': monitoramentos.map((e) => e.toJson()).toList(),
+    if (climaManual != null && RelatorioClimaManual.hasContent(climaManual))
+      'climaManual': climaManual!.toJson(),
   };
 
   factory RelatorioTecnico.fromJson(Map<String, dynamic> json) {
@@ -241,6 +253,11 @@ class RelatorioTecnico {
               )
               .toList() ??
           [],
+      climaManual: json['climaManual'] != null
+          ? RelatorioClimaManual.fromJson(
+              Map<String, dynamic>.from(json['climaManual'] as Map),
+            )
+          : null,
     );
   }
 }

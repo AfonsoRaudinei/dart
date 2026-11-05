@@ -5,6 +5,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../../../../core/database/database_helper.dart';
 import '../data/relatorio_table.dart';
+import '../models/relatorio_clima_manual.dart';
 import '../models/relatorio_status.dart';
 import '../models/relatorio_tecnico.dart';
 import '../models/visit_session_snapshot.dart';
@@ -264,6 +265,10 @@ class RelatorioRepositoryImpl implements IRelatorioRepository {
     RelatorioTable.colMonitoramentos: jsonEncode(
       r.monitoramentos.map((e) => e.toJson()).toList(),
     ),
+    RelatorioTable.colClimaManualJson:
+        r.climaManual != null && RelatorioClimaManual.hasContent(r.climaManual)
+        ? jsonEncode(r.climaManual!.toJson())
+        : null,
     'user_id': LocalSessionIdentity.resolveUserId(),
   };
 
@@ -304,7 +309,24 @@ class RelatorioRepositoryImpl implements IRelatorioRepository {
       m[RelatorioTable.colMonitoramentos],
       (e) => MonitoramentoSnapshot.fromJson(e as Map<String, dynamic>),
     ),
+    climaManual: _decodeClimaManual(m[RelatorioTable.colClimaManualJson]),
   );
+
+  RelatorioClimaManual? _decodeClimaManual(Object? raw) {
+    if (raw == null) return null;
+    final text = raw.toString().trim();
+    if (text.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(text);
+      if (decoded is! Map) return null;
+      final clima = RelatorioClimaManual.fromJson(
+        Map<String, dynamic>.from(decoded),
+      );
+      return RelatorioClimaManual.hasContent(clima) ? clima : null;
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// Decodifica um campo TEXT JSON em lista tipada.
   ///
