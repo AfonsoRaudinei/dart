@@ -93,6 +93,9 @@ class OccurrenceFormData {
   final String? amostraTramite;
   final String? amostraLaudoTexto;
 
+  /// Talhão sob o ponto na criação. Edição não regrava.
+  final String? fieldId;
+
   const OccurrenceFormData({
     required this.type,
     required this.description,
@@ -123,6 +126,7 @@ class OccurrenceFormData {
     this.amostraColetor,
     this.amostraTramite,
     this.amostraLaudoTexto,
+    this.fieldId,
   });
 
   /// Coordenadas válidas para pin no mapa (rejeita NaN/∞/(0,0)).
