@@ -778,6 +778,11 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
                     categoriasJson: data.categoriasJson,
                     notasCategoriasJson: data.notasCategoriasJson,
                     fotosCategoriasJson: data.fotosCategoriasJson,
+                    dataEmergencia: data.dataEmergencia,
+                    sementesPorMetro: data.sementesPorMetro,
+                    estandePlantas: data.estandePlantas,
+                    avaliacaoPlantio: data.avaliacaoPlantio,
+                    objetivoPlantio: data.objetivoPlantio,
                   ),
                 );
             container.invalidate(occurrencesListProvider);

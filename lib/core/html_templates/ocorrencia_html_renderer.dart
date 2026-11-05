@@ -743,6 +743,8 @@ class OcorrenciaHtmlRenderer {
         return const _CatInfo('Água');
       case 'amostra_solo':
         return const _CatInfo('Solo');
+      case 'plantio':
+        return const _CatInfo('Plantio');
       default:
         return const _CatInfo('Ocorrência');
     }
