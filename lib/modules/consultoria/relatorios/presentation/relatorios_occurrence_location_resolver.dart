@@ -86,6 +86,53 @@ Future<OccurrenceLocationNames> resolveOccurrenceLocationNames({
   return OccurrenceLocationNames(fazenda: fazenda, talhao: talhao);
 }
 
+/// Id do talhão da ocorrência: geometria do cliente e, na falta, `areaId`
+/// da sessão. Não persiste — só resolve para leitura.
+Future<String?> resolveFieldIdForOccurrence({
+  required String? clientId,
+  required double? lat,
+  required double? lng,
+  required String? visitSessionId,
+  IFarmLookup? farmLookup,
+  IFieldLookup? fieldLookup,
+  IVisitSessionLookup? visitSessionLookup,
+}) async {
+  final client = clientId?.trim() ?? '';
+  if (client.isNotEmpty &&
+      isValidOccurrencePoint(lat, lng) &&
+      farmLookup != null &&
+      fieldLookup != null) {
+    try {
+      final farms = await farmLookup.getFarmsByClient(client);
+      for (final farm in farms) {
+        final fields = await fieldLookup.listByFarmId(farm.id);
+        for (final field in fields) {
+          if (!fieldContainsPoint(field, lat!, lng!)) continue;
+          final id = field.id.trim();
+          if (id.isNotEmpty) return id;
+        }
+      }
+    } catch (_) {
+      // Segue para a sessão.
+    }
+  }
+
+  final sessionId = visitSessionId?.trim() ?? '';
+  if (sessionId.isEmpty || visitSessionLookup == null || fieldLookup == null) {
+    return null;
+  }
+  try {
+    final session = await visitSessionLookup.findById(sessionId);
+    final areaId = session?.areaId?.trim() ?? '';
+    if (areaId.isEmpty) return null;
+    final field = await fieldLookup.findById(areaId);
+    final resolved = field?.id.trim() ?? '';
+    return resolved.isNotEmpty ? resolved : areaId;
+  } catch (_) {
+    return null;
+  }
+}
+
 bool isValidOccurrencePoint(double? lat, double? lng) =>
     isValidGeoPoint(lat, lng);
 
