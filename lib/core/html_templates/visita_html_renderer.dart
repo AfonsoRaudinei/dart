@@ -103,6 +103,16 @@ class VisitaHtmlRenderer {
       include: talhoes.isNotEmpty,
       truthyHtml: '<div class="sf-sheet">${_renderTalhoes(talhoes)}</div>',
     );
+    final climaManual = _map(relatorio['climaManual']);
+    tpl = RelatorioHtmlRenderer.resolveIfBlock(
+      tpl,
+      'clima_manual',
+      include: _climaManualHasContent(climaManual),
+      truthyHtml: _section(
+        'Clima (próximos dias)',
+        _renderClimaManual(climaManual),
+      ),
+    );
     tpl = RelatorioHtmlRenderer.resolveIfBlock(
       tpl,
       'ocorrencias.length > 0',
@@ -199,6 +209,8 @@ class VisitaHtmlRenderer {
       );
       final safra = RelatorioHtmlRenderer.escapeHtml(_string(talhao['safra']));
       final area = _double(talhao['areaHectares']);
+      final ndviSrc = _string(talhao['ndviImageSrc']);
+      final ndviCaption = _string(talhao['ndviCaption']);
       final sub = [
         if (cultura.isNotEmpty) 'Cultura: $cultura',
         if (safra.isNotEmpty) 'Safra: $safra',
@@ -209,9 +221,76 @@ class VisitaHtmlRenderer {
         <span class="sf-row-label"><span class="sf-item-title">$nome</span>${sub.isNotEmpty ? '<span class="sf-row-sub">$sub</span>' : ''}</span>
         ${area != null ? '<span class="sf-row-value">${RelatorioHtmlRenderer.formatHectares(area)} ha</span>' : ''}
       </div>
+      ${ndviSrc.isNotEmpty ? '''
+      <figure class="sf-figure sf-ndvi-figure">
+        <img data-sf-photo src="$ndviSrc" alt="NDVI — $nome" loading="lazy">
+        ${ndviCaption.isNotEmpty ? '<figcaption>${RelatorioHtmlRenderer.escapeHtml(ndviCaption)}</figcaption>' : '<figcaption>NDVI</figcaption>'}
+      </figure>
+      ''' : ''}
       ''');
     }
     return sb.toString();
+  }
+
+  static bool _climaManualHasContent(Map<String, dynamic> clima) {
+    if (clima.isEmpty) return false;
+    final nota = _stringOrNull(clima['pulverizacaoNota'])?.trim();
+    if (nota != null && nota.isNotEmpty) return true;
+    final dias = clima['dias'];
+    if (dias is! List) return false;
+    for (final item in dias) {
+      if (item is! Map) continue;
+      final resumo = item['resumo']?.toString().trim();
+      if (resumo != null && resumo.isNotEmpty) return true;
+    }
+    return false;
+  }
+
+  static String _renderClimaManual(Map<String, dynamic> clima) {
+    if (!_climaManualHasContent(clima)) return '';
+    final sb = StringBuffer();
+    sb.write('<div class="sf-sheet sf-clima-table">');
+    final dias = clima['dias'];
+    if (dias is List) {
+      var index = 0;
+      for (final item in dias) {
+        if (item is! Map) continue;
+        index++;
+        if (index > 3) break;
+        final resumo = _stringOrNull(item['resumo'])?.trim() ?? '';
+        if (resumo.isEmpty) continue;
+        final dataLabel = _formatClimaDiaLabel(item['data'], index);
+        sb.write('''
+        <div class="sf-row">
+          <span class="sf-row-label">${RelatorioHtmlRenderer.escapeHtml(dataLabel)}</span>
+          <span class="sf-row-value">${RelatorioHtmlRenderer.escapeHtml(resumo)}</span>
+        </div>
+        ''');
+      }
+    }
+    final pulver = _stringOrNull(clima['pulverizacaoNota'])?.trim();
+    if (pulver != null && pulver.isNotEmpty) {
+      sb.write('''
+      <div class="sf-row">
+        <span class="sf-row-label">Pulverização</span>
+        <span class="sf-row-value">${RelatorioHtmlRenderer.escapeHtml(pulver)}</span>
+      </div>
+      ''');
+    }
+    sb.write('</div>');
+    return sb.toString();
+  }
+
+  static String _formatClimaDiaLabel(Object? dataRaw, int fallbackIndex) {
+    final raw = _string(dataRaw);
+    if (raw.isNotEmpty) {
+      try {
+        return RelatorioHtmlRenderer.formatDate(DateTime.parse(raw));
+      } catch (_) {
+        return raw;
+      }
+    }
+    return 'Dia $fallbackIndex';
   }
 
   static Future<String> _renderOcorrencias(

@@ -315,6 +315,19 @@ body {
 .sf-figure-hero + .sf-figure-grid,
 .sf-figure-hero + .sf-group-label { margin-top: var(--sf-space-4); }
 
+.sf-ndvi-figure {
+  margin-top: var(--sf-space-2);
+  margin-bottom: var(--sf-space-3);
+}
+
+.sf-ndvi-figure img {
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+  background: var(--sf-gray);
+}
+
+.sf-clima-table { margin-top: var(--sf-space-2); }
+
 /* ═══ Ampliar foto (CSS puro — WebView sem JavaScript) ═══ */
 .sf-lb-toggle { display: none; }
 
