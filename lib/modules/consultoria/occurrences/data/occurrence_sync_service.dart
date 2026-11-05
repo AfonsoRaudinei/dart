@@ -354,6 +354,8 @@ class OccurrenceRemoteMapper {
       'objetivo_plantio': occurrence.objetivoPlantio,
       'andamento': occurrence.andamento ?? OccurrenceAndamento.aberta.storageValue,
       'responsavel_nome': occurrence.responsavelNome,
+      'audio_path': occurrence.audioPath,
+      'audio_duration_sec': occurrence.audioDurationSec,
       'external_source': occurrence.externalSource,
       'external_analysis_id': occurrence.externalAnalysisId,
       'analysis_payload': _decodeJson(occurrence.analysisPayloadJson),
@@ -409,6 +411,8 @@ class OccurrenceRemoteMapper {
       'andamento': remote['andamento'] as String? ??
           OccurrenceAndamento.aberta.storageValue,
       'responsavel_nome': remote['responsavel_nome'] as String?,
+      'audio_path': remote['audio_path'] as String?,
+      'audio_duration_sec': (remote['audio_duration_sec'] as num?)?.toInt(),
       'external_source': remote['external_source'],
       'external_analysis_id': remote['external_analysis_id'],
       'analysis_payload_json': _encodeJson(remote['analysis_payload']),
