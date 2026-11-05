@@ -13,6 +13,8 @@ import '../../../../modules/consultoria/occurrences/presentation/coordinators/oc
 import '../../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../../../modules/consultoria/occurrences/presentation/providers/occurrence_draft_provider.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart';
+import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
+import '../occurrence_talhao_prefill.dart';
 import '../../../../modules/marketing/domain/entities/marketing_case.dart';
 import '../../../../modules/marketing/domain/enums/case_tipo.dart';
 import '../../../../modules/marketing/presentation/screens/novo_case_type_sheets.dart';
@@ -190,6 +192,10 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
       longitude: lng,
       formGuard: guard,
       compactHeader: true,
+      talhaoPrefill: occurrenceTalhaoPrefillFor(
+        ref.read(drawingControllerProvider),
+        LatLng(lat, lng),
+      ),
       onCancel: () async {
         final canClose = await OccurrenceCloseCoordinator.confirmDiscardIfDirty(
           context,
