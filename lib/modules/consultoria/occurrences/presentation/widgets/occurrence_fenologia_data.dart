@@ -257,6 +257,7 @@ const kCategoryColors = {
   'daninhas': Color(0xFFFF9500),
   'nutrientes': Color(0xFF8E8E93),
   'agua': Color(0xFF30B0C7),
+  'plantio': Color(0xFFA16207),
 };
 
 // ── Labels dos sliders 0–3 ──────────────────────────────────────────────────

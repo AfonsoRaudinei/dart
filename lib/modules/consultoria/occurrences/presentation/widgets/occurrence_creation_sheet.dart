@@ -78,6 +78,11 @@ class _OccurrenceCreationSheetState
     extends ConsumerState<OccurrenceCreationSheet> {
   final _cultivarCtrl = TextEditingController();
   DateTime? _dataPlantio;
+  DateTime? _dataEmergencia;
+  final _sementesPorMetroCtrl = TextEditingController();
+  final _estandePlantasCtrl = TextEditingController();
+  String? _avaliacaoPlantio;
+  final _objetivoPlantioCtrl = TextEditingController();
   EstadioData? _estadio;
   bool _estadioCardExpanded = false;
   final Set<OccurrenceCategory> _cats = {};
@@ -112,6 +117,9 @@ class _OccurrenceCreationSheetState
     _cultivarCtrl.addListener(_persistDraft);
     _descCtrl.addListener(_persistDraft);
     _recomCtrl.addListener(_persistDraft);
+    _sementesPorMetroCtrl.addListener(_persistDraft);
+    _estandePlantasCtrl.addListener(_persistDraft);
+    _objetivoPlantioCtrl.addListener(_persistDraft);
     if (widget.initialOccurrence != null) {
       _prefillInitialClient();
     } else if (_selectedClient == null && !_isAreaVisitada) {
@@ -168,6 +176,13 @@ class _OccurrenceCreationSheetState
     _dataPlantio = occurrence.dataPlantio != null
         ? DateTime.tryParse(occurrence.dataPlantio!)
         : null;
+    _dataEmergencia = occurrence.dataEmergencia != null
+        ? DateTime.tryParse(occurrence.dataEmergencia!)
+        : null;
+    _sementesPorMetroCtrl.text = occurrence.sementesPorMetro?.toString() ?? '';
+    _estandePlantasCtrl.text = occurrence.estandePlantas?.toString() ?? '';
+    _avaliacaoPlantio = occurrence.avaliacaoPlantio;
+    _objetivoPlantioCtrl.text = occurrence.objetivoPlantio ?? '';
     _estadio = _findEstadio(occurrence.estadioFenologico);
 
     final cat = _categories
@@ -246,12 +261,18 @@ class _OccurrenceCreationSheetState
     _cultivarCtrl.removeListener(_persistDraft);
     _descCtrl.removeListener(_persistDraft);
     _recomCtrl.removeListener(_persistDraft);
+    _sementesPorMetroCtrl.removeListener(_persistDraft);
+    _estandePlantasCtrl.removeListener(_persistDraft);
+    _objetivoPlantioCtrl.removeListener(_persistDraft);
     if (widget.formGuard?.readIsDirty == _hasUnsavedChanges) {
       widget.formGuard?.readIsDirty = null;
     }
     _cultivarCtrl.dispose();
     _descCtrl.dispose();
     _recomCtrl.dispose();
+    _sementesPorMetroCtrl.dispose();
+    _estandePlantasCtrl.dispose();
+    _objetivoPlantioCtrl.dispose();
     for (final c in _notasCtrls.values) {
       c.dispose();
     }
@@ -278,6 +299,8 @@ class _OccurrenceCreationSheetState
         return const Color(0xFF30B0C7);
       case OccurrenceCategory.amostraSolo:
         return const Color(0xFF8B5CF6);
+      case OccurrenceCategory.plantio:
+        return const Color(0xFFA16207);
       case OccurrenceCategory.areaVisitada:
         return const Color(0xFF607D8B);
     }

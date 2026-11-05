@@ -51,6 +51,12 @@ const _categories = [
     enumValue: OccurrenceCategory.amostraSolo,
   ),
   _OccurrenceCategory(
+    label: 'Plantio',
+    icon: Icons.agriculture_outlined,
+    value: 'plantio',
+    enumValue: OccurrenceCategory.plantio,
+  ),
+  _OccurrenceCategory(
     label: 'Área\nVisitada',
     icon: Icons.place_outlined,
     value: kOccurrenceAreaVisitadaCategory,
@@ -81,6 +87,11 @@ class OccurrenceFormData {
   final String? categoriasJson;
   final String? notasCategoriasJson;
   final String? fotosCategoriasJson;
+  final String? dataEmergencia;
+  final double? sementesPorMetro;
+  final int? estandePlantas;
+  final String? avaliacaoPlantio;
+  final String? objetivoPlantio;
 
   const OccurrenceFormData({
     required this.type,
@@ -101,6 +112,11 @@ class OccurrenceFormData {
     this.categoriasJson,
     this.notasCategoriasJson,
     this.fotosCategoriasJson,
+    this.dataEmergencia,
+    this.sementesPorMetro,
+    this.estandePlantas,
+    this.avaliacaoPlantio,
+    this.objetivoPlantio,
   });
 
   /// Coordenadas válidas para pin no mapa (rejeita NaN/∞/(0,0)).
