@@ -357,6 +357,9 @@ class DrawingLocalStore {
       'cultura': f.properties.cultura,
       'material': f.properties.material,
       'safra': f.properties.safra,
+      'data_plantio': f.properties.dataPlantio,
+      'data_emergencia': f.properties.dataEmergencia,
+      'ciclo_dias': f.properties.cicloDias,
       'soil_sampling_scheme': f.properties.soilSamplingScheme,
       'rec_by_nutrient': f.properties.recByNutrient != null
           ? jsonEncode(f.properties.recByNutrient)
@@ -392,6 +395,9 @@ class DrawingLocalStore {
       cultura: row['cultura'] as String?,
       material: row['material'] as String?,
       safra: row['safra'] as String?,
+      dataPlantio: row['data_plantio'] as String?,
+      dataEmergencia: row['data_emergencia'] as String?,
+      cicloDias: _cicloDiasFromRow(row['ciclo_dias']),
       soilSamplingScheme: row['soil_sampling_scheme'] as String?,
       recByNutrient: row['rec_by_nutrient'] != null
           ? Map<String, double>.from(
@@ -408,4 +414,10 @@ class DrawingLocalStore {
       properties: properties,
     );
   }
+}
+
+int? _cicloDiasFromRow(Object? value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return null;
 }
