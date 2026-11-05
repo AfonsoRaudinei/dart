@@ -141,34 +141,78 @@ class GpsWalkNotifier extends AutoDisposeNotifier<GpsWalkSession?> {
 
   /// Sincroniza pontos coletados do DrawingController e recalcula métricas.
   ///
-  /// Chamado via `ref.listen` no widget ao detectar mudança em gpsVertices.
-  /// Computa perímetro e área usando [GeoCalculatorService].
+  /// A distância gravada é a do caminho aberto (sem volta ao início).
+  /// A área continua calculada, mas a UI não a mostra enquanto o traço
+  /// está aberto.
   void syncFromController(List<LatLng> points) {
     if (state == null) return;
+    final distance = GeoCalculatorService.calculateOpenPathMeters(points);
     state = state!.copyWith(
       points: List.unmodifiable(points),
-      perimeterMeters: GeoCalculatorService.calculatePerimeterMeters(points),
+      distanceMeters: distance,
+      perimeterMeters: distance,
       areaSquareMeters: GeoCalculatorService.calculateAreaSquareMeters(points),
     );
   }
 
-  /// Finaliza a sessão e envia a geometria ao DrawingController.
+  /// Para o stream GPS e mantém os vértices.
+  ///
+  /// O desenho permanece em rastreamento GPS, com status [GpsWalkStatus.stoppedOpen].
+  /// Não chama finalizeGpsTracking, não abre revisão e não persiste feature.
+  /// Exige pelo menos 2 pontos.
+  void stopWithoutClosing() {
+    final session = state;
+    if (session == null) return;
+    if (session.status != GpsWalkStatus.measuring &&
+        session.status != GpsWalkStatus.paused) {
+      return;
+    }
+    final points = List<LatLng>.unmodifiable(_dc.gpsVertices);
+    if (points.length < 2) {
+      AppLogger.warning(
+        'GPS Walk: parar ignorado — menos de 2 pontos',
+        tag: 'GpsWalkNotifier',
+      );
+      return;
+    }
+    _dc.stopGpsStreamKeepingVertices();
+    final distance = GeoCalculatorService.calculateOpenPathMeters(points);
+    state = session.copyWith(
+      status: GpsWalkStatus.stoppedOpen,
+      points: points,
+      distanceMeters: distance,
+      perimeterMeters: distance,
+    );
+    AppLogger.debug(
+      'GPS Walk: parado com traço aberto (${points.length} pts)',
+      tag: 'GpsWalkNotifier',
+    );
+  }
+
+  /// Fecha o anel (início ao fim) e envia a geometria ao DrawingController.
   ///
   /// Requer mínimo de [kGpsMinVertices] pontos.
-  /// Após finalizar, o DrawingController transiciona para reviewing
-  /// e o formulário de confirmação é exibido.
+  /// Após fechar, o DrawingController transiciona para reviewing
+  /// e o formulário de confirmação é exibido. A sessão GPS é zerada.
   void finish() {
+    final session = state;
+    if (session == null) return;
+    if (session.status != GpsWalkStatus.measuring &&
+        session.status != GpsWalkStatus.paused &&
+        session.status != GpsWalkStatus.stoppedOpen) {
+      return;
+    }
     final points = _dc.gpsVertices;
     if (points.length < kGpsMinVertices) {
       AppLogger.warning(
-        'GPS Walk: finish ignorado — menos de $kGpsMinVertices pontos',
+        'GPS Walk: fechar ignorado — menos de $kGpsMinVertices pontos',
         tag: 'GpsWalkNotifier',
       );
       return;
     }
     _dc.finalizeGpsTracking();
     state = null;
-    AppLogger.debug('GPS Walk: concluído', tag: 'GpsWalkNotifier');
+    AppLogger.debug('GPS Walk: desenho fechado', tag: 'GpsWalkNotifier');
   }
 
   /// Cancela a sessão sem persistir dados.
