@@ -225,6 +225,42 @@ void main() {
       expect(mapped.responsavelNome, 'João');
     });
 
+    test('toRemote/fromRemote round-trip dos campos de amostra preenchidos', () {
+      final occurrence = Occurrence(
+        id: 'local-amostra',
+        type: 'Média',
+        description: 'Coleta de solo',
+        category: 'amostra_solo',
+        amostraSolo: true,
+        lat: -10.25,
+        long: -48.32,
+        createdAt: DateTime.utc(2026, 11, 5),
+        amostraCodigo: 'AS-2026-014',
+        amostraColetor: 'Técnico',
+        amostraTramite: 'laudo_pronto',
+        amostraLaudoTexto: 'pH 5,8',
+        amostraAnalisesJson: '{"reservado":true}',
+      );
+
+      final remote = OccurrenceRemoteMapper.toRemote(occurrence, 'owner-1');
+      expect(remote['amostra_codigo'], 'AS-2026-014');
+      expect(remote['amostra_coletor'], 'Técnico');
+      expect(remote['amostra_tramite'], 'laudo_pronto');
+      expect(remote['amostra_laudo_texto'], 'pH 5,8');
+      expect(remote['amostra_analises_json'], {'reservado': true});
+
+      final local = OccurrenceRemoteMapper.fromRemote(
+        remote,
+        localId: 'local-amostra',
+        cachedByUserId: null,
+      );
+      final mapped = Occurrence.fromMap(local);
+      expect(mapped.amostraCodigo, 'AS-2026-014');
+      expect(mapped.amostraTramite, 'laudo_pronto');
+      expect(mapped.amostraLaudoTexto, 'pH 5,8');
+      expect(mapped.amostraAnalisesJson, contains('reservado'));
+    });
+
     test('preserva owner, identidade externa e payload completo no cache', () {
       final local = OccurrenceRemoteMapper.fromRemote(
         {
