@@ -7,6 +7,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/core/state/map_ui_providers.dart';
+import 'package:soloforte_app/ui/components/map/map_sheet_state.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/domain/map_models.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
@@ -53,6 +55,13 @@ class DrawingMapBehaviorListener extends ConsumerWidget {
             ),
           );
         }
+      }
+
+      // GPS → revisão: reabre o formulário de desenho só quando o anel fecha.
+      if (prev == DrawingState.gpsTracking && next == DrawingState.reviewing) {
+        ref.read(mapSheetStateProvider.notifier).state = const MapSheetState(
+          type: MapSheetType.draw,
+        );
       }
 
       // 🆕 SPRINT 5: GPS Tracking → ativar satélite + centralizar no usuário
