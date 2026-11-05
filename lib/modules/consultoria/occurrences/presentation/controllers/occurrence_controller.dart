@@ -96,6 +96,10 @@ class OccurrenceController {
     String? objetivoPlantio,
     String? audioPath,
     int? audioDurationSec,
+    String? amostraCodigo,
+    String? amostraColetor,
+    String? amostraTramite,
+    String? amostraLaudoTexto,
   }) async {
     final visitLookup = ref.read(visitSessionLookupProvider);
     final activeSession = await visitLookup.getActiveSession();
@@ -150,6 +154,10 @@ class OccurrenceController {
       objetivoPlantio: objetivoPlantio,
       audioPath: audioPath,
       audioDurationSec: audioDurationSec,
+      amostraCodigo: amostraCodigo,
+      amostraColetor: amostraColetor,
+      amostraTramite: amostraTramite,
+      amostraLaudoTexto: amostraLaudoTexto,
     );
 
     await _repository.saveOccurrence(occurrence);

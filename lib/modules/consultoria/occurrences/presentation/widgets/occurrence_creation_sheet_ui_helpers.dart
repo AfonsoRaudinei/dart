@@ -10,6 +10,13 @@ extension _OccurrenceCreationSheetLifecycle on _OccurrenceCreationSheetState {
     if (_estandePlantasCtrl.text.trim().isNotEmpty) return true;
     if (_avaliacaoPlantio != null) return true;
     if (_objetivoPlantioCtrl.text.trim().isNotEmpty) return true;
+    if (_amostraCodigoCtrl.text.trim().isNotEmpty) return true;
+    if (_amostraColetorCtrl.text.trim().isNotEmpty) return true;
+    if (_amostraLaudoCtrl.text.trim().isNotEmpty) return true;
+    if (_amostraTramite != null &&
+        _amostraTramite != OccurrenceAmostraTramite.coletada) {
+      return true;
+    }
     if (_estadio != null) return true;
     if (_selectedCategoryValue != null) return true;
     if (_descCtrl.text.trim().isNotEmpty) return true;
@@ -144,6 +151,20 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
             ),
           );
         }),
+      ),
+    );
+  }
+
+  Widget _buildAmostraSection(Color color) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+      child: OccurrenceAmostraSoloSection(
+        codigoController: _amostraCodigoCtrl,
+        coletorController: _amostraColetorCtrl,
+        laudoController: _amostraLaudoCtrl,
+        tramite: _amostraTramite,
+        onTramiteChanged: (step) =>
+            _patchForm(() => _amostraTramite = step),
       ),
     );
   }
@@ -468,6 +489,8 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
               _buildAguaSection(color)
             else if (cat == OccurrenceCategory.plantio)
               _buildPlantioSection(color)
+            else if (cat == OccurrenceCategory.amostraSolo)
+              _buildAmostraSection(color)
             else
               ...metrics.map(
                 (metric) => OccurrenceSliderRow(

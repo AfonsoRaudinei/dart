@@ -9,6 +9,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../domain/occurrence.dart';
+import '../../domain/occurrence_amostra_solo.dart';
 import '../../domain/occurrence_campo_nivel.dart';
 import '../../presentation/controllers/occurrence_controller.dart';
 import 'package:soloforte_app/core/contracts/i_visit_session_lookup.dart';
@@ -434,6 +435,9 @@ class _OccurrenceListItem extends StatelessWidget {
         occurrence.visitSessionId == activeVisitId && activeVisitId != null;
     final firstMetric = _firstMetricLabel();
     final campoNivel = resolveCampoNivelLista(occurrence);
+    final amostraTramite = OccurrenceAmostraTramite.fromStorage(
+      occurrence.amostraTramite,
+    );
     final campoSliderMax = maxIncidenciaSeveridadeSlider(occurrence);
     final campoAcimaLimite = occurrenceCampoNivelAcimaDoLimite(occurrence);
     final syncColor = _syncColor();
@@ -564,6 +568,15 @@ class _OccurrenceListItem extends StatelessWidget {
                             ),
                           ],
                         ],
+                      ),
+                    ],
+
+                    if (occurrenceIsAmostraSolo(occurrence) &&
+                        amostraTramite != null) ...[
+                      const SizedBox(height: 4),
+                      _MiniChip(
+                        label: amostraTramite.label,
+                        color: const Color(0xFF8B5CF6),
                       ),
                     ],
 

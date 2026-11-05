@@ -19,6 +19,7 @@ import '../occurrence_form_apply.dart';
 import 'occurrence_andamento_section.dart';
 import 'occurrence_detail_close_button.dart';
 import 'occurrence_creation_sheet.dart';
+import 'occurrence_detail_amostra_section.dart';
 import 'occurrence_detail_pin_correction.dart';
 import 'occurrence_detail_audio_section.dart';
 import 'occurrence_detail_photo_section.dart';
@@ -545,6 +546,13 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                 isDark: isDark,
               ),
               OccurrenceDetailAudioSection(
+                occurrence: live,
+                cardBg: cardBg,
+                cardRadius: cardRadius,
+                isIos: isIos,
+                isDark: isDark,
+              ),
+              OccurrenceDetailAmostraSection(
                 occurrence: live,
                 cardBg: cardBg,
                 cardRadius: cardRadius,
