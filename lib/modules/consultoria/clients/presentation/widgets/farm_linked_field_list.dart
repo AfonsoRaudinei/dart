@@ -188,6 +188,9 @@ class FarmLinkedFieldList extends ConsumerWidget {
         initialCultura: field.crop,
         initialMaterial: field.material,
         initialSafra: field.harvest,
+        initialDataPlantio: field.dataPlantio,
+        initialDataEmergencia: field.dataEmergencia,
+        initialCicloDias: field.cicloDias,
       );
       return;
     }
@@ -274,10 +277,7 @@ class _FarmTalhaoNdviCard extends ConsumerWidget {
         ndviLoading: true,
         onNdviImageTap: onNdviImageTap,
       ),
-      error: (_, _) => _preview(
-        showNdvi: true,
-        onNdviImageTap: onNdviImageTap,
-      ),
+      error: (_, _) => _preview(showNdvi: true, onNdviImageTap: onNdviImageTap),
       data: (summary) => _preview(
         showNdvi: true,
         ndviIsColormap: summary?.isColormap ?? false,
@@ -305,11 +305,7 @@ class _FarmTalhaoNdviCard extends ConsumerWidget {
       boundsVertices: field.boundsVertices,
       nome: field.name,
       areaHa: field.areaHa,
-      subtitle: farmLinkedFieldSubtitle(
-        field,
-        areaUnit,
-        includeArea: false,
-      ),
+      subtitle: farmLinkedFieldSubtitle(field, areaUnit, includeArea: false),
       onTap: onOpenField,
       actions: actions,
       showNdvi: showNdvi,
