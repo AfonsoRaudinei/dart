@@ -688,6 +688,45 @@ void main() {
       expect(html, contains('V4 a V6'));
       expect(html, isNot(contains('texto legado')));
       expect(html, contains('sf-sheet sf-ordem'));
+      expect(html, isNot(contains('{{')));
+    });
+
+    test('ordem de aplicação escapa HTML dos três campos', () async {
+      await initializeDateFormatting('pt_BR');
+
+      final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+        'id': 'occ-ordem-escape',
+        'type': 'Alta',
+        'category': 'insetos',
+        'created_at': now.toIso8601String(),
+        'recomendacao_acao': '<script>alert(1)</script>',
+        'recomendacao_dose': '1 L & 2 kg',
+        'recomendacao_quando': 'pH < 5',
+      });
+
+      expect(html, isNot(contains('<script>alert(1)</script>')));
+      expect(html, contains('&lt;script&gt;alert(1)&lt;/script&gt;'));
+      expect(html, contains('1 L &amp; 2 kg'));
+      expect(html, contains('pH &lt; 5'));
+      expect(html, isNot(contains('{{')));
+    });
+
+    test('ocorrência antiga só com recomendacoes mostra o texto', () async {
+      await initializeDateFormatting('pt_BR');
+
+      final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+        'id': 'occ-ordem-legado',
+        'type': 'Média',
+        'category': 'insetos',
+        'created_at': now.toIso8601String(),
+        'recomendacoes': 'Monitorar <reboleira> & bordadura',
+      });
+
+      expect(html, contains('Ordem de aplicação'));
+      expect(html, contains('>O que fazer</span>'));
+      expect(html, contains('Monitorar &lt;reboleira&gt; &amp; bordadura'));
+      expect(html, isNot(contains('>Dose</span>')));
+      expect(html, isNot(contains('{{')));
     });
 
     test('relatorio visita usa base editorial e preserva dados', () async {
