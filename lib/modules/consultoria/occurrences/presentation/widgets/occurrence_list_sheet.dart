@@ -11,6 +11,7 @@ import 'package:latlong2/latlong.dart';
 import '../../domain/occurrence.dart';
 import '../../domain/occurrence_amostra_solo.dart';
 import '../../domain/occurrence_campo_nivel.dart';
+import '../../domain/occurrence_soy_age.dart';
 import '../../presentation/controllers/occurrence_controller.dart';
 import 'package:soloforte_app/core/contracts/i_visit_session_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_visit_session_lookup_provider.dart';
@@ -422,6 +423,9 @@ class _OccurrenceListItem extends StatelessWidget {
     return '$d/$mo/${date.year} $h:$mi';
   }
 
+  String _estadioComIdadeLabel(Occurrence occurrence) =>
+      occurrenceEstadioDisplay(occurrence);
+
   @override
   Widget build(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
@@ -433,6 +437,7 @@ class _OccurrenceListItem extends StatelessWidget {
     final isDraft = occurrence.status == 'draft';
     final isFromVisit =
         occurrence.visitSessionId == activeVisitId && activeVisitId != null;
+    final estadioLinha = _estadioComIdadeLabel(occurrence);
     final firstMetric = _firstMetricLabel();
     final campoNivel = resolveCampoNivelLista(occurrence);
     final amostraTramite = OccurrenceAmostraTramite.fromStorage(
@@ -545,14 +550,14 @@ class _OccurrenceListItem extends StatelessWidget {
                     ),
 
                     // Linha 2: estádio + cultivar
-                    if (occurrence.estadioFenologico != null ||
+                    if (estadioLinha.isNotEmpty ||
                         occurrence.cultivar != null) ...[
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          if (occurrence.estadioFenologico != null)
+                          if (estadioLinha.isNotEmpty)
                             _MiniChip(
-                              label: '📊 ${occurrence.estadioFenologico}',
+                              label: '📊 $estadioLinha',
                               color: isIos
                                   ? SoloForteSheetSkinIos.iconStroke
                                   : context.themeAccent,

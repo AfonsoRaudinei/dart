@@ -11,6 +11,7 @@ import '../../../../core/contracts/i_field_lookup.dart';
 import '../../occurrences/domain/occurrence.dart';
 import '../../occurrences/domain/occurrence_amostra_solo.dart';
 import '../../occurrences/domain/occurrence_historico_talhao.dart';
+import '../../occurrences/domain/occurrence_soy_age.dart' as soy_age;
 import '../../occurrences/domain/occurrence_photo_paths.dart';
 import '../../occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../occurrences/presentation/widgets/occurrence_fenologia_data.dart';
@@ -152,9 +153,16 @@ Future<String> buildOccurrenceReportHtml(
   data['talhao_nome'] = location.talhao;
   data['historico_talhao_linha'] = await _historicoTalhaoLinha(ref, occurrence);
   final estadio = _findEstadio(occurrence.estadioFenologico);
+  final estadioDisplay = soy_age.occurrenceEstadioDisplay(
+    occurrence,
+    estadioLabel: estadio?.name,
+  );
   if (estadio != null) {
-    data['estadio_fenologico_label'] = estadio.name;
     data['estadio_atencao'] = estadio.attention;
+  }
+  if (estadioDisplay.isNotEmpty) {
+    data['estadio_fenologico'] = estadioDisplay;
+    data['estadio_fenologico_label'] = estadioDisplay;
   }
   if (occurrenceIsAmostraSolo(occurrence)) {
     final tramite = OccurrenceAmostraTramite.fromStorage(
