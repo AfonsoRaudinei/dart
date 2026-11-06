@@ -200,12 +200,19 @@ class OccurrenceDetailSheet extends ConsumerWidget {
           initialOccurrence: live,
           onCancel: () => Navigator.of(sheetContext).pop(),
           onConfirm: (data) async {
-            final current = await loadLiveOccurrence(repository, live);
-            await repository.updateOccurrence(
-              applyOccurrenceFormEdit(current, data),
+            final saved = await updateLiveOccurrence(
+              repository,
+              live,
+              (current) => applyOccurrenceFormEdit(current, data),
             );
             container.invalidate(occurrencesListProvider);
-            if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+            if (!sheetContext.mounted) return;
+            if (!saved) {
+              ScaffoldMessenger.maybeOf(sheetContext)?.showSnackBar(
+                const SnackBar(content: Text(kOccurrenceDeletedMessage)),
+              );
+            }
+            Navigator.of(sheetContext).pop();
           },
         ),
       ),
