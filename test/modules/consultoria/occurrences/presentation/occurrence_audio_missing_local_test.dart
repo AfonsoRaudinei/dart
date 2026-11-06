@@ -47,6 +47,72 @@ void main() {
       expect(calls, 1);
     });
 
+    testWidgets('download grava efeito e o segundo resolve mostra Play', (
+      tester,
+    ) async {
+      var calls = 0;
+      var downloaded = false;
+      await tester.pumpWidget(
+        _host(
+          OccurrenceDetailAudioSection(
+            occurrence: _occurrenceWithAudio(),
+            cardBg: Colors.black,
+            cardRadius: 12,
+            isIos: false,
+            isDark: true,
+            resolvePath: (_) async {
+              calls++;
+              if (!downloaded) return null;
+              return '/docs/media/audio_outro_aparelho.m4a';
+            },
+            downloadMissing: (_) async {
+              downloaded = true;
+              return true;
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+      expect(
+        find.text(OccurrenceDetailAudioSection.missingLocalFileLabel),
+        findsNothing,
+      );
+      expect(downloaded, isTrue);
+      expect(calls, 2);
+    });
+
+    testWidgets('download que falha mantém aviso sem Play e um resolve', (
+      tester,
+    ) async {
+      var calls = 0;
+      await tester.pumpWidget(
+        _host(
+          OccurrenceDetailAudioSection(
+            occurrence: _occurrenceWithAudio(),
+            cardBg: Colors.black,
+            cardRadius: 12,
+            isIos: false,
+            isDark: true,
+            resolvePath: (_) async {
+              calls++;
+              return null;
+            },
+            downloadMissing: (_) async => false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(OccurrenceDetailAudioSection.missingLocalFileLabel),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
+      expect(calls, 1);
+    });
+
     testWidgets('com arquivo local mostra Play sem aviso', (tester) async {
       await tester.pumpWidget(
         _host(
