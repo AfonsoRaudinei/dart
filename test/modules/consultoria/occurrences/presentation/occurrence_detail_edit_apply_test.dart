@@ -38,6 +38,58 @@ void main() {
     expect(edited.long, -48.32);
   });
 
+  test('edição atualiza amostra e preserva andamento do registro vivo', () {
+    final fresh = stale.copyWith(
+      category: 'amostra_solo',
+      amostraSolo: true,
+      andamento: OccurrenceAndamento.emAtendimento.storageValue,
+      amostraCodigo: 'AS-1',
+      amostraColetor: 'João',
+      amostraTramite: 'coletada',
+      amostraAnalisesJson: '{"fase":2}',
+    );
+    const amostraForm = OccurrenceFormData(
+      type: 'Média',
+      description: 'Coleta',
+      latitude: -10.25,
+      longitude: -48.32,
+      category: 'amostra_solo',
+      amostraSolo: true,
+      amostraCodigo: ' AS-2 ',
+      amostraColetor: 'João',
+      amostraTramite: 'laudo_pronto',
+      amostraLaudoTexto: 'pH 5,8',
+    );
+
+    final edited = applyOccurrenceFormEdit(
+      resolveLiveOccurrence([fresh], stale),
+      amostraForm,
+    );
+
+    expect(edited.andamentoEnum, OccurrenceAndamento.emAtendimento);
+    expect(edited.amostraCodigo, 'AS-2');
+    expect(edited.amostraColetor, 'João');
+    expect(edited.amostraTramite, 'laudo_pronto');
+    expect(edited.amostraLaudoTexto, 'pH 5,8');
+    expect(edited.amostraAnalisesJson, '{"fase":2}');
+  });
+
+  test('edição sem campos de amostra limpa os existentes', () {
+    final fresh = stale.copyWith(
+      amostraCodigo: 'AS-1',
+      amostraColetor: 'João',
+      amostraTramite: 'laboratorio',
+      amostraLaudoTexto: 'antigo',
+    );
+
+    final edited = applyOccurrenceFormEdit(fresh, form);
+
+    expect(edited.amostraCodigo, isNull);
+    expect(edited.amostraColetor, isNull);
+    expect(edited.amostraTramite, isNull);
+    expect(edited.amostraLaudoTexto, isNull);
+  });
+
   test('sem lista carregada usa o snapshot recebido', () {
     final edited = applyOccurrenceFormEdit(
       resolveLiveOccurrence(null, stale),
