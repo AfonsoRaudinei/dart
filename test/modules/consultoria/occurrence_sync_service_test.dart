@@ -261,6 +261,73 @@ void main() {
       expect(mapped.amostraAnalisesJson, contains('reservado'));
     });
 
+    test('toRemote envia as 5 chaves de amostra junto com andamento e áudio', () {
+      final occurrence = Occurrence(
+        id: 'local-amostra-full',
+        type: 'Média',
+        description: 'Coleta',
+        category: 'amostra_solo',
+        amostraSolo: true,
+        createdAt: DateTime.utc(2026, 11, 5),
+        status: 'confirmed',
+        andamento: 'em_atendimento',
+        responsavelNome: 'Maria',
+        audioPath: 'media/audio_1.m4a',
+        audioDurationSec: 12,
+        amostraCodigo: 'AS-1',
+        amostraColetor: 'João',
+        amostraTramite: 'laboratorio',
+      );
+
+      final remote = OccurrenceRemoteMapper.toRemote(occurrence, 'owner-1');
+      expect(
+        remote.keys,
+        containsAll(<String>[
+          'amostra_codigo',
+          'amostra_coletor',
+          'amostra_tramite',
+          'amostra_laudo_texto',
+          'amostra_analises_json',
+        ]),
+      );
+      expect(remote['amostra_laudo_texto'], isNull);
+      expect(remote['amostra_analises_json'], isNull);
+
+      final mapped = Occurrence.fromMap(
+        OccurrenceRemoteMapper.fromRemote(
+          remote,
+          localId: 'local-amostra-full',
+          cachedByUserId: null,
+        ),
+      );
+      expect(mapped.amostraCodigo, 'AS-1');
+      expect(mapped.amostraColetor, 'João');
+      expect(mapped.amostraTramite, 'laboratorio');
+      expect(mapped.andamento, 'em_atendimento');
+      expect(mapped.responsavelNome, 'Maria');
+      expect(mapped.audioPath, 'media/audio_1.m4a');
+      expect(mapped.audioDurationSec, 12);
+    });
+
+    test('fromRemote sem chaves de amostra mantém campos nulos', () {
+      final local = OccurrenceRemoteMapper.fromRemote(
+        {
+          'id': 'remote-sem-amostra',
+          'user_id': 'owner-1',
+          'type': 'Alta',
+          'description': 'Legado',
+        },
+        localId: 'local-sem-amostra',
+        cachedByUserId: null,
+      );
+      final mapped = Occurrence.fromMap(local);
+      expect(mapped.amostraCodigo, isNull);
+      expect(mapped.amostraColetor, isNull);
+      expect(mapped.amostraTramite, isNull);
+      expect(mapped.amostraLaudoTexto, isNull);
+      expect(mapped.amostraAnalisesJson, isNull);
+    });
+
     test('preserva owner, identidade externa e payload completo no cache', () {
       final local = OccurrenceRemoteMapper.fromRemote(
         {
