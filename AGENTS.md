@@ -328,6 +328,7 @@ lib/
 | 051 | Carteira remote sync (espelho SQLite + SyncModule tier 1) |
 | 052 | Relatório combinado persistido (SQLite v46 + sync tier 1) |
 | 055 | Histórico factual do talhão no HTML da ocorrência (SQLite v49, `field_id` local) |
+| 056 | Ordem de aplicação em três campos (SQLite v49, espelho em `recomendacoes`) |
 | 057 | Rota sugerida da visita (paradas locais, sem sync) |
 
 Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
