@@ -40,8 +40,6 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     this.onExportLocation,
   });
 
-  bool get _isReadOnly => occurrence.cachedByUserId != null;
-
   static bool occurrencePinCorrectionEligible(Occurrence occurrence) {
     return occurrence.cachedByUserId == null &&
         occurrence.getCoordinates() != null;
