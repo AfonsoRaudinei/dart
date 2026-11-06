@@ -6,13 +6,18 @@ import '../../../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/occurrence.dart';
 
+typedef AudioPathResolver = Future<String?> Function(String storedPath);
+
 /// Reprodução read-only do áudio gravado no pin.
 class OccurrenceDetailAudioSection extends StatefulWidget {
+  static const missingLocalFileLabel = 'Áudio gravado em outro aparelho';
+
   final Occurrence occurrence;
   final Color cardBg;
   final double cardRadius;
   final bool isIos;
   final bool isDark;
+  final AudioPathResolver resolvePath;
 
   const OccurrenceDetailAudioSection({
     super.key,
@@ -21,6 +26,7 @@ class OccurrenceDetailAudioSection extends StatefulWidget {
     required this.cardRadius,
     required this.isIos,
     required this.isDark,
+    this.resolvePath = LocalMediaPathResolver.resolveLocalPath,
   });
 
   @override
@@ -30,46 +36,71 @@ class OccurrenceDetailAudioSection extends StatefulWidget {
 
 class _OccurrenceDetailAudioSectionState
     extends State<OccurrenceDetailAudioSection> {
-  final _player = AudioPlayer();
+  AudioPlayer? _player;
   bool _playing = false;
+  Future<String?>? _resolvedFuture;
 
   @override
   void initState() {
     super.initState();
-    _player.onPlayerComplete.listen((_) {
+    _resolve();
+  }
+
+  @override
+  void didUpdateWidget(covariant OccurrenceDetailAudioSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.occurrence.audioPath != widget.occurrence.audioPath) {
+      _resolve();
+    }
+  }
+
+  void _resolve() {
+    final path = widget.occurrence.audioPath?.trim();
+    _resolvedFuture = path == null || path.isEmpty
+        ? null
+        : widget.resolvePath(path);
+  }
+
+  AudioPlayer _ensurePlayer() {
+    final existing = _player;
+    if (existing != null) return existing;
+    final player = AudioPlayer();
+    player.onPlayerComplete.listen((_) {
       if (!mounted) return;
       setState(() => _playing = false);
     });
+    return _player = player;
   }
 
   @override
   void dispose() {
-    _player.dispose();
+    _player?.dispose();
     super.dispose();
   }
 
-  Future<void> _toggle() async {
-    final path = widget.occurrence.audioPath;
-    if (path == null || path.isEmpty) return;
+  Future<void> _toggle(String resolved) async {
+    final player = _ensurePlayer();
     if (_playing) {
-      await _player.stop();
+      await player.stop();
       if (mounted) setState(() => _playing = false);
       return;
     }
-    final resolved = await LocalMediaPathResolver.resolveLocalPath(path);
-    if (resolved == null) return;
-    await _player.play(DeviceFileSource(resolved));
+    await player.play(DeviceFileSource(resolved));
     if (mounted) setState(() => _playing = true);
   }
 
+  Color get _secondaryColor => widget.isIos
+      ? SoloForteSheetSkinIos.subtitleColor
+      : PremiumTokens.textSecondaryDark;
+
   @override
   Widget build(BuildContext context) {
-    final path = widget.occurrence.audioPath;
-    if (path == null || path.trim().isEmpty) {
-      return const SizedBox.shrink();
-    }
+    final future = _resolvedFuture;
+    if (future == null) return const SizedBox.shrink();
     final sec = widget.occurrence.audioDurationSec;
-    final subtitle = sec != null && sec > 0 ? '${sec}s gravados no ponto' : null;
+    final subtitle = sec != null && sec > 0
+        ? '${sec}s gravados no ponto'
+        : null;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -82,47 +113,66 @@ class _OccurrenceDetailAudioSectionState
               ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
               : null,
         ),
-        child: Row(
-          children: [
-            IconButton(
-              onPressed: _toggle,
-              icon: Icon(
-                _playing ? Icons.stop_circle_outlined : Icons.play_arrow_rounded,
-                color: widget.isIos
-                    ? SoloForteSheetSkinIos.iconStroke
-                    : context.themeAccent,
-              ),
-            ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Áudio no ponto',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+        child: FutureBuilder<String?>(
+          future: future,
+          builder: (context, snapshot) {
+            final done = snapshot.connectionState == ConnectionState.done;
+            final resolved = snapshot.data;
+            final missing = done && resolved == null;
+            return Row(
+              children: [
+                if (resolved != null)
+                  IconButton(
+                    onPressed: () => _toggle(resolved),
+                    icon: Icon(
+                      _playing
+                          ? Icons.stop_circle_outlined
+                          : Icons.play_arrow_rounded,
                       color: widget.isIos
-                          ? SoloForteSheetSkinIos.subtitleColor
-                          : (widget.isDark
-                              ? PremiumTokens.textSecondaryDark
-                              : context.premiumTextSecondary),
+                          ? SoloForteSheetSkinIos.iconStroke
+                          : context.themeAccent,
                     ),
-                  ),
-                  if (subtitle != null)
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: widget.isIos
-                            ? SoloForteSheetSkinIos.subtitleColor
-                            : PremiumTokens.textSecondaryDark,
+                  )
+                else
+                  const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Áudio no ponto',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: widget.isIos
+                              ? SoloForteSheetSkinIos.subtitleColor
+                              : (widget.isDark
+                                    ? PremiumTokens.textSecondaryDark
+                                    : context.premiumTextSecondary),
+                        ),
                       ),
-                    ),
-                ],
-              ),
-            ),
-          ],
+                      if (subtitle != null)
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _secondaryColor,
+                          ),
+                        ),
+                      if (missing)
+                        Text(
+                          OccurrenceDetailAudioSection.missingLocalFileLabel,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _secondaryColor,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
