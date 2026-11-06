@@ -1152,6 +1152,9 @@ class FakeOccurrenceRepository extends OccurrenceRepository {
   Occurrence? get(String id) => _store[id];
 
   @override
+  Future<Occurrence?> getById(String id) async => _store[id];
+
+  @override
   Future<List<Occurrence>> getAllOccurrences() async {
     return _store.values
         .where((occurrence) => occurrence.syncStatus != 'deleted')
