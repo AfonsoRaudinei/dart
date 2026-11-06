@@ -71,9 +71,6 @@ Future<String> _historicoTalhaoLinha(
             visitSessionId: occurrence.visitSessionId,
             farmLookup: _tryReadContract(() => ref.read(iFarmLookupProvider)),
             fieldLookup: fieldLookup,
-            visitSessionLookup: _tryReadContract(
-              () => ref.read(visitSessionLookupProvider),
-            ),
           ))?.trim() ??
           '';
     }
