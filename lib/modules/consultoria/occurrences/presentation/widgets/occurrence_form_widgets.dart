@@ -5,6 +5,8 @@ import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/widgets/photo/soloforte_photo_picker_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
+import 'package:soloforte_app/core/domain/occurrence_recomendacao_ordem.dart';
+
 import '../../domain/occurrence.dart';
 import 'occurrence_fenologia_data.dart';
 
@@ -608,6 +610,53 @@ class OccurrenceCatPickerSheet extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Três campos da ordem de aplicação (ação, dose, janela).
+class OccurrenceOrdemAplicacaoFields extends StatelessWidget {
+  final TextEditingController acao;
+  final TextEditingController dose;
+  final TextEditingController quando;
+
+  const OccurrenceOrdemAplicacaoFields({
+    super.key,
+    required this.acao,
+    required this.dose,
+    required this.quando,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const OccurrenceSectionHeader(
+          icon: '•',
+          title: OccurrenceRecomendacaoOrdem.sectionTitle,
+        ),
+        const SizedBox(height: 8),
+        OccurrenceDarkField(
+          controller: acao,
+          label: OccurrenceRecomendacaoOrdem.labelAcao,
+          hint: 'Ação, produto ou manejo',
+          maxLines: 3,
+        ),
+        const SizedBox(height: 12),
+        OccurrenceDarkField(
+          controller: dose,
+          label: OccurrenceRecomendacaoOrdem.labelDose,
+          hint: 'Quantidade e unidade',
+        ),
+        const SizedBox(height: 12),
+        OccurrenceDarkField(
+          controller: quando,
+          label: OccurrenceRecomendacaoOrdem.labelQuando,
+          hint: 'Janela ou estádio',
+          maxLines: 2,
+        ),
+      ],
     );
   }
 }
