@@ -622,6 +622,7 @@ class _CombinedReportsComposerState
           jsonData: payload.json,
           csvData: payload.csv,
           bodyBuilder: bodyBuilder,
+          enableWhatsAppShareLink: true,
           actions: _actionsFor(saved),
         ),
       ),
