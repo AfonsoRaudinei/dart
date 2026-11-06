@@ -8,6 +8,9 @@ import '../../domain/occurrence.dart';
 
 typedef AudioPathResolver = Future<String?> Function(String storedPath);
 
+typedef OccurrenceAudioDownloader =
+    Future<bool> Function(Occurrence occurrence);
+
 /// Reprodução read-only do áudio gravado no pin.
 class OccurrenceDetailAudioSection extends StatefulWidget {
   static const missingLocalFileLabel = 'Áudio gravado em outro aparelho';
@@ -18,6 +21,7 @@ class OccurrenceDetailAudioSection extends StatefulWidget {
   final bool isIos;
   final bool isDark;
   final AudioPathResolver resolvePath;
+  final OccurrenceAudioDownloader? downloadMissing;
 
   const OccurrenceDetailAudioSection({
     super.key,
@@ -27,6 +31,7 @@ class OccurrenceDetailAudioSection extends StatefulWidget {
     required this.isIos,
     required this.isDark,
     this.resolvePath = LocalMediaPathResolver.resolveLocalPath,
+    this.downloadMissing,
   });
 
   @override
@@ -58,7 +63,23 @@ class _OccurrenceDetailAudioSectionState
     final path = widget.occurrence.audioPath?.trim();
     _resolvedFuture = path == null || path.isEmpty
         ? null
-        : widget.resolvePath(path);
+        : _resolvePlayable(path);
+  }
+
+  Future<String?> _resolvePlayable(String path) async {
+    final first = await widget.resolvePath(path);
+    if (first != null && first.isNotEmpty) return first;
+    final download = widget.downloadMissing;
+    if (download == null) return null;
+    try {
+      final ok = await download(widget.occurrence);
+      if (!ok) return null;
+    } catch (_) {
+      return null;
+    }
+    final second = await widget.resolvePath(path);
+    if (second == null || second.isEmpty) return null;
+    return second;
   }
 
   AudioPlayer _ensurePlayer() {
