@@ -3,6 +3,7 @@
 // Contrato neutro — acessível por todos os bounded contexts.
 // ADR-024 (origem — DT-023-3: visit_controller depende de OccurrenceRepository)
 // ADR-047 (expansão: campos agronômicos ricos para IReportWriter / HTML)
+// ADR-056 (ordem de aplicação: ação, dose, quando)
 //
 // PROIBIDO: importar lib/modules/ neste arquivo.
 // Expõe apenas os campos de Occurrence necessários aos consumidores externos.
@@ -29,6 +30,9 @@ class OccurrenceSummary {
     this.estadioFenologico,
     this.tipoOcorrencia,
     this.recomendacoes,
+    this.recomendacaoAcao,
+    this.recomendacaoDose,
+    this.recomendacaoQuando,
     this.metricasJson,
     this.nutrientesJson,
     this.categoriasJson,
@@ -80,6 +84,9 @@ class OccurrenceSummary {
   final String? estadioFenologico;
   final String? tipoOcorrencia;
   final String? recomendacoes;
+  final String? recomendacaoAcao;
+  final String? recomendacaoDose;
+  final String? recomendacaoQuando;
   final String? metricasJson;
   final String? nutrientesJson;
   final String? categoriasJson;
