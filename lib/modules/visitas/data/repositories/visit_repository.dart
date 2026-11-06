@@ -57,6 +57,8 @@ class VisitRepository {
       {
         'farm_id': newFarmId,
         'area_id': null,
+        'route_stops_json': null,
+        'route_current_index': null,
         'updated_at': DateTime.now().toIso8601String(),
         'sync_status': 1,
       },
@@ -77,8 +79,30 @@ class VisitRepository {
       {
         if (farmId != null) 'farm_id': farmId,
         'area_id': newAreaId,
+        'route_stops_json': null,
+        'route_current_index': null,
         'updated_at': DateTime.now().toIso8601String(),
         'sync_status': 1,
+      },
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [sessionId, userId],
+    );
+  }
+
+  /// Estado da rota sugerida. Local-only: não altera `sync_status` nem
+  /// `updated_at`, para o sync da visita continuar igual (ADR-057).
+  Future<void> saveRouteState(
+    String sessionId, {
+    required String? routeStopsJson,
+    required int? routeCurrentIndex,
+  }) async {
+    final db = await _databaseHelper.database;
+    final userId = LocalSessionIdentity.resolveUserId();
+    await db.update(
+      'visit_sessions',
+      {
+        'route_stops_json': routeStopsJson,
+        'route_current_index': routeCurrentIndex,
       },
       where: 'id = ? AND user_id = ?',
       whereArgs: [sessionId, userId],
