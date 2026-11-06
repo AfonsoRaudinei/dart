@@ -38,6 +38,19 @@ class OcorrenciaHtmlRenderer {
 
     final category = data['category'] as String? ?? '';
     final cat = _categoriaInfo(category);
+    final isAmostraSolo = _isAmostraSolo(data);
+    final amostraCodigo = _amostraText(data, 'amostra_codigo', isAmostraSolo);
+    final amostraColetor = _amostraText(data, 'amostra_coletor', isAmostraSolo);
+    final amostraLaudo = _amostraText(
+      data,
+      'amostra_laudo_texto',
+      isAmostraSolo,
+    );
+    final amostraTramiteLabel = isAmostraSolo
+        ? (_nonEmpty(data['amostra_tramite_label'] as String?) ??
+              _amostraTramiteLabel(data['amostra_tramite'] as String?) ??
+              'Coletada')
+        : '';
     final categoriaLabel = RelatorioHtmlRenderer.escapeHtml(
       data['categoria_label'] as String? ?? cat.label,
     );
@@ -119,19 +132,12 @@ class OcorrenciaHtmlRenderer {
       'created_at_formatado': RelatorioHtmlRenderer.formatDateTime(createdAt),
       'id_curto': RelatorioHtmlRenderer.shortId(data['id'] as String? ?? ''),
       'sync_status': data['sync_status'] as String? ?? '',
-      'amostra_codigo': RelatorioHtmlRenderer.escapeHtml(
-        data['amostra_codigo'] as String?,
-      ),
-      'amostra_coletor': RelatorioHtmlRenderer.escapeHtml(
-        data['amostra_coletor'] as String?,
-      ),
+      'amostra_codigo': RelatorioHtmlRenderer.escapeHtml(amostraCodigo),
+      'amostra_coletor': RelatorioHtmlRenderer.escapeHtml(amostraColetor),
       'amostra_tramite_label': RelatorioHtmlRenderer.escapeHtml(
-        data['amostra_tramite_label'] as String? ??
-            _amostraTramiteLabel(data['amostra_tramite'] as String?),
+        amostraTramiteLabel,
       ),
-      'amostra_laudo_texto': RelatorioHtmlRenderer.escapeHtml(
-        data['amostra_laudo_texto'] as String?,
-      ),
+      'amostra_laudo_texto': RelatorioHtmlRenderer.escapeHtml(amostraLaudo),
     });
 
     final galeria = await _renderGaleria(
@@ -184,30 +190,18 @@ class OcorrenciaHtmlRenderer {
       'data_plantio',
       (data['data_plantio'] as String?)?.isNotEmpty == true,
     );
-    tpl = _resolveRepeatedIf(tpl, 'amostra_solo', _isAmostraSolo(data));
-    tpl = _resolveRepeatedIf(
-      tpl,
-      'amostra_codigo',
-      _isAmostraSolo(data) &&
-          (data['amostra_codigo'] as String?)?.isNotEmpty == true,
-    );
-    tpl = _resolveRepeatedIf(
-      tpl,
-      'amostra_coletor',
-      _isAmostraSolo(data) &&
-          (data['amostra_coletor'] as String?)?.isNotEmpty == true,
-    );
+    tpl = _resolveRepeatedIf(tpl, 'amostra_solo', isAmostraSolo);
+    tpl = _resolveRepeatedIf(tpl, 'amostra_codigo', amostraCodigo.isNotEmpty);
+    tpl = _resolveRepeatedIf(tpl, 'amostra_coletor', amostraColetor.isNotEmpty);
     tpl = _resolveRepeatedIf(
       tpl,
       'amostra_tramite_label',
-      _isAmostraSolo(data) &&
-          (data['amostra_tramite_label'] as String?)?.isNotEmpty == true,
+      amostraTramiteLabel.isNotEmpty,
     );
     tpl = _resolveRepeatedIf(
       tpl,
       'amostra_laudo_texto',
-      _isAmostraSolo(data) &&
-          (data['amostra_laudo_texto'] as String?)?.isNotEmpty == true,
+      amostraLaudo.isNotEmpty,
     );
     tpl = _resolveRepeatedIf(
       tpl,
@@ -847,6 +841,20 @@ class OcorrenciaHtmlRenderer {
     return cat == 'amostra_solo' ||
         cat == 'amostra solo' ||
         cat == 'amostra de solo';
+  }
+
+  static String? _nonEmpty(String? value) {
+    final trimmed = value?.trim() ?? '';
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  static String _amostraText(
+    Map<String, dynamic> data,
+    String key,
+    bool isAmostraSolo,
+  ) {
+    if (!isAmostraSolo) return '';
+    return _nonEmpty(data[key] as String?) ?? '';
   }
 
   static String? _amostraTramiteLabel(String? storage) {
