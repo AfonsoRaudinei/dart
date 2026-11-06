@@ -34,7 +34,9 @@ import 'core/contracts/marketing_case_reports_list_provider.dart';
 import 'core/database/database_helper.dart';
 import 'core/infra/preferences_service.dart';
 import 'core/router/app_router.dart';
+import 'core/services/notification_service.dart';
 import 'core/services/sync_orchestrator.dart';
+import 'modules/visitas/domain/visit_route_notification.dart';
 import 'core/utils/app_logger.dart';
 import 'core/contracts/i_agenda_ai_recommendation_context_lookup_provider.dart';
 import 'core/contracts/i_agenda_ai_visit_writer_provider.dart';
@@ -183,7 +185,9 @@ Future<void> main() async {
                 (ref) => NdviFieldRefreshAdapter(ref),
               ),
               ndviLatestLookupProvider.overrideWith((ref) {
-                return NdviLatestLookupAdapter(ref.watch(ndviRepositoryProvider));
+                return NdviLatestLookupAdapter(
+                  ref.watch(ndviRepositoryProvider),
+                );
               }),
               opportunityLookupProvider.overrideWith((ref) {
                 return OpportunityLookupImpl(
@@ -342,6 +346,17 @@ class _SoloForteAppState extends ConsumerState<SoloForteApp> {
     // antes do primeiro frame. Sem isto o primeiro triggerSync roda vazio.
     // Sync só após JWT (SessionAuthenticated). Sem triggerSync no first-frame.
     registerSyncModules(ref.read(syncOrchestratorProvider));
+
+    final notifications = NotificationService();
+    notifications.onNotificationResponse = (payload) {
+      final location = mapFocusLocationFromNotificationPayload(payload);
+      if (location == null) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(routerProvider).go(location);
+      });
+    };
+    unawaited(notifications.init());
 
     // VisitCompletionObserver (ADR-010): conclusão de visita → RelatorioTecnico.
     WidgetsBinding.instance.addPostFrameCallback((_) {
