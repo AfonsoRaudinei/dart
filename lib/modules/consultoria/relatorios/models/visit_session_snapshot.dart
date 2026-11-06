@@ -57,6 +57,9 @@ class OcorrenciaSnapshot {
   final String? estadioFenologico;
   final String? tipoOcorrencia;
   final String? recomendacoes;
+  final String? recomendacaoAcao;
+  final String? recomendacaoDose;
+  final String? recomendacaoQuando;
   final String? metricasJson;
   final String? nutrientesJson;
   final String? categoriasJson;
@@ -84,6 +87,9 @@ class OcorrenciaSnapshot {
     this.estadioFenologico,
     this.tipoOcorrencia,
     this.recomendacoes,
+    this.recomendacaoAcao,
+    this.recomendacaoDose,
+    this.recomendacaoQuando,
     this.metricasJson,
     this.nutrientesJson,
     this.categoriasJson,
@@ -112,6 +118,9 @@ class OcorrenciaSnapshot {
     String? estadioFenologico,
     String? tipoOcorrencia,
     String? recomendacoes,
+    String? recomendacaoAcao,
+    String? recomendacaoDose,
+    String? recomendacaoQuando,
     String? metricasJson,
     String? nutrientesJson,
     String? categoriasJson,
@@ -139,6 +148,9 @@ class OcorrenciaSnapshot {
       estadioFenologico: estadioFenologico ?? this.estadioFenologico,
       tipoOcorrencia: tipoOcorrencia ?? this.tipoOcorrencia,
       recomendacoes: recomendacoes ?? this.recomendacoes,
+      recomendacaoAcao: recomendacaoAcao ?? this.recomendacaoAcao,
+      recomendacaoDose: recomendacaoDose ?? this.recomendacaoDose,
+      recomendacaoQuando: recomendacaoQuando ?? this.recomendacaoQuando,
       metricasJson: metricasJson ?? this.metricasJson,
       nutrientesJson: nutrientesJson ?? this.nutrientesJson,
       categoriasJson: categoriasJson ?? this.categoriasJson,
@@ -168,6 +180,9 @@ class OcorrenciaSnapshot {
     'estadioFenologico': estadioFenologico,
     'tipoOcorrencia': tipoOcorrencia,
     'recomendacoes': recomendacoes,
+    'recomendacaoAcao': recomendacaoAcao,
+    'recomendacaoDose': recomendacaoDose,
+    'recomendacaoQuando': recomendacaoQuando,
     'metricasJson': metricasJson,
     'nutrientesJson': nutrientesJson,
     'categoriasJson': categoriasJson,
@@ -197,6 +212,9 @@ class OcorrenciaSnapshot {
         estadioFenologico: json['estadioFenologico'] as String?,
         tipoOcorrencia: json['tipoOcorrencia'] as String?,
         recomendacoes: json['recomendacoes'] as String?,
+        recomendacaoAcao: json['recomendacaoAcao'] as String?,
+        recomendacaoDose: json['recomendacaoDose'] as String?,
+        recomendacaoQuando: json['recomendacaoQuando'] as String?,
         metricasJson: json['metricasJson'] as String?,
         nutrientesJson: json['nutrientesJson'] as String?,
         categoriasJson: json['categoriasJson'] as String?,
