@@ -579,7 +579,8 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
     RelatorioTecnico relatorio,
   ) async {
     try {
-      final html = await buildRelatorioVisitHtml(ref, relatorio);
+      final html =
+          await buildRelatorioVisitHtml(ref, _withUnsavedClima(relatorio));
       if (!context.mounted) return;
       final whatsAppPhoneDigits =
           await _clientPhoneDigitsForWhatsApp(ref, relatorio.clientId);
@@ -615,7 +616,8 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
   ) async {
     try {
       final shareOrigin = resolveSharePositionOrigin(context);
-      final html = await buildRelatorioVisitHtml(ref, relatorio);
+      final html =
+          await buildRelatorioVisitHtml(ref, _withUnsavedClima(relatorio));
       await const ReportExportService().export(
         ReportExportFormat.html,
         ReportExportPayload(
@@ -655,6 +657,14 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
       pulverizacaoNota: pulver.isEmpty ? null : pulver,
     );
     return RelatorioClimaManual.hasContent(clima) ? clima : null;
+  }
+
+  RelatorioTecnico _withUnsavedClima(RelatorioTecnico relatorio) {
+    final clima = _climaManualFromFields();
+    return relatorio.copyWith(
+      climaManual: clima,
+      clearClimaManual: clima == null,
+    );
   }
 
   Future<void> _saveChanges(RelatorioTecnico relatorio) async {
