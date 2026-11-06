@@ -316,7 +316,62 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField>
     if (widget.storedPath != null && d != null && d > 0) {
       return 'Áudio gravado · ${d}s';
     }
-    return 'Até ${OccurrenceAudioField.maxDurationSec}s — mais rápido que digitar no talhão.';
+    return '';
+  }
+
+  /// Rótulos de outline no sheet Azul (iOS): nunca usar [SoloForteSheetSkinIos.ctaText]
+  /// — é branco para botão preenchido, ilegível em [v.cardBackground].
+  Color _outlineButtonLabelColor({
+    required BuildContext context,
+    required bool isIos,
+  }) {
+    return isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : Colors.white;
+  }
+
+  Widget _buildStatusArea({
+    required BuildContext context,
+    required bool isIos,
+    required bool hasAudio,
+  }) {
+    final primaryStyle = TextStyle(
+      fontSize: 13,
+      height: 1.4,
+      fontWeight: FontWeight.w500,
+      color: isIos
+          ? SoloForteSheetSkinIos.titleColor
+          : PremiumTokens.textPrimaryLight,
+    );
+    final secondaryStyle = TextStyle(
+      fontSize: 12,
+      height: 1.35,
+      color: isIos
+          ? SoloForteSheetSkinIos.subtitleColor
+          : PremiumTokens.textSecondaryDark,
+    );
+
+    final line = _statusLabel;
+    if (line.isNotEmpty) {
+      return Text(line, style: secondaryStyle);
+    }
+    if (!hasAudio) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '30 segundos para relato após tocar no ícone do microfone.',
+            style: primaryStyle,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Até ${OccurrenceAudioField.maxDurationSec}s — mais rápido que digitar no talhão.',
+            style: secondaryStyle,
+          ),
+        ],
+      );
+    }
+    return const SizedBox.shrink();
   }
 
   @override
@@ -326,6 +381,10 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField>
     final accent = isIos
         ? SoloForteSheetSkinIos.iconStroke
         : context.themeAccent;
+    final outlineLabelColor = _outlineButtonLabelColor(
+      context: context,
+      isIos: isIos,
+    );
     final hasAudio = _hasAudio;
     final canPlay = _resolvedPath != null;
 
@@ -342,18 +401,13 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const OccurrenceSectionHeader(icon: '🎙️', title: 'Áudio no ponto'),
-          const SizedBox(height: 6),
-          Text(
-            _statusLabel,
-            style: TextStyle(
-              fontSize: 12,
-              height: 1.35,
-              color: isIos
-                  ? SoloForteSheetSkinIos.subtitleColor
-                  : PremiumTokens.textSecondaryDark,
-            ),
+          const SizedBox(height: 8),
+          _buildStatusArea(
+            context: context,
+            isIos: isIos,
+            hasAudio: hasAudio,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Row(
             children: [
               if (_recording)
@@ -373,23 +427,38 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField>
                 )
               else if (!hasAudio)
                 Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: widget.enabled ? _startRecording : null,
-                    icon: Icon(Icons.mic_rounded, color: accent),
-                    label: Text(
-                      'Gravar',
-                      style: TextStyle(
-                        color: isIos
-                            ? SoloForteSheetSkinIos.ctaText
-                            : Colors.white,
-                        fontWeight: FontWeight.w600,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Material(
+                        color: accent.withValues(alpha: isIos ? 0.14 : 0.18),
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: widget.enabled ? _startRecording : null,
+                          customBorder: const CircleBorder(),
+                          child: SizedBox(
+                            width: 72,
+                            height: 72,
+                            child: Icon(
+                              Icons.mic_rounded,
+                              size: 36,
+                              color: accent,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: accent.withValues(alpha: 0.8)),
-                      minimumSize: const Size(48, 44),
-                      backgroundColor: v.cardBackground,
-                    ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Gravar',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: outlineLabelColor,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
                 )
               else ...[
@@ -408,9 +477,7 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField>
                       label: Text(
                         _playing ? 'Parar' : 'Ouvir',
                         style: TextStyle(
-                          color: isIos
-                              ? SoloForteSheetSkinIos.ctaText
-                              : Colors.white,
+                          color: outlineLabelColor,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
