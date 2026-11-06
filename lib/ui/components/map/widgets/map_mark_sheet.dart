@@ -30,17 +30,22 @@ class MapMarkSheet extends ConsumerStatefulWidget {
   final ActiveVisitContext? visitContext;
   final VoidCallback onClose;
 
+  /// Chamado só quando a ocorrência é salva (não nos cases de marketing).
+  final Future<void> Function(String occurrenceId)? onOccurrenceCreated;
+
   const MapMarkSheet({
     super.key,
     required this.position,
     required this.visitContext,
     required this.onClose,
+    this.onOccurrenceCreated,
   });
 
   static Future<void> show({
     required BuildContext context,
     required WidgetRef ref,
     required LatLng position,
+    Future<void> Function(String occurrenceId)? onOccurrenceCreated,
   }) async {
     final visit = await NovoCaseModalLauncher.loadActiveVisitContext(ref);
     if (!context.mounted) return;
@@ -53,6 +58,7 @@ class MapMarkSheet extends ConsumerStatefulWidget {
       builder: (sheetContext) => MapMarkSheet(
         position: position,
         visitContext: visit,
+        onOccurrenceCreated: onOccurrenceCreated,
         onClose: () => Navigator.of(sheetContext).pop(),
       ),
     );
@@ -211,7 +217,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
             'Ponto do mapa inválido. Toque novamente no mapa para marcar a ocorrência.',
           );
         }
-        await ref
+        final occurrenceId = await ref
             .read(occurrenceControllerProvider)
             .createOccurrence(
               type: data.type,
@@ -239,6 +245,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
               avaliacaoPlantio: data.avaliacaoPlantio,
               objetivoPlantio: data.objetivoPlantio,
             );
+        await widget.onOccurrenceCreated?.call(occurrenceId);
         if (!mounted) return;
         clearOccurrenceDraft(ref, data.latitude, data.longitude);
         if (!mounted) return;
