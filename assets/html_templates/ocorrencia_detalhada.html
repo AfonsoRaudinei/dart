@@ -114,10 +114,20 @@
     <!-- {{#if nutrientes && nutrientes.length > 0}} -->
     <!-- {{/if}} -->
 
-    <!-- {{#if recomendacoes}} -->
+    <!-- {{#if ordem_aplicacao}} -->
     <section class="sf-section">
-      <h2 class="sf-section-title"><span class="sf-section-num"></span>Recomendações técnicas</h2>
-      <div class="sf-callout"><p class="sf-prose">{{recomendacoes}}</p></div>
+      <h2 class="sf-section-title"><span class="sf-section-num"></span>Ordem de aplicação</h2>
+      <div class="sf-sheet sf-ordem">
+        <!-- {{#if recomendacao_acao}} -->
+        <div class="sf-row"><span class="sf-row-label">O que fazer</span><span class="sf-row-value">{{recomendacao_acao}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if recomendacao_dose}} -->
+        <div class="sf-row"><span class="sf-row-label">Dose</span><span class="sf-row-value">{{recomendacao_dose}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if recomendacao_quando}} -->
+        <div class="sf-row"><span class="sf-row-label">Quando</span><span class="sf-row-value">{{recomendacao_quando}}</span></div>
+        <!-- {{/if}} -->
+      </div>
     </section>
     <!-- {{/if}} -->
 
