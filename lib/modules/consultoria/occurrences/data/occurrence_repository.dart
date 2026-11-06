@@ -121,6 +121,27 @@ class OccurrenceRepository {
     );
   }
 
+  /// Registro atual por id (inclui soft-deleted, para não ressuscitar ao regravar).
+  Future<Occurrence?> getById(String id) async {
+    final db = await _databaseHelper.database;
+    final currentUserId = _scopedUserId();
+    final maps = await db.query(
+      'occurrences',
+      where:
+          'id = ? AND '
+          '(${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause()} '
+          'OR cached_by_user_id = ?)',
+      whereArgs: [
+        id,
+        ...OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereArgs(currentUserId),
+        currentUserId,
+      ],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return Occurrence.fromMap(maps.first);
+  }
+
   Future<List<Occurrence>> getOccurrencesByClientId(String clientId) async {
     final normalized = clientId.trim();
     if (normalized.isEmpty) return const [];
