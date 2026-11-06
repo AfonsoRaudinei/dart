@@ -401,20 +401,25 @@ class VisitaHtmlRenderer {
   }
 
   static String? _amostraMetaLine(Map<String, dynamic> ocorrencia) {
-    final categoria = (_stringOrNull(ocorrencia['categoria']) ?? '').toLowerCase();
-    final hasAmostraFields = _stringOrNull(ocorrencia['amostraCodigo']) != null ||
+    final categoria = (_stringOrNull(ocorrencia['categoria']) ?? '')
+        .toLowerCase();
+    final hasAmostraFields =
+        _stringOrNull(ocorrencia['amostraCodigo']) != null ||
         _stringOrNull(ocorrencia['amostraColetor']) != null ||
         _stringOrNull(ocorrencia['amostraTramite']) != null;
     if (categoria != 'amostra_solo' && !hasAmostraFields) return null;
 
     final parts = <String>[];
     final codigo = _stringOrNull(ocorrencia['amostraCodigo'])?.trim() ?? '';
-    if (codigo.isNotEmpty) parts.add('Amostra $codigo');
+    if (codigo.isNotEmpty) {
+      parts.add('Amostra ${RelatorioHtmlRenderer.escapeHtml(codigo)}');
+    }
     final coletor = _stringOrNull(ocorrencia['amostraColetor'])?.trim() ?? '';
     if (coletor.isNotEmpty) {
       parts.add('Coletor: ${RelatorioHtmlRenderer.escapeHtml(coletor)}');
     }
-    final tramiteRaw = _stringOrNull(ocorrencia['amostraTramite'])?.trim() ?? '';
+    final tramiteRaw =
+        _stringOrNull(ocorrencia['amostraTramite'])?.trim() ?? '';
     final tramiteLabel = switch (tramiteRaw) {
       'coletada' => 'Coletada',
       'laboratorio' => 'No laboratório',
@@ -424,9 +429,7 @@ class VisitaHtmlRenderer {
     if (tramiteLabel.isNotEmpty) parts.add(tramiteLabel);
     final laudo = _stringOrNull(ocorrencia['amostraLaudoTexto'])?.trim() ?? '';
     if (tramiteRaw == 'laudo_pronto' && laudo.isNotEmpty) {
-      parts.add(
-        'Laudo: ${RelatorioHtmlRenderer.escapeHtml(laudo)}',
-      );
+      parts.add('Laudo: ${RelatorioHtmlRenderer.escapeHtml(laudo)}');
     }
     if (parts.isEmpty) return null;
     return parts.join(' · ');
