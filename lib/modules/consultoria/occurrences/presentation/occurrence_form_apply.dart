@@ -7,7 +7,10 @@ String? _trimOrNull(String? value) {
 }
 
 /// Aplica [OccurrenceFormData] sobre uma ocorrência existente (edição).
-Occurrence occurrenceWithFormData(Occurrence occurrence, OccurrenceFormData data) {
+Occurrence occurrenceWithFormData(
+  Occurrence occurrence,
+  OccurrenceFormData data,
+) {
   final clearAudio =
       data.audioPath == null && occurrence.audioPath?.trim().isNotEmpty == true;
   final amostraCodigo = _trimOrNull(data.amostraCodigo);
