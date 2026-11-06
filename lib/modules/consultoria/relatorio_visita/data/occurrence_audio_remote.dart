@@ -96,6 +96,7 @@ class OccurrenceAudioRemote {
   }
 
   /// Se o arquivo local já existe, devolve true sem baixar.
+  /// Caminho com `..`, absoluto ou fora de `docs/media`: false, sem gravar.
   /// Rede ou 403: log e false. Não lança e não altera `sync_status`.
   Future<bool> downloadIfMissing({
     required String userId,
@@ -106,20 +107,20 @@ class OccurrenceAudioRemote {
     final stored = audioPath?.trim() ?? '';
     if (stored.isEmpty) return false;
 
+    final docs = documentsDirectory ?? await getApplicationDocumentsDirectory();
+    final target = _mediaFileInsideDocuments(docs, stored);
+    if (target == null) return false;
+
     final resolved = await LocalMediaPathResolver.resolveLocalPath(stored);
     if (resolved != null &&
         !_isRemoteUrl(resolved) &&
-        await File(resolved).exists()) {
+        await File(resolved).exists() &&
+        _fileStaysInsideMedia(docs, resolved)) {
       return true;
     }
 
     try {
       final bytes = await _store.download(objectPath(userId, occurrenceId));
-      final docs =
-          documentsDirectory ?? await getApplicationDocumentsDirectory();
-      final relative = LocalMediaPathResolver.toStoredPath(stored);
-      if (relative.isEmpty) return false;
-      final target = File(p.join(docs.path, relative));
       if (!await target.parent.exists()) {
         await target.parent.create(recursive: true);
       }
@@ -153,4 +154,39 @@ class OccurrenceAudioRemote {
 
   static bool _isRemoteUrl(String path) =>
       path.startsWith('http://') || path.startsWith('https://');
+
+  /// Grava só `docs/media/<basename>` de um nome sem barra.
+  /// Recusa relativo com `..`, caminho absoluto ou destino fora de `docs/media`.
+  static File? _mediaFileInsideDocuments(Directory docs, String stored) {
+    final relative = LocalMediaPathResolver.toStoredPath(
+      stored,
+    ).replaceAll(r'\', '/');
+    if (relative.isEmpty || _isUnsafeMediaPath(relative)) return null;
+
+    final name = p.basename(relative);
+    if (!_isSafeMediaFileName(name)) return null;
+
+    final mediaDir = _mediaDirectory(docs);
+    final targetPath = p.normalize(p.join(mediaDir, name));
+    if (!p.isWithin(mediaDir, targetPath)) return null;
+    return File(targetPath);
+  }
+
+  static bool _fileStaysInsideMedia(Directory docs, String path) {
+    final normalized = p.normalize(path);
+    if (normalized.contains('..')) return false;
+    return p.isWithin(_mediaDirectory(docs), normalized);
+  }
+
+  static String _mediaDirectory(Directory docs) =>
+      p.normalize(p.join(docs.path, LocalMediaPathResolver.mediaSegment));
+
+  static bool _isUnsafeMediaPath(String path) =>
+      path.contains('..') || p.isAbsolute(path) || p.posix.isAbsolute(path);
+
+  static bool _isSafeMediaFileName(String name) =>
+      name.isNotEmpty &&
+      !name.contains('/') &&
+      !name.contains(r'\') &&
+      !name.contains('..');
 }
