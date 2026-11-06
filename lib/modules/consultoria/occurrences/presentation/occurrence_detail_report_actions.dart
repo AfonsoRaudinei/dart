@@ -89,13 +89,23 @@ HtmlReportViewerActions occurrenceReportHtmlViewerActions(
         : null,
     onConfirm: occurrence.status != 'confirmed'
         ? (viewerContext) async {
-            await repository.updateOccurrence(
-              occurrence.copyWith(
+            final saved = await updateLiveOccurrence(
+              repository,
+              occurrence,
+              (live) => live.copyWith(
                 status: 'confirmed',
-                andamento: occurrence.andamento ??
+                andamento: live.andamento ??
                     OccurrenceAndamento.aberta.storageValue,
               ),
             );
+            if (!saved) {
+              if (viewerContext.mounted) {
+                ScaffoldMessenger.maybeOf(viewerContext)?.showSnackBar(
+                  const SnackBar(content: Text(kOccurrenceDeletedMessage)),
+                );
+              }
+              return false;
+            }
             container.invalidate(occurrencesListProvider);
             schedulePopParentSheetAfterViewer();
             return true;
