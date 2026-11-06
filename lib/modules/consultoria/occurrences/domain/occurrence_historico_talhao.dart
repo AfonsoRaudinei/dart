@@ -99,6 +99,7 @@ String? buildOccurrenceHistoricoTalhaoLinha({
     consider(row);
   }
   consider(current);
+  if (!matches.any((row) => row.id == current.id)) return null;
 
   return formatHistoricoTalhaoCopy(
     pragaKey: key,
