@@ -20,7 +20,9 @@ extension _OccurrenceCreationSheetLifecycle on _OccurrenceCreationSheetState {
     if (_estadio != null) return true;
     if (_selectedCategoryValue != null) return true;
     if (_descCtrl.text.trim().isNotEmpty) return true;
-    if (_recomCtrl.text.trim().isNotEmpty) return true;
+    if (_ordemAcaoCtrl.text.trim().isNotEmpty) return true;
+    if (_ordemDoseCtrl.text.trim().isNotEmpty) return true;
+    if (_ordemQuandoCtrl.text.trim().isNotEmpty) return true;
     if (_metrics.isNotEmpty) return true;
     if (_nutrientes.isNotEmpty) return true;
     if (_fotos.isNotEmpty) return true;
