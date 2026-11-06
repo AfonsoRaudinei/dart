@@ -208,6 +208,27 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Ordem de aplicação: valor empilhado no celular para copiar com o dedo. */
+.sf-ordem .sf-row-value {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 520px) {
+  .sf-ordem .sf-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .sf-ordem .sf-row-value {
+    text-align: left;
+    width: 100%;
+  }
+}
+
 .sf-row-sub {
   display: block;
   font-size: 13px;
