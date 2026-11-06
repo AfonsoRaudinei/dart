@@ -35,6 +35,9 @@ void main() {
         estadioFenologico: 'R5.1',
         tipoOcorrencia: 'sazonal',
         recomendacoes: 'Aplicar fungicida',
+        recomendacaoAcao: 'Aplicar fungicida',
+        recomendacaoDose: '0,5 L/ha',
+        recomendacaoQuando: 'V4',
         metricasJson: '{"doenca":{"severidade":3}}',
         nutrientesJson: '["N","K"]',
         categoriasJson: '["doenca"]',
@@ -55,6 +58,9 @@ void main() {
       expect(s.cultivar, 'TMG 2183');
       expect(s.estadioFenologico, 'R5.1');
       expect(s.recomendacoes, 'Aplicar fungicida');
+      expect(s.recomendacaoAcao, 'Aplicar fungicida');
+      expect(s.recomendacaoDose, '0,5 L/ha');
+      expect(s.recomendacaoQuando, 'V4');
       expect(s.metricasJson, contains('severidade'));
       expect(s.fotoPaths, ['/tmp/foto.jpg']);
       expect(s.geometry, contains('Point'));
