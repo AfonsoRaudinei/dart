@@ -76,6 +76,9 @@ class OccurrenceFormData {
   final String? tipoOcorrencia; // "sazonal" | "permanente"
   final bool amostraSolo;
   final String? recomendacoes;
+  final String? recomendacaoAcao;
+  final String? recomendacaoDose;
+  final String? recomendacaoQuando;
   final String? metricasJson;
   final String? nutrientesJson;
   final String? categoriasJson;
@@ -110,6 +113,9 @@ class OccurrenceFormData {
     this.tipoOcorrencia,
     this.amostraSolo = false,
     this.recomendacoes,
+    this.recomendacaoAcao,
+    this.recomendacaoDose,
+    this.recomendacaoQuando,
     this.metricasJson,
     this.nutrientesJson,
     this.categoriasJson,
