@@ -429,6 +429,9 @@ class FakeOccurrenceRepository extends OccurrenceRepository {
   Occurrence? lastUpdated;
 
   @override
+  Future<Occurrence?> getById(String id) async => null;
+
+  @override
   Future<void> updateOccurrence(Occurrence occurrence) async {
     lastUpdated = occurrence;
   }
