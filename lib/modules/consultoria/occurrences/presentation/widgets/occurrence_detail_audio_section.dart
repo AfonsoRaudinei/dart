@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/core/utils/local_media_path_resolver.dart';
 
 import '../../../../../../core/ui/sheets/sheet_tokens.dart';
