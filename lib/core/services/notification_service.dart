@@ -32,15 +32,13 @@ class NotificationService {
   Future<void> init() async {
     if (_initialized) return;
 
-    if (Platform.isAndroid) {
-      await Permission.notification.request();
-    }
-
+    // Sem pedido de permissão no boot: o pedido é contextual
+    // (ensureNotificationPermission).
     const androidSettings = AndroidInitializationSettings('launcher_icon');
     const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
     );
 
     const settings = InitializationSettings(
@@ -73,6 +71,41 @@ class NotificationService {
     handler(payload);
   }
 
+  /// Confere a permissão de notificação e pede se o sistema ainda deixa.
+  ///
+  /// iOS usa o plugin de notificações: o Podfile não habilita
+  /// `PERMISSION_NOTIFICATIONS` no permission_handler.
+  Future<bool> ensureNotificationPermission() async {
+    if (!_initialized) {
+      await init();
+    }
+
+    if (Platform.isIOS) {
+      final ios = _localNotifications
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+      if (ios == null) return false;
+      final current = await ios.checkPermissions();
+      if (current?.isEnabled == true) return true;
+      final granted = await ios.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      return granted ?? false;
+    }
+
+    var status = await Permission.notification.status;
+    if (status.isGranted || status.isLimited || status.isProvisional) {
+      return true;
+    }
+    if (status.isDenied && !status.isPermanentlyDenied) {
+      status = await Permission.notification.request();
+    }
+    return status.isGranted || status.isLimited || status.isProvisional;
+  }
+
   Future<void> showNotification({
     required int id,
     required String title,
@@ -82,6 +115,7 @@ class NotificationService {
     if (!_initialized) {
       await init();
     }
+    if (!await ensureNotificationPermission()) return;
 
     const androidDetails = AndroidNotificationDetails(
       'geofence_channel',
@@ -109,8 +143,8 @@ class NotificationService {
   ///
   /// Fase 1 (ADR-057): a notificação é publicada com o app ainda aberto,
   /// no momento em que a parada é concluída. Não usa localização em
-  /// background.
-  Future<void> showVisitRouteNotification({
+  /// background. Retorna `false` sem publicar quando não há permissão.
+  Future<bool> showVisitRouteNotification({
     required int id,
     required String title,
     required String body,
@@ -119,6 +153,7 @@ class NotificationService {
     if (!_initialized) {
       await init();
     }
+    if (!await ensureNotificationPermission()) return false;
 
     const androidDetails = AndroidNotificationDetails(
       'visit_route_channel',
@@ -146,5 +181,6 @@ class NotificationService {
       notificationDetails: details,
       payload: payload,
     );
+    return true;
   }
 }
