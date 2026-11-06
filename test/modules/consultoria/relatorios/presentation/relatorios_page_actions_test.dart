@@ -83,6 +83,10 @@ void main() {
 
     await _openReportCardByTitle(tester, 'Fazenda Rascunho');
     expect(find.text('Pré-visualização HTML'), findsOneWidget);
+    final viewer = tester.widget<HtmlReportViewer>(
+      find.byType(HtmlReportViewer),
+    );
+    expect(viewer.enableWhatsAppShareLink, isTrue);
     expect(find.byTooltip('Exportar'), findsOneWidget);
     expect(find.byTooltip('Publicar'), findsOneWidget);
     await _tapViewerToolbar(tester, 'Publicar');
