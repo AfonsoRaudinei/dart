@@ -528,7 +528,10 @@ void main() {
         );
         expect(html, contains('<p class="sf-prose">N, K</p>'));
         expect(html, isNot(contains('nutriente-badge')));
-        expect(html, contains('class="sf-callout"'));
+        expect(html, contains('Ordem de aplicação'));
+        expect(html, contains('>O que fazer</span>'));
+        expect(html, contains('Aplicar inseticida biológico.'));
+        expect(html, contains('sf-sheet sf-ordem'));
         expect(html, contains('class="sf-signature"'));
         expect(html, contains('Agronomo Teste'));
         expect(
@@ -662,6 +665,31 @@ void main() {
       expect(html, isNot(contains('<span class="sf-row-value"></span>')));
     });
 
+    test('ordem de aplicação mostra as três linhas e esconde as vazias', () async {
+      await initializeDateFormatting('pt_BR');
+
+      final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+        'id': 'occ-ordem',
+        'type': 'Alta',
+        'category': 'insetos',
+        'created_at': now.toIso8601String(),
+        'recomendacao_acao': 'Inseticida biológico',
+        'recomendacao_dose': '0,5 L/ha',
+        'recomendacao_quando': 'V4 a V6',
+        'recomendacoes': 'texto legado que não deve substituir os campos',
+      });
+
+      expect(html, contains('Ordem de aplicação'));
+      expect(html, contains('>O que fazer</span>'));
+      expect(html, contains('Inseticida biológico'));
+      expect(html, contains('>Dose</span>'));
+      expect(html, contains('0,5 L/ha'));
+      expect(html, contains('>Quando</span>'));
+      expect(html, contains('V4 a V6'));
+      expect(html, isNot(contains('texto legado')));
+      expect(html, contains('sf-sheet sf-ordem'));
+    });
+
     test('relatorio visita usa base editorial e preserva dados', () async {
       await initializeDateFormatting('pt_BR');
 
@@ -723,6 +751,8 @@ void main() {
       expect(html, contains('Cultura: Soja · Safra: 2025/26'));
       expect(html, contains('42,0 ha'));
       expect(html, contains('Lagarta em reboleira'));
+      expect(html, contains('Ordem de aplicação'));
+      expect(html, contains('>O que fazer</span>'));
       expect(html, contains('Monitorar em 7 dias'));
       expect(html, contains('Moderada'));
       expect(html, contains('Ponto registrado no mapa'));
