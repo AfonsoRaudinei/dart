@@ -22,7 +22,9 @@ void main() {
 
     test('isEffectivelyEmpty detecta foto anexada', () {
       const draft = OccurrenceFormDraft(
-        fotos: {'doenca': ['/tmp/photo.jpg']},
+        fotos: {
+          'doenca': ['/tmp/photo.jpg'],
+        },
       );
       expect(draft.isEffectivelyEmpty, isFalse);
     });
@@ -51,6 +53,19 @@ void main() {
           objetivoPlantio: 'Stand uniforme',
         ).isEffectivelyEmpty,
         isFalse,
+      );
+    });
+
+    test('isEffectivelyEmpty detecta ordem de aplicação', () {
+      expect(
+        const OccurrenceFormDraft(
+          recomendacaoDose: '1 L/ha',
+        ).isEffectivelyEmpty,
+        isFalse,
+      );
+      expect(
+        const OccurrenceFormDraft(recomendacaoAcao: ' ').isEffectivelyEmpty,
+        isTrue,
       );
     });
 
