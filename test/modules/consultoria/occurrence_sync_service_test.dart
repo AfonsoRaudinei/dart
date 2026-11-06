@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/data/occurrence_repository.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/data/occurrence_sync_service.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/domain/occurrence.dart';
@@ -419,6 +420,72 @@ void main() {
       ),
       isTrue,
     );
+  });
+
+  test('toRemote não envia field_id (coluna só local)', () {
+    final occurrence = Occurrence(
+      id: 'local-field',
+      type: 'Média',
+      description: 'Ferrugem',
+      createdAt: DateTime.utc(2026, 6, 21),
+      fieldId: 'field-1',
+    );
+
+    final remote = OccurrenceRemoteMapper.toRemote(occurrence, 'owner-1');
+
+    expect(remote.containsKey('field_id'), isFalse);
+  });
+
+  group('OccurrenceCachePolicy.writePulledRow', () {
+    late Database db;
+
+    setUpAll(sqfliteFfiInit);
+
+    setUp(() async {
+      db = await databaseFactoryFfi.openDatabase(inMemoryDatabasePath);
+    });
+
+    tearDown(() async => db.close());
+
+    test('pull com replace preserva field_id local', () async {
+      await db.execute(
+        'CREATE TABLE occurrences ('
+        'id TEXT PRIMARY KEY, description TEXT, sync_status TEXT, '
+        'field_id TEXT)',
+      );
+      await db.insert('occurrences', {
+        'id': 'occ-1',
+        'description': 'Antiga',
+        'sync_status': 'synced',
+        'field_id': 'field-1',
+      });
+
+      await OccurrenceCachePolicy.writePulledRow(db, {
+        'id': 'occ-1',
+        'description': 'Ferrugem',
+        'sync_status': 'synced',
+      });
+
+      final rows = await db.query('occurrences');
+      expect(rows, hasLength(1));
+      expect(rows.single['description'], 'Ferrugem');
+      expect(rows.single['field_id'], 'field-1');
+    });
+
+    test('pull de linha nova deixa field_id nulo', () async {
+      await db.execute(
+        'CREATE TABLE occurrences ('
+        'id TEXT PRIMARY KEY, description TEXT, field_id TEXT)',
+      );
+
+      await OccurrenceCachePolicy.writePulledRow(db, {
+        'id': 'occ-2',
+        'description': 'Ferrugem',
+      });
+
+      final rows = await db.query('occurrences');
+      expect(rows.single['field_id'], isNull);
+    });
   });
 
   test('cache compartilhado rejeita edicao local', () async {
