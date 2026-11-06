@@ -128,4 +128,51 @@ void main() {
       expect(reread.single.ownerUserId, 'user-persist');
     },
   );
+
+  group('getById', () {
+    Future<void> insertRaw(String id, Map<String, Object?> overrides) async {
+      final map = Occurrence(
+        id: id,
+        type: 'Info',
+        description: 'getById',
+        createdAt: DateTime.utc(2026, 11, 6, 12),
+      ).toMap();
+      map.addAll(overrides);
+      await db.insert('occurrences', map);
+    }
+
+    test('ocorrência de outro user_id não é retornada', () async {
+      LocalSessionIdentity.remember('user-a');
+      await insertRaw('occ-other', {'user_id': 'user-b'});
+
+      expect(await OccurrenceRepository().getById('occ-other'), isNull);
+    });
+
+    test('cached_by_user_id do usuário atual é retornada', () async {
+      LocalSessionIdentity.remember('user-a');
+      await insertRaw('occ-cached', {
+        'user_id': 'user-b',
+        'cached_by_user_id': 'user-a',
+      });
+
+      final found = await OccurrenceRepository().getById('occ-cached');
+
+      expect(found?.id, 'occ-cached');
+    });
+
+    test('deleted_local é retornada (tombstone)', () async {
+      LocalSessionIdentity.remember('user-a');
+      await insertRaw('occ-deleted', {
+        'user_id': 'user-a',
+        'sync_status': 'deleted_local',
+        'deleted_at': '2026-11-06T12:00:00.000Z',
+      });
+
+      final found = await OccurrenceRepository().getById('occ-deleted');
+
+      expect(found?.id, 'occ-deleted');
+      expect(found?.syncStatus, 'deleted_local');
+      expect(found?.deletedAt, isNotNull);
+    });
+  });
 }
