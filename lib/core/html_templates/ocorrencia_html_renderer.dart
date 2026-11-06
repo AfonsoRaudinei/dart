@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'ocorrencia_html_ordem_aplicacao.dart';
 import 'relatorio_html_renderer.dart';
 
 class OcorrenciaHtmlRenderer {
@@ -68,6 +69,7 @@ class OcorrenciaHtmlRenderer {
       photoPath: data['photo_path'] as String?,
       captions: photoCaptions,
     );
+    final ordem = OcorrenciaHtmlOrdemAplicacao.fromData(data);
     final contextoLinha =
         [data['cliente_nome'], data['fazenda_nome'], data['talhao_nome']]
             .map((value) => (value as String?)?.trim() ?? '')
@@ -122,9 +124,7 @@ class OcorrenciaHtmlRenderer {
       'description': RelatorioHtmlRenderer.escapeHtml(
         data['description'] as String?,
       ),
-      'recomendacoes': RelatorioHtmlRenderer.escapeHtml(
-        data['recomendacoes'] as String?,
-      ),
+      ...ordem.placeholders,
       'audio_base64': data['audio_base64'] as String? ?? '',
       'audio_duration_label': RelatorioHtmlRenderer.escapeHtml(
         data['audio_duration_label'] as String?,
@@ -247,11 +247,7 @@ class OcorrenciaHtmlRenderer {
       include: nutrientes.isNotEmpty,
       truthyHtml: nutrientes,
     );
-    tpl = _resolveRepeatedIf(
-      tpl,
-      'recomendacoes',
-      (data['recomendacoes'] as String?)?.isNotEmpty == true,
-    );
+    tpl = ordem.resolveIfs(tpl, _resolveRepeatedIf);
     tpl = _resolveRepeatedIf(
       tpl,
       'lat && long',
