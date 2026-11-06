@@ -16,7 +16,9 @@ class OccurrenceFormDraft {
   final List<String> categoryNames;
   final String urgency;
   final String description;
-  final String recomendacoes;
+  final String recomendacaoAcao;
+  final String recomendacaoDose;
+  final String recomendacaoQuando;
   final Map<String, Map<String, int>> metrics;
   final Set<String> nutrientes;
   final Map<String, List<String>> fotos;
@@ -44,7 +46,9 @@ class OccurrenceFormDraft {
     this.categoryNames = const [],
     this.urgency = 'Média',
     this.description = '',
-    this.recomendacoes = '',
+    this.recomendacaoAcao = '',
+    this.recomendacaoDose = '',
+    this.recomendacaoQuando = '',
     this.metrics = const {},
     this.nutrientes = const {},
     this.fotos = const {},
@@ -76,7 +80,9 @@ class OccurrenceFormDraft {
     if (selectedCategoryValue != null) return false;
     if (categoryNames.isNotEmpty) return false;
     if (description.trim().isNotEmpty) return false;
-    if (recomendacoes.trim().isNotEmpty) return false;
+    if (recomendacaoAcao.trim().isNotEmpty) return false;
+    if (recomendacaoDose.trim().isNotEmpty) return false;
+    if (recomendacaoQuando.trim().isNotEmpty) return false;
     if (metrics.isNotEmpty) return false;
     if (nutrientes.isNotEmpty) return false;
     if (fotos.isNotEmpty) return false;
@@ -107,7 +113,9 @@ class OccurrenceFormDraft {
     List<String>? categoryNames,
     String? urgency,
     String? description,
-    String? recomendacoes,
+    String? recomendacaoAcao,
+    String? recomendacaoDose,
+    String? recomendacaoQuando,
     Map<String, Map<String, int>>? metrics,
     Set<String>? nutrientes,
     Map<String, List<String>>? fotos,
@@ -138,7 +146,9 @@ class OccurrenceFormDraft {
       categoryNames: categoryNames ?? this.categoryNames,
       urgency: urgency ?? this.urgency,
       description: description ?? this.description,
-      recomendacoes: recomendacoes ?? this.recomendacoes,
+      recomendacaoAcao: recomendacaoAcao ?? this.recomendacaoAcao,
+      recomendacaoDose: recomendacaoDose ?? this.recomendacaoDose,
+      recomendacaoQuando: recomendacaoQuando ?? this.recomendacaoQuando,
       metrics: metrics ?? this.metrics,
       nutrientes: nutrientes ?? this.nutrientes,
       fotos: fotos ?? this.fotos,
