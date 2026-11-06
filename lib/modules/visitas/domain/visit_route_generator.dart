@@ -34,19 +34,19 @@ class VisitRouteGenerator {
   }) {
     if (geometryJson == null || geometryJson.trim().isEmpty) return const [];
     final count = stopCount.clamp(minStops, maxStops);
-    final ring = _largestOuterRing(geometryJson);
-    if (ring == null || ring.length < 3) return const [];
+    final parts = _decodeParts(geometryJson);
+    if (parts.isEmpty) return const [];
 
-    final bounds = _bounds(ring);
+    final bounds = _unionBounds(parts);
     if (bounds.spanLat == 0 || bounds.spanLng == 0) return const [];
 
-    final centroid = _centroid(ring);
+    final centroid = _centroid(_largestAreaPart(parts).outer);
     final pool = <_Pt>[];
-    if (geoJsonContainsPoint(geometryJson, centroid.lat, centroid.lng)) {
+    if (_partsContain(parts, centroid.lat, centroid.lng)) {
       pool.add(centroid);
     }
-    _addGrid(pool, geometryJson, bounds);
-    _addHalton(pool, geometryJson, bounds);
+    _addGrid(pool, parts, bounds);
+    _addHalton(pool, parts, bounds);
     if (pool.isEmpty) return const [];
 
     final minSep = minSeparationDegrees(
@@ -69,23 +69,23 @@ class VisitRouteGenerator {
     ];
   }
 
-  void _addGrid(List<_Pt> pool, String geometryJson, _Bounds bounds) {
+  void _addGrid(List<_Pt> pool, List<_Part> parts, _Bounds bounds) {
     const cells = 8;
     for (var row = 0; row < cells; row++) {
       for (var col = 0; col < cells; col++) {
         final lat = bounds.minLat + (row + 0.5) / cells * bounds.spanLat;
         final lng = bounds.minLng + (col + 0.5) / cells * bounds.spanLng;
-        if (!geoJsonContainsPoint(geometryJson, lat, lng)) continue;
+        if (!_partsContain(parts, lat, lng)) continue;
         pool.add(_Pt(lat, lng));
       }
     }
   }
 
-  void _addHalton(List<_Pt> pool, String geometryJson, _Bounds bounds) {
+  void _addHalton(List<_Pt> pool, List<_Part> parts, _Bounds bounds) {
     for (var i = 1; i <= 240; i++) {
       final lat = bounds.minLat + _halton(i, 3) * bounds.spanLat;
       final lng = bounds.minLng + _halton(i, 2) * bounds.spanLng;
-      if (!geoJsonContainsPoint(geometryJson, lat, lng)) continue;
+      if (!_partsContain(parts, lat, lng)) continue;
       pool.add(_Pt(lat, lng));
     }
   }
@@ -172,18 +172,76 @@ class _Bounds {
   double get spanLng => maxLng - minLng;
 }
 
-_Bounds _bounds(List<_Pt> ring) {
-  var minLat = ring.first.lat;
-  var maxLat = ring.first.lat;
-  var minLng = ring.first.lng;
-  var maxLng = ring.first.lng;
-  for (final point in ring) {
-    minLat = math.min(minLat, point.lat);
-    maxLat = math.max(maxLat, point.lat);
-    minLng = math.min(minLng, point.lng);
-    maxLng = math.max(maxLng, point.lng);
+/// Parte de Polygon/MultiPolygon: contorno externo + furos.
+class _Part {
+  final List<_Pt> outer;
+  final List<List<_Pt>> holes;
+
+  const _Part(this.outer, this.holes);
+}
+
+/// bbox de todos os contornos externos — a amostragem cobre todas as partes.
+_Bounds _unionBounds(List<_Part> parts) {
+  final first = parts.first.outer.first;
+  var minLat = first.lat;
+  var maxLat = first.lat;
+  var minLng = first.lng;
+  var maxLng = first.lng;
+  for (final part in parts) {
+    for (final point in part.outer) {
+      minLat = math.min(minLat, point.lat);
+      maxLat = math.max(maxLat, point.lat);
+      minLng = math.min(minLng, point.lng);
+      maxLng = math.max(maxLng, point.lng);
+    }
   }
   return _Bounds(minLat, maxLat, minLng, maxLng);
+}
+
+_Part _largestAreaPart(List<_Part> parts) {
+  var best = parts.first;
+  var bestArea = _shoelaceArea(best.outer);
+  for (final part in parts.skip(1)) {
+    final area = _shoelaceArea(part.outer);
+    if (area > bestArea) {
+      best = part;
+      bestArea = area;
+    }
+  }
+  return best;
+}
+
+double _shoelaceArea(List<_Pt> ring) {
+  var sum = 0.0;
+  for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    sum += ring[j].lng * ring[i].lat - ring[i].lng * ring[j].lat;
+  }
+  return sum.abs() / 2;
+}
+
+/// Mesma regra de `geoJsonContainsPoint`, sobre a geometria já decodificada.
+bool _partsContain(List<_Part> parts, double lat, double lng) {
+  if (!isValidGeoPoint(lat, lng)) return false;
+  for (final part in parts) {
+    if (!_ringContains(part.outer, lat, lng)) continue;
+    if (part.holes.any((hole) => _ringContains(hole, lat, lng))) continue;
+    return true;
+  }
+  return false;
+}
+
+bool _ringContains(List<_Pt> ring, double lat, double lng) {
+  var inside = false;
+  for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    final a = ring[i];
+    final b = ring[j];
+    final crosses = (a.lat > lat) != (b.lat > lat);
+    if (crosses &&
+        lng < (b.lng - a.lng) * (lat - a.lat) / (b.lat - a.lat) + a.lng) {
+      inside = !inside;
+    }
+  }
+  return inside;
 }
 
 _Pt _centroid(List<_Pt> ring) {
@@ -219,56 +277,65 @@ double _dist2(_Pt a, _Pt b) {
   return dLat * dLat + dLng * dLng;
 }
 
-List<_Pt>? _largestOuterRing(String geometryJson) {
+List<_Part> _decodeParts(String geometryJson) {
   Object? decoded;
   try {
     decoded = jsonDecode(geometryJson);
   } catch (_) {
-    return null;
+    return const [];
   }
-  final rings = <List<_Pt>>[];
-  _collectOuterRings(decoded, rings);
-  if (rings.isEmpty) return null;
-  rings.sort((a, b) => b.length.compareTo(a.length));
-  return rings.first;
+  final parts = <_Part>[];
+  _collectParts(decoded, parts);
+  return parts;
 }
 
-void _collectOuterRings(Object? node, List<List<_Pt>> into) {
+void _collectParts(Object? node, List<_Part> into) {
   if (node is! Map) return;
   switch (node['type']) {
     case 'Feature':
-      _collectOuterRings(node['geometry'], into);
+      _collectParts(node['geometry'], into);
     case 'FeatureCollection':
       final features = node['features'];
       if (features is! List) return;
       for (final feature in features) {
-        _collectOuterRings(feature, into);
+        _collectParts(feature, into);
       }
     case 'Polygon':
-      final ring = _ringPoints(node['coordinates']);
-      if (ring != null) into.add(ring);
+      final part = _polygonPart(node['coordinates']);
+      if (part != null) into.add(part);
     case 'MultiPolygon':
       final polygons = node['coordinates'];
       if (polygons is! List) return;
       for (final polygon in polygons) {
-        final ring = _ringPoints(polygon);
-        if (ring != null) into.add(ring);
+        final part = _polygonPart(polygon);
+        if (part != null) into.add(part);
       }
   }
 }
 
-List<_Pt>? _ringPoints(Object? rings) {
+/// Primeiro anel = contorno; demais = furos. Anel com posição inválida é
+/// descartado, como no hit-test de `geo_json_polygon_geometry.dart`.
+_Part? _polygonPart(Object? rings) {
   if (rings is! List || rings.isEmpty) return null;
-  final ring = rings.first;
-  if (ring is! List) return null;
+  final outer = _ringPoints(rings.first);
+  if (outer == null) return null;
+  final holes = <List<_Pt>>[];
+  for (final hole in rings.skip(1)) {
+    final points = _ringPoints(hole);
+    if (points != null) holes.add(points);
+  }
+  return _Part(outer, holes);
+}
+
+List<_Pt>? _ringPoints(Object? ring) {
+  if (ring is! List || ring.length < 3) return null;
   final points = <_Pt>[];
   for (final position in ring) {
-    if (position is! List || position.length < 2) continue;
+    if (position is! List || position.length < 2) return null;
     final lng = position[0];
     final lat = position[1];
-    if (lng is! num || lat is! num) continue;
+    if (lng is! num || lat is! num) return null;
     points.add(_Pt(lat.toDouble(), lng.toDouble()));
   }
-  if (points.length < 3) return null;
   return points;
 }
