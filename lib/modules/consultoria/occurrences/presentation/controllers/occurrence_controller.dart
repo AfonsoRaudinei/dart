@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
 import 'package:soloforte_app/core/contracts/i_visit_session_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/i_occurrence_access_reader_provider.dart';
+import 'package:soloforte_app/core/domain/occurrence_recomendacao_ordem.dart';
 import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import '../../domain/occurrence.dart';
 import '../../data/occurrence_repository.dart';
@@ -84,6 +85,9 @@ class OccurrenceController {
     String? tipoOcorrencia,
     bool amostraSolo = false,
     String? recomendacoes,
+    String? recomendacaoAcao,
+    String? recomendacaoDose,
+    String? recomendacaoQuando,
     String? metricasJson,
     String? nutrientesJson,
     String? categoriasJson,
@@ -142,7 +146,17 @@ class OccurrenceController {
       estadioFenologico: estadioFenologico,
       tipoOcorrencia: tipoOcorrencia,
       amostraSolo: amostraSolo,
-      recomendacoes: recomendacoes,
+      recomendacaoAcao: OccurrenceRecomendacaoOrdem.normalize(recomendacaoAcao),
+      recomendacaoDose: OccurrenceRecomendacaoOrdem.normalize(recomendacaoDose),
+      recomendacaoQuando: OccurrenceRecomendacaoOrdem.normalize(
+        recomendacaoQuando,
+      ),
+      recomendacoes: OccurrenceRecomendacaoOrdem.mirrorLegacy(
+        acao: recomendacaoAcao,
+        dose: recomendacaoDose,
+        quando: recomendacaoQuando,
+        legacy: recomendacoes,
+      ),
       metricasJson: metricasJson,
       nutrientesJson: nutrientesJson,
       categoriasJson: categoriasJson,
