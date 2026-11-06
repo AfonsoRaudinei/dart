@@ -1,3 +1,5 @@
+import 'visit_route_stop.dart';
+
 class VisitSession {
   final String id;
   final String producerId;
@@ -13,6 +15,11 @@ class VisitSession {
   final DateTime createdAt;
   final DateTime updatedAt;
   final int syncStatus; // 0 = synced, 1 = pending
+  /// JSON local da rota sugerida. Não sincroniza com o Supabase (ADR-057).
+  final String? routeStopsJson;
+
+  /// Índice 1-based da próxima parada pendente. Null sem rota ou rota concluída.
+  final int? routeCurrentIndex;
 
   VisitSession({
     required this.id,
@@ -28,7 +35,23 @@ class VisitSession {
     required this.createdAt,
     required this.updatedAt,
     this.syncStatus = 1,
+    this.routeStopsJson,
+    this.routeCurrentIndex,
   });
+
+  List<VisitRouteStop> get routeStops =>
+      VisitRouteStop.decodeList(routeStopsJson);
+
+  VisitRouteStop? get currentRouteStop {
+    final index = routeCurrentIndex;
+    if (index == null) return null;
+    for (final stop in routeStops) {
+      if (stop.index == index && stop.status == VisitRouteStopStatus.pending) {
+        return stop;
+      }
+    }
+    return null;
+  }
 
   factory VisitSession.fromMap(Map<String, dynamic> map) {
     return VisitSession(
@@ -45,6 +68,8 @@ class VisitSession {
       createdAt: DateTime.parse(map['created_at']),
       updatedAt: DateTime.parse(map['updated_at']),
       syncStatus: map['sync_status'] ?? 1,
+      routeStopsJson: map['route_stops_json'] as String?,
+      routeCurrentIndex: (map['route_current_index'] as num?)?.toInt(),
     );
   }
 
@@ -63,6 +88,8 @@ class VisitSession {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'sync_status': syncStatus,
+      'route_stops_json': routeStopsJson,
+      'route_current_index': routeCurrentIndex,
     };
   }
 
@@ -81,6 +108,9 @@ class VisitSession {
     DateTime? createdAt,
     DateTime? updatedAt,
     int? syncStatus,
+    String? routeStopsJson,
+    int? routeCurrentIndex,
+    bool clearRoute = false,
   }) {
     return VisitSession(
       id: id ?? this.id,
@@ -96,6 +126,36 @@ class VisitSession {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       syncStatus: syncStatus ?? this.syncStatus,
+      routeStopsJson: clearRoute
+          ? null
+          : (routeStopsJson ?? this.routeStopsJson),
+      routeCurrentIndex: clearRoute
+          ? null
+          : (routeCurrentIndex ?? this.routeCurrentIndex),
+    );
+  }
+
+  /// Grava a rota local sem mexer em `updated_at` / `sync_status`.
+  VisitSession copyWithRoute({
+    required String? routeStopsJson,
+    required int? routeCurrentIndex,
+  }) {
+    return VisitSession(
+      id: id,
+      producerId: producerId,
+      farmId: farmId,
+      areaId: areaId,
+      activityType: activityType,
+      startTime: startTime,
+      endTime: endTime,
+      initialLat: initialLat,
+      initialLong: initialLong,
+      status: status,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      syncStatus: syncStatus,
+      routeStopsJson: routeStopsJson,
+      routeCurrentIndex: routeCurrentIndex,
     );
   }
 }
