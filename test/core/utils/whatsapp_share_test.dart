@@ -19,9 +19,9 @@ void main() {
   });
 
   group('buildWhatsAppShareUri', () {
-    test('sem telefone usa wa.me com text apenas', () {
+    test('sem telefone abre o seletor de conversa', () {
       final uri = buildWhatsAppShareUri(message: 'Olá mundo');
-      expect(uri, 'https://wa.me/?text=Ol%C3%A1%20mundo');
+      expect(uri, 'https://api.whatsapp.com/send?text=Ol%C3%A1%20mundo');
     });
 
     test('telefone local recebe prefixo 55', () {
