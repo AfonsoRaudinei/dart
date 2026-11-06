@@ -1169,6 +1169,69 @@ void main() {
       );
     });
 
+    test('visita escapa campos da amostra de solo', () async {
+      await initializeDateFormatting('pt_BR');
+
+      final html = await VisitaHtmlRenderer.render(
+        relatorio: {
+          'id': 'rel-amostra',
+          'status': 'publicado',
+          'title': 'Visita',
+          'farmName': 'Fazenda',
+          'periodStart': now.toIso8601String(),
+          'ocorrencias': [
+            {
+              'id': 'occ-amostra',
+              'tipo': 'Amostra de solo',
+              'categoria': 'amostra_solo',
+              'amostraCodigo': 'AS-<14>',
+              'amostraColetor': 'João <b>',
+              'amostraTramite': 'laudo_pronto',
+              'amostraLaudoTexto': 'pH < 5 & K alto',
+              'registradaEm': now.toIso8601String(),
+            },
+          ],
+        },
+        agronomistNome: '',
+        clienteNome: 'Cliente',
+        publicacoesTitulos: const {},
+      );
+
+      expect(html, contains('AS-&lt;14&gt;'));
+      expect(html, contains('João &lt;b&gt;'));
+      expect(html, contains('pH &lt; 5 &amp; K alto'));
+      expect(html, isNot(contains('<b>')));
+      expect(html, isNot(contains('{{')));
+    });
+
+    test('visita com amostra legada sem campos não vaza tokens', () async {
+      await initializeDateFormatting('pt_BR');
+
+      final html = await VisitaHtmlRenderer.render(
+        relatorio: {
+          'id': 'rel-amostra-legada',
+          'status': 'publicado',
+          'title': 'Visita',
+          'farmName': 'Fazenda',
+          'periodStart': now.toIso8601String(),
+          'ocorrencias': [
+            {
+              'id': 'occ-legada',
+              'tipo': 'Amostra de solo',
+              'categoria': 'amostra_solo',
+              'registradaEm': now.toIso8601String(),
+            },
+          ],
+        },
+        agronomistNome: '',
+        clienteNome: 'Cliente',
+        publicacoesTitulos: const {},
+      );
+
+      expect(html, isNot(contains('{{')));
+      expect(html, isNot(contains('amostra_')));
+    });
+
     test('lista de ocorrências numera miniaturas', () async {
       await initializeDateFormatting('pt_BR');
 
