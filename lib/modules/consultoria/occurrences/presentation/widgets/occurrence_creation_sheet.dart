@@ -765,19 +765,19 @@ class _OccurrenceCreationSheetState
                       : 'Descreva a ocorrência…',
                   maxLines: 4,
                 ),
-                const SizedBox(height: 16),
-                OccurrenceAudioField(
-                  storedPath: _audioPath,
-                  durationSec: _audioDurationSec,
-                  enabled: !_isSaving,
-                  onChanged: (value) {
-                    _patchForm(() {
-                      _audioPath = value.path;
-                      _audioDurationSec = value.durationSec;
-                    });
-                  },
-                ),
                 if (!_isAreaVisitada) ...[
+                  const SizedBox(height: 16),
+                  OccurrenceAudioField(
+                    storedPath: _audioPath,
+                    durationSec: _audioDurationSec,
+                    enabled: !_isSaving,
+                    onChanged: (value) {
+                      _patchForm(() {
+                        _audioPath = value.path;
+                        _audioDurationSec = value.durationSec;
+                      });
+                    },
+                  ),
                   const SizedBox(height: 20),
                   const OccurrenceSectionHeader(
                     icon: '✅',
