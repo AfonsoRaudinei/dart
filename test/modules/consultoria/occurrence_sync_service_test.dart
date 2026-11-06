@@ -170,6 +170,61 @@ void main() {
       expect(mapped.objetivoPlantio, isNull);
     });
 
+    test('toRemote envia andamento e responsavel_nome', () {
+      final occurrence = Occurrence(
+        id: 'local-andamento',
+        type: 'Alta',
+        description: 'Ferrugem',
+        createdAt: DateTime.utc(2026, 11, 5),
+        status: 'confirmed',
+        andamento: 'em_atendimento',
+        responsavelNome: 'Maria',
+      );
+
+      final remote = OccurrenceRemoteMapper.toRemote(occurrence, 'owner-1');
+      expect(remote['andamento'], 'em_atendimento');
+      expect(remote['responsavel_nome'], 'Maria');
+    });
+
+    test('fromRemote sem chave andamento assume aberta', () {
+      final local = OccurrenceRemoteMapper.fromRemote(
+        {
+          'id': 'remote-legacy',
+          'user_id': 'owner-1',
+          'type': 'Alta',
+          'description': 'Legado',
+        },
+        localId: 'local-legacy',
+        cachedByUserId: null,
+      );
+      expect(local['andamento'], 'aberta');
+      expect(local['responsavel_nome'], isNull);
+      expect(Occurrence.fromMap(local).andamento, 'aberta');
+    });
+
+    test('toRemote/fromRemote round-trip de andamento preenchido', () {
+      final occurrence = Occurrence(
+        id: 'local-andamento-rt',
+        type: 'Média',
+        description: 'Percevejo',
+        createdAt: DateTime.utc(2026, 11, 5),
+        status: 'confirmed',
+        andamento: 'resolvida',
+        responsavelNome: 'João',
+      );
+
+      final remote = OccurrenceRemoteMapper.toRemote(occurrence, 'owner-1');
+      final mapped = Occurrence.fromMap(
+        OccurrenceRemoteMapper.fromRemote(
+          remote,
+          localId: 'local-andamento-rt',
+          cachedByUserId: null,
+        ),
+      );
+      expect(mapped.andamento, 'resolvida');
+      expect(mapped.responsavelNome, 'João');
+    });
+
     test('preserva owner, identidade externa e payload completo no cache', () {
       final local = OccurrenceRemoteMapper.fromRemote(
         {
