@@ -278,6 +278,47 @@ void main() {
       );
     });
 
+    test('atual sem field_id e fora do polígono não gera linha', () {
+      final current = row(id: 'now', lat: 5, lng: 5);
+      final inside = [
+        row(id: 'b', fieldId: 'field-1', estadio: 'R5'),
+        row(id: 'c', createdAt: DateTime(2025, 3, 2), estadio: 'V4'),
+      ];
+      expect(
+        buildOccurrenceHistoricoTalhaoLinha(
+          current: current,
+          candidates: inside,
+          fieldId: 'field-1',
+          field: field(),
+        ),
+        isNull,
+      );
+    });
+
+    test(
+      'atual com field_id do talhão e um legado no polígono mantém linha',
+      () {
+        final current = row(
+          id: 'now',
+          fieldId: 'field-1',
+          lat: 5,
+          lng: 5,
+          createdAt: DateTime(2026, 8, 1),
+          estadio: 'R1',
+        );
+        final legacy = row(id: 'old', createdAt: DateTime(2025, 3, 2));
+        expect(
+          buildOccurrenceHistoricoTalhaoLinha(
+            current: current,
+            candidates: [legacy],
+            fieldId: 'field-1',
+            field: field(),
+          ),
+          'Ferrugem apareceu 2 vezes; a última em R1.',
+        );
+      },
+    );
+
     test('sem chave de praga não gera linha', () {
       final current = row(id: 'a', description: ' ', fieldId: 'field-1');
       final other = row(id: 'b', description: ' ', fieldId: 'field-1');
