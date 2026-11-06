@@ -214,36 +214,7 @@ class OccurrenceSyncService {
       localId: localId,
       cachedByUserId: isOwned ? null : currentUserId,
     );
-    final preservedFieldId = await _preservedFieldId(db, localId);
-    if (preservedFieldId != null) {
-      localData['field_id'] = preservedFieldId;
-    }
-    await db.insert(
-      'occurrences',
-      localData,
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
-
-  /// `field_id` é só local (v49). O replace do pull não pode apagá-lo.
-  Future<String?> _preservedFieldId(DatabaseExecutor db, String localId) async {
-    if (!await DatabaseSchemaUtils.columnExists(
-      db,
-      'occurrences',
-      'field_id',
-    )) {
-      return null;
-    }
-    final prior = await db.query(
-      'occurrences',
-      columns: ['field_id'],
-      where: 'id = ?',
-      whereArgs: [localId],
-      limit: 1,
-    );
-    if (prior.isEmpty) return null;
-    final value = prior.single['field_id']?.toString().trim() ?? '';
-    return value.isEmpty ? null : value;
+    await OccurrenceCachePolicy.writePulledRow(db, localData);
   }
 
   Future<void> _removeLegacySharedCache(
@@ -329,6 +300,46 @@ class OccurrenceCachePolicy {
     if (localUpdatedAt == null || remoteUpdatedAt == null) return true;
     return remoteUpdatedAt.isAfter(localUpdatedAt);
   }
+
+  /// `field_id` é só local (v49) e não vem do Supabase: o replace do pull
+  /// mantém o valor já gravado em vez de zerá-lo.
+  static Future<void> writePulledRow(
+    DatabaseExecutor db,
+    Map<String, dynamic> localData,
+  ) async {
+    final preservedFieldId = await _localFieldId(db, localData['id'] as String);
+    final row = preservedFieldId == null
+        ? localData
+        : {...localData, 'field_id': preservedFieldId};
+    await db.insert(
+      'occurrences',
+      row,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  static Future<String?> _localFieldId(
+    DatabaseExecutor db,
+    String localId,
+  ) async {
+    if (!await DatabaseSchemaUtils.columnExists(
+      db,
+      'occurrences',
+      'field_id',
+    )) {
+      return null;
+    }
+    final prior = await db.query(
+      'occurrences',
+      columns: ['field_id'],
+      where: 'id = ?',
+      whereArgs: [localId],
+      limit: 1,
+    );
+    if (prior.isEmpty) return null;
+    final value = prior.single['field_id']?.toString().trim() ?? '';
+    return value.isEmpty ? null : value;
+  }
 }
 
 class OccurrenceRemoteMapper {
@@ -378,7 +389,8 @@ class OccurrenceRemoteMapper {
       'estande_plantas': occurrence.estandePlantas,
       'avaliacao_plantio': occurrence.avaliacaoPlantio,
       'objetivo_plantio': occurrence.objetivoPlantio,
-      'andamento': occurrence.andamento ?? OccurrenceAndamento.aberta.storageValue,
+      'andamento':
+          occurrence.andamento ?? OccurrenceAndamento.aberta.storageValue,
       'responsavel_nome': occurrence.responsavelNome,
       'audio_path': occurrence.audioPath,
       'audio_duration_sec': occurrence.audioDurationSec,
@@ -439,7 +451,8 @@ class OccurrenceRemoteMapper {
       'estande_plantas': (remote['estande_plantas'] as num?)?.toInt(),
       'avaliacao_plantio': remote['avaliacao_plantio'] as String?,
       'objetivo_plantio': remote['objetivo_plantio'] as String?,
-      'andamento': remote['andamento'] as String? ??
+      'andamento':
+          remote['andamento'] as String? ??
           OccurrenceAndamento.aberta.storageValue,
       'responsavel_nome': remote['responsavel_nome'] as String?,
       'audio_path': remote['audio_path'] as String?,
