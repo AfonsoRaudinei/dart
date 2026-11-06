@@ -12,6 +12,7 @@ import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_controller.dart';
 import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/ui/components/map/map_sheet_state.dart';
+import 'package:soloforte_app/ui/components/map/visit_suggested_route_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 final _visitClientHierarchyProvider = FutureProvider.autoDispose
@@ -77,9 +78,7 @@ class VisitActiveCard extends ConsumerWidget {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: context.themeAccent.withValues(
-                              alpha: 0.5,
-                            ),
+                            color: context.themeAccent.withValues(alpha: 0.5),
                             blurRadius: 6,
                             spreadRadius: 1,
                           ),
@@ -144,7 +143,7 @@ class VisitActiveCard extends ConsumerWidget {
                       child: const Text('Desenhar talhão'),
                     ),
                   ),
-                if (session.areaId != null)
+                if (session.areaId != null) ...[
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: OutlinedButton.icon(
@@ -158,6 +157,42 @@ class VisitActiveCard extends ConsumerWidget {
                           ),
                       icon: const Icon(Icons.satellite_alt_outlined, size: 16),
                       label: const Text('NDVI'),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: OutlinedButton(
+                      onPressed: () =>
+                          showVisitSuggestedRouteSheet(context, ref),
+                      child: const Text('Rota sugerida'),
+                    ),
+                  ),
+                ],
+                if (session.currentRouteStop != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Parada ${session.routeCurrentIndex} de ${session.routeStops.length}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: context.premiumTextPrimary,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              registerOccurrenceAtCurrentStop(context, ref),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: const Size(0, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text('Registrar ocorrência'),
+                        ),
+                      ],
                     ),
                   ),
               ],
@@ -358,21 +393,18 @@ class _SelectionSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
-    final bg =
-        isIos ? SoloForteSheetSkinIos.background : Colors.white;
+    final bg = isIos ? SoloForteSheetSkinIos.background : Colors.white;
     final handle = isIos
         ? SoloForteSheetSkinIos.handleColor
         : const Color(0xFFC5C5C7);
-    final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
     final accent = isIos
         ? SoloForteSheetSkinIos.iconStroke
         : context.themeAccent;
     final divider = isIos
         ? SoloForteSheetSkinIos.rowDivider
         : Colors.black.withValues(alpha: 0.07);
-    final radius =
-        isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
+    final radius = isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
 
     return Container(
       decoration: BoxDecoration(
@@ -392,12 +424,8 @@ class _SelectionSheet extends StatelessWidget {
             Center(
               child: Container(
                 margin: const EdgeInsets.only(top: 10, bottom: 8),
-                width: isIos
-                    ? SoloForteSheetSkinIos.handleSize.width
-                    : 36,
-                height: isIos
-                    ? SoloForteSheetSkinIos.handleSize.height
-                    : 4,
+                width: isIos ? SoloForteSheetSkinIos.handleSize.width : 36,
+                height: isIos ? SoloForteSheetSkinIos.handleSize.height : 4,
                 decoration: BoxDecoration(
                   color: handle,
                   borderRadius: BorderRadius.circular(10),
@@ -438,17 +466,13 @@ class _SelectionSheet extends StatelessWidget {
                       color: isSelected
                           ? accent
                           : (isIos
-                              ? SoloForteSheetSkinIos.titleColor
-                              : context.premiumTextPrimary),
+                                ? SoloForteSheetSkinIos.titleColor
+                                : context.premiumTextPrimary),
                       letterSpacing: -0.3,
                     ),
                   ),
                   trailing: isSelected
-                      ? Icon(
-                          Icons.check_rounded,
-                          size: 18,
-                          color: accent,
-                        )
+                      ? Icon(Icons.check_rounded, size: 18, color: accent)
                       : null,
                   onTap: () {
                     HapticFeedback.selectionClick();
