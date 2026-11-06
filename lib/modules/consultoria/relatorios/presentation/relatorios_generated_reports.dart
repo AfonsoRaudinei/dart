@@ -72,6 +72,7 @@ class _GeneratedReportCardState extends ConsumerState<_GeneratedReportCard> {
             jsonData: payload.json,
             csvData: payload.csv,
             bodyBuilder: bodyBuilder,
+            enableWhatsAppShareLink: true,
             actions: widget.viewerActions,
           ),
         ),
