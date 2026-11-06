@@ -158,6 +158,50 @@ void main() {
     },
   );
 
+  test('download recusa media/../soloforte.db e não grava o banco', () async {
+    final ok = await remote.downloadIfMissing(
+      userId: 'user',
+      occurrenceId: 'occ',
+      audioPath: 'media/../soloforte.db',
+      documentsDirectory: docs,
+    );
+
+    expect(ok, isFalse);
+    expect(await File('${docs.path}/soloforte.db').exists(), isFalse);
+    expect(await File('${docs.path}/media/soloforte.db').exists(), isFalse);
+  });
+
+  test('download recusa media/foo/../x.m4a', () async {
+    final ok = await remote.downloadIfMissing(
+      userId: 'user',
+      occurrenceId: 'occ',
+      audioPath: 'media/foo/../x.m4a',
+      documentsDirectory: docs,
+    );
+
+    expect(ok, isFalse);
+    expect(await File('${docs.path}/x.m4a').exists(), isFalse);
+    expect(await File('${docs.path}/media/x.m4a').exists(), isFalse);
+    expect(await File('${docs.path}/media/foo/x.m4a').exists(), isFalse);
+  });
+
+  test('download grava media/audio_ok.m4a em docs/media', () async {
+    store.downloadBytes = Uint8List.fromList(const [7, 7, 7]);
+
+    final ok = await remote.downloadIfMissing(
+      userId: 'user',
+      occurrenceId: 'occ',
+      audioPath: 'media/audio_ok.m4a',
+      documentsDirectory: docs,
+    );
+
+    final saved = File('${docs.path}/media/audio_ok.m4a');
+    expect(ok, isTrue);
+    expect(await saved.exists(), isTrue);
+    expect(await saved.readAsBytes(), store.downloadBytes);
+    expect(await File('${docs.path}/audio_ok.m4a').exists(), isFalse);
+  });
+
   test('download que lança devolve false sem exceção', () async {
     store.downloadError = Exception('403');
 
