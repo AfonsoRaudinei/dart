@@ -29,6 +29,8 @@ class _OccurrenceAndamentoSectionState
     extends ConsumerState<OccurrenceAndamentoSection> {
   late OccurrenceAndamento _andamento;
   late TextEditingController _responsavelCtrl;
+  late FocusNode _responsavelFocus;
+  String? _savedResponsavel;
   bool _saving = false;
 
   @override
@@ -38,6 +40,10 @@ class _OccurrenceAndamentoSectionState
     _responsavelCtrl = TextEditingController(
       text: widget.occurrence.responsavelNome ?? '',
     );
+    _savedResponsavel = _normalizedResponsavel(
+      widget.occurrence.responsavelNome,
+    );
+    _responsavelFocus = FocusNode()..addListener(_onResponsavelFocusChange);
   }
 
   @override
@@ -45,6 +51,9 @@ class _OccurrenceAndamentoSectionState
     super.didUpdateWidget(oldWidget);
     if (oldWidget.occurrence.id != widget.occurrence.id) {
       _andamento = widget.occurrence.andamentoEnum;
+      _savedResponsavel = _normalizedResponsavel(
+        widget.occurrence.responsavelNome,
+      );
       _responsavelCtrl.text = widget.occurrence.responsavelNome ?? '';
       return;
     }
@@ -53,56 +62,76 @@ class _OccurrenceAndamentoSectionState
     }
     if (oldWidget.occurrence.responsavelNome !=
         widget.occurrence.responsavelNome) {
-      _responsavelCtrl.text = widget.occurrence.responsavelNome ?? '';
+      _savedResponsavel = _normalizedResponsavel(
+        widget.occurrence.responsavelNome,
+      );
+      // Não sobrescrever o que o usuário está digitando.
+      if (!_responsavelFocus.hasFocus) {
+        _responsavelCtrl.text = widget.occurrence.responsavelNome ?? '';
+      }
     }
   }
 
   @override
   void dispose() {
+    // Sem persistência aqui: o widget já saiu da árvore e `ref` não é seguro.
+    _responsavelFocus
+      ..removeListener(_onResponsavelFocusChange)
+      ..dispose();
     _responsavelCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _persist({
-    OccurrenceAndamento? andamento,
-    String? responsavelNome,
-    bool clearResponsavel = false,
+  void _onResponsavelFocusChange() {
+    if (!mounted || _responsavelFocus.hasFocus) return;
+    _onResponsavelSubmitted();
+  }
+
+  static String? _normalizedResponsavel(String? raw) {
+    final trimmed = raw?.trim() ?? '';
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  Future<bool> _persist({
+    required OccurrenceAndamento andamento,
+    required String? responsavelNome,
   }) async {
-    if (widget.readOnly || _saving) return;
+    if (widget.readOnly || _saving) return false;
     setState(() => _saving = true);
     try {
       final repo = ref.read(occurrenceRepositoryProvider);
       final next = widget.occurrence.copyWith(
-        andamento: (andamento ?? _andamento).storageValue,
-        responsavelNome: clearResponsavel
-            ? null
-            : (responsavelNome ?? _responsavelCtrl.text.trim()),
-        clearResponsavelNome: clearResponsavel,
+        andamento: andamento.storageValue,
+        responsavelNome: responsavelNome,
+        clearResponsavelNome: responsavelNome == null,
         syncStatus: SyncStatusContract.pendingSync,
         updatedAt: DateTime.now(),
       );
       await repo.updateOccurrence(next);
+      _savedResponsavel = responsavelNome;
       ref.invalidate(occurrencesListProvider);
+      return true;
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
   Future<void> _onAndamentoSelected(OccurrenceAndamento value) async {
-    if (value == _andamento) return;
+    if (value == _andamento || _saving) return;
     HapticFeedback.selectionClick();
+    final previous = _andamento;
     setState(() => _andamento = value);
-    await _persist(andamento: value);
+    final saved = await _persist(
+      andamento: value,
+      responsavelNome: _savedResponsavel,
+    );
+    if (!saved && mounted) setState(() => _andamento = previous);
   }
 
   Future<void> _onResponsavelSubmitted() async {
-    final trimmed = _responsavelCtrl.text.trim();
-    final current = widget.occurrence.responsavelNome?.trim() ?? '';
-    if (trimmed == current) return;
-    await _persist(
-      responsavelNome: trimmed.isEmpty ? null : trimmed,
-      clearResponsavel: trimmed.isEmpty,
-    );
+    final typed = _normalizedResponsavel(_responsavelCtrl.text);
+    if (typed == _savedResponsavel) return;
+    await _persist(andamento: _andamento, responsavelNome: typed);
   }
 
   @override
@@ -193,8 +222,9 @@ class _OccurrenceAndamentoSectionState
                     borderSide: BorderSide.none,
                   ),
                 ),
-                onSubmitted: (_) => _onResponsavelSubmitted(),
-                onEditingComplete: _onResponsavelSubmitted,
+                focusNode: _responsavelFocus,
+                // Persistência acontece no blur (_onResponsavelFocusChange).
+                onEditingComplete: _responsavelFocus.unfocus,
               ),
             if (_saving) ...[
               const SizedBox(height: 8),
