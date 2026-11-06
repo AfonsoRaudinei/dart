@@ -128,6 +128,11 @@ class OcorrenciaHtmlRenderer {
     final estadioAtencao = _renderEstadioAtencao(data['estadio_atencao']);
 
     tpl = _resolveRepeatedIf(tpl, 'contexto_linha', contextoLinha.isNotEmpty);
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'andamento_label',
+      _andamentoStatusLine(data).isNotEmpty,
+    );
     tpl = _resolveRepeatedIf(tpl, 'type', type.isNotEmpty);
     tpl = _resolveRepeatedIf(tpl, 'consultant_nome', consultantNome.isNotEmpty);
     tpl = _resolveRepeatedIf(
