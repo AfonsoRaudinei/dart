@@ -75,16 +75,14 @@ class OcorrenciaHtmlRenderer {
             .map(RelatorioHtmlRenderer.escapeHtml)
             .followedBy([if (dataRegistro.isNotEmpty) dataRegistro])
             .join(' · ');
-    final historicoTalhao =
-        (data['historico_talhao_linha'] as String?)?.trim() ?? '';
+    final hist = (data['historico_talhao_linha'] as String?)?.trim() ?? '';
+    final andamento = _andamentoStatusLine(data);
 
     tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
       ...branding,
       'categoria_label': categoriaLabel,
       'contexto_linha': contextoLinha,
-      'historico_talhao_linha': RelatorioHtmlRenderer.escapeHtml(
-        historicoTalhao,
-      ),
+      'historico_talhao_linha': RelatorioHtmlRenderer.escapeHtml(hist),
       'cliente_nome': RelatorioHtmlRenderer.escapeHtml(
         data['cliente_nome'] as String?,
       ),
@@ -99,7 +97,7 @@ class OcorrenciaHtmlRenderer {
       'urgencia_class': urgenciaClass,
       'urgencia_label':
           'Urgência ${_urgenciaValor(urgenciaClass).toLowerCase()}',
-      'andamento_label': _andamentoStatusLine(data),
+      'andamento_label': andamento,
       'andamento_class': _andamentoCssClass(data),
       'consultant_nome': RelatorioHtmlRenderer.escapeHtml(consultantNome),
       'consultant_role': RelatorioHtmlRenderer.escapeHtml(
@@ -156,16 +154,8 @@ class OcorrenciaHtmlRenderer {
     final estadioAtencao = _renderEstadioAtencao(data['estadio_atencao']);
 
     tpl = _resolveRepeatedIf(tpl, 'contexto_linha', contextoLinha.isNotEmpty);
-    tpl = _resolveRepeatedIf(
-      tpl,
-      'andamento_label',
-      _andamentoStatusLine(data).isNotEmpty,
-    );
-    tpl = _resolveRepeatedIf(
-      tpl,
-      'historico_talhao_linha',
-      historicoTalhao.isNotEmpty,
-    );
+    tpl = _resolveRepeatedIf(tpl, 'andamento_label', andamento.isNotEmpty);
+    tpl = _resolveRepeatedIf(tpl, 'historico_talhao_linha', hist.isNotEmpty);
     tpl = _resolveRepeatedIf(tpl, 'type', type.isNotEmpty);
     tpl = _resolveRepeatedIf(tpl, 'consultant_nome', consultantNome.isNotEmpty);
     tpl = _resolveRepeatedIf(
