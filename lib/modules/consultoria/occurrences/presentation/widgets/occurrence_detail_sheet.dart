@@ -21,6 +21,44 @@ import 'occurrence_creation_sheet.dart';
 import 'occurrence_detail_pin_correction.dart';
 import 'occurrence_detail_photo_section.dart';
 
+/// Aplica os campos do formulário de edição sobre [current], preservando
+/// campos que o formulário não edita (status, andamento, responsável).
+Occurrence applyOccurrenceFormEdit(
+  Occurrence current,
+  OccurrenceFormData data,
+) {
+  return current.copyWith(
+    type: data.type,
+    description: data.description,
+    clientId: data.clientId,
+    photoPath: data.photoPath,
+    category: data.category,
+    status: current.status,
+    lat: data.latitude,
+    long: data.longitude,
+    geometry: jsonEncode({
+      'type': 'Point',
+      'coordinates': [data.longitude, data.latitude],
+    }),
+    cultivar: data.cultivar,
+    dataPlantio: data.dataPlantio,
+    estadioFenologico: data.estadioFenologico,
+    tipoOcorrencia: data.tipoOcorrencia,
+    amostraSolo: data.amostraSolo,
+    recomendacoes: data.recomendacoes,
+    metricasJson: data.metricasJson,
+    nutrientesJson: data.nutrientesJson,
+    categoriasJson: data.categoriasJson,
+    notasCategoriasJson: data.notasCategoriasJson,
+    fotosCategoriasJson: data.fotosCategoriasJson,
+    dataEmergencia: data.dataEmergencia,
+    sementesPorMetro: data.sementesPorMetro,
+    estandePlantas: data.estandePlantas,
+    avaliacaoPlantio: data.avaliacaoPlantio,
+    objetivoPlantio: data.objetivoPlantio,
+  );
+}
+
 /// Sheet de detalhe de uma ocorrência existente.
 ///
 /// Abre via tap no marcador no mapa ou lista.
@@ -181,37 +219,10 @@ class OccurrenceDetailSheet extends ConsumerWidget {
           initialOccurrence: live,
           onCancel: () => Navigator.of(sheetContext).pop(),
           onConfirm: (data) async {
+            final list = await container.read(occurrencesListProvider.future);
+            final current = resolveLiveOccurrence(list, live);
             await repository.updateOccurrence(
-              live.copyWith(
-                type: data.type,
-                description: data.description,
-                clientId: data.clientId,
-                photoPath: data.photoPath,
-                category: data.category,
-                status: live.status,
-                lat: data.latitude,
-                long: data.longitude,
-                geometry: jsonEncode({
-                  'type': 'Point',
-                  'coordinates': [data.longitude, data.latitude],
-                }),
-                cultivar: data.cultivar,
-                dataPlantio: data.dataPlantio,
-                estadioFenologico: data.estadioFenologico,
-                tipoOcorrencia: data.tipoOcorrencia,
-                amostraSolo: data.amostraSolo,
-                recomendacoes: data.recomendacoes,
-                metricasJson: data.metricasJson,
-                nutrientesJson: data.nutrientesJson,
-                categoriasJson: data.categoriasJson,
-                notasCategoriasJson: data.notasCategoriasJson,
-                fotosCategoriasJson: data.fotosCategoriasJson,
-                dataEmergencia: data.dataEmergencia,
-                sementesPorMetro: data.sementesPorMetro,
-                estandePlantas: data.estandePlantas,
-                avaliacaoPlantio: data.avaliacaoPlantio,
-                objetivoPlantio: data.objetivoPlantio,
-              ),
+              applyOccurrenceFormEdit(current, data),
             );
             container.invalidate(occurrencesListProvider);
             if (sheetContext.mounted) Navigator.of(sheetContext).pop();
