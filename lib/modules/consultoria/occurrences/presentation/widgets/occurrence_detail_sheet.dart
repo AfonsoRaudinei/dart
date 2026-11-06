@@ -9,6 +9,7 @@ import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../../../core/design/sf_icons.dart';
 import '../../../../../../ui/theme/premium/design_tokens.dart';
@@ -26,6 +27,7 @@ import 'occurrence_detail_amostra_section.dart';
 import 'occurrence_detail_pin_correction.dart';
 import 'occurrence_detail_audio_section.dart';
 import 'occurrence_detail_photo_section.dart';
+import '../../../relatorio_visita/data/occurrence_audio_remote.dart';
 
 part 'occurrence_detail_sheet_rows.dart';
 
@@ -44,6 +46,30 @@ Occurrence applyOccurrenceFormEdit(
       'coordinates': [data.longitude, data.latitude],
     }),
   );
+}
+
+/// Baixa o m4a do dono quando o arquivo local ainda não existe.
+/// Supabase ausente ou dono vazio devolve false — o detalhe mantém o aviso.
+Future<bool> _downloadOccurrenceDetailAudio(Occurrence occurrence) async {
+  final userId = occurrence.ownerUserId?.trim() ?? '';
+  if (userId.isEmpty) return false;
+  final audioPath = occurrence.audioPath?.trim() ?? '';
+  if (audioPath.isEmpty) return false;
+  try {
+    final supabase = Supabase.instance;
+    if (!supabase.isInitialized) return false;
+    final remoteId = occurrence.remoteId?.trim() ?? '';
+    final occurrenceId = remoteId.isNotEmpty ? remoteId : occurrence.id;
+    return OccurrenceAudioRemote(
+      SupabaseOccurrenceAudioObjectStore(supabase.client),
+    ).downloadIfMissing(
+      userId: userId,
+      occurrenceId: occurrenceId,
+      audioPath: audioPath,
+    );
+  } catch (_) {
+    return false;
+  }
 }
 
 /// Sheet de detalhe de uma ocorrência existente.
@@ -562,6 +588,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                 cardRadius: cardRadius,
                 isIos: isIos,
                 isDark: isDark,
+                downloadMissing: _downloadOccurrenceDetailAudio,
               ),
               OccurrenceDetailAmostraSection(
                 occurrence: live,
