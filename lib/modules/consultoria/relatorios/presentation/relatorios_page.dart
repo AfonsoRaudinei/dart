@@ -635,9 +635,19 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
           : null,
       onConfirm: occurrence.status != 'confirmed'
           ? (viewerContext) async {
-              await repository.updateOccurrence(
-                occurrence.copyWith(status: 'confirmed'),
+              final saved = await updateLiveOccurrence(
+                repository,
+                occurrence,
+                (live) => live.copyWith(status: 'confirmed'),
               );
+              if (!saved) {
+                if (viewerContext.mounted) {
+                  ScaffoldMessenger.maybeOf(viewerContext)?.showSnackBar(
+                    const SnackBar(content: Text(kOccurrenceDeletedMessage)),
+                  );
+                }
+                return false;
+              }
               container.invalidate(occurrencesListProvider);
               return true;
             }
