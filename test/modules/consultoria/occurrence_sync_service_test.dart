@@ -329,6 +329,38 @@ void main() {
       expect(mapped.amostraAnalisesJson, isNull);
     });
 
+    test('toRemote/fromRemote preserva ordem de aplicação e o espelho', () {
+      final occurrence = Occurrence(
+        id: 'local-ordem',
+        type: 'Média',
+        description: 'Lagarta',
+        createdAt: DateTime.utc(2026, 11, 5),
+        recomendacaoAcao: 'Aplicar',
+        recomendacaoDose: '0,5 L/ha',
+        recomendacaoQuando: 'V4 a V6',
+      );
+
+      final remote = OccurrenceRemoteMapper.toRemote(occurrence, 'owner-1');
+      expect(remote['recomendacao_acao'], 'Aplicar');
+      expect(remote['recomendacao_dose'], '0,5 L/ha');
+      expect(remote['recomendacao_quando'], 'V4 a V6');
+      expect(remote.containsKey('field_id'), isFalse);
+      expect(
+        remote['recomendacoes'],
+        'O que fazer: Aplicar\nDose: 0,5 L/ha\nQuando: V4 a V6',
+      );
+
+      final local = OccurrenceRemoteMapper.fromRemote(
+        remote,
+        localId: 'local-ordem',
+        cachedByUserId: null,
+      );
+      final mapped = Occurrence.fromMap(local);
+      expect(mapped.recomendacaoAcao, 'Aplicar');
+      expect(mapped.recomendacaoDose, '0,5 L/ha');
+      expect(mapped.recomendacaoQuando, 'V4 a V6');
+    });
+
     test('preserva owner, identidade externa e payload completo no cache', () {
       final local = OccurrenceRemoteMapper.fromRemote(
         {
