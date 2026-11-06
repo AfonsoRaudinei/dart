@@ -3,14 +3,18 @@ import 'package:soloforte_app/core/services/notification_service.dart';
 import '../domain/visit_route_notification.dart';
 
 /// Porta da notificação da próxima parada. Testes injetam um fake.
+///
+/// `show*` retornam `false` quando o aviso não foi publicado (sem permissão).
 abstract class VisitRouteNotificationPort {
-  Future<void> showNextStop({
+  Future<bool> ensurePermission();
+
+  Future<bool> showNextStop({
     required int index,
     required int total,
     required String payload,
   });
 
-  Future<void> showRouteCompleted({required int total});
+  Future<bool> showRouteCompleted({required int total});
 }
 
 class NotificationServiceVisitRoutePort implements VisitRouteNotificationPort {
@@ -20,7 +24,10 @@ class NotificationServiceVisitRoutePort implements VisitRouteNotificationPort {
   final NotificationService _service;
 
   @override
-  Future<void> showNextStop({
+  Future<bool> ensurePermission() => _service.ensureNotificationPermission();
+
+  @override
+  Future<bool> showNextStop({
     required int index,
     required int total,
     required String payload,
@@ -34,7 +41,7 @@ class NotificationServiceVisitRoutePort implements VisitRouteNotificationPort {
   }
 
   @override
-  Future<void> showRouteCompleted({required int total}) {
+  Future<bool> showRouteCompleted({required int total}) {
     return _service.showVisitRouteNotification(
       id: visitRouteCompletedNotificationId,
       title: 'Rota concluída',
