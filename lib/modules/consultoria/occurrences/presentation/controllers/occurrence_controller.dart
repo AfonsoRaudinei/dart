@@ -27,7 +27,7 @@ class OccurrenceController {
 
   OccurrenceController(this.ref, this._repository);
 
-  Future<void> createOccurrence({
+  Future<String> createOccurrence({
     required String type,
     required String description,
     String? clientId,
@@ -110,6 +110,7 @@ class OccurrenceController {
     await _repository.saveOccurrence(occurrence);
 
     ref.invalidate(occurrencesListProvider);
+    return occurrence.id;
   }
 }
 
