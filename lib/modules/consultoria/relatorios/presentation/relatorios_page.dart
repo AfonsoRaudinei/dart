@@ -760,13 +760,21 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
           initialOccurrence: occurrence,
           onCancel: () => Navigator.of(sheetContext).pop(),
           onConfirm: (data) async {
-            await repository.updateOccurrence(
-              occurrenceWithFormData(occurrence, data).copyWith(
-                status: occurrence.status,
+            final saved = await updateLiveOccurrence(
+              repository,
+              occurrence,
+              (live) => occurrenceWithFormData(live, data).copyWith(
+                status: live.status,
               ),
             );
             container.invalidate(occurrencesListProvider);
-            if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+            if (!sheetContext.mounted) return;
+            if (!saved) {
+              ScaffoldMessenger.maybeOf(sheetContext)?.showSnackBar(
+                const SnackBar(content: Text(kOccurrenceDeletedMessage)),
+              );
+            }
+            Navigator.of(sheetContext).pop();
           },
         ),
       ),
