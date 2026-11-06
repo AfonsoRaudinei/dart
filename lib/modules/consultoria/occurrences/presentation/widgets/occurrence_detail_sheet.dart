@@ -15,6 +15,7 @@ import '../../../../../../ui/theme/premium/design_tokens.dart';
 import 'package:soloforte_app/core/domain/occurrence_recomendacao_ordem.dart';
 
 import '../../domain/occurrence.dart';
+import '../../domain/occurrence_soy_age.dart';
 import '../controllers/occurrence_controller.dart';
 import '../occurrence_detail_report_actions.dart';
 import '../occurrence_form_apply.dart';
@@ -316,6 +317,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
       quando: live.recomendacaoQuando,
       legacy: live.recomendacoes,
     );
+    final estadioComIdade = occurrenceEstadioDisplay(live);
     final detailRows = <_DetailRowData>[
       if (live.clientId != null && live.clientId!.isNotEmpty)
         _DetailRowData(
@@ -351,12 +353,11 @@ class OccurrenceDetailSheet extends ConsumerWidget {
           label: 'Indicador',
           value: metricLabel,
         ),
-      if (live.estadioFenologico != null &&
-          live.estadioFenologico!.isNotEmpty)
+      if (estadioComIdade.isNotEmpty)
         _DetailRowData(
           icon: SFIcons.leaf,
           label: 'Estádio fenológico',
-          value: live.estadioFenologico!,
+          value: estadioComIdade,
         ),
       if (live.cultivar != null && live.cultivar!.isNotEmpty)
         _DetailRowData(
