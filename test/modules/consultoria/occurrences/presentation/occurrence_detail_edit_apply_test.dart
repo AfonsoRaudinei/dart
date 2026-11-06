@@ -99,6 +99,46 @@ void main() {
     expect(Occurrence.fromMap(edited.toMap()).fieldId, 'field-1');
   });
 
+  test('edição grava os três campos da ordem e o espelho legado', () {
+    const ordemForm = OccurrenceFormData(
+      type: 'Alta',
+      description: 'Editada',
+      latitude: -10.25,
+      longitude: -48.32,
+      recomendacaoAcao: ' Aplicar ',
+      recomendacaoDose: '0,5 L/ha',
+      recomendacaoQuando: 'V4 a V6',
+    );
+
+    final edited = applyOccurrenceFormEdit(stale, ordemForm);
+
+    expect(edited.recomendacaoAcao, 'Aplicar');
+    expect(edited.recomendacaoDose, '0,5 L/ha');
+    expect(edited.recomendacaoQuando, 'V4 a V6');
+    expect(
+      edited.recomendacoes,
+      'O que fazer: Aplicar\nDose: 0,5 L/ha\nQuando: V4 a V6',
+    );
+  });
+
+  test('edição de ocorrência antiga mantém o texto legado no formulário', () {
+    final legado = stale.copyWith(recomendacoes: 'Monitorar em 7 dias');
+    // A sheet de edição carrega o legado em "O que fazer".
+    const legacyForm = OccurrenceFormData(
+      type: 'Média',
+      description: 'Antiga',
+      latitude: -10.25,
+      longitude: -48.32,
+      recomendacaoAcao: 'Monitorar em 7 dias',
+    );
+
+    final edited = applyOccurrenceFormEdit(legado, legacyForm);
+    final reloaded = Occurrence.fromMap(edited.toMap());
+
+    expect(reloaded.recomendacaoAcao, 'Monitorar em 7 dias');
+    expect(reloaded.recomendacoes, contains('Monitorar em 7 dias'));
+  });
+
   test('sem lista carregada usa o snapshot recebido', () {
     final edited = applyOccurrenceFormEdit(
       resolveLiveOccurrence(null, stale),
