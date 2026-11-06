@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
 import 'package:soloforte_app/core/contracts/i_visit_session_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/i_occurrence_access_reader_provider.dart';
+import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import '../../domain/occurrence.dart';
 import '../../data/occurrence_repository.dart';
 import 'package:uuid/uuid.dart';
@@ -38,6 +39,27 @@ Future<Occurrence> loadLiveOccurrence(
   Occurrence seed,
 ) async {
   return await repository.getById(seed.id) ?? seed;
+}
+
+const kOccurrenceDeletedMessage = 'Esta ocorrência foi excluída.';
+
+/// Tombstone (soft delete): não pode ser regravada, senão volta ao mapa.
+bool isOccurrenceDeleted(Occurrence occurrence) {
+  return occurrence.deletedAt != null ||
+      SyncStatusContract.normalize(occurrence.syncStatus) ==
+          SyncStatusContract.deletedLocal;
+}
+
+/// Regrava a partir do registro vivo; `false` sem gravar se foi excluída.
+Future<bool> updateLiveOccurrence(
+  OccurrenceRepository repository,
+  Occurrence seed,
+  Occurrence Function(Occurrence live) build,
+) async {
+  final live = await loadLiveOccurrence(repository, seed);
+  if (isOccurrenceDeleted(live)) return false;
+  await repository.updateOccurrence(build(live));
+  return true;
 }
 
 class OccurrenceController {
