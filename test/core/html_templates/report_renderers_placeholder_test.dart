@@ -556,6 +556,46 @@ void main() {
       expect(html, isNot(contains('class="sf-signature"')));
     });
 
+    test('ocorrencia confirmada mostra andamento e responsável', () async {
+      await initializeDateFormatting('pt_BR');
+
+      final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+        'id': 'occ-andamento',
+        'type': 'Alta',
+        'category': 'doenca',
+        'status': 'confirmed',
+        'andamento': 'em_atendimento',
+        'responsavel_nome': 'Maria',
+        'created_at': now.toIso8601String(),
+      });
+
+      expect(
+        html,
+        contains(
+          '<span class="sf-dot media"></span>Andamento Em atendimento · Maria',
+        ),
+      );
+      expect(html, isNot(contains('andamento_label')));
+    });
+
+    test('ocorrencia rascunho não renderiza andamento vazio', () async {
+      await initializeDateFormatting('pt_BR');
+
+      final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+        'id': 'occ-draft',
+        'type': 'Alta',
+        'category': 'doenca',
+        'status': 'draft',
+        'andamento': 'em_atendimento',
+        'created_at': now.toIso8601String(),
+      });
+
+      expect(html, isNot(contains('Andamento')));
+      expect(html, isNot(contains('andamento_label')));
+      expect(html, isNot(contains('<span class="sf-dot "></span>')));
+      expect(RegExp('Urgência alta').allMatches(html).length, 1);
+    });
+
     test('relatorio visita usa base editorial e preserva dados', () async {
       await initializeDateFormatting('pt_BR');
 
