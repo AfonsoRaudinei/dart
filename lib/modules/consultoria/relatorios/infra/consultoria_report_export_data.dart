@@ -1,3 +1,5 @@
+import 'package:soloforte_app/core/domain/occurrence_recomendacao_ordem.dart';
+
 import '../models/relatorio_tecnico.dart';
 import '../../occurrences/domain/occurrence.dart';
 
@@ -233,7 +235,12 @@ class ConsultoriaReportExportData {
         occurrence.estadioFenologico,
         occurrence.tipoOcorrencia,
         occurrence.amostraSolo,
-        occurrence.recomendacoes,
+        OccurrenceRecomendacaoOrdem.mirrorLegacy(
+          acao: occurrence.recomendacaoAcao,
+          dose: occurrence.recomendacaoDose,
+          quando: occurrence.recomendacaoQuando,
+          legacy: occurrence.recomendacoes,
+        ),
       ],
     ]);
   }
