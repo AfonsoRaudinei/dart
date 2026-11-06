@@ -23,6 +23,9 @@ void main() {
         estadioFenologico: 'R5.1',
         tipoOcorrencia: 'sazonal',
         recomendacoes: 'Aplicar',
+        recomendacaoAcao: 'Aplicar',
+        recomendacaoDose: '1 L/ha',
+        recomendacaoQuando: 'R5',
         metricasJson: '{}',
         nutrientesJson: '[]',
         categoriasJson: '["doenca"]',
@@ -47,6 +50,9 @@ void main() {
         estadioFenologico: summary.estadioFenologico,
         tipoOcorrencia: summary.tipoOcorrencia,
         recomendacoes: summary.recomendacoes,
+        recomendacaoAcao: summary.recomendacaoAcao,
+        recomendacaoDose: summary.recomendacaoDose,
+        recomendacaoQuando: summary.recomendacaoQuando,
         metricasJson: summary.metricasJson,
         nutrientesJson: summary.nutrientesJson,
         categoriasJson: summary.categoriasJson,
@@ -57,6 +63,9 @@ void main() {
       expect(snap.cultivar, isNotNull);
       expect(snap.estadioFenologico, isNotNull);
       expect(snap.recomendacoes, isNotNull);
+      expect(snap.recomendacaoAcao, 'Aplicar');
+      expect(snap.recomendacaoDose, '1 L/ha');
+      expect(snap.recomendacaoQuando, 'R5');
       expect(snap.categoriasJson, isNotNull);
       expect(snap.fotoPaths, isNotEmpty);
     });
