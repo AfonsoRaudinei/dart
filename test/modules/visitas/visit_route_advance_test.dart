@@ -49,7 +49,10 @@ class _FakeRouteNotifications implements VisitRouteNotificationPort {
   int completedCalls = 0;
 
   @override
-  Future<void> showNextStop({
+  Future<bool> ensurePermission() async => true;
+
+  @override
+  Future<bool> showNextStop({
     required int index,
     required int total,
     required String payload,
@@ -58,11 +61,13 @@ class _FakeRouteNotifications implements VisitRouteNotificationPort {
     lastIndex = index;
     lastTotal = total;
     lastPayload = payload;
+    return true;
   }
 
   @override
-  Future<void> showRouteCompleted({required int total}) async {
+  Future<bool> showRouteCompleted({required int total}) async {
     completedCalls++;
+    return true;
   }
 }
 
