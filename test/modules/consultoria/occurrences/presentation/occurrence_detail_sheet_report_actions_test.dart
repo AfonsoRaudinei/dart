@@ -203,6 +203,46 @@ void main() {
       expect(find.byType(HtmlReportViewer), findsOneWidget);
     });
 
+    testWidgets('ocorrência excluída no confirm não grava', (tester) async {
+      final snapshot = Occurrence(
+        id: 'occ-confirm-tombstone',
+        type: 'Média',
+        description: 'Snapshot do viewer',
+        status: 'draft',
+        createdAt: DateTime.utc(2026, 10, 2),
+      );
+      final repository = FakeOccurrenceRepository()
+        ..seed([
+          snapshot.copyWith(
+            syncStatus: 'deleted_local',
+            deletedAt: '2026-11-06T12:00:00Z',
+          ),
+        ]);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            occurrenceRepositoryProvider.overrideWithValue(repository),
+          ],
+          child: const MaterialApp(home: Scaffold(body: Text('viewer-host'))),
+        ),
+      );
+
+      final viewerContext = tester.element(find.text('viewer-host'));
+      final actions = occurrenceReportHtmlViewerActions(
+        ProviderScope.containerOf(viewerContext),
+        snapshot,
+      );
+      final done = await actions.onConfirm!(viewerContext);
+      await tester.pump();
+
+      expect(done, isFalse);
+      expect(repository.updateCount, 0);
+      expect(repository.get('occ-confirm-tombstone')?.status, 'draft');
+      expect(find.text(kOccurrenceDeletedMessage), findsOneWidget);
+      expect(find.text('viewer-host'), findsOneWidget);
+    });
+
     testWidgets('excluir não faz pop síncrono do pai com viewer aberto', (
       tester,
     ) async {
@@ -309,6 +349,11 @@ class FakeOccurrenceRepository extends OccurrenceRepository {
 
   Occurrence? get(String id) => _store[id];
 
+  int updateCount = 0;
+
+  @override
+  Future<Occurrence?> getById(String id) async => _store[id];
+
   @override
   Future<List<Occurrence>> getAllOccurrences() async {
     return _store.values
@@ -318,6 +363,7 @@ class FakeOccurrenceRepository extends OccurrenceRepository {
 
   @override
   Future<void> updateOccurrence(Occurrence occurrence) async {
+    updateCount++;
     _store[occurrence.id] = occurrence.copyWith(
       updatedAt: DateTime.now().toUtc(),
       syncStatus: 'updated',
