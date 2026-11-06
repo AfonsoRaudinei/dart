@@ -1,16 +1,25 @@
 // lib/modules/visitas/presentation/controllers/visit_controller.dart
 // ADR-024: imports de consultoria/ e agenda/ removidos — substituídos por contratos neutros.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/models/visit_route_stop.dart';
 import '../../domain/models/visit_session.dart';
+import '../../domain/visit_route_advance.dart';
+import '../../domain/visit_route_notification.dart';
 import '../../data/repositories/visit_repository.dart';
+import '../visit_route_notification_port.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_session_bridge.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_session_bridge_provider.dart';
 import 'package:soloforte_app/core/session/session_controller.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 import 'package:uuid/uuid.dart';
 
 final visitRepositoryProvider = Provider<VisitRepository>((ref) {
   return VisitRepository();
 });
+
+final visitRouteNotificationPortProvider = Provider<VisitRouteNotificationPort>(
+  (ref) => NotificationServiceVisitRoutePort(),
+);
 
 final visitControllerProvider =
     StateNotifierProvider<VisitController, AsyncValue<VisitSession?>>((ref) {
@@ -19,6 +28,7 @@ final visitControllerProvider =
         ref.watch(
           agendaSessionBridgeProvider,
         ), // IAgendaSessionBridge — ADR-024
+        notifications: ref.watch(visitRouteNotificationPortProvider),
       );
     });
 
@@ -34,9 +44,14 @@ final _visitLogoutInvalidationRegistration = () {
 class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
   final VisitRepository _repository;
   final IAgendaSessionBridge _agendaBridge; // ADR-024
+  final VisitRouteNotificationPort _notifications;
 
-  VisitController(this._repository, this._agendaBridge)
-    : super(const AsyncValue.loading()) {
+  VisitController(
+    this._repository,
+    this._agendaBridge, {
+    VisitRouteNotificationPort? notifications,
+  }) : _notifications = notifications ?? NotificationServiceVisitRoutePort(),
+       super(const AsyncValue.loading()) {
     checkActiveSession();
   }
 
@@ -121,7 +136,11 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
     try {
       await _repository.updateFarm(currentSession.id, newFarmId);
       state = AsyncValue.data(
-        currentSession.copyWith(farmId: newFarmId, clearAreaId: true),
+        currentSession.copyWith(
+          farmId: newFarmId,
+          clearAreaId: true,
+          clearRoute: true,
+        ),
       );
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -139,7 +158,11 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
         farmId: farmId,
       );
       state = AsyncValue.data(
-        currentSession.copyWith(areaId: newAreaId, farmId: farmId),
+        currentSession.copyWith(
+          areaId: newAreaId,
+          farmId: farmId,
+          clearRoute: true,
+        ),
       );
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -167,6 +190,101 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+    }
+  }
+
+  /// Grava paradas geradas dentro do talhão. Não marca a visita para sync.
+  Future<void> saveSuggestedRoute(List<VisitRouteStop> stops) async {
+    final currentSession = state.valueOrNull;
+    if (currentSession == null || stops.isEmpty) return;
+    final json = VisitRouteStop.encodeList(stops);
+    final index = stops.first.index;
+    try {
+      await _repository.saveRouteState(
+        currentSession.id,
+        routeStopsJson: json,
+        routeCurrentIndex: index,
+      );
+      state = AsyncValue.data(
+        currentSession.copyWithRoute(
+          routeStopsJson: json,
+          routeCurrentIndex: index,
+        ),
+      );
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> clearSuggestedRoute() async {
+    final currentSession = state.valueOrNull;
+    if (currentSession == null) return;
+    try {
+      await _repository.saveRouteState(
+        currentSession.id,
+        routeStopsJson: null,
+        routeCurrentIndex: null,
+      );
+      state = AsyncValue.data(
+        currentSession.copyWithRoute(
+          routeStopsJson: null,
+          routeCurrentIndex: null,
+        ),
+      );
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  /// Conclusão da ocorrência na parada atual: marca feita e avisa a próxima.
+  ///
+  /// A notificação é local e permanece na bandeja se o usuário bloquear a
+  /// tela em seguida. O payload abre `/map?modo=foco` na próxima parada.
+  Future<void> completeCurrentStop({String? occurrenceId}) async {
+    final currentSession = state.valueOrNull;
+    if (currentSession == null) return;
+    final advance = advanceVisitRoute(
+      stops: currentSession.routeStops,
+      currentIndex: currentSession.routeCurrentIndex,
+      occurrenceId: occurrenceId,
+    );
+    if (advance == null) return;
+
+    final json = VisitRouteStop.encodeList(advance.stops);
+    try {
+      await _repository.saveRouteState(
+        currentSession.id,
+        routeStopsJson: json,
+        routeCurrentIndex: advance.currentIndex,
+      );
+      state = AsyncValue.data(
+        currentSession.copyWithRoute(
+          routeStopsJson: json,
+          routeCurrentIndex: advance.currentIndex,
+        ),
+      );
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return;
+    }
+
+    try {
+      final next = advance.next;
+      if (next != null) {
+        await _notifications.showNextStop(
+          index: next.index,
+          total: advance.stops.length,
+          payload: visitRouteMapFocusLocationFor(next),
+        );
+      } else {
+        await _notifications.showRouteCompleted(total: advance.stops.length);
+      }
+    } catch (error) {
+      AppLogger.warning(
+        'Falha ao notificar a próxima parada',
+        tag: 'VisitRoute',
+        error: error,
+      );
     }
   }
 }
