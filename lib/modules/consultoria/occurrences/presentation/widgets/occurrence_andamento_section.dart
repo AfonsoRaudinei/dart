@@ -100,14 +100,18 @@ class _OccurrenceAndamentoSectionState
     setState(() => _saving = true);
     try {
       final repo = ref.read(occurrenceRepositoryProvider);
-      final next = widget.occurrence.copyWith(
-        andamento: andamento.storageValue,
-        responsavelNome: responsavelNome,
-        clearResponsavelNome: responsavelNome == null,
-        syncStatus: SyncStatusContract.pendingSync,
-        updatedAt: DateTime.now(),
+      final saved = await updateLiveOccurrence(
+        repo,
+        widget.occurrence,
+        (live) => live.copyWith(
+          andamento: andamento.storageValue,
+          responsavelNome: responsavelNome,
+          clearResponsavelNome: responsavelNome == null,
+          syncStatus: SyncStatusContract.pendingSync,
+          updatedAt: DateTime.now(),
+        ),
       );
-      await repo.updateOccurrence(next);
+      if (!saved) return false;
       _savedResponsavel = responsavelNome;
       ref.invalidate(occurrencesListProvider);
       return true;
