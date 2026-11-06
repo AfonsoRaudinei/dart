@@ -63,6 +63,70 @@ void main() {
     expect(jsonEncode(stops.first.toJson()), contains('"lat"'));
   });
 
+  test(
+    'MultiPolygon: paradas cobrem a parte grande, não só a de mais vértices',
+    () {
+      final smallRing = <List<double>>[
+        for (var i = 0; i < 40; i++)
+          [
+            -45.5 + 0.05 * math.cos(2 * math.pi * i / 40),
+            -9.5 + 0.05 * math.sin(2 * math.pi * i / 40),
+          ],
+      ]..add([-45.45, -9.5]);
+      final multi = jsonEncode({
+        'type': 'MultiPolygon',
+        'coordinates': [
+          [
+            [
+              [-48.0, -10.0],
+              [-47.0, -10.0],
+              [-47.0, -9.0],
+              [-48.0, -9.0],
+              [-48.0, -10.0],
+            ],
+          ],
+          [smallRing],
+        ],
+      });
+
+      final stops = const VisitRouteGenerator().generate(
+        geometryJson: multi,
+        stopCount: 5,
+      );
+
+      expect(stops, hasLength(5));
+      for (final stop in stops) {
+        expect(geoJsonContainsPoint(multi, stop.lat, stop.lng), isTrue);
+      }
+      final inLarge = stops.where(
+        (stop) => geoJsonContainsPoint(square, stop.lat, stop.lng),
+      );
+      expect(inLarge, isNotEmpty);
+    },
+  );
+
+  test('furo do polígono não recebe parada', () {
+    const withHole = '''
+      {
+        "type": "Polygon",
+        "coordinates": [
+          [[-48.0, -10.0], [-47.0, -10.0], [-47.0, -9.0], [-48.0, -9.0], [-48.0, -10.0]],
+          [[-47.8, -9.8], [-47.2, -9.8], [-47.2, -9.2], [-47.8, -9.2], [-47.8, -9.8]]
+        ]
+      }
+    ''';
+
+    final stops = const VisitRouteGenerator().generate(
+      geometryJson: withHole,
+      stopCount: 6,
+    );
+
+    expect(stops, hasLength(6));
+    for (final stop in stops) {
+      expect(geoJsonContainsPoint(withHole, stop.lat, stop.lng), isTrue);
+    }
+  });
+
   test('polígono vazio não inventa parada', () {
     expect(
       const VisitRouteGenerator().generate(geometryJson: null, stopCount: 5),
