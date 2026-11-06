@@ -12,6 +12,8 @@ import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 import '../../../../../../core/design/sf_icons.dart';
 import '../../../../../../ui/theme/premium/design_tokens.dart';
+import 'package:soloforte_app/core/domain/occurrence_recomendacao_ordem.dart';
+
 import '../../domain/occurrence.dart';
 import '../controllers/occurrence_controller.dart';
 import '../occurrence_detail_report_actions.dart';
@@ -23,6 +25,8 @@ import 'occurrence_detail_amostra_section.dart';
 import 'occurrence_detail_pin_correction.dart';
 import 'occurrence_detail_audio_section.dart';
 import 'occurrence_detail_photo_section.dart';
+
+part 'occurrence_detail_sheet_rows.dart';
 
 /// Aplica os campos do formulário de edição sobre [current], preservando
 /// campos que o formulário não edita (status, andamento, responsável).
@@ -306,6 +310,12 @@ class OccurrenceDetailSheet extends ConsumerWidget {
       "dd 'de' MMMM 'de' yyyy 'às' HH:mm",
       'pt_BR',
     ).format(live.createdAt);
+    final ordem = OccurrenceRecomendacaoOrdem.resolve(
+      acao: live.recomendacaoAcao,
+      dose: live.recomendacaoDose,
+      quando: live.recomendacaoQuando,
+      legacy: live.recomendacoes,
+    );
     final detailRows = <_DetailRowData>[
       if (live.clientId != null && live.clientId!.isNotEmpty)
         _DetailRowData(
@@ -328,12 +338,12 @@ class OccurrenceDetailSheet extends ConsumerWidget {
             ? live.description
             : 'Sem descrição — toque em Editar para preencher',
       ),
-      if (live.recomendacoes != null &&
-          live.recomendacoes!.trim().isNotEmpty)
+      for (final row in ordem.rows)
         _DetailRowData(
-          icon: Icons.lightbulb_outline,
-          label: 'Recomendações',
-          value: live.recomendacoes!,
+          icon: SFIcons.description,
+          label: row.label,
+          value: row.value,
+          selectable: true,
         ),
       if (metricLabel != null)
         _DetailRowData(
@@ -583,6 +593,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                           label: detailRows[i].label,
                           value: detailRows[i].value,
                           valueBuilder: detailRows[i].valueBuilder,
+                          selectable: detailRows[i].selectable,
                           showDivider: i < detailRows.length - 1,
                         ),
                     ],
@@ -715,137 +726,5 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     } catch (_) {
       return payload;
     }
-  }
-}
-
-class _DetailRowData {
-  final IconData icon;
-  final String label;
-  final String? value;
-  final WidgetBuilder? valueBuilder;
-
-  const _DetailRowData({
-    required this.icon,
-    required this.label,
-    this.value,
-    this.valueBuilder,
-  });
-}
-
-class _HeaderChip extends StatelessWidget {
-  final String label;
-  final Color color;
-
-  const _HeaderChip({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  final bool isDark;
-  final bool isIos;
-  final IconData icon;
-  final String label;
-  final String? value;
-  final WidgetBuilder? valueBuilder;
-  final bool showDivider;
-
-  const _DetailRow({
-    required this.isDark,
-    this.isIos = false,
-    required this.icon,
-    required this.label,
-    this.value,
-    this.valueBuilder,
-    required this.showDivider,
-  });
-
-  static TextStyle valueStyle(bool isDark, {bool isIos = false}) {
-    return TextStyle(
-      fontSize: 15,
-      fontWeight: FontWeight.w400,
-      letterSpacing: -0.4,
-      color: isIos
-          ? SoloForteSheetSkinIos.titleColor
-          : (isDark
-              ? PremiumTokens.textPrimaryDark
-              : PremiumTokens.textPrimaryLight),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final iconColor = isIos
-        ? SoloForteSheetSkinIos.iconStroke
-        : (isDark ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70));
-    final labelColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : (isDark ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70));
-    final dividerColor = isIos
-        ? SoloForteSheetSkinIos.rowDivider
-        : (isDark ? PremiumTokens.hairlineDark : context.premiumHairline);
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, size: 18, color: iconColor),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.07,
-                        color: labelColor,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    if (valueBuilder != null)
-                      valueBuilder!(context)
-                    else
-                      Text(value ?? '—', style: valueStyle(isDark, isIos: isIos)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (showDivider)
-          Padding(
-            padding: const EdgeInsets.only(left: 46),
-            child: Divider(
-              thickness: PremiumTokens.hairlineThickness,
-              color: dividerColor,
-              height: 1,
-            ),
-          ),
-      ],
-    );
   }
 }
