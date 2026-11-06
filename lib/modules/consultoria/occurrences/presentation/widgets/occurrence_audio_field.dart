@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -12,6 +13,7 @@ import 'package:soloforte_app/core/utils/local_media_path_resolver.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../../relatorio_visita/data/occurrence_audio_storage.dart';
+import 'occurrence_detail_audio_section.dart';
 import 'occurrence_form_widgets.dart';
 
 /// Gravação de áudio de campo (máx. 30 s) no pin da ocorrência.
@@ -22,6 +24,7 @@ class OccurrenceAudioField extends StatefulWidget {
   final int? durationSec;
   final ValueChanged<({String? path, int? durationSec})> onChanged;
   final bool enabled;
+  final AudioPathResolver resolvePath;
 
   const OccurrenceAudioField({
     super.key,
@@ -29,49 +32,115 @@ class OccurrenceAudioField extends StatefulWidget {
     this.durationSec,
     required this.onChanged,
     this.enabled = true,
+    this.resolvePath = LocalMediaPathResolver.resolveLocalPath,
   });
 
   @override
   State<OccurrenceAudioField> createState() => _OccurrenceAudioFieldState();
 }
 
-class _OccurrenceAudioFieldState extends State<OccurrenceAudioField> {
-  final _recorder = AudioRecorder();
-  final _player = AudioPlayer();
+class _OccurrenceAudioFieldState extends State<OccurrenceAudioField>
+    with WidgetsBindingObserver {
+  AudioRecorder? _recorderInstance;
+  AudioPlayer? _playerInstance;
   Timer? _tick;
   int _elapsedSec = 0;
   bool _recording = false;
+  bool _stopping = false;
   bool _playing = false;
   String? _pendingTempPath;
+
+  int _resolveGeneration = 0;
+  bool _resolved = false;
+  String? _resolvedPath;
+
+  AudioRecorder get _recorder => _recorderInstance ??= AudioRecorder();
+
+  AudioPlayer get _player {
+    final existing = _playerInstance;
+    if (existing != null) return existing;
+    final player = AudioPlayer();
+    player.onPlayerComplete.listen((_) {
+      if (!mounted) return;
+      setState(() => _playing = false);
+    });
+    return _playerInstance = player;
+  }
 
   @override
   void initState() {
     super.initState();
-    _player.onPlayerComplete.listen((_) {
-      if (!mounted) return;
-      setState(() => _playing = false);
-    });
+    WidgetsBinding.instance.addObserver(this);
+    _resolveStoredPath();
+  }
+
+  @override
+  void didUpdateWidget(covariant OccurrenceAudioField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.storedPath != widget.storedPath) {
+      _resolveStoredPath();
+    }
+  }
+
+  void _resolveStoredPath() {
+    final generation = ++_resolveGeneration;
+    final path = widget.storedPath?.trim();
+    _resolved = false;
+    _resolvedPath = null;
+    if (path == null || path.isEmpty) return;
+    widget
+        .resolvePath(path)
+        .then(
+          (resolved) {
+            if (!mounted || generation != _resolveGeneration) return;
+            setState(() {
+              _resolved = true;
+              _resolvedPath = resolved;
+            });
+          },
+          onError: (Object _) {
+            if (!mounted || generation != _resolveGeneration) return;
+            setState(() => _resolved = true);
+          },
+        );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_recording) return;
+    final backgrounded =
+        state == AppLifecycleState.paused ||
+        (state == AppLifecycleState.inactive &&
+            defaultTargetPlatform == TargetPlatform.iOS);
+    if (backgrounded) unawaited(_stopRecording(save: true));
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _tick?.cancel();
     _tick = null;
     final temp = _pendingTempPath;
     _pendingTempPath = null;
-    if (_recording) {
+    final recorder = _recorderInstance;
+    if (recorder != null) {
+      final discard = _recording ? recorder.cancel() : Future<void>.value();
       _recording = false;
-      unawaited(_recorder.stop().then((p) => _deleteFile(p ?? temp)));
+      unawaited(
+        discard
+            .catchError((Object _) {})
+            .whenComplete(recorder.dispose)
+            .whenComplete(() => _deleteFile(temp)),
+      );
     } else {
       unawaited(_deleteFile(temp));
     }
-    _player.dispose();
-    _recorder.dispose();
+    _playerInstance?.dispose();
     super.dispose();
   }
 
   Future<void> _startRecording() async {
-    if (!widget.enabled || _recording) return;
+    if (!widget.enabled || _recording || _stopping) return;
     final ok = await _recorder.hasPermission();
     if (!ok) {
       if (!mounted) return;
@@ -83,23 +152,38 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField> {
       return;
     }
 
-    await _player.stop();
+    await _playerInstance?.stop();
     if (!mounted) return;
     setState(() => _playing = false);
 
     final dir = await getTemporaryDirectory();
     if (!mounted) return;
-    final path = '${dir.path}/occ_audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+    final path =
+        '${dir.path}/occ_audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
     _pendingTempPath = path;
 
-    await _recorder.start(
-      const RecordConfig(
-        encoder: AudioEncoder.aacLc,
-        bitRate: 64000,
-        sampleRate: 44100,
-      ),
-      path: path,
-    );
+    try {
+      await _recorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 64000,
+          sampleRate: 44100,
+        ),
+        path: path,
+      );
+    } catch (_) {
+      await _deleteFile(path);
+      _pendingTempPath = null;
+      if (!mounted) return;
+      setState(() {
+        _recording = false;
+        _elapsedSec = 0;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível gravar o áudio.')),
+      );
+      return;
+    }
     if (!mounted) {
       await _recorder.stop();
       await _deleteFile(path);
@@ -118,6 +202,7 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField> {
       if (!mounted) return;
       final next = _elapsedSec + 1;
       if (next >= OccurrenceAudioField.maxDurationSec) {
+        timer.cancel();
         setState(() => _elapsedSec = OccurrenceAudioField.maxDurationSec);
         await _stopRecording(save: true);
         return;
@@ -129,14 +214,24 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField> {
   Future<void> _stopRecording({required bool save}) async {
     _tick?.cancel();
     _tick = null;
-    if (!_recording) return;
+    if (!_recording || _stopping) return;
+    _stopping = true;
+    try {
+      await _finishRecording(save: save);
+    } finally {
+      _stopping = false;
+    }
+  }
 
+  Future<void> _finishRecording({required bool save}) async {
     final path = await _recorder.stop();
     _recording = false;
-    if (!mounted) return;
-
     final source = path ?? _pendingTempPath;
     _pendingTempPath = null;
+    if (!mounted) {
+      await _deleteFile(source);
+      return;
+    }
 
     if (!save || source == null || source.isEmpty) {
       await _deleteFile(source);
@@ -145,9 +240,14 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField> {
       return;
     }
 
-    final stored = await OccurrenceAudioStorage.instance.persistLocalCopy(source);
+    final stored = await OccurrenceAudioStorage.instance.persistLocalCopy(
+      source,
+    );
     await _deleteFile(source);
-    if (!mounted) return;
+    if (!mounted) {
+      await OccurrenceAudioStorage.instance.deleteAudio(stored);
+      return;
+    }
     if (stored == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Não foi possível salvar o áudio.')),
@@ -173,8 +273,8 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField> {
   }
 
   Future<void> _togglePlayback() async {
-    final path = widget.storedPath;
-    if (path == null || path.isEmpty || _recording) return;
+    final resolved = _resolvedPath;
+    if (resolved == null || _recording) return;
 
     if (_playing) {
       await _player.stop();
@@ -182,15 +282,13 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField> {
       return;
     }
 
-    final resolved = await LocalMediaPathResolver.resolveLocalPath(path);
-    if (resolved == null) return;
     await _player.play(DeviceFileSource(resolved));
     if (mounted) setState(() => _playing = true);
   }
 
   Future<void> _removeAudio() async {
     HapticFeedback.selectionClick();
-    await _player.stop();
+    await _playerInstance?.stop();
     await OccurrenceAudioStorage.instance.deleteAudio(widget.storedPath);
     widget.onChanged((path: null, durationSec: null));
     if (mounted) {
@@ -201,10 +299,18 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField> {
     }
   }
 
+  bool get _hasAudio => widget.storedPath?.trim().isNotEmpty == true;
+
+  bool get _audioMissingLocally =>
+      _hasAudio && _resolved && _resolvedPath == null;
+
   String get _statusLabel {
     if (_recording) {
       final left = OccurrenceAudioField.maxDurationSec - _elapsedSec;
       return 'Gravando… ${left}s restantes';
+    }
+    if (_audioMissingLocally) {
+      return OccurrenceDetailAudioSection.missingLocalFileLabel;
     }
     final d = widget.durationSec;
     if (widget.storedPath != null && d != null && d > 0) {
@@ -220,7 +326,8 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField> {
     final accent = isIos
         ? SoloForteSheetSkinIos.iconStroke
         : context.themeAccent;
-    final hasAudio = widget.storedPath?.trim().isNotEmpty == true;
+    final hasAudio = _hasAudio;
+    final canPlay = _resolvedPath != null;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -234,10 +341,7 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const OccurrenceSectionHeader(
-            icon: '🎙️',
-            title: 'Áudio no ponto',
-          ),
+          const OccurrenceSectionHeader(icon: '🎙️', title: 'Áudio no ponto'),
           const SizedBox(height: 6),
           Text(
             _statusLabel,
@@ -289,29 +393,36 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField> {
                   ),
                 )
               else ...[
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: widget.enabled ? _togglePlayback : null,
-                    icon: Icon(
-                      _playing ? Icons.stop_circle_outlined : Icons.play_arrow_rounded,
-                      color: accent,
-                    ),
-                    label: Text(
-                      _playing ? 'Parar' : 'Ouvir',
-                      style: TextStyle(
-                        color: isIos
-                            ? SoloForteSheetSkinIos.ctaText
-                            : Colors.white,
-                        fontWeight: FontWeight.w600,
+                if (!_audioMissingLocally)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: widget.enabled && canPlay
+                          ? _togglePlayback
+                          : null,
+                      icon: Icon(
+                        _playing
+                            ? Icons.stop_circle_outlined
+                            : Icons.play_arrow_rounded,
+                        color: accent,
+                      ),
+                      label: Text(
+                        _playing ? 'Parar' : 'Ouvir',
+                        style: TextStyle(
+                          color: isIos
+                              ? SoloForteSheetSkinIos.ctaText
+                              : Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: accent.withValues(alpha: 0.8)),
+                        minimumSize: const Size(48, 44),
+                        backgroundColor: v.cardBackground,
                       ),
                     ),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: accent.withValues(alpha: 0.8)),
-                      minimumSize: const Size(48, 44),
-                      backgroundColor: v.cardBackground,
-                    ),
-                  ),
-                ),
+                  )
+                else
+                  const Spacer(),
                 const SizedBox(width: 8),
                 IconButton(
                   tooltip: 'Excluir áudio',
