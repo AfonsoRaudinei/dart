@@ -270,14 +270,20 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
 
     try {
       final next = advance.next;
-      if (next != null) {
-        await _notifications.showNextStop(
-          index: next.index,
-          total: advance.stops.length,
-          payload: visitRouteMapFocusLocationFor(next),
+      final sent = next != null
+          ? await _notifications.showNextStop(
+              index: next.index,
+              total: advance.stops.length,
+              payload: visitRouteMapFocusLocationFor(next),
+            )
+          : await _notifications.showRouteCompleted(
+              total: advance.stops.length,
+            );
+      if (!sent) {
+        AppLogger.warning(
+          'aviso não enviado: sem permissão',
+          tag: 'VisitRoute',
         );
-      } else {
-        await _notifications.showRouteCompleted(total: advance.stops.length);
       }
     } catch (error) {
       AppLogger.warning(
