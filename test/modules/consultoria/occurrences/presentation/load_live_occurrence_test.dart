@@ -15,6 +15,13 @@ class _FakeByIdRepository extends OccurrenceRepository {
     requestedIds.add(id);
     return stored;
   }
+
+  final List<Occurrence> updates = [];
+
+  @override
+  Future<void> updateOccurrence(Occurrence occurrence) async {
+    updates.add(occurrence);
+  }
 }
 
 void main() {
@@ -45,5 +52,67 @@ void main() {
     final live = await loadLiveOccurrence(repo, seed);
 
     expect(identical(live, seed), isTrue);
+  });
+
+  group('isOccurrenceDeleted', () {
+    test('ativa não é excluída', () {
+      expect(isOccurrenceDeleted(seed), isFalse);
+    });
+
+    test('deleted_local é excluída', () {
+      expect(
+        isOccurrenceDeleted(seed.copyWith(syncStatus: 'deleted_local')),
+        isTrue,
+      );
+    });
+
+    test('deleted legado é excluída', () {
+      expect(isOccurrenceDeleted(seed.copyWith(syncStatus: 'deleted')), isTrue);
+    });
+
+    test('deletedAt preenchido é excluída', () {
+      expect(
+        isOccurrenceDeleted(seed.copyWith(deletedAt: '2026-11-06T12:00:00Z')),
+        isTrue,
+      );
+    });
+  });
+
+  group('updateLiveOccurrence', () {
+    test('tombstone no repositório não grava', () async {
+      final repo = _FakeByIdRepository(
+        seed.copyWith(
+          syncStatus: 'deleted_local',
+          deletedAt: '2026-11-06T12:00:00Z',
+        ),
+      );
+
+      final saved = await updateLiveOccurrence(
+        repo,
+        seed,
+        (live) => live.copyWith(description: 'Editada'),
+      );
+
+      expect(saved, isFalse);
+      expect(repo.updates, isEmpty);
+    });
+
+    test('ativa grava a partir do registro vivo', () async {
+      final stored = seed.copyWith(
+        andamento: OccurrenceAndamento.resolvida.storageValue,
+      );
+      final repo = _FakeByIdRepository(stored);
+
+      final saved = await updateLiveOccurrence(
+        repo,
+        seed,
+        (live) => live.copyWith(description: 'Editada'),
+      );
+
+      expect(saved, isTrue);
+      expect(repo.updates, hasLength(1));
+      expect(repo.updates.single.description, 'Editada');
+      expect(repo.updates.single.andamentoEnum, OccurrenceAndamento.resolvida);
+    });
   });
 }
