@@ -21,7 +21,7 @@ class OccurrenceAudioStorage {
       final saved = await _saveToAppDirectory(source);
       return LocalMediaPathResolver.toStoredPath(saved.path);
     } catch (e, st) {
-      AppLogger.warning(
+      AppLogger.error(
         'Erro ao persistir áudio da ocorrência',
         tag: 'OccurrenceAudio',
         error: e,
