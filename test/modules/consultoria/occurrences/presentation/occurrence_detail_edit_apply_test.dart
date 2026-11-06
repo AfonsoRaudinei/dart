@@ -90,6 +90,15 @@ void main() {
     expect(edited.amostraLaudoTexto, isNull);
   });
 
+  test('edição preserva field_id gravado na criação', () {
+    final fresh = stale.copyWith(fieldId: 'field-1');
+
+    final edited = applyOccurrenceFormEdit(fresh, form);
+
+    expect(edited.fieldId, 'field-1');
+    expect(Occurrence.fromMap(edited.toMap()).fieldId, 'field-1');
+  });
+
   test('sem lista carregada usa o snapshot recebido', () {
     final edited = applyOccurrenceFormEdit(
       resolveLiveOccurrence(null, stale),
