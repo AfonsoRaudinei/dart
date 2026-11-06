@@ -10,8 +10,9 @@ import 'database_migrations_v45.dart';
 import 'database_migrations_v46.dart';
 import 'database_migrations_v47.dart';
 import 'database_migrations_v48.dart';
+import 'database_migrations_v49.dart';
 
-/// Fachada de migrações SQLite v1–v48 (Fase 3).
+/// Fachada de migrações SQLite v1–v49 (Fase 3).
 class DatabaseMigrations {
   DatabaseMigrations._();
 
@@ -63,4 +64,5 @@ class DatabaseMigrations {
   static Future<void> migrateToV46(Database db) => DatabaseMigrationsV46.migrateToV46(db);
   static Future<void> migrateToV47(Database db) => DatabaseMigrationsV47.migrateToV47(db);
   static Future<void> migrateToV48(Database db) => DatabaseMigrationsV48.migrateToV48(db);
+  static Future<void> migrateToV49(Database db) => DatabaseMigrationsV49.migrateToV49(db);
 }
