@@ -12,9 +12,9 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
 
     _cultivarCtrl.text = draft.cultivar;
     _descCtrl.text = draft.description;
-    _ordemAcaoCtrl.text = draft.recomendacaoAcao;
-    _ordemDoseCtrl.text = draft.recomendacaoDose;
-    _ordemQuandoCtrl.text = draft.recomendacaoQuando;
+    _ordem.acao.text = draft.recomendacaoAcao;
+    _ordem.dose.text = draft.recomendacaoDose;
+    _ordem.quando.text = draft.recomendacaoQuando;
     _urgency = draft.urgency;
     _selectedCategoryValue = draft.selectedCategoryValue;
     _dataPlantio = draft.dataPlantioIso != null
@@ -116,9 +116,9 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
       categoryNames: _cats.map((cat) => cat.name).toList(),
       urgency: _urgency,
       description: _descCtrl.text,
-      recomendacaoAcao: _ordemAcaoCtrl.text,
-      recomendacaoDose: _ordemDoseCtrl.text,
-      recomendacaoQuando: _ordemQuandoCtrl.text,
+      recomendacaoAcao: _ordem.acao.text,
+      recomendacaoDose: _ordem.dose.text,
+      recomendacaoQuando: _ordem.quando.text,
       metrics: _metrics.map(
         (key, value) => MapEntry(key, Map<String, int>.from(value)),
       ),
