@@ -5,6 +5,9 @@ import 'package:soloforte_app/core/geo/geo_json_polygon_geometry.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/services/notification_service.dart';
 import 'package:soloforte_app/modules/visitas/domain/models/geofence_state.dart';
+import 'package:soloforte_app/modules/visitas/domain/models/visit_session.dart';
+import 'package:soloforte_app/modules/visitas/domain/visit_route_advance.dart';
+import 'package:soloforte_app/modules/visitas/domain/visit_route_notification.dart';
 import 'package:soloforte_app/modules/dashboard/domain/user_location_fix.dart';
 import 'package:soloforte_app/modules/dashboard/providers/location_providers.dart';
 import '../controllers/visit_controller.dart';
@@ -24,6 +27,8 @@ class GeofenceController {
   bool _isDisposed = false;
   bool _isChecking = false;
   DateTime? _lastEvaluationAt;
+  String? _approachRouteKey;
+  int? _approachNotifiedIndex;
 
   static const _evaluationThrottle = Duration(seconds: 15);
 
@@ -101,6 +106,7 @@ class GeofenceController {
     final activeSession = visitState.value;
 
     if (activeSession != null) {
+      _maybeNotifyRouteApproach(userPoint, activeSession);
       // --- Scenario: Active Session -> Check Exit ---
       final FieldSummary? activeField = fields.cast<FieldSummary?>().firstWhere(
         (f) => f?.id == activeSession.areaId,
@@ -164,6 +170,38 @@ class GeofenceController {
         }
       }
     }
+  }
+
+  /// Aviso de proximidade da próxima parada só com o mapa em primeiro plano.
+  ///
+  /// ADR-057 Fase 2: o mesmo aviso com a tela bloqueada exigiria
+  /// `UIBackgroundModes` + localização Always. Esta fase não liga isso.
+  void _maybeNotifyRouteApproach(LatLng userPoint, VisitSession session) {
+    final routeKey =
+        '${session.id}|${session.routeStopsJson}|${session.routeCurrentIndex}';
+    if (_approachRouteKey != routeKey) {
+      _approachRouteKey = routeKey;
+      _approachNotifiedIndex = null;
+    }
+    final stop = session.currentRouteStop;
+    if (stop == null || _approachNotifiedIndex == stop.index) return;
+
+    final meters = visitRouteDistanceMeters(
+      fromLat: userPoint.latitude,
+      fromLng: userPoint.longitude,
+      toLat: stop.lat,
+      toLng: stop.lng,
+    );
+    if (meters > visitRouteApproachRadiusMeters) return;
+
+    _approachNotifiedIndex = stop.index;
+    final total = session.routeStops.length;
+    _notificationService.showNotification(
+      id: visitRouteApproachNotificationId(stop.index),
+      title: 'Parada ${stop.index} de $total',
+      body: 'Você está perto desta parada.',
+      payload: visitRouteMapFocusLocationFor(stop),
+    );
   }
 
   /// Verifica se o ponto está dentro ou a menos de 300m do talhão.
