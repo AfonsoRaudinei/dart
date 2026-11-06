@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/painting.dart';
+import '../../../../core/domain/occurrence_recomendacao_ordem.dart';
 import '../../../../core/services/sync_status_contract.dart';
 import '../../../../core/utils/app_logger.dart';
 import 'occurrence_andamento.dart';
@@ -170,6 +171,9 @@ class Occurrence {
   final String? tipoOcorrencia; // "sazonal" | "permanente"
   final bool amostraSolo;
   final String? recomendacoes;
+  final String? recomendacaoAcao;
+  final String? recomendacaoDose;
+  final String? recomendacaoQuando;
   final String? metricasJson; // {cat: {metric: valor}}
   final String? nutrientesJson; // lista de símbolos selecionados
   final String? categoriasJson; // lista de categorias ativas
@@ -230,6 +234,9 @@ class Occurrence {
     this.tipoOcorrencia,
     this.amostraSolo = false,
     this.recomendacoes,
+    this.recomendacaoAcao,
+    this.recomendacaoDose,
+    this.recomendacaoQuando,
     this.metricasJson,
     this.nutrientesJson,
     this.categoriasJson,
@@ -292,7 +299,18 @@ class Occurrence {
       // Back-compat: alguns fluxos antigos salvavam apenas `category`
       // e deixavam `amostra_solo` como 0. Garantimos consistência.
       amostraSolo: amostraSoloDb || amostraSoloByCategory,
-      recomendacoes: map['recomendacoes'],
+      recomendacoes: OccurrenceRecomendacaoOrdem.normalize(
+        map['recomendacoes'] as String?,
+      ),
+      recomendacaoAcao: OccurrenceRecomendacaoOrdem.normalize(
+        map['recomendacao_acao'] as String?,
+      ),
+      recomendacaoDose: OccurrenceRecomendacaoOrdem.normalize(
+        map['recomendacao_dose'] as String?,
+      ),
+      recomendacaoQuando: OccurrenceRecomendacaoOrdem.normalize(
+        map['recomendacao_quando'] as String?,
+      ),
       metricasJson: map['metricas_json'],
       nutrientesJson: map['nutrientes_json'],
       categoriasJson: map['categorias_json'],
@@ -357,7 +375,15 @@ class Occurrence {
       // Consistência: se a categoria indica amostra de solo,
       // garantimos flag = 1 mesmo que amostraSolo esteja false.
       'amostra_solo': (amostraSolo || isAmostraSoloCategory) ? 1 : 0,
-      'recomendacoes': recomendacoes,
+      'recomendacoes': OccurrenceRecomendacaoOrdem.mirrorLegacy(
+        acao: recomendacaoAcao,
+        dose: recomendacaoDose,
+        quando: recomendacaoQuando,
+        legacy: recomendacoes,
+      ),
+      'recomendacao_acao': recomendacaoAcao,
+      'recomendacao_dose': recomendacaoDose,
+      'recomendacao_quando': recomendacaoQuando,
       'metricas_json': metricasJson,
       'nutrientes_json': nutrientesJson,
       'categorias_json': categoriasJson,
@@ -411,6 +437,10 @@ class Occurrence {
     String? tipoOcorrencia,
     bool? amostraSolo,
     String? recomendacoes,
+    String? recomendacaoAcao,
+    String? recomendacaoDose,
+    String? recomendacaoQuando,
+    bool replaceRecomendacaoOrdem = false,
     String? metricasJson,
     String? nutrientesJson,
     String? categoriasJson,
@@ -467,7 +497,18 @@ class Occurrence {
       estadioFenologico: estadioFenologico ?? this.estadioFenologico,
       tipoOcorrencia: tipoOcorrencia ?? this.tipoOcorrencia,
       amostraSolo: amostraSolo ?? this.amostraSolo,
-      recomendacoes: recomendacoes ?? this.recomendacoes,
+      recomendacoes: replaceRecomendacaoOrdem
+          ? recomendacoes
+          : (recomendacoes ?? this.recomendacoes),
+      recomendacaoAcao: replaceRecomendacaoOrdem
+          ? recomendacaoAcao
+          : (recomendacaoAcao ?? this.recomendacaoAcao),
+      recomendacaoDose: replaceRecomendacaoOrdem
+          ? recomendacaoDose
+          : (recomendacaoDose ?? this.recomendacaoDose),
+      recomendacaoQuando: replaceRecomendacaoOrdem
+          ? recomendacaoQuando
+          : (recomendacaoQuando ?? this.recomendacaoQuando),
       metricasJson: metricasJson ?? this.metricasJson,
       nutrientesJson: nutrientesJson ?? this.nutrientesJson,
       categoriasJson: categoriasJson ?? this.categoriasJson,
@@ -504,6 +545,29 @@ class Occurrence {
       OccurrenceAndamento.fromStorage(andamento);
 
   String get andamentoLabel => andamentoEnum.label;
+
+  /// Substitui a ordem de aplicação, inclusive com campos vazios.
+  ///
+  /// Grava o espelho em [recomendacoes]. Sem texto nos três campos, o legado
+  /// também sai — senão a próxima leitura devolveria a ação antiga.
+  Occurrence applyRecomendacaoOrdem({
+    String? acao,
+    String? dose,
+    String? quando,
+  }) {
+    final ordem = OccurrenceRecomendacaoOrdem.resolve(
+      acao: acao,
+      dose: dose,
+      quando: quando,
+    );
+    return copyWith(
+      replaceRecomendacaoOrdem: true,
+      recomendacaoAcao: ordem.acao,
+      recomendacaoDose: ordem.dose,
+      recomendacaoQuando: ordem.quando,
+      recomendacoes: ordem.legacyText,
+    );
+  }
 
   Map<String, double>? getCoordinates() {
     if (_validCoordinates(lat, long)) {
