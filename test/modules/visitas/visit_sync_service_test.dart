@@ -15,6 +15,8 @@ VisitSession _session() => VisitSession(
   status: 'finished',
   createdAt: DateTime(2026, 5, 31, 8),
   updatedAt: DateTime(2026, 5, 31, 9),
+  routeStopsJson: '[{"index":1,"lat":-10.1,"lng":-48.1,"status":"pending"}]',
+  routeCurrentIndex: 1,
 );
 
 void main() {
@@ -36,6 +38,8 @@ void main() {
     expect(payload.containsKey('started_at'), isFalse);
     expect(payload.containsKey('ended_at'), isFalse);
     expect(payload.containsKey('sync_status'), isFalse);
+    expect(payload.containsKey('route_stops_json'), isFalse);
+    expect(payload.containsKey('route_current_index'), isFalse);
   });
 
   test('pull com start_time/end_time canônico', () {
