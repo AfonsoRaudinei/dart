@@ -32,9 +32,17 @@ class ReportShareLinkService implements IReportShareLinkPublisher {
   static String ensureMobileReadyHtml(String html) {
     const viewport =
         '<meta name="viewport" content="width=device-width, initial-scale=1">';
-    const pdfStub = '''
-<div id="sf-share-pdf-stub" style="margin:24px 16px;padding:12px;text-align:center;font-family:-apple-system,sans-serif;font-size:13px;color:#666;border-top:1px solid #e0e0e0;">
-  <button type="button" disabled style="opacity:0.5;padding:8px 16px;border-radius:8px;border:1px solid #ccc;background:#f5f5f5;">Gerar PDF (em breve)</button>
+    // Rodapé na página pública: `window.print()` → Salvar em PDF no diálogo do SO.
+    const pdfToolbar = '''
+<style id="sf-share-print-css">
+@media print {
+  #sf-share-pdf-toolbar { display: none !important; }
+  body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+</style>
+<div id="sf-share-pdf-toolbar" class="sf-share-pdf-stub" style="margin:24px 16px;padding:16px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;color:#444;border-top:1px solid #e0e0e0;">
+  <p style="margin:0 0 12px;line-height:1.45;color:#666;">Para gerar um PDF, toque no botão abaixo e, na tela de impressão do aparelho, escolha <strong>Salvar em PDF</strong> ou <strong>PDF</strong>.</p>
+  <button type="button" onclick="window.print()" style="padding:10px 20px;border-radius:10px;border:none;background:#0175C2;color:#fff;font-size:15px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;">Gerar PDF</button>
 </div>''';
 
     var doc = html.trim();
@@ -54,9 +62,9 @@ class ReportShareLinkService implements IReportShareLinkPublisher {
 
     if (!doc.contains('sf-share-pdf-stub')) {
       if (doc.contains('</body>')) {
-        doc = doc.replaceFirst('</body>', '$pdfStub\n</body>');
+        doc = doc.replaceFirst('</body>', '$pdfToolbar\n</body>');
       } else {
-        doc = '$doc$pdfStub';
+        doc = '$doc$pdfToolbar';
       }
     }
     return doc;
