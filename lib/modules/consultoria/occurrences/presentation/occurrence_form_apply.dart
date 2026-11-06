@@ -28,7 +28,6 @@ Occurrence occurrenceWithFormData(
     estadioFenologico: data.estadioFenologico,
     tipoOcorrencia: data.tipoOcorrencia,
     amostraSolo: data.amostraSolo,
-    recomendacoes: data.recomendacoes,
     metricasJson: data.metricasJson,
     nutrientesJson: data.nutrientesJson,
     categoriasJson: data.categoriasJson,
@@ -51,5 +50,9 @@ Occurrence occurrenceWithFormData(
     clearAmostraTramite: amostraTramite == null,
     amostraLaudoTexto: amostraLaudoTexto,
     clearAmostraLaudoTexto: amostraLaudoTexto == null,
+  ).applyRecomendacaoOrdem(
+    acao: data.recomendacaoAcao,
+    dose: data.recomendacaoDose,
+    quando: data.recomendacaoQuando,
   );
 }
