@@ -45,6 +45,7 @@ import '../../../components/map/widgets/map_layers.dart';
 import '../../../components/map/widgets/map_markers.dart';
 import '../../../components/map/widgets/map_controls_overlay.dart';
 import '../../../components/map/widgets/map_offline_widgets.dart';
+import '../../../components/map/visit_route_stop_markers.dart';
 import '../../../components/map/widgets/isolated_marker_layers.dart';
 import '../../../components/map/widgets/draggable_pin_layer.dart';
 import '../../../components/map/widgets/pin_position_correction_overlay.dart';
@@ -327,8 +328,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 if (hitIndex != null) {
                   hitId = hitIndex.hitTest(
                     point,
-                    (p, geometry) =>
-                        geoJsonContainsLatLngMap(geometry, p),
+                    (p, geometry) => geoJsonContainsLatLngMap(geometry, p),
                   );
                 }
 
@@ -485,6 +485,8 @@ class MapBuildOrchestrator extends ConsumerWidget {
                     );
                   },
                 ),
+
+                const VisitRouteStopMarkers(),
 
                 // 🎯 ÚNICA LAYER QUE REBUILDA: Localização GPS
                 const IsolatedUserLocationLayer(),
