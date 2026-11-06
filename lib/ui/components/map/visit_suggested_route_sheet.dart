@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -87,6 +89,9 @@ class _VisitSuggestedRouteSheetState
           .read(visitControllerProvider.notifier)
           .saveSuggestedRoute(stops);
       if (!mounted) return;
+      unawaited(
+        ref.read(visitRouteNotificationPortProvider).ensurePermission(),
+      );
       Navigator.of(context).pop();
     } catch (_) {
       if (!mounted) return;
