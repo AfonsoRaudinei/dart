@@ -19,8 +19,11 @@ String whatsAppPhonePathSegment(String? phoneDigitsBrazil) {
   return '55$digits';
 }
 
-/// Monta URI wa.me com texto e telefone BR opcional.
+/// Monta a URI de compartilhamento do WhatsApp.
 ///
+/// Sem telefone, abre o seletor de conversa
+/// (`https://api.whatsapp.com/send?text=`).
+/// Com telefone, usa `wa.me/<número>?text=`.
 /// [phoneDigitsBrazil]: apenas dígitos locais (sem +55); regra em
 /// [whatsAppPhonePathSegment].
 String buildWhatsAppShareUri({
@@ -30,7 +33,7 @@ String buildWhatsAppShareUri({
   final text = Uri.encodeComponent(message);
   final phone = whatsAppPhonePathSegment(phoneDigitsBrazil);
   if (phone.isEmpty) {
-    return 'https://wa.me/?text=$text';
+    return 'https://api.whatsapp.com/send?text=$text';
   }
   return 'https://wa.me/$phone?text=$text';
 }
@@ -44,8 +47,8 @@ Future<void> launchWhatsAppShare({
     message: message,
   );
   final uri = Uri.parse(url);
-  if (!await canLaunchUrl(uri)) {
+  final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+  if (!launched) {
     throw StateError('Não foi possível abrir o WhatsApp.');
   }
-  await launchUrl(uri, mode: LaunchMode.externalApplication);
 }
