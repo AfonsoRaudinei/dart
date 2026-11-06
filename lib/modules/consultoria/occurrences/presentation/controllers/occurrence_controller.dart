@@ -30,6 +30,16 @@ Occurrence resolveLiveOccurrence(List<Occurrence>? list, Occurrence seed) {
   return seed;
 }
 
+/// Ocorrência atual no repositório antes de regravar; [seed] se não encontrada.
+///
+/// Não usa [occurrencesListProvider]: o detalhe já fechou quando o confirm roda.
+Future<Occurrence> loadLiveOccurrence(
+  OccurrenceRepository repository,
+  Occurrence seed,
+) async {
+  return await repository.getById(seed.id) ?? seed;
+}
+
 class OccurrenceController {
   final Ref ref;
   final OccurrenceRepository _repository;
