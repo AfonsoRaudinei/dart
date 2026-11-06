@@ -200,8 +200,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
           initialOccurrence: live,
           onCancel: () => Navigator.of(sheetContext).pop(),
           onConfirm: (data) async {
-            final list = await container.read(occurrencesListProvider.future);
-            final current = resolveLiveOccurrence(list, live);
+            final current = await loadLiveOccurrence(repository, live);
             await repository.updateOccurrence(
               applyOccurrenceFormEdit(current, data),
             );
