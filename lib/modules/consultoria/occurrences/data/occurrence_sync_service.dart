@@ -12,14 +12,29 @@ import 'package:soloforte_app/core/services/sync_retry_runner.dart';
 import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 
+import '../../relatorio_visita/data/occurrence_audio_remote.dart';
 import '../domain/occurrence.dart';
 import '../domain/occurrence_andamento.dart';
 
 class OccurrenceSyncService {
-  OccurrenceSyncService(this._supabase, this._accessReader);
+  OccurrenceSyncService(
+    this._supabase,
+    this._accessReader, {
+    OccurrenceAudioRemote? audioRemote,
+  }) : _injectedAudioRemote = audioRemote;
 
   final SupabaseClient _supabase;
   final IOccurrenceAccessReader _accessReader;
+  final OccurrenceAudioRemote? _injectedAudioRemote;
+  OccurrenceAudioRemote? _lazyAudioRemote;
+
+  OccurrenceAudioRemote get _audioRemoteClient {
+    final injected = _injectedAudioRemote;
+    if (injected != null) return injected;
+    return _lazyAudioRemote ??= OccurrenceAudioRemote(
+      SupabaseOccurrenceAudioObjectStore(_supabase),
+    );
+  }
 
   Future<void> syncOccurrences() async {
     try {
@@ -61,6 +76,17 @@ class OccurrenceSyncService {
 
     for (final row in pending) {
       final occurrence = Occurrence.fromMap(row);
+      final remoteId = occurrence.remoteId?.trim() ?? '';
+      final occurrenceId = remoteId.isNotEmpty ? remoteId : occurrence.id;
+      final owner = occurrence.ownerUserId?.trim() ?? '';
+      final allowUpsert = await shouldUpsertOccurrenceAfterAudio(
+        audio: _audioRemoteClient,
+        userId: owner.isNotEmpty ? owner : userId,
+        occurrenceId: occurrenceId,
+        syncStatus: occurrence.syncStatus,
+        audioPath: occurrence.audioPath,
+      );
+      if (!allowUpsert) continue;
       try {
         final payload = OccurrenceRemoteMapper.toRemote(occurrence, userId);
         await SyncRetryRunner.execute(
@@ -139,11 +165,14 @@ class OccurrenceSyncService {
     }
 
     final db = await DatabaseHelper.instance.database;
+    final audioDownloads =
+        <({String userId, String occurrenceId, String audioPath})>[];
     await db.transaction((txn) async {
       await _removeRevokedCache(txn, userId, activeClientIds);
       for (final remote in rowsById.values) {
         try {
-          await _cacheRemote(txn, remote, userId);
+          final audio = await _cacheRemote(txn, remote, userId);
+          if (audio != null) audioDownloads.add(audio);
         } catch (error, stackTrace) {
           AppLogger.error(
             'Occurrence pull persist failed [id=${remote['id']}]',
@@ -154,13 +183,21 @@ class OccurrenceSyncService {
         }
       }
     });
+    for (final audio in audioDownloads) {
+      await _audioRemoteClient.downloadIfMissing(
+        userId: audio.userId,
+        occurrenceId: audio.occurrenceId,
+        audioPath: audio.audioPath,
+      );
+    }
     AppLogger.debug(
       'Occurrence pull applied ${rowsById.length} row(s)',
       tag: 'OccurrenceSync',
     );
   }
 
-  Future<void> _cacheRemote(
+  Future<({String userId, String occurrenceId, String audioPath})?>
+  _cacheRemote(
     DatabaseExecutor db,
     Map<String, dynamic> remote,
     String currentUserId,
@@ -185,7 +222,7 @@ class OccurrenceSyncService {
         where: 'id = ?',
         whereArgs: [localId],
       );
-      return;
+      return null;
     }
 
     if (isOwned) {
@@ -206,7 +243,7 @@ class OccurrenceSyncService {
           '[id=$localId sync_status=${existing.single['sync_status']}]',
           tag: 'OccurrenceSync',
         );
-        return;
+        return null;
       }
     }
 
@@ -216,6 +253,21 @@ class OccurrenceSyncService {
       cachedByUserId: isOwned ? null : currentUserId,
     );
     await OccurrenceCachePolicy.writePulledRow(db, localData);
+    return _audioPullAfterWrite(remote, localData);
+  }
+
+  /// Só depois da linha gravada. userId é o dono (`remote.user_id`).
+  ({String userId, String occurrenceId, String audioPath})?
+  _audioPullAfterWrite(
+    Map<String, dynamic> remote,
+    Map<String, dynamic> localData,
+  ) {
+    final audioPath = (localData['audio_path'] as String?)?.trim() ?? '';
+    if (audioPath.isEmpty) return null;
+    final owner = (remote['user_id'] as String?)?.trim() ?? '';
+    final occurrenceId = (remote['id'] as String?)?.trim() ?? '';
+    if (owner.isEmpty || occurrenceId.isEmpty) return null;
+    return (userId: owner, occurrenceId: occurrenceId, audioPath: audioPath);
   }
 
   Future<void> _removeLegacySharedCache(
@@ -259,6 +311,39 @@ class OccurrenceSyncService {
         whereArgs: [id],
       );
     }
+  }
+}
+
+/// `true` quando o upsert da linha pode seguir.
+/// Upload que lança devolve `false`: a pendência local permanece.
+Future<bool> shouldUpsertOccurrenceAfterAudio({
+  required OccurrenceAudioRemote audio,
+  required String userId,
+  required String occurrenceId,
+  required String syncStatus,
+  String? audioPath,
+}) async {
+  if (syncStatus == 'deleted' ||
+      syncStatus == SyncStatusContract.deletedLocal) {
+    await audio.removeObject(userId: userId, occurrenceId: occurrenceId);
+    return true;
+  }
+  final stored = audioPath?.trim() ?? '';
+  if (stored.isEmpty) return true;
+  try {
+    await audio.uploadIfLocal(
+      userId: userId,
+      occurrenceId: occurrenceId,
+      audioPath: stored,
+    );
+    return true;
+  } catch (error) {
+    AppLogger.warning(
+      'Falha ao enviar áudio da ocorrência $occurrenceId; upsert adiado',
+      tag: 'OccurrenceSync',
+      error: error,
+    );
+    return false;
   }
 }
 
