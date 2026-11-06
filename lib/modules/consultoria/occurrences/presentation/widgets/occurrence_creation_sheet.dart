@@ -21,8 +21,6 @@ import 'package:soloforte_app/core/ui/sheets/widgets/sheet_section_header.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
-import 'package:soloforte_app/core/domain/occurrence_recomendacao_ordem.dart';
-
 import '../../domain/occurrence.dart';
 import '../../domain/occurrence_amostra_solo.dart';
 import '../../domain/occurrence_soy_age.dart';
@@ -36,6 +34,7 @@ import 'occurrence_amostra_solo_section.dart';
 import 'occurrence_client_selector.dart';
 import 'occurrence_fenologia_data.dart';
 import 'occurrence_form_widgets.dart';
+import 'occurrence_ordem_aplicacao_controllers.dart';
 import 'occurrence_audio_field.dart';
 import 'occurrence_photo_gallery.dart';
 
@@ -111,9 +110,7 @@ class _OccurrenceCreationSheetState
   String _urgency = 'Média';
   String? _selectedCategoryValue;
   final _descCtrl = TextEditingController();
-  final _ordemAcaoCtrl = TextEditingController();
-  final _ordemDoseCtrl = TextEditingController();
-  final _ordemQuandoCtrl = TextEditingController();
+  final _ordem = OccurrenceOrdemAplicacaoControllers();
   bool _isSaving = false;
   String? _submitError;
   String? _audioPath;
@@ -136,9 +133,7 @@ class _OccurrenceCreationSheetState
     _applyTalhaoPrefillFields();
     _cultivarCtrl.addListener(_persistDraft);
     _descCtrl.addListener(_persistDraft);
-    _ordemAcaoCtrl.addListener(_persistDraft);
-    _ordemDoseCtrl.addListener(_persistDraft);
-    _ordemQuandoCtrl.addListener(_persistDraft);
+    _ordem.addListener(_persistDraft);
     _sementesPorMetroCtrl.addListener(_persistDraft);
     _estandePlantasCtrl.addListener(_persistDraft);
     _objetivoPlantioCtrl.addListener(_persistDraft);
@@ -202,15 +197,7 @@ class _OccurrenceCreationSheetState
 
     _cultivarCtrl.text = occurrence.cultivar ?? '';
     _descCtrl.text = occurrence.description;
-    final ordem = OccurrenceRecomendacaoOrdem.resolve(
-      acao: occurrence.recomendacaoAcao,
-      dose: occurrence.recomendacaoDose,
-      quando: occurrence.recomendacaoQuando,
-      legacy: occurrence.recomendacoes,
-    );
-    _ordemAcaoCtrl.text = ordem.acao ?? '';
-    _ordemDoseCtrl.text = ordem.dose ?? '';
-    _ordemQuandoCtrl.text = ordem.quando ?? '';
+    _ordem.load(occurrence);
     _urgency = occurrence.type;
     _selectedCategoryValue = occurrence.category;
     _dataPlantio = occurrence.dataPlantio != null
@@ -279,9 +266,7 @@ class _OccurrenceCreationSheetState
     // (via _patchForm e listeners dos controllers).
     _cultivarCtrl.removeListener(_persistDraft);
     _descCtrl.removeListener(_persistDraft);
-    _ordemAcaoCtrl.removeListener(_persistDraft);
-    _ordemDoseCtrl.removeListener(_persistDraft);
-    _ordemQuandoCtrl.removeListener(_persistDraft);
+    _ordem.removeListener(_persistDraft);
     _sementesPorMetroCtrl.removeListener(_persistDraft);
     _estandePlantasCtrl.removeListener(_persistDraft);
     _objetivoPlantioCtrl.removeListener(_persistDraft);
@@ -294,9 +279,7 @@ class _OccurrenceCreationSheetState
     }
     _cultivarCtrl.dispose();
     _descCtrl.dispose();
-    _ordemAcaoCtrl.dispose();
-    _ordemDoseCtrl.dispose();
-    _ordemQuandoCtrl.dispose();
+    _ordem.dispose();
     _sementesPorMetroCtrl.dispose();
     _estandePlantasCtrl.dispose();
     _objetivoPlantioCtrl.dispose();
@@ -821,9 +804,9 @@ class _OccurrenceCreationSheetState
                   ),
                   const SizedBox(height: 20),
                   OccurrenceOrdemAplicacaoFields(
-                    acao: _ordemAcaoCtrl,
-                    dose: _ordemDoseCtrl,
-                    quando: _ordemQuandoCtrl,
+                    acao: _ordem.acao,
+                    dose: _ordem.dose,
+                    quando: _ordem.quando,
                   ),
                   const SizedBox(height: 24),
                   _buildPhotoActionSection(),
