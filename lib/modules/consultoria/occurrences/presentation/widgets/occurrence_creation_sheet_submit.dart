@@ -151,9 +151,14 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
                   laudoTrim.isNotEmpty
               ? laudoTrim
               : null,
-          recomendacoes: _recomCtrl.text.trim().isEmpty
-              ? null
-              : _recomCtrl.text.trim(),
+          recomendacaoAcao: _ordemAcaoCtrl.text,
+          recomendacaoDose: _ordemDoseCtrl.text,
+          recomendacaoQuando: _ordemQuandoCtrl.text,
+          recomendacoes: OccurrenceRecomendacaoOrdem.mirrorLegacy(
+            acao: _ordemAcaoCtrl.text,
+            dose: _ordemDoseCtrl.text,
+            quando: _ordemQuandoCtrl.text,
+          ),
           metricasJson: _encodeMetricas(),
           nutrientesJson: _encodeNutrientes(),
           categoriasJson: _encodeCategorias(),
