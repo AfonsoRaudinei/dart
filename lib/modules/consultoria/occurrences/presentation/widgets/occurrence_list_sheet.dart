@@ -556,19 +556,24 @@ class _OccurrenceListItem extends StatelessWidget {
                       Row(
                         children: [
                           if (estadioLinha.isNotEmpty)
-                            _MiniChip(
-                              label: '📊 $estadioLinha',
-                              color: isIos
-                                  ? SoloForteSheetSkinIos.iconStroke
-                                  : context.themeAccent,
+                            Flexible(
+                              child: _MiniChip(
+                                label: '📊 $estadioLinha',
+                                maxLines: 2,
+                                color: isIos
+                                    ? SoloForteSheetSkinIos.iconStroke
+                                    : context.themeAccent,
+                              ),
                             ),
                           if (occurrence.cultivar != null) ...[
                             const SizedBox(width: 4),
-                            Text(
-                              occurrence.cultivar!,
-                              style: TextStyle(
-                                color: secondaryText,
-                                fontSize: 11,
+                            Flexible(
+                              child: Text(
+                                occurrence.cultivar!,
+                                style: TextStyle(
+                                  color: secondaryText,
+                                  fontSize: 11,
+                                ),
                               ),
                             ),
                           ],
@@ -728,7 +733,12 @@ class _CategoryIcon extends StatelessWidget {
 class _MiniChip extends StatelessWidget {
   final String label;
   final Color color;
-  const _MiniChip({required this.label, required this.color});
+  final int maxLines;
+  const _MiniChip({
+    required this.label,
+    required this.color,
+    this.maxLines = 1,
+  });
 
   @override
   Widget build(BuildContext context) => Container(
@@ -739,6 +749,8 @@ class _MiniChip extends StatelessWidget {
     ),
     child: Text(
       label,
+      maxLines: maxLines,
+      softWrap: true,
       style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold),
     ),
   );
