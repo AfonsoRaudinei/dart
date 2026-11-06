@@ -20,12 +20,13 @@ void main() {
       expect(out, contains('width=device-width'));
     });
 
-    test('ensureMobileReadyHtml adiciona stub PDF desabilitado', () {
+    test('ensureMobileReadyHtml adiciona barra Gerar PDF (print → PDF)', () {
       const raw =
           '<!DOCTYPE html><html><head><meta name="viewport" content="width=1"></head><body></body></html>';
       final out = ReportShareLinkService.ensureMobileReadyHtml(raw);
       expect(out, contains('sf-share-pdf-stub'));
-      expect(out, contains('Gerar PDF (em breve)'));
+      expect(out, contains('window.print()'));
+      expect(out, contains('Salvar em PDF'));
     });
 
     test('ensureMobileReadyHtml envolve fragmento sem html', () {
