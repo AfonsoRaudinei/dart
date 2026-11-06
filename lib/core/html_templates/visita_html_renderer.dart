@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../domain/occurrence_recomendacao_ordem.dart';
 import 'relatorio_html_renderer.dart';
 
 class VisitaHtmlRenderer {
@@ -320,8 +321,7 @@ class VisitaHtmlRenderer {
       final fotos = await _resolveOcorrenciaFotos(ocorrencia);
       final captions = _photoCaptionsFrom(ocorrencia);
       final descricao = _stringOrNull(ocorrencia['descricao'])?.trim() ?? '';
-      final recomendacao =
-          _stringOrNull(ocorrencia['recomendacoes'])?.trim() ?? '';
+      final ordemHtml = _renderOrdemAplicacao(ocorrencia);
       String altFor(String path) {
         final caption = captions[path]?.trim();
         if (caption != null && caption.isNotEmpty) {
@@ -347,13 +347,33 @@ class VisitaHtmlRenderer {
           </div>
           ${meta.isEmpty ? '' : '<span class="sf-caption">${meta.join(' · ')}</span>'}
           ${descricao.isEmpty ? '' : '<p class="sf-prose">${RelatorioHtmlRenderer.escapeHtml(descricao)}</p>'}
-          ${recomendacao.isEmpty ? '' : '<div class="sf-callout"><p class="sf-note-label">Recomendação</p><p class="sf-prose">${RelatorioHtmlRenderer.escapeHtml(recomendacao)}</p></div>'}
+          $ordemHtml
           $stripHtml
         </div>
       </div>
       ''');
     }
     return sb.toString();
+  }
+
+  static String _renderOrdemAplicacao(Map<String, dynamic> ocorrencia) {
+    final ordem = OccurrenceRecomendacaoOrdem.resolve(
+      acao: _stringOrNull(ocorrencia['recomendacaoAcao']),
+      dose: _stringOrNull(ocorrencia['recomendacaoDose']),
+      quando: _stringOrNull(ocorrencia['recomendacaoQuando']),
+      legacy: _stringOrNull(ocorrencia['recomendacoes']),
+    );
+    if (ordem.isEmpty) return '';
+    final rows = ordem.rows
+        .map(
+          (row) =>
+              '<div class="sf-row"><span class="sf-row-label">${RelatorioHtmlRenderer.escapeHtml(row.label)}</span><span class="sf-row-value">${RelatorioHtmlRenderer.escapeHtml(row.value)}</span></div>',
+        )
+        .join();
+    return '''
+      <p class="sf-note-label">${OccurrenceRecomendacaoOrdem.sectionTitle}</p>
+      <div class="sf-sheet sf-ordem">$rows</div>
+    ''';
   }
 
   static String _renderOcorrenciasSummary(
