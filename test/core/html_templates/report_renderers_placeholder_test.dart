@@ -596,6 +596,72 @@ void main() {
       expect(RegExp('Urgência alta').allMatches(html).length, 1);
     });
 
+    test('ocorrencia de amostra mostra código, coletor, trâmite e laudo', () async {
+      await initializeDateFormatting('pt_BR');
+
+      final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+        'id': 'occ-amostra',
+        'type': 'Média',
+        'category': 'amostra_solo',
+        'amostra_solo': 1,
+        'status': 'confirmed',
+        'amostra_codigo': 'AS-<14>',
+        'amostra_coletor': 'Equipe campo',
+        'amostra_tramite': 'laudo_pronto',
+        'amostra_laudo_texto': 'pH 5,8',
+        'created_at': now.toIso8601String(),
+      });
+
+      expect(html, contains('>Código da amostra</span>'));
+      expect(html, contains('AS-&lt;14&gt;'));
+      expect(html, contains('>Equipe campo</span>'));
+      expect(html, contains('>Laudo pronto</span>'));
+      expect(html, contains('>pH 5,8</span>'));
+      expect(html, isNot(contains('{{')));
+      expect(html, isNot(contains('amostra_')));
+    });
+
+    test('amostra legada sem campos mostra trâmite Coletada', () async {
+      await initializeDateFormatting('pt_BR');
+
+      final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+        'id': 'occ-amostra-legada',
+        'type': 'Média',
+        'category': 'amostra_solo',
+        'amostra_solo': 1,
+        'status': 'draft',
+        'created_at': now.toIso8601String(),
+      });
+
+      expect(html, contains('>Trâmite</span>'));
+      expect(html, contains('>Coletada</span>'));
+      expect(html, isNot(contains('>Código da amostra</span>')));
+      expect(html, isNot(contains('>Resumo do laudo</span>')));
+      expect(html, isNot(contains('{{')));
+      expect(html, isNot(contains('amostra_')));
+      expect(html, isNot(contains('<span class="sf-row-value"></span>')));
+    });
+
+    test('ocorrencia sem amostra não deixa resto de markup de amostra', () async {
+      await initializeDateFormatting('pt_BR');
+
+      final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+        'id': 'occ-sem-amostra',
+        'type': 'Alta',
+        'category': 'doenca',
+        'status': 'draft',
+        'amostra_codigo': 'AS-IGNORADO',
+        'amostra_tramite': 'laboratorio',
+        'created_at': now.toIso8601String(),
+      });
+
+      expect(html, isNot(contains('AS-IGNORADO')));
+      expect(html, isNot(contains('Trâmite')));
+      expect(html, isNot(contains('{{')));
+      expect(html, isNot(contains('amostra_')));
+      expect(html, isNot(contains('<span class="sf-row-value"></span>')));
+    });
+
     test('relatorio visita usa base editorial e preserva dados', () async {
       await initializeDateFormatting('pt_BR');
 
