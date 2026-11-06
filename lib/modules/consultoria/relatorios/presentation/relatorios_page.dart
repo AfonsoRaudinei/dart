@@ -397,6 +397,9 @@ class _RelatorioCardState extends ConsumerState<_RelatorioCard> {
     try {
       final html = await buildRelatorioVisitHtml(ref, relatorio);
       if (!context.mounted) return;
+      final whatsAppPhoneDigits =
+          await _clientPhoneDigitsForWhatsApp(ref, relatorio.clientId);
+      if (!context.mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => HtmlReportViewer(
@@ -408,6 +411,8 @@ class _RelatorioCardState extends ConsumerState<_RelatorioCard> {
             jsonData: ConsultoriaReportExportData.reportJson(relatorio),
             csvData: ConsultoriaReportExportData.reportCsv(relatorio),
             bodyBuilder: bodyBuilder,
+            whatsAppPhoneDigits: whatsAppPhoneDigits,
+            enableWhatsAppShareLink: true,
             actions: _visitViewerActions(container),
           ),
         ),
@@ -689,6 +694,9 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
         farmName: location.fazenda,
       );
       if (!context.mounted) return;
+      final whatsAppPhoneDigits =
+          await _clientPhoneDigitsForWhatsApp(ref, occurrence.clientId);
+      if (!context.mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => HtmlReportViewer(
@@ -698,6 +706,8 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
             jsonData: ConsultoriaReportExportData.occurrenceJson(occurrence),
             csvData: ConsultoriaReportExportData.occurrenceCsv(occurrence),
             bodyBuilder: bodyBuilder,
+            whatsAppPhoneDigits: whatsAppPhoneDigits,
+            enableWhatsAppShareLink: true,
             actions: _occurrenceViewerActions(container),
           ),
         ),
@@ -815,6 +825,23 @@ T? _tryReadContract<T>(T Function() read) {
   } catch (_) {
     return null;
   }
+}
+
+/// Dígitos do telefone do cliente, ou null se o contrato não resolver.
+Future<String?> _clientPhoneDigitsForWhatsApp(
+  WidgetRef ref,
+  String? clientId,
+) async {
+  final id = clientId?.trim() ?? '';
+  if (id.isEmpty) return null;
+  final lookup = _tryReadContract(() => ref.read(clientLookupProvider));
+  if (lookup == null) return null;
+  try {
+    final client = await lookup.findById(id);
+    final phone = client?.phone?.replaceAll(RegExp(r'[^0-9]'), '');
+    if (phone != null && phone.isNotEmpty) return phone;
+  } catch (_) {}
+  return null;
 }
 
 /// Vazio quando o nome não resolve — o HTML não exibe o UUID cru.
