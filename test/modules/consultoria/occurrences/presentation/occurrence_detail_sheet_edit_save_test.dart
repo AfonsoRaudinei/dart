@@ -38,6 +38,9 @@ class _FakeOccurrenceRepository extends OccurrenceRepository {
   }
 
   @override
+  Future<Occurrence?> getById(String id) async => null;
+
+  @override
   Future<List<Occurrence>> getAllOccurrences() async => const [];
 
   @override
