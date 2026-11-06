@@ -5,6 +5,7 @@ import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:soloforte_app/core/contracts/i_occurrence_access_reader.dart';
+import 'package:soloforte_app/core/domain/occurrence_recomendacao_ordem.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
 import 'package:soloforte_app/core/database/database_schema_utils.dart';
 import 'package:soloforte_app/core/services/sync_retry_runner.dart';
@@ -378,7 +379,15 @@ class OccurrenceRemoteMapper {
       'estadio_fenologico': occurrence.estadioFenologico,
       'tipo_ocorrencia': occurrence.tipoOcorrencia,
       'amostra_solo': occurrence.amostraSolo,
-      'recomendacoes': occurrence.recomendacoes,
+      'recomendacoes': OccurrenceRecomendacaoOrdem.mirrorLegacy(
+        acao: occurrence.recomendacaoAcao,
+        dose: occurrence.recomendacaoDose,
+        quando: occurrence.recomendacaoQuando,
+        legacy: occurrence.recomendacoes,
+      ),
+      'recomendacao_acao': occurrence.recomendacaoAcao,
+      'recomendacao_dose': occurrence.recomendacaoDose,
+      'recomendacao_quando': occurrence.recomendacaoQuando,
       'metricas_json': _decodeJson(occurrence.metricasJson),
       'nutrientes_json': _decodeJson(occurrence.nutrientesJson),
       'categorias_json': _decodeJson(occurrence.categoriasJson),
@@ -441,6 +450,9 @@ class OccurrenceRemoteMapper {
       'tipo_ocorrencia': remote['tipo_ocorrencia'],
       'amostra_solo': _asSqliteBool(remote['amostra_solo']),
       'recomendacoes': remote['recomendacoes'],
+      'recomendacao_acao': remote['recomendacao_acao'],
+      'recomendacao_dose': remote['recomendacao_dose'],
+      'recomendacao_quando': remote['recomendacao_quando'],
       'metricas_json': _encodeJson(remote['metricas_json']),
       'nutrientes_json': _encodeJson(remote['nutrientes_json']),
       'categorias_json': _encodeJson(remote['categorias_json']),
