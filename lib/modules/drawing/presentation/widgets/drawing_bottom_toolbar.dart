@@ -31,6 +31,7 @@ class DrawingBottomToolbar extends StatefulWidget {
     this.distanceUnit = DistanceDisplayUnit.kilometer,
     this.onDistanceUnit,
     this.onStartHoleCut,
+    this.canStartHoleCut = true,
     this.onRemoveHoleRing,
     this.showRemoveHoleRing = false,
     this.canRemoveHoleRing = false,
@@ -56,6 +57,8 @@ class DrawingBottomToolbar extends StatefulWidget {
 
   /// Segunda linha compacta (edição): recortar talhão.
   final VoidCallback? onStartHoleCut;
+
+  final bool canStartHoleCut;
 
   /// Segunda linha compacta (edição): excluir anel interno.
   final VoidCallback? onRemoveHoleRing;
@@ -212,6 +215,7 @@ class _DrawingBottomToolbarState extends State<DrawingBottomToolbar>
                               labelColor: Colors.white70,
                               iconSize: 20,
                               semanticsLabel: 'Recortar área interna do talhão',
+                              enabled: widget.canStartHoleCut,
                               onTap: widget.onStartHoleCut,
                             ),
                           ),

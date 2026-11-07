@@ -29,6 +29,7 @@ class DrawingBottomToolbarOverlay extends StatelessWidget {
     this.distanceUnit = DistanceDisplayUnit.kilometer,
     this.onDistanceUnit,
     this.onStartHoleCut,
+    this.canStartHoleCut = true,
     this.onRemoveHoleRing,
     this.showRemoveHoleRing = false,
     this.canRemoveHoleRing = false,
@@ -52,6 +53,7 @@ class DrawingBottomToolbarOverlay extends StatelessWidget {
   final DistanceDisplayUnit distanceUnit;
   final ValueChanged<DistanceDisplayUnit>? onDistanceUnit;
   final VoidCallback? onStartHoleCut;
+  final bool canStartHoleCut;
   final VoidCallback? onRemoveHoleRing;
   final bool showRemoveHoleRing;
   final bool canRemoveHoleRing;
@@ -84,6 +86,7 @@ class DrawingBottomToolbarOverlay extends StatelessWidget {
           distanceUnit: distanceUnit,
           onDistanceUnit: onDistanceUnit,
           onStartHoleCut: onStartHoleCut,
+          canStartHoleCut: canStartHoleCut,
           onRemoveHoleRing: onRemoveHoleRing,
           showRemoveHoleRing: showRemoveHoleRing,
           canRemoveHoleRing: canRemoveHoleRing,
