@@ -29,6 +29,10 @@ import '../../../../core/utils/app_logger.dart';
 part 'drawing_controller_vertex.dart';
 part 'drawing_controller_sketch.dart';
 
+/// Talhão efêmero em recorte durante sketch de polígono novo (antes de salvar).
+@visibleForTesting
+const String kSketchHoleCutFeatureId = '__sketch_hole_cut__';
+
 /// Controller de orquestração do módulo Drawing.
 ///
 /// Responsabilidades únicas (após refatoração Sprint 1):
@@ -275,6 +279,9 @@ class DrawingController extends ChangeNotifier {
 
   /// Feature cujo anel interno está sendo desenhado. Não limpa a seleção.
   String? _holeCutFeatureId;
+
+  /// Contorno externo guardado ao iniciar recorte em sketch de polígono novo.
+  DrawingGeometry? _holeCutSketchBase;
   DrawingFeatureActionsMode _featureActionsMode =
       DrawingFeatureActionsMode.compact;
   bool _multiSelectEnabled = false;
@@ -365,6 +372,17 @@ class DrawingController extends ChangeNotifier {
 
   String? get holeCutFeatureId => _holeCutFeatureId;
 
+  bool get canStartHoleCutFromSketch {
+    if (isCuttingHole) return false;
+    if (currentState != DrawingState.drawing) return false;
+    if (currentTool != DrawingTool.polygon) return false;
+    if (!canFinishDrawing) return false;
+    final geom = buildSketchLiveGeometry();
+    if (geom is! DrawingPolygon) return false;
+    if (geom.coordinates.isEmpty) return false;
+    return geom.coordinates.first.length >= 4;
+  }
+
   /// Bloqueia taps contextuais do mapa (talhões, pins, sheets) enquanto o
   /// usuário está desenhando, revisando, editando ou em fluxos exclusivos.
   ///
@@ -446,12 +464,51 @@ class DrawingController extends ChangeNotifier {
   DrawingFeature? get _holeCutFeature {
     final id = _holeCutFeatureId;
     if (id == null) return null;
+    if (id == kSketchHoleCutFeatureId) {
+      final base = _holeCutSketchBase;
+      if (base == null) return null;
+      final now = DateTime.now();
+      return DrawingFeature(
+        id: id,
+        geometry: base,
+        properties: DrawingProperties(
+          nome: '',
+          tipo: DrawingType.talhao,
+          origem: DrawingOrigin.desenho_manual,
+          status: DrawingStatus.rascunho,
+          autorId: 'sketch',
+          autorTipo: AuthorType.sistema,
+          areaHa: DrawingUtils.calculateGeometryArea(base),
+          versao: 1,
+          ativo: true,
+          createdAt: now,
+          updatedAt: now,
+          syncStatus: SyncStatus.local_only,
+        ),
+      );
+    }
     final selected = _selectedFeature;
     if (selected != null && selected.id == id) return selected;
     for (final feature in _features) {
       if (feature.id == id) return feature;
     }
     return null;
+  }
+
+  void _restorePolygonSketchFromHoleCut(DrawingGeometry geometry) {
+    if (geometry is! DrawingPolygon || geometry.coordinates.isEmpty) return;
+    _clearSketchState();
+    final ring = geometry.coordinates.first;
+    if (ring.length < 3) return;
+    final closed =
+        ring.length >= 4 &&
+        (ring.first[0] - ring.last[0]).abs() < 1e-9 &&
+        (ring.first[1] - ring.last[1]).abs() < 1e-9;
+    final end = closed ? ring.length - 1 : ring.length;
+    for (var i = 0; i < end; i++) {
+      final pt = ring[i];
+      _currentPoints.add(LatLng(pt[1], pt[0]));
+    }
   }
 
   /// Talhão em recorte: a base, ou a base com o furo quando [DrawingUtils.tryAddHole] aceita.
@@ -1460,6 +1517,7 @@ class DrawingController extends ChangeNotifier {
       _reviewAreaHa = 0.0;
       _reviewPerimeterKm = 0.0;
       _holeCutFeatureId = null;
+      _holeCutSketchBase = null;
       _selectedFeature = null;
 
       // 🔧 FIX-DRAW-REDSCREEN: startDrawing agora retorna bool, não lança
@@ -1495,6 +1553,7 @@ class DrawingController extends ChangeNotifier {
       _reviewAreaHa = 0.0;
       _reviewPerimeterKm = 0.0;
       _holeCutFeatureId = null;
+      _holeCutSketchBase = null;
 
       if (kDebugMode) {
         AppLogger.debug('Modo desenho desativado', tag: 'DrawingController');
@@ -1509,13 +1568,22 @@ class DrawingController extends ChangeNotifier {
 
   void cancelOperation({bool notify = true}) {
     if (isCuttingHole) {
+      final restoreSketch =
+          _holeCutFeatureId == kSketchHoleCutFeatureId &&
+          _holeCutSketchBase != null;
+      final sketchBase = _holeCutSketchBase;
       _clearSketchState();
       _manualSketch = null;
       _intersectionWarningMessage = null;
       _errorMessage = null;
       _holeCutFeatureId = null;
+      _holeCutSketchBase = null;
       _stateMachine.cancel();
-      if (_selectedFeature != null) {
+      if (restoreSketch && sketchBase != null) {
+        _restorePolygonSketchFromHoleCut(sketchBase);
+        _stateMachine.startDrawing(DrawingTool.polygon);
+        _stateMachine.beginAddingPoints();
+      } else if (_selectedFeature != null) {
         _stateMachine.startSelected();
       }
       if (notify) notifyListeners();
@@ -1558,6 +1626,7 @@ class DrawingController extends ChangeNotifier {
     _selectedFeatureIds.clear();
     _multiSelectEnabled = false;
     _holeCutFeatureId = null;
+    _holeCutSketchBase = null;
     _editGeometry = null;
     _editGeometrySnapshotJson = null;
     _history.clear();
@@ -1945,6 +2014,43 @@ class DrawingController extends ChangeNotifier {
     startHoleCut();
   }
 
+  /// Recorte interno durante sketch de polígono novo (antes de revisão/salvar).
+  void startHoleCutFromDrawing() {
+    if (_isDisposed) return;
+    if (!canStartHoleCutFromSketch) {
+      _errorMessage = 'Feche o polígono para recortar';
+      notifyListeners();
+      return;
+    }
+    final outer = buildSketchLiveGeometry();
+    if (outer == null) {
+      _errorMessage = 'Feche o polígono para recortar';
+      notifyListeners();
+      return;
+    }
+    _holeCutSketchBase = DrawingUtils.normalizeGeometry(outer);
+    _holeCutFeatureId = kSketchHoleCutFeatureId;
+    _intersectionWarningMessage = null;
+    _errorMessage = null;
+    _clearSketchState();
+    _manualSketch = null;
+    _interactionMode = DrawingInteraction.normal;
+
+    if (_stateMachine.currentState == DrawingState.drawing) {
+      _stateMachine.cancel();
+    }
+
+    final started = _stateMachine.startDrawing(DrawingTool.polygon);
+    if (!started) {
+      _holeCutFeatureId = null;
+      _holeCutSketchBase = null;
+      _errorMessage = 'Não foi possível iniciar o recorte.';
+      notifyListeners();
+      return;
+    }
+    notifyListeners();
+  }
+
   /// Quantidade de anéis internos (furos) na geometria em edição.
   int get editHoleRingCount {
     final geometry = _editGeometry;
@@ -1983,6 +2089,7 @@ class DrawingController extends ChangeNotifier {
       return;
     }
 
+    _holeCutSketchBase = null;
     _holeCutFeatureId = selected.id;
     _clearSketchState();
     _manualSketch = null;
@@ -2001,6 +2108,7 @@ class DrawingController extends ChangeNotifier {
     final started = _stateMachine.startDrawing(DrawingTool.polygon);
     if (!started) {
       _holeCutFeatureId = null;
+      _holeCutSketchBase = null;
       _errorMessage = 'Selecione um talhão para recortar';
       notifyListeners();
       return;
@@ -2044,33 +2152,60 @@ class DrawingController extends ChangeNotifier {
   void _confirmHoleCut() {
     if (_stateMachine.currentState != DrawingState.drawing) return;
 
-    final feature = _selectedFeature;
+    final target = _holeCutFeature;
     final hole = buildSketchLiveGeometry();
     final ring = hole is DrawingPolygon && hole.coordinates.isNotEmpty
         ? hole.coordinates.first
         : const <List<double>>[];
     DrawingGeometry? result;
-    if (feature != null &&
-        feature.id == _holeCutFeatureId &&
+    if (target != null &&
+        target.id == _holeCutFeatureId &&
         hole != null &&
         ring.length >= 4) {
-      result = DrawingUtils.tryAddHole(feature.geometry, hole);
+      result = DrawingUtils.tryAddHole(target.geometry, hole);
     }
 
-    if (result == null || feature == null) {
+    if (result == null || target == null) {
       _intersectionWarningMessage = 'O recorte precisa ficar dentro do talhão.';
       _errorMessage = null;
       notifyListeners();
       return;
     }
 
+    if (target.id == kSketchHoleCutFeatureId) {
+      final normalized = DrawingUtils.normalizeGeometry(result);
+      _holeCutFeatureId = null;
+      _holeCutSketchBase = null;
+      _clearSketchState();
+      _manualSketch = normalized;
+      _reviewGeometrySnapshot = normalized;
+      _captureReviewMetrics(normalized);
+      _intersectionWarningMessage = null;
+      _errorMessage = null;
+      validateGeometry(normalized);
+      final transitioned = _stateMachine.currentState == DrawingState.drawing
+          ? _stateMachine.completeDrawing()
+          : _stateMachine.startDrawing(DrawingTool.polygon) &&
+                _stateMachine.beginAddingPoints() &&
+                _stateMachine.completeDrawing();
+      if (!transitioned && kDebugMode) {
+        AppLogger.debug(
+          'Sketch hole cut: falha ao entrar em reviewing',
+          tag: 'DrawingController',
+        );
+      }
+      notifyListeners();
+      return;
+    }
+
     updateFeature(
-      feature.id,
+      target.id,
       newGeometry: result,
       editorId: 'sistema',
       editorType: AuthorType.sistema,
     );
     _holeCutFeatureId = null;
+    _holeCutSketchBase = null;
     _clearSketchState();
     _manualSketch = null;
     _intersectionWarningMessage = null;
