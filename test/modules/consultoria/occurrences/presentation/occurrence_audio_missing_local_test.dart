@@ -162,12 +162,14 @@ void main() {
         find.text(OccurrenceDetailAudioSection.missingLocalFileLabel),
         findsOneWidget,
       );
-      expect(find.text('Ouvir'), findsNothing);
+      expect(find.byTooltip('Ouvir'), findsNothing);
       expect(find.byTooltip('Excluir áudio'), findsOneWidget);
       expect(calls, 1);
     });
 
-    testWidgets('com arquivo local mostra Ouvir', (tester) async {
+    testWidgets('com arquivo local mostra controles compactos', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           OccurrenceAudioField(
@@ -181,8 +183,10 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('Ouvir'), findsOneWidget);
-      expect(find.text('Áudio gravado · 8s'), findsOneWidget);
+      expect(find.byTooltip('Ouvir'), findsOneWidget);
+      expect(find.text('0:08'), findsOneWidget);
+      expect(find.text('Áudio no ponto'), findsNothing);
+      expect(find.text('Gravar'), findsNothing);
     });
   });
 }
