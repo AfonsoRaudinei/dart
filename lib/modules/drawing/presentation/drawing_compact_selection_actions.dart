@@ -49,6 +49,10 @@ class DrawingCompactSelectionActions {
     controller.startHoleCutFromEdit();
   }
 
+  static void startHoleCutFromDrawing(DrawingController controller) {
+    controller.startHoleCutFromDrawing();
+  }
+
   static void requestMetadataSheet(WidgetRef ref) {
     ref.read(drawingCompactOpenMetadataProvider.notifier).state = true;
   }

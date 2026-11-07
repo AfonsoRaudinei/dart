@@ -248,6 +248,43 @@ void main() {
     expect(controller.editHoleRingCount, 2);
   });
 
+  test('sketch polígono novo inicia recorte e cancelamento restaura vértices', () {
+    controller.selectTool('polygon');
+    controller.appendDrawingPoint(const LatLng(-15.78, -47.93));
+    controller.appendDrawingPoint(const LatLng(-15.78, -47.92));
+    controller.appendDrawingPoint(const LatLng(-15.77, -47.92));
+    expect(controller.canStartHoleCutFromSketch, isTrue);
+    final pointCount = controller.currentPoints.length;
+
+    controller.startHoleCutFromDrawing();
+    expect(controller.currentState, DrawingState.armed);
+    expect(controller.isCuttingHole, isTrue);
+    expect(controller.holeCutFeatureId, kSketchHoleCutFeatureId);
+
+    controller.cancelOperation();
+    expect(controller.isCuttingHole, isFalse);
+    expect(controller.currentPoints.length, pointCount);
+  });
+
+  test('confirmar furo em sketch deixa geometria composta em memória', () {
+    controller.selectTool('polygon');
+    controller.appendDrawingPoint(const LatLng(-15.78, -47.93));
+    controller.appendDrawingPoint(const LatLng(-15.78, -47.92));
+    controller.appendDrawingPoint(const LatLng(-15.77, -47.92));
+    controller.appendDrawingPoint(const LatLng(-15.77, -47.93));
+    controller.startHoleCutFromDrawing();
+    controller.appendDrawingPoint(const LatLng(-15.777, -47.927));
+    controller.appendDrawingPoint(const LatLng(-15.777, -47.923));
+    controller.appendDrawingPoint(const LatLng(-15.773, -47.925));
+    controller.completeDrawing();
+
+    expect(controller.isCuttingHole, isFalse);
+    expect(controller.currentState, DrawingState.reviewing);
+    final geom = controller.liveGeometry;
+    expect(geom, isA<DrawingPolygon>());
+    expect((geom! as DrawingPolygon).coordinates.length, 2);
+  });
+
   test('excluir recorte interno na edição restaura área externa', () async {
     controller.selectFeature(controller.features.first);
     controller.startHoleCut();
