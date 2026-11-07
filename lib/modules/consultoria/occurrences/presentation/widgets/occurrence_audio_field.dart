@@ -8,7 +8,6 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
-import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/core/utils/local_media_path_resolver.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
@@ -137,6 +136,13 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField>
     }
     _playerInstance?.dispose();
     super.dispose();
+  }
+
+  static String _formatClock(int totalSec) {
+    final clamped = totalSec.clamp(0, OccurrenceAudioField.maxDurationSec);
+    final m = clamped ~/ 60;
+    final s = clamped % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
   }
 
   Future<void> _startRecording() async {
@@ -299,198 +305,140 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField>
     }
   }
 
+  void _onMicTap() {
+    if (!widget.enabled || _stopping) return;
+    if (_recording) {
+      unawaited(_stopRecording(save: true));
+    } else {
+      unawaited(_startRecording());
+    }
+  }
+
   bool get _hasAudio => widget.storedPath?.trim().isNotEmpty == true;
 
   bool get _audioMissingLocally =>
       _hasAudio && _resolved && _resolvedPath == null;
 
-  String get _statusLabel {
-    if (_recording) {
-      final left = OccurrenceAudioField.maxDurationSec - _elapsedSec;
-      return 'Gravando… ${left}s restantes';
-    }
-    if (_audioMissingLocally) {
-      return OccurrenceDetailAudioSection.missingLocalFileLabel;
-    }
-    final d = widget.durationSec;
-    if (widget.storedPath != null && d != null && d > 0) {
-      return 'Áudio gravado · ${d}s';
-    }
-    return '';
-  }
-
-  /// Rótulos de outline no sheet Azul (iOS): nunca usar [SoloForteSheetSkinIos.ctaText]
-  /// — é branco para botão preenchido, ilegível em [v.cardBackground].
-  Color _outlineButtonLabelColor({
-    required BuildContext context,
-    required bool isIos,
-  }) {
-    return isIos
-        ? SoloForteSheetSkinIos.iconStroke
-        : Colors.white;
-  }
-
-  Widget _buildStatusArea({
-    required BuildContext context,
-    required bool isIos,
-    required bool hasAudio,
-  }) {
-    final primaryStyle = TextStyle(
-      fontSize: 13,
-      height: 1.4,
+  TextStyle _timerStyle({required bool isIos}) {
+    final color = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : PremiumTokens.textPrimaryLight;
+    return TextStyle(
+      fontSize: 22,
       fontWeight: FontWeight.w500,
-      color: isIos
-          ? SoloForteSheetSkinIos.titleColor
-          : PremiumTokens.textPrimaryLight,
+      fontFeatures: const [FontFeature.tabularFigures()],
+      fontFamily: 'Menlo',
+      letterSpacing: 0.5,
+      color: _recording ? PremiumTokens.alertError : color,
     );
-    final secondaryStyle = TextStyle(
-      fontSize: 12,
-      height: 1.35,
-      color: isIos
-          ? SoloForteSheetSkinIos.subtitleColor
-          : PremiumTokens.textSecondaryDark,
-    );
+  }
 
-    final line = _statusLabel;
-    if (line.isNotEmpty) {
-      return Text(line, style: secondaryStyle);
-    }
-    if (!hasAudio) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '30 segundos para relato após tocar no ícone do microfone.',
-            style: primaryStyle,
+  Widget _micButton({
+    required Color accent,
+    required bool isIos,
+    required bool activeRecording,
+  }) {
+    final fill = activeRecording
+        ? PremiumTokens.alertError.withValues(alpha: isIos ? 0.16 : 0.2)
+        : accent.withValues(alpha: isIos ? 0.14 : 0.18);
+    final iconColor = activeRecording ? PremiumTokens.alertError : accent;
+
+    return Material(
+      color: fill,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: widget.enabled ? _onMicTap : null,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 72,
+          height: 72,
+          child: Icon(
+            activeRecording ? Icons.stop_rounded : Icons.mic_rounded,
+            size: activeRecording ? 32 : 36,
+            color: iconColor,
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Até ${OccurrenceAudioField.maxDurationSec}s — mais rápido que digitar no talhão.',
-            style: secondaryStyle,
-          ),
-        ],
-      );
-    }
-    return const SizedBox.shrink();
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final isIos = occurrenceFormIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
     final accent = isIos
         ? SoloForteSheetSkinIos.iconStroke
         : context.themeAccent;
-    final outlineLabelColor = _outlineButtonLabelColor(
-      context: context,
-      isIos: isIos,
-    );
     final hasAudio = _hasAudio;
     final canPlay = _resolvedPath != null;
+    final savedDuration = widget.durationSec;
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(
-          isIos ? SoloForteSheetSkinIos.cardRadius : 14,
-        ),
-        border: Border.all(color: accent.withValues(alpha: 0.55), width: 1.2),
-      ),
+    final timerStyle = _timerStyle(isIos: isIos);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const OccurrenceSectionHeader(icon: '🎙️', title: 'Áudio no ponto'),
-          const SizedBox(height: 8),
-          _buildStatusArea(
-            context: context,
-            isIos: isIos,
-            hasAudio: hasAudio,
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              if (_recording)
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: widget.enabled
-                        ? () => _stopRecording(save: true)
-                        : null,
-                    icon: const Icon(Icons.stop_rounded, size: 20),
-                    label: const Text('Parar'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: PremiumTokens.alertError,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(48, 44),
+          if (_audioMissingLocally)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text(
+                OccurrenceDetailAudioSection.missingLocalFileLabel,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.35,
+                  color: isIos
+                      ? SoloForteSheetSkinIos.subtitleColor
+                      : PremiumTokens.textSecondaryDark,
+                ),
+              ),
+            ),
+          if (_recording) ...[
+            Center(
+              child: Text(
+                _formatClock(_elapsedSec),
+                style: timerStyle,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Center(child: _micButton(
+              accent: accent,
+              isIos: isIos,
+              activeRecording: true,
+            )),
+          ] else if (!hasAudio)
+            Center(child: _micButton(
+              accent: accent,
+              isIos: isIos,
+              activeRecording: false,
+            ))
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (savedDuration != null && savedDuration > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Text(
+                      _formatClock(savedDuration),
+                      style: timerStyle.copyWith(fontSize: 17),
                     ),
                   ),
-                )
-              else if (!hasAudio)
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Material(
-                        color: accent.withValues(alpha: isIos ? 0.14 : 0.18),
-                        shape: const CircleBorder(),
-                        clipBehavior: Clip.antiAlias,
-                        child: InkWell(
-                          onTap: widget.enabled ? _startRecording : null,
-                          customBorder: const CircleBorder(),
-                          child: SizedBox(
-                            width: 72,
-                            height: 72,
-                            child: Icon(
-                              Icons.mic_rounded,
-                              size: 36,
-                              color: accent,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Gravar',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: outlineLabelColor,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else ...[
                 if (!_audioMissingLocally)
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: widget.enabled && canPlay
-                          ? _togglePlayback
-                          : null,
-                      icon: Icon(
-                        _playing
-                            ? Icons.stop_circle_outlined
-                            : Icons.play_arrow_rounded,
-                        color: accent,
-                      ),
-                      label: Text(
-                        _playing ? 'Parar' : 'Ouvir',
-                        style: TextStyle(
-                          color: outlineLabelColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: accent.withValues(alpha: 0.8)),
-                        minimumSize: const Size(48, 44),
-                        backgroundColor: v.cardBackground,
-                      ),
+                  IconButton(
+                    tooltip: _playing ? 'Parar' : 'Ouvir',
+                    onPressed:
+                        widget.enabled && canPlay ? _togglePlayback : null,
+                    icon: Icon(
+                      _playing
+                          ? Icons.stop_circle_outlined
+                          : Icons.play_arrow_rounded,
+                      color: accent,
                     ),
-                  )
-                else
-                  const Spacer(),
-                const SizedBox(width: 8),
+                  ),
                 IconButton(
                   tooltip: 'Excluir áudio',
                   onPressed: widget.enabled ? _removeAudio : null,
@@ -502,8 +450,7 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField>
                   icon: Icon(Icons.mic_rounded, color: accent),
                 ),
               ],
-            ],
-          ),
+            ),
         ],
       ),
     );
