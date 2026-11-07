@@ -63,6 +63,9 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final VoidCallback? onUndoDrawing; // Undo no modo drawing
   final bool canUndo;
   final VoidCallback? onStartHoleCutFromEdit;
+  final VoidCallback? onStartHoleCutFromDrawing;
+  final DrawingTool drawingTool;
+  final bool canStartHoleCutFromSketch;
   final VoidCallback? onRemoveHoleRing;
   final bool editHasHoleRings;
   final bool canRemoveHoleRing;
@@ -97,6 +100,9 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     this.onUndoDrawing,
     this.canUndo = false,
     this.onStartHoleCutFromEdit,
+    this.onStartHoleCutFromDrawing,
+    this.drawingTool = DrawingTool.none,
+    this.canStartHoleCutFromSketch = false,
     this.onRemoveHoleRing,
     this.editHasHoleRings = false,
     this.canRemoveHoleRing = false,
@@ -128,6 +134,28 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
       widget.drawingState == DrawingState.drawing ||
       widget.drawingState == DrawingState.editing ||
       _holeCutArmed;
+
+  VoidCallback? _holeCutCallback() {
+    if (widget.holeCutActive) return null;
+    if (widget.drawingState == DrawingState.editing) {
+      return widget.onStartHoleCutFromEdit;
+    }
+    if (widget.drawingState == DrawingState.drawing &&
+        widget.drawingTool == DrawingTool.polygon) {
+      return widget.onStartHoleCutFromDrawing;
+    }
+    return null;
+  }
+
+  bool _holeCutEnabled() {
+    if (widget.holeCutActive) return false;
+    if (widget.drawingState == DrawingState.editing) return true;
+    if (widget.drawingState == DrawingState.drawing &&
+        widget.drawingTool == DrawingTool.polygon) {
+      return widget.canStartHoleCutFromSketch;
+    }
+    return false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -300,9 +328,8 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             distanceUnit: distanceUnit,
             onDistanceUnit: (u) =>
                 ref.read(distanceDisplayUnitProvider.notifier).setUnit(u),
-            onStartHoleCut: widget.drawingState == DrawingState.editing
-                ? widget.onStartHoleCutFromEdit
-                : null,
+            onStartHoleCut: _holeCutCallback(),
+            canStartHoleCut: _holeCutEnabled(),
             onRemoveHoleRing: widget.onRemoveHoleRing,
             showRemoveHoleRing:
                 widget.drawingState == DrawingState.editing &&

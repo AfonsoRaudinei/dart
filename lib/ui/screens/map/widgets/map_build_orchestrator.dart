@@ -668,6 +668,12 @@ class _MapControlsHost extends ConsumerWidget {
       onUndoEdit: () => ref.read(drawingControllerProvider).undoEdit(),
       onStartHoleCutFromEdit: () =>
           ref.read(drawingControllerProvider).startHoleCutFromEdit(),
+      onStartHoleCutFromDrawing: () =>
+          ref.read(drawingControllerProvider).startHoleCutFromDrawing(),
+      drawingTool: drawingMetrics.tool,
+      canStartHoleCutFromSketch: ref.watch(
+        drawingControllerProvider.select((c) => c.canStartHoleCutFromSketch),
+      ),
       onRemoveHoleRing: () =>
           ref.read(drawingControllerProvider).removeSelectedHoleRing(),
       editHasHoleRings: ref.watch(

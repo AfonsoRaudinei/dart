@@ -288,6 +288,32 @@ void main() {
     expect(find.text('m'), findsOneWidget);
   });
 
+  testWidgets('modo drawing polígono exibe Recortar no card inferior', (
+    tester,
+  ) async {
+    await _pumpMapControlsOverlay(
+      tester,
+      drawingState: DrawingState.drawing,
+      isDrawMode: true,
+      drawingTool: DrawingTool.polygon,
+      canStartHoleCutFromSketch: true,
+      onStartHoleCutFromDrawing: _noop,
+    );
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('Recortar'), findsOneWidget);
+  });
+
+  testWidgets('modo editing continua exibindo Recortar', (tester) async {
+    await _pumpMapControlsOverlay(
+      tester,
+      drawingState: DrawingState.editing,
+      isDrawMode: true,
+      onStartHoleCutFromEdit: _noop,
+    );
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('Recortar'), findsOneWidget);
+  });
+
   testWidgets('Cancelar no modo drawing dispara onCancelDrawing', (
     tester,
   ) async {
@@ -324,6 +350,10 @@ Future<void> _pumpMapControlsOverlay(
   VoidCallback onUndoEdit = _noop,
   VoidCallback? onUndoDrawing,
   bool canUndo = false,
+  DrawingTool drawingTool = DrawingTool.none,
+  VoidCallback? onStartHoleCutFromEdit,
+  VoidCallback? onStartHoleCutFromDrawing,
+  bool canStartHoleCutFromSketch = false,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final settingsRepository = SettingsRepository(
@@ -367,6 +397,10 @@ Future<void> _pumpMapControlsOverlay(
             onUndoEdit: onUndoEdit,
             onUndoDrawing: onUndoDrawing,
             canUndo: canUndo,
+            drawingTool: drawingTool,
+            onStartHoleCutFromEdit: onStartHoleCutFromEdit,
+            onStartHoleCutFromDrawing: onStartHoleCutFromDrawing,
+            canStartHoleCutFromSketch: canStartHoleCutFromSketch,
           ),
         ),
       ),
