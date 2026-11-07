@@ -41,9 +41,9 @@ DrawingFeature _squareFeature({String id = 'f1'}) {
 
 void main() {
   group('talhaoSelectionToolbarChipCount', () {
-    test('5 chips com NDVI e 3 sem', () {
-      expect(talhaoSelectionToolbarChipCount(showNdvi: true), 5);
-      expect(talhaoSelectionToolbarChipCount(showNdvi: false), 3);
+    test('4 chips com NDVI e 2 sem', () {
+      expect(talhaoSelectionToolbarChipCount(showNdvi: true), 4);
+      expect(talhaoSelectionToolbarChipCount(showNdvi: false), 2);
     });
   });
 
@@ -172,14 +172,14 @@ void main() {
   });
 
   group('estimateMapTalhaoToolbarWidth', () {
-    test('retorna largura para 5 chips quando feature tem id', () {
+    test('retorna largura para 4 chips quando feature tem id', () {
       final feature = _squareFeature();
-      expect(estimateMapTalhaoToolbarWidth(feature), 344.0);
+      expect(estimateMapTalhaoToolbarWidth(feature), 275.0);
     });
 
-    test('retorna largura para 3 chips quando feature tem id vazio', () {
+    test('retorna largura para 2 chips quando feature tem id vazio', () {
       final feature = _squareFeature(id: '');
-      expect(estimateMapTalhaoToolbarWidth(feature), 206.0);
+      expect(estimateMapTalhaoToolbarWidth(feature), 137.0);
     });
   });
 
