@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/core/contracts/i_active_visit_context_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_active_visit_context_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
@@ -201,6 +202,76 @@ void main() {
 
       expect(result.markers, hasLength(1));
       expect(result.markers.first.occurrence.pendingClientLink, isTrue);
+      expect(result.markers.first.pinLegend, isNull);
+    });
+
+    test('legenda usa nome do produtor quando clientId está vinculado', () {
+      final result = OccurrencePinGenerator.projectOccurrences(
+        [
+          Occurrence(
+            id: 'pin-2',
+            type: 'Média',
+            description: '',
+            category: kOccurrenceAreaVisitadaCategory,
+            clientId: 'client-gustavo',
+            lat: -15.2,
+            long: -47.3,
+            createdAt: DateTime.utc(2026, 9, 16),
+          ),
+        ],
+        clientNameById: const {'client-gustavo': 'Gustavo lang'},
+      );
+
+      expect(result.markers.single.pinLegend, 'Gustavo lang');
+    });
+
+    testWidgets('pin de área visitada mostra legenda do produtor', (
+      tester,
+    ) async {
+      final data = OccurrenceMarkerData(
+        id: 'pin-ui',
+        occurrence: Occurrence(
+          id: 'pin-ui',
+          type: 'Média',
+          description: '',
+          category: kOccurrenceAreaVisitadaCategory,
+          clientId: 'c1',
+          lat: -15.0,
+          long: -47.0,
+          createdAt: DateTime.utc(2026, 9, 16),
+        ),
+        position: const LatLng(-15, -47),
+        category: kOccurrenceAreaVisitadaCategory,
+        urgency: 'Média',
+        status: 'confirmed',
+        pinLegend: 'Gustavo lang',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(home: Scaffold(body: OccurrenceMapPin(data: data))),
+      );
+
+      expect(find.text('Gustavo lang'), findsOneWidget);
+    });
+
+    test('outras categorias não recebem legenda', () {
+      final result = OccurrencePinGenerator.projectOccurrences(
+        [
+          Occurrence(
+            id: 'pin-3',
+            type: 'Média',
+            description: '',
+            category: 'doenca',
+            clientId: 'client-gustavo',
+            lat: -15.2,
+            long: -47.3,
+            createdAt: DateTime.utc(2026, 9, 16),
+          ),
+        ],
+        clientNameById: const {'client-gustavo': 'Gustavo lang'},
+      );
+
+      expect(result.markers.single.pinLegend, isNull);
     });
   });
 }

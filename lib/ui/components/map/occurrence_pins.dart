@@ -16,6 +16,7 @@ class OccurrenceMarkerData {
     required this.category,
     required this.urgency,
     required this.status,
+    this.pinLegend,
   });
 
   final String id;
@@ -24,6 +25,9 @@ class OccurrenceMarkerData {
   final String? category;
   final String urgency;
   final String status;
+
+  /// Legenda no mapa (ex.: nome do produtor em área visitada).
+  final String? pinLegend;
 }
 
 class OccurrenceProjectionResult {
@@ -43,8 +47,9 @@ class OccurrencePinGenerator {
   static const double pinSize = 40;
 
   static OccurrenceProjectionResult projectOccurrences(
-    List<Occurrence> occurrences,
-  ) {
+    List<Occurrence> occurrences, {
+    Map<String, String> clientNameById = const {},
+  }) {
     if (occurrences.isEmpty) {
       return const OccurrenceProjectionResult(
         markers: <OccurrenceMarkerData>[],
@@ -78,6 +83,7 @@ class OccurrencePinGenerator {
           category: occurrence.category,
           urgency: occurrence.type,
           status: occurrence.status ?? '',
+          pinLegend: _pinLegendFor(occurrence, clientNameById),
         ),
       );
     }
@@ -95,19 +101,55 @@ class OccurrencePinGenerator {
   }) {
     return markerData
         .map(
-          (data) => Marker(
-            key: ValueKey('occ_${data.id}'),
-            point: data.position,
-            width: pinSize,
-            height: pinSize,
-            alignment: Alignment.center,
-            child: GestureDetector(
-              onTap: () => onPinTap(data.occurrence),
-              child: OccurrenceMapPin(data: data),
-            ),
-          ),
+          (data) {
+            final legend = data.pinLegend?.trim();
+            final hasLegend = legend != null && legend.isNotEmpty;
+            final width = hasLegend ? _legendMarkerWidth(legend) : pinSize;
+            final height = hasLegend ? 56.0 : pinSize;
+            return Marker(
+              key: ValueKey('occ_${data.id}'),
+              point: data.position,
+              width: width,
+              height: height,
+              alignment: hasLegend ? Alignment.bottomCenter : Alignment.center,
+              child: GestureDetector(
+                onTap: () => onPinTap(data.occurrence),
+                child: OccurrenceMapPin(data: data),
+              ),
+            );
+          },
         )
         .toList(growable: false);
+  }
+
+  static String? _pinLegendFor(
+    Occurrence occurrence,
+    Map<String, String> clientNameById,
+  ) {
+    if (!isAreaVisitadaCategory(occurrence.category)) return null;
+    final clientId = occurrence.clientId?.trim();
+    if (clientId == null || clientId.isEmpty) return null;
+    final name = clientNameById[clientId]?.trim();
+    if (name == null || name.isEmpty) return null;
+    return _truncateLegend(name);
+  }
+
+  @visibleForTesting
+  static String truncateLegendForTest(String name) => _truncateLegend(name);
+
+  static String _truncateLegend(String name) {
+    const max = 24;
+    if (name.length <= max) return name;
+    return '${name.substring(0, max - 1)}…';
+  }
+
+  @visibleForTesting
+  static double legendMarkerWidthForTest(String legend) =>
+      _legendMarkerWidth(legend);
+
+  static double _legendMarkerWidth(String legend) {
+    final len = legend.length.clamp(4, 26);
+    return (len * 6.5 + 36).clamp(72, 168);
   }
 
   static void logProjectionDropCounts({
@@ -205,9 +247,11 @@ class OccurrenceMapPin extends StatelessWidget {
     final icon = _iconForCategory(data.category);
     final isDraft = data.status == 'draft';
     final pendingLink = data.occurrence.pendingClientLink;
+    final legend = data.pinLegend?.trim();
+    final hasLegend = legend != null && legend.isNotEmpty;
     final opacity = isDraft ? 0.65 : 1.0;
 
-    return SizedBox(
+    final pin = SizedBox(
       width: OccurrencePinGenerator.pinSize,
       height: OccurrencePinGenerator.pinSize,
       child: Stack(
@@ -275,6 +319,36 @@ class OccurrenceMapPin extends StatelessWidget {
             ),
         ],
       ),
+    );
+
+    if (!hasLegend) return pin;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        pin,
+        const SizedBox(height: 2),
+        Material(
+          elevation: 2,
+          shadowColor: Colors.black26,
+          borderRadius: BorderRadius.circular(6),
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            child: Text(
+              legend,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFF1C1C1E),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                height: 1.2,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

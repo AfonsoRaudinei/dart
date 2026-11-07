@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/contracts/i_client_lookup_provider.dart';
 import '../../../../core/design/sf_icons.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,38 @@ import '../../../../modules/consultoria/occurrences/domain/occurrence.dart';
 import '../../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import '../occurrence_pins.dart';
 import 'package:latlong2/latlong.dart';
+
+/// Nomes de produtor para legendas em pins de área visitada.
+final occurrenceAreaVisitadaClientLabelsProvider =
+    FutureProvider<Map<String, String>>((ref) async {
+      final occurrences = ref.watch(
+        occurrencesListProvider.select((asyncOcc) {
+          if (!asyncOcc.hasValue) return <Occurrence>[];
+          return asyncOcc.value!;
+        }),
+      );
+
+      final clientIds = <String>{};
+      for (final occurrence in occurrences) {
+        if (!isAreaVisitadaCategory(occurrence.category)) continue;
+        final id = occurrence.clientId?.trim();
+        if (id == null || id.isEmpty) continue;
+        clientIds.add(id);
+      }
+
+      if (clientIds.isEmpty) return const {};
+
+      final lookup = ref.read(clientLookupProvider);
+      final labels = <String, String>{};
+      for (final id in clientIds) {
+        final client = await lookup.findById(id);
+        final name = client?.name.trim();
+        if (name != null && name.isNotEmpty) {
+          labels[id] = name;
+        }
+      }
+      return labels;
+    });
 
 /// 🎯 PROVIDER DERIVADO: Markers de Publicações
 ///
@@ -67,7 +100,14 @@ final occurrenceMarkersProvider =
         return const [];
       }
 
-      final projection = OccurrencePinGenerator.projectOccurrences(occurrences);
+      final clientLabels =
+          ref.watch(occurrenceAreaVisitadaClientLabelsProvider).valueOrNull ??
+          const {};
+
+      final projection = OccurrencePinGenerator.projectOccurrences(
+        occurrences,
+        clientNameById: clientLabels,
+      );
       OccurrencePinGenerator.logProjectionDropCounts(
         invalidCount: projection.invalidCount,
         duplicateCount: projection.duplicateCount,
