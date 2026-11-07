@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/domain/occurrence.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/widgets/occurrence_audio_field.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/widgets/occurrence_detail_audio_section.dart';
 
@@ -15,6 +17,20 @@ Occurrence _occurrenceWithAudio() => Occurrence(
 
 Widget _host(Widget child) => MaterialApp(
   home: Scaffold(body: SingleChildScrollView(child: child)),
+);
+
+Widget _hostBlackSheet(Widget child) => MaterialApp(
+  theme: ThemeData(
+    brightness: Brightness.dark,
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFF1428A0),
+    ),
+    extensions: const [SoloForteThemeExtension(themeId: 'black')],
+  ),
+  home: Scaffold(
+    backgroundColor: SoloForteSheetTokens.sheetBackground,
+    body: SingleChildScrollView(child: child),
+  ),
 );
 
 void main() {
@@ -138,6 +154,22 @@ void main() {
   });
 
   group('OccurrenceAudioField', () {
+    testWidgets('estado vazio expõe tooltip Gravar no microfone', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          OccurrenceAudioField(
+            onChanged: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byTooltip('Gravar'), findsOneWidget);
+      expect(find.text('Gravar'), findsNothing);
+    });
+
     testWidgets('sem arquivo local mostra aviso e oculta Ouvir', (
       tester,
     ) async {
@@ -187,6 +219,27 @@ void main() {
       expect(find.text('0:08'), findsOneWidget);
       expect(find.text('Áudio no ponto'), findsNothing);
       expect(find.text('Gravar'), findsNothing);
+    });
+
+    testWidgets('duração legível no tema Black (onSheetPrimary)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _hostBlackSheet(
+          OccurrenceAudioField(
+            storedPath: 'media/audio_local.m4a',
+            durationSec: 8,
+            onChanged: (_) {},
+            resolvePath: (_) async => '/docs/media/audio_local.m4a',
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final durationText = tester.widget<Text>(find.text('0:08'));
+      expect(durationText.style?.color, SoloForteSheetTokens.titleColor);
+      expect(durationText.style?.color, isNot(PremiumTokens.textPrimaryLight));
     });
   });
 }
