@@ -23,9 +23,9 @@ import '../../../modules/drawing/presentation/drawing_compact_selection_actions.
 import '../../../modules/drawing/presentation/providers/drawing_provider.dart';
 import 'map_sheet_state.dart';
 
-/// Geometria, Dados, Recortar e, quando há id, NDVI + P&B.
+/// Geometria, Dados e, quando há id, NDVI + P&B (recorte só no card de geometria).
 int talhaoSelectionToolbarChipCount({required bool showNdvi}) =>
-    showNdvi ? 5 : 3;
+    showNdvi ? 4 : 2;
 
 /// Toolbar contextual (ícone + label curto) ancorada na feature selecionada
 /// no fluxo compact — espírito Apple Maps.
@@ -192,18 +192,6 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
                             },
                           ),
                         ],
-                        _divider,
-                        _ToolbarChip(
-                          key: const Key('map_talhao_toolbar_cut_hole'),
-                          icon: Icons.content_cut,
-                          label: 'Recortar',
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            DrawingCompactSelectionActions.startHoleCut(
-                              controller,
-                            );
-                          },
-                        ),
                       ],
                     ),
                   ),
