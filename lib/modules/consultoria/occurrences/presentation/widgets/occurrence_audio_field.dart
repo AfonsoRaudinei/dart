@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/core/utils/local_media_path_resolver.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
@@ -319,17 +320,17 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField>
   bool get _audioMissingLocally =>
       _hasAudio && _resolved && _resolvedPath == null;
 
-  TextStyle _timerStyle({required bool isIos}) {
-    final color = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : PremiumTokens.textPrimaryLight;
+  TextStyle _timerStyle(BuildContext context) {
+    final color = _recording
+        ? PremiumTokens.alertError
+        : SoloForteSheetVisuals.of(context).onSheetPrimary;
     return TextStyle(
       fontSize: 22,
       fontWeight: FontWeight.w500,
       fontFeatures: const [FontFeature.tabularFigures()],
       fontFamily: 'Menlo',
       letterSpacing: 0.5,
-      color: _recording ? PremiumTokens.alertError : color,
+      color: color,
     );
   }
 
@@ -343,20 +344,23 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField>
         : accent.withValues(alpha: isIos ? 0.14 : 0.18);
     final iconColor = activeRecording ? PremiumTokens.alertError : accent;
 
-    return Material(
-      color: fill,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: widget.enabled ? _onMicTap : null,
-        customBorder: const CircleBorder(),
-        child: SizedBox(
-          width: 72,
-          height: 72,
-          child: Icon(
-            activeRecording ? Icons.stop_rounded : Icons.mic_rounded,
-            size: activeRecording ? 32 : 36,
-            color: iconColor,
+    return Tooltip(
+      message: activeRecording ? 'Parar' : 'Gravar',
+      child: Material(
+        color: fill,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: widget.enabled ? _onMicTap : null,
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: 72,
+            height: 72,
+            child: Icon(
+              activeRecording ? Icons.stop_rounded : Icons.mic_rounded,
+              size: activeRecording ? 32 : 36,
+              color: iconColor,
+            ),
           ),
         ),
       ),
@@ -373,7 +377,7 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField>
     final canPlay = _resolvedPath != null;
     final savedDuration = widget.durationSec;
 
-    final timerStyle = _timerStyle(isIos: isIos);
+    final timerStyle = _timerStyle(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
