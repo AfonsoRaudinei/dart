@@ -1,13 +1,13 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -129,6 +129,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
   }
 
   void _goToMapPin(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final coords = occurrence.getCoordinates();
     if (coords == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -206,6 +207,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     WidgetRef ref,
     Occurrence live,
   ) async {
+    final v = SoloForteSheetVisuals.of(context);
     final coords = live.getCoordinates();
     if (coords == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -256,6 +258,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     WidgetRef ref,
     Occurrence live,
   ) async {
+    final v = SoloForteSheetVisuals.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -293,12 +296,13 @@ class OccurrenceDetailSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final v = SoloForteSheetVisuals.of(context);
     final live = resolveLiveOccurrence(
       ref.watch(occurrencesListProvider).valueOrNull,
       occurrence,
     );
     final isReadOnly = live.cachedByUserId != null;
-    final isIos = soloForteSheetIsIos(context);
+    final isIos = v.isIos;
     final isDark =
         !isIos && Theme.of(context).brightness == Brightness.dark;
     final categoryColor = _colorForCategory(live.category);
@@ -310,27 +314,27 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     final hasMapPin = live.getCoordinates() != null;
 
     final sheetBg = isIos
-        ? SoloForteSheetSkinIos.background
+        ? v.sheetBackground
         : (isDark ? PremiumTokens.surfaceDark : context.premiumSurface);
     final sheetRadius = isIos
-        ? SoloForteSheetSkinIos.sheetRadius
+        ? v.sheetRadius
         : PremiumTokens.borderRadiusLg;
     final handleColor = isIos
-        ? SoloForteSheetSkinIos.handleColor
+        ? v.handleColor
         : (isDark ? const Color(0xFF545458) : const Color(0xFFC5C5C7));
     final titleColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
+        ? v.titleColor
         : (isDark
             ? PremiumTokens.textPrimaryDark
             : context.premiumTextPrimary);
     final dividerColor = isIos
-        ? SoloForteSheetSkinIos.rowDivider
+        ? v.rowDivider
         : (isDark ? PremiumTokens.hairlineDark : context.premiumHairline);
     final cardBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
+        ? v.cardBackground
         : (isDark ? const Color(0xFF2C2C2E) : context.premiumBackground);
     final cardRadius = isIos
-        ? SoloForteSheetSkinIos.cardRadius
+        ? v.cardRadius
         : PremiumTokens.borderRadiusSm;
 
     final formattedDate = DateFormat(
@@ -355,7 +359,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                 .findById(live.clientId!),
             builder: (context, snapshot) => Text(
               snapshot.data?.name ?? 'Cliente não encontrado',
-              style: _DetailRow.valueStyle(isDark, isIos: isIos),
+              style: _DetailRow.valueStyle(context, isDark, isIos: isIos),
             ),
           ),
         ),
@@ -467,12 +471,8 @@ class OccurrenceDetailSheet extends ConsumerWidget {
               const SizedBox(height: 12),
               Center(
                 child: Container(
-                  width: isIos
-                      ? SoloForteSheetSkinIos.handleSize.width
-                      : 36,
-                  height: isIos
-                      ? SoloForteSheetSkinIos.handleSize.height
-                      : 5,
+                  width: v.handleSize.width,
+                  height: v.handleSize.height,
                   decoration: BoxDecoration(
                     color: handleColor,
                     borderRadius: BorderRadius.circular(10),
@@ -489,7 +489,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                         icon: Icon(
                           Icons.arrow_back_ios_new,
                           color: isIos
-                              ? SoloForteSheetSkinIos.arrowColor
+                              ? v.arrowColor
                               : null,
                         ),
                         padding: EdgeInsets.zero,
@@ -513,7 +513,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                       height: 44,
                       decoration: BoxDecoration(
                         color: isIos
-                            ? SoloForteSheetSkinIos.iconBackground
+                            ? v.iconBackground
                             : categoryColor.withValues(alpha: 0.16),
                         shape: BoxShape.circle,
                       ),
@@ -556,7 +556,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                         icon: Icon(
                           SFIcons.pinFill,
                           color: isIos
-                              ? SoloForteSheetSkinIos.iconStroke
+                              ? v.iconStroke
                               : categoryColor,
                           size: 22,
                         ),
@@ -608,7 +608,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                     color: cardBg,
                     borderRadius: BorderRadius.circular(cardRadius),
                     border: isIos
-                        ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+                        ? Border.all(color: v.cardBorder)
                         : null,
                   ),
                   child: Column(
@@ -661,13 +661,12 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                       ),
                       style: isIos
                           ? OutlinedButton.styleFrom(
-                              foregroundColor: SoloForteSheetSkinIos.ghostText,
-                              side: const BorderSide(
-                                color: SoloForteSheetSkinIos.ghostBorder,
+                              foregroundColor: v.ghostText,
+                              side: BorderSide(color: v.ghostBorder,
                               ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(
-                                  SoloForteSheetSkinIos.ghostRadius,
+                                  v.ghostRadius,
                                 ),
                               ),
                             )
@@ -676,7 +675,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                         Icons.open_with_rounded,
                         size: 18,
                         color: isIos
-                            ? SoloForteSheetSkinIos.iconStroke
+                            ? v.iconStroke
                             : categoryColor,
                       ),
                       label: const Text('Corrigir posição'),
@@ -696,13 +695,12 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                           style: isIos
                               ? OutlinedButton.styleFrom(
                                   foregroundColor:
-                                      SoloForteSheetSkinIos.ghostText,
-                                  side: const BorderSide(
-                                    color: SoloForteSheetSkinIos.ghostBorder,
+                                      v.ghostText,
+                                  side: BorderSide(color: v.ghostBorder,
                                   ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(
-                                      SoloForteSheetSkinIos.ghostRadius,
+                                      v.ghostRadius,
                                     ),
                                   ),
                                 )

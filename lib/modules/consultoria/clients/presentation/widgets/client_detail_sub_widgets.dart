@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
@@ -34,6 +35,7 @@ class _ClientActionButtonState extends State<ClientActionButton> {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -106,6 +108,7 @@ class ClientFarmItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final displayChevron = showChevron && onTap != null;
 
     return GestureDetector(
@@ -189,26 +192,27 @@ class ClientModalOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final accent = isIos
-        ? SoloForteSheetSkinIos.iconStroke
+        ? v.iconStroke
         : Theme.of(context).colorScheme.primary;
     final surface = isIos
-        ? SoloForteSheetSkinIos.cardBackground
+        ? v.cardBackground
         : context.premiumSurface;
     final border = isIos
-        ? SoloForteSheetSkinIos.cardBorder
+        ? v.cardBorder
         : context.premiumHairline;
     final titleColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
+        ? v.titleColor
         : context.premiumTextPrimary;
     final subtitleColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
+        ? v.subtitleColor
         : context.premiumTextSecondary;
     final arrowColor = isIos
-        ? SoloForteSheetSkinIos.arrowColor
+        ? v.arrowColor
         : const Color(0xFFC7C7CC);
-    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
+    final radius = v.cardRadius;
 
     return Material(
       color: Colors.transparent,
@@ -229,10 +233,10 @@ class ClientModalOption extends StatelessWidget {
                 height: 44,
                 decoration: BoxDecoration(
                   color: isIos
-                      ? SoloForteSheetSkinIos.iconBackground
+                      ? v.iconBackground
                       : accent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(
-                    isIos ? SoloForteSheetSkinIos.iconRadius : 12,
+                    v.iconRadius,
                   ),
                 ),
                 child: Icon(icon, color: accent, size: 22),
@@ -278,6 +282,7 @@ class ClientModalOption extends StatelessWidget {
 // Função livre para evitar dependência do state — chamada com context+client.
 
 void showAdicionarTalhaoModal(BuildContext context, Client client) {
+    final v = SoloForteSheetVisuals.of(context);
   HapticFeedback.lightImpact();
   showSoloForteSheet<void>(
     context: context,
@@ -293,16 +298,14 @@ void showAdicionarTalhaoModal(BuildContext context, Client client) {
           ? Colors.transparent
           : context.premiumSurface;
       final handle = isIos
-          ? SoloForteSheetSkinIos.handleColor
+          ? v.handleColor
           : context.premiumHairline;
-      final titleColor = isIos
-          ? SoloForteSheetSkinIos.titleColor
-          : null;
+      final titleColor = v.isIos ? v.titleColor : null;
       final subtitleColor = isIos
-          ? SoloForteSheetSkinIos.subtitleColor
+          ? v.subtitleColor
           : context.premiumTextSecondary;
       final radius =
-          isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
+          v.sheetRadius;
 
       return Container(
         decoration: BoxDecoration(
@@ -314,12 +317,8 @@ void showAdicionarTalhaoModal(BuildContext context, Client client) {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: isIos
-                  ? SoloForteSheetSkinIos.handleSize.width
-                  : 36,
-              height: isIos
-                  ? SoloForteSheetSkinIos.handleSize.height
-                  : 5,
+              width: v.handleSize.width,
+              height: v.handleSize.height,
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
                 color: handle,

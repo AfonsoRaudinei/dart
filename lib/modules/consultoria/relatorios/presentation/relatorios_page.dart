@@ -25,6 +25,7 @@ import '../../../../core/html_templates/report_export_service.dart';
 import '../../../../core/session/user_role.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/solo_forte_sheet_visuals.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../quick_photo/data/quick_photo_repository.dart';
 import '../../quick_photo/domain/quick_photo_record.dart';

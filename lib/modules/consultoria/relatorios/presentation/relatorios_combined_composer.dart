@@ -329,6 +329,7 @@ class _CombinedEventsLoaderState extends ConsumerState<_CombinedEventsLoader> {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     if (!_ready) return const SizedBox.shrink();
     return _CombinedReportsComposer(
       clientId: widget.clientId,
@@ -517,6 +518,7 @@ class _CombinedReportsComposerState
     BuildContext viewerContext,
     RelatorioCombinado saved,
   ) {
+    final v = SoloForteSheetVisuals.of(context);
     final rows = _chapterRows(saved);
     return showSoloForteSheet<String>(
       context: viewerContext,
@@ -529,12 +531,12 @@ class _CombinedReportsComposerState
             shrinkWrap: true,
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
-              const Text(
+              Text(
                 'Sumário',
                 style: TextStyle(
-                  color: SoloForteSheetTokens.titleColor,
-                  fontSize: SoloForteSheetTokens.titleFontSize,
-                  fontWeight: SoloForteSheetTokens.titleWeight,
+                  color: v.titleColor,
+                  fontSize: v.titleFontSize,
+                  fontWeight: v.titleWeight,
                 ),
               ),
               const SizedBox(height: 12),

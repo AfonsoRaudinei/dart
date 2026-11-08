@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
@@ -154,27 +154,28 @@ class _LinkDrawingToFarmSheetState
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : null;
+        v.isIos ? v.titleColor : null;
     final subtitleColor =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.black54;
+        v.isIos ? v.subtitleColor : v.inputHint;
     final accent =
-        isIos ? SoloForteSheetSkinIos.iconStroke : context.themeAccent;
+        isIos ? v.iconStroke : context.themeAccent;
     final ctaBg = isIos
-        ? SoloForteSheetSkinIos.ctaBackground
+        ? v.ctaBackground
         : context.themeAccent;
     final ctaFg =
-        isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+        v.ctaText;
     final ctaRadius =
-        isIos ? SoloForteSheetSkinIos.ctaRadius : 8.0;
+        v.ctaRadius;
     // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final sheetBg =
-        isIos ? Colors.transparent : Colors.white;
+        v.isIos ? Colors.transparent : v.sheetBackground;
     final sheetRadius =
-        isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
+        v.sheetRadius;
     final handleColor = isIos
-        ? SoloForteSheetSkinIos.handleColor
+        ? v.handleColor
         : const Color(0xFFC5C5C7);
 
     return Container(
@@ -196,12 +197,8 @@ class _LinkDrawingToFarmSheetState
               children: [
                 Center(
                   child: Container(
-                    width: isIos
-                        ? SoloForteSheetSkinIos.handleSize.width
-                        : 36,
-                    height: isIos
-                        ? SoloForteSheetSkinIos.handleSize.height
-                        : 5,
+                    width: v.handleSize.width,
+                    height: v.handleSize.height,
                     margin: const EdgeInsets.only(bottom: 20),
                     decoration: BoxDecoration(
                       color: handleColor,
@@ -285,21 +282,22 @@ class _LinkDrawingToFarmSheetState
   }
 
   Widget _buildFarmList(bool isIos) {
+    final v = SoloForteSheetVisuals.of(context);
     final accent =
-        isIos ? SoloForteSheetSkinIos.iconStroke : context.themeAccent;
+        isIos ? v.iconStroke : context.themeAccent;
     final selectedBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
+        ? v.cardBackground
         : const Color(0xFFEFFAF2);
     final unselectedBg =
-        isIos ? SoloForteSheetSkinIos.background : Colors.white;
+        isIos ? v.sheetBackground : v.cardBackground;
     final unselectedBorder = isIos
-        ? SoloForteSheetSkinIos.cardBorder
+        ? v.cardBorder
         : const Color(0xFFE2E2E8);
     final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : null;
+        v.isIos ? v.titleColor : null;
     final unchecked =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.black38;
-    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
+        v.isIos ? v.subtitleColor : v.inputHint;
+    final radius = v.cardRadius;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -356,6 +354,7 @@ class _LinkDrawingToFarmSheetState
   }
 
   Widget _buildCreateForm(bool isIos) {
+    final v = SoloForteSheetVisuals.of(context);
     return Form(
       key: _formKey,
       child: Column(
@@ -366,7 +365,7 @@ class _LinkDrawingToFarmSheetState
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: isIos ? SoloForteSheetSkinIos.titleColor : null,
+              color: v.isIos ? v.titleColor : null,
             ),
           ),
           const SizedBox(height: 12),

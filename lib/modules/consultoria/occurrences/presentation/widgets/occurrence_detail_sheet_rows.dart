@@ -24,6 +24,7 @@ class _HeaderChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
@@ -63,13 +64,18 @@ class _DetailRow extends StatelessWidget {
     this.selectable = false,
   });
 
-  static TextStyle valueStyle(bool isDark, {bool isIos = false}) {
+  static TextStyle valueStyle(
+    BuildContext context,
+    bool isDark, {
+    bool isIos = false,
+  }) {
+    final v = SoloForteSheetVisuals.of(context);
     return TextStyle(
       fontSize: 15,
       fontWeight: FontWeight.w400,
       letterSpacing: -0.4,
       color: isIos
-          ? SoloForteSheetSkinIos.titleColor
+          ? v.titleColor
           : (isDark
               ? PremiumTokens.textPrimaryDark
               : PremiumTokens.textPrimaryLight),
@@ -78,14 +84,15 @@ class _DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final iconColor = isIos
-        ? SoloForteSheetSkinIos.iconStroke
+        ? v.iconStroke
         : (isDark ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70));
     final labelColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
+        ? v.subtitleColor
         : (isDark ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70));
     final dividerColor = isIos
-        ? SoloForteSheetSkinIos.rowDivider
+        ? v.rowDivider
         : (isDark ? PremiumTokens.hairlineDark : context.premiumHairline);
 
     return Column(
@@ -117,10 +124,13 @@ class _DetailRow extends StatelessWidget {
                     else if (selectable)
                       SelectableText(
                         value ?? '—',
-                        style: valueStyle(isDark, isIos: isIos),
+                        style: valueStyle(context, isDark, isIos: isIos),
                       )
                     else
-                      Text(value ?? '—', style: valueStyle(isDark, isIos: isIos)),
+                      Text(
+                        value ?? '—',
+                        style: valueStyle(context, isDark, isIos: isIos),
+                      ),
                   ],
                 ),
               ),
