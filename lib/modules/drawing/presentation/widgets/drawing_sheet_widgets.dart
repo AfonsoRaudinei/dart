@@ -13,10 +13,10 @@ class _SelectedModeFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final footerBg = isIos
-        ? SoloForteSheetSkinIos.background
+        ? v.sheetBackground
         : v.sheetBackground;
     final topBorder = v.cardBorder;
 
@@ -45,9 +45,9 @@ class _SelectedModeFooter extends StatelessWidget {
               onPressed: onEdit,
               style: isIos
                   ? OutlinedButton.styleFrom(
-                      foregroundColor: SoloForteSheetSkinIos.ghostText,
-                      side: const BorderSide(
-                        color: SoloForteSheetSkinIos.ghostBorder,
+                      foregroundColor: v.ghostText,
+                      side: BorderSide(
+                        color: v.ghostBorder,
                       ),
                     )
                   : null,
@@ -61,7 +61,7 @@ class _SelectedModeFooter extends StatelessWidget {
               onPressed: onExit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: isIos
-                    ? SoloForteSheetSkinIos.ctaBackground
+                    ? v.ctaBackground
                     : context.themeAccent,
               ),
               child: const Text(
@@ -84,11 +84,11 @@ class _SheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
-    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : v.titleColor;
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
+    final titleColor = v.titleColor;
     final iconColor = isIos
-        ? SoloForteSheetSkinIos.iconStroke
+        ? v.iconStroke
         : Theme.of(context).colorScheme.onSurface;
 
     return Column(
@@ -132,7 +132,7 @@ class _SheetHeader extends StatelessWidget {
         Divider(
           height: 1,
           color: isIos
-              ? SoloForteSheetSkinIos.rowDivider
+              ? v.rowDivider
               : Theme.of(
                   context,
                 ).colorScheme.outlineVariant.withValues(alpha: 0.5),
@@ -194,10 +194,11 @@ class _MetricItem extends StatelessWidget {
   const _MetricItem({required this.label, required this.value});
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final valueColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
+    final valueColor = v.isIos ? v.titleColor : null;
     final labelColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
+        ? v.subtitleColor
         : Colors.grey;
 
     return Column(
@@ -231,30 +232,31 @@ class _FormatButton extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final surface = isIos
-        ? SoloForteSheetSkinIos.cardBackground
+        ? v.cardBackground
         : Colors.grey[50];
-    final border = isIos ? SoloForteSheetSkinIos.cardBorder : Colors.grey[300]!;
+    final border = isIos ? v.cardBorder : Colors.grey[300]!;
     final iconColor = isIos
-        ? SoloForteSheetSkinIos.iconStroke
+        ? v.iconStroke
         : Theme.of(context).primaryColor;
-    final labelColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final labelColor = v.isIos ? v.titleColor : null;
     final sublabelColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
+        ? v.subtitleColor
         : Colors.grey;
 
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(
-        isIos ? SoloForteSheetSkinIos.cardRadius : 12,
+        v.cardRadius,
       ),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 24),
         decoration: BoxDecoration(
           color: surface,
           borderRadius: BorderRadius.circular(
-            isIos ? SoloForteSheetSkinIos.cardRadius : 12,
+            v.cardRadius,
           ),
           border: Border.all(color: border),
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
@@ -22,6 +23,7 @@ class DrawingReviewMetricsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final scheme = Theme.of(context).colorScheme;
     final metricValueColor = scheme.onSurface;
     final metricLabelColor = Color.alphaBlend(
@@ -29,7 +31,7 @@ class DrawingReviewMetricsPanel extends StatelessWidget {
       scheme.surface,
     );
     final iconColor = isIos
-        ? SoloForteSheetSkinIos.iconStroke
+        ? v.iconStroke
         : context.themeAccent;
 
     return Container(

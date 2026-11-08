@@ -175,7 +175,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
 
     final isIos = v.isIos;
     final bg = isIos && !widget.embedded
-        ? SoloForteSheetSkinIos.background
+        ? v.sheetBackground
         : (widget.embedded ? Colors.transparent : v.sheetBackground);
     final inputBg = v.cardBackground;
     final hintColor = v.inputHint;
@@ -248,7 +248,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: isIos
-                      ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+                      ? BorderSide(color: v.cardBorder)
                       : BorderSide.none,
                 ),
               ),
@@ -266,7 +266,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                 color: inputBg,
                 borderRadius: BorderRadius.circular(8),
                 border: isIos
-                    ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+                    ? Border.all(color: v.cardBorder)
                     : null,
               ),
               child: Text(
@@ -394,11 +394,11 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                     onPressed: _close,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: isIos
-                          ? SoloForteSheetSkinIos.ghostText
-                          : Colors.white70,
+                          ? v.ghostText
+                          : v.onSheetSecondary,
                       side: BorderSide(
                         color: isIos
-                            ? SoloForteSheetSkinIos.ghostBorder
+                            ? v.ghostBorder
                             : divColor,
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -415,7 +415,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                     onPressed: _save,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isIos
-                          ? SoloForteSheetSkinIos.ctaBackground
+                          ? v.ctaBackground
                           : const Color(0xFF34C759),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),

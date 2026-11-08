@@ -2,6 +2,7 @@ part of 'drawing_sheet.dart';
 
 extension _DrawingSheetBuildersA on _DrawingSheetState {
   Widget _buildMetricsPanel(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     // BUG 3: Ocultar durante revisão — as métricas já aparecem em _buildReviewingMode
     if (widget.controller.currentState == DrawingState.reviewing) {
       return const SizedBox.shrink();
@@ -13,8 +14,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
     if (area <= 0 && perimeter <= 0) return const SizedBox.shrink();
 
     final f = NumberFormat("##0.##", "pt_BR");
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final panelBg = v.cardBackground;
     final panelBorder = v.cardBorder;
     final labelColor = v.subtitleColor;
@@ -26,7 +26,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
         color: panelBg,
         borderRadius: BorderRadius.circular(
           isIos
-              ? SoloForteSheetSkinIos.cardRadius
+              ? v.cardRadius
               : PremiumTokens.borderRadiusSm,
         ),
         border: Border.all(
@@ -69,6 +69,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
   }
 
   Widget _buildErrorState(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -78,7 +79,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
           Text(
             widget.controller.errorMessage!,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: SoloForteSheetTokens.sectionLabel),
+            style: TextStyle(color: v.sectionLabel),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
@@ -91,8 +92,9 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
   }
 
   Widget _buildToolsGrid(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final pendingCount = widget.controller.pendingSyncCount;
-    final isIos = soloForteSheetIsIos(context);
+    final isIos = v.isIos;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -110,13 +112,13 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
               label: Text('Enviar alterações ($pendingCount)'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: isIos
-                    ? SoloForteSheetSkinIos.ctaBackground
+                    ? v.ctaBackground
                     : Colors.orange,
                 foregroundColor: Colors.white,
                 shape: isIos
                     ? RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(
-                          SoloForteSheetSkinIos.ctaRadius,
+                          v.ctaRadius,
                         ),
                       )
                     : null,
@@ -129,6 +131,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
   }
 
   Future<void> _syncPendingFeatures(BuildContext context) async {
+    final v = SoloForteSheetVisuals.of(context);
     final result = await widget.controller.syncFeatures();
     if (!context.mounted || result == null || result.conflicts.isEmpty) {
       return;
@@ -157,11 +160,11 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
   // Métodos de construção de modo
 
   Widget _buildImportingMode(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final titleColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.sectionLabel;
+        ? v.titleColor
+        : v.sectionLabel;
     final hintColor = v.subtitleColor;
 
     return Padding(
@@ -196,13 +199,12 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
                 _requestClose(DrawingCloseIntent.cancelFlowAndClose),
             style: isIos
                 ? OutlinedButton.styleFrom(
-                    foregroundColor: SoloForteSheetSkinIos.ghostText,
-                    side: const BorderSide(
-                      color: SoloForteSheetSkinIos.ghostBorder,
+                    foregroundColor: v.ghostText,
+                    side: BorderSide(color: v.ghostBorder,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(
-                        SoloForteSheetSkinIos.ghostRadius,
+                        v.ghostRadius,
                       ),
                     ),
                   )
@@ -216,7 +218,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
               'Cancelar',
               style: TextStyle(
                 color: isIos
-                    ? SoloForteSheetSkinIos.ghostText
+                    ? v.ghostText
                     : context.themeAccent,
                 fontWeight: FontWeight.w600,
               ),
@@ -228,6 +230,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
   }
 
   Widget _buildUnionMode(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return _buildBooleanOpMode(
       context,
       "Unir Áreas",
@@ -237,6 +240,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
   }
 
   Widget _buildDifferenceMode(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return _buildBooleanOpMode(
       context,
       "Subtrair Área",
@@ -246,6 +250,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
   }
 
   Widget _buildIntersectionMode(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return _buildBooleanOpMode(
       context,
       "Interseção",
@@ -260,11 +265,11 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
     String instructions,
     VoidCallback onConfirm,
   ) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final titleColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.sectionLabel;
+        ? v.titleColor
+        : v.sectionLabel;
     final hintColor = v.subtitleColor;
 
     return Padding(
@@ -305,13 +310,12 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
                       _requestClose(DrawingCloseIntent.cancelFlowAndClose),
                   style: isIos
                       ? OutlinedButton.styleFrom(
-                          foregroundColor: SoloForteSheetSkinIos.ghostText,
-                          side: const BorderSide(
-                            color: SoloForteSheetSkinIos.ghostBorder,
+                          foregroundColor: v.ghostText,
+                          side: BorderSide(color: v.ghostBorder,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(
-                              SoloForteSheetSkinIos.ghostRadius,
+                              v.ghostRadius,
                             ),
                           ),
                         )
@@ -325,7 +329,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
                     'Cancelar',
                     style: TextStyle(
                       color: isIos
-                          ? SoloForteSheetSkinIos.ghostText
+                          ? v.ghostText
                           : context.themeAccent,
                       fontWeight: FontWeight.w600,
                     ),
@@ -341,13 +345,13 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isIos
-                        ? SoloForteSheetSkinIos.ctaBackground
+                        ? v.ctaBackground
                         : context.themeAccent,
                     foregroundColor: Colors.white,
                     shape: isIos
                         ? RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(
-                              SoloForteSheetSkinIos.ctaRadius,
+                              v.ctaRadius,
                             ),
                           )
                         : null,
@@ -369,6 +373,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
   }
 
   Widget _buildImportPreviewMode(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final hasImportWarning = widget.controller.hasPendingImportWarning;
     final previewGeometry = widget.controller.liveGeometry;
     final detectedParts = widget.controller.polygonPartCount(previewGeometry);
@@ -384,12 +389,12 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const Divider(),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
             child: Text(
               'A geometria foi carregada no mapa como visualização.\nConfirme para adicionar ao desenho.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: SoloForteSheetTokens.sectionLabel),
+              style: TextStyle(color: v.sectionLabel),
             ),
           ),
           if (detectedParts > 1) ...[
@@ -406,9 +411,9 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
                 '$detectedParts talhões detectados no arquivo. '
                 'Cada um será salvo separadamente.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13.5,
-                  color: SoloForteSheetTokens.sectionLabel,
+                  color: v.sectionLabel,
                 ),
               ),
             ),
