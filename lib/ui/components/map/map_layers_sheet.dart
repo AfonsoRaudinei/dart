@@ -6,11 +6,8 @@ import '../../../core/constants/layout_constants.dart';
 import '../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../core/ui/sheets/soloforte_sheet.dart';
 import 'widgets/map_offline_widgets.dart';
-import '../../theme/premium/design_tokens.dart';
 
 class LayersSheet extends ConsumerWidget {
-  static const _accent = PremiumTokens.brandGreenDark;
-
   final VoidCallback? onClose;
   final Future<void> Function()? onDownloadOfflineArea;
 
@@ -49,9 +46,7 @@ class LayersSheet extends ConsumerWidget {
                       fontWeight: isIos
                           ? FontWeight.w700
                           : SoloForteSheetTokens.titleWeight,
-                      color: isIos
-                          ? SoloForteSheetSkinIos.titleColor
-                          : SoloForteSheetTokens.titleColor,
+                      color: v.titleColor,
                     ),
                   ),
                 ),
@@ -62,9 +57,7 @@ class LayersSheet extends ConsumerWidget {
                   child: Text(
                     'Cancelar',
                     style: TextStyle(
-                      color: isIos
-                          ? SoloForteSheetSkinIos.ghostText
-                          : _accent,
+                      color: v.ghostText,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -75,9 +68,7 @@ class LayersSheet extends ConsumerWidget {
           ),
           Divider(
             height: 1,
-            color: isIos
-                ? SoloForteSheetSkinIos.rowDivider
-                : SoloForteSheetTokens.divider,
+            color: v.dividerColor,
           ),
           Flexible(
             child: ListView(
