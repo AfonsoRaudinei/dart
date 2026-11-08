@@ -23,6 +23,22 @@ void main() {
     },
   );
 
+  test(
+    'MercadoPagoService bloqueia checkout antes de chamar backend no Android',
+    () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      final service = MercadoPagoService(
+        SupabaseClient('https://example.supabase.co', 'test-anon-key'),
+      );
+
+      await expectLater(
+        service.criarPreferenciaPagamento(plano: 'bronze', metodo: 'pix'),
+        throwsA(isA<UnsupportedError>()),
+      );
+      debugDefaultTargetPlatformOverride = null;
+    },
+  );
+
   testWidgets('PagamentoScreen não exibe ação de compra no iOS', (
     tester,
   ) async {
