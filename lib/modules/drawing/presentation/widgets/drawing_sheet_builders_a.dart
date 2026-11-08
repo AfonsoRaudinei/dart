@@ -290,7 +290,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
                               actionsMode: DrawingFeatureActionsMode.full,
                             );
                             widget.onFocusFeature?.call(f);
-                            Navigator.of(ctx).pop();
+                            _popLocalDialog(ctx);
                           },
                         );
                       },
@@ -301,7 +301,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
+                onPressed: () => _popLocalDialog(ctx),
                 child: const Text('Fechar'),
               ),
             ],

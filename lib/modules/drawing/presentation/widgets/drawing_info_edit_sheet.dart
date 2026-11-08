@@ -8,6 +8,7 @@ import '../providers/drawing_client_provider.dart';
 import '../../../../core/domain/cultura_tipo.dart';
 import '../../../../core/ui/cultura_material_fields.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
+import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 
 /// Bottom sheet para editar as informações básicas de um talhão:
 /// nome, cliente, fazenda, área (read-only), cultura e safra.
@@ -114,6 +115,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
   }
 
   void _close() {
+    SoloforteKeyboardDismiss.dismiss();
     if (widget.onCancel != null) {
       widget.onCancel!();
       return;
@@ -135,6 +137,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
       clienteId: _selectedClient?.id,
       fazendaId: _selectedFarm?.id,
     );
+    SoloforteKeyboardDismiss.dismiss();
     if (widget.onSaved != null) {
       widget.onSaved!();
       return;

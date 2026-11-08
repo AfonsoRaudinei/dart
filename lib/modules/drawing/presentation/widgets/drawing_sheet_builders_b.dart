@@ -496,7 +496,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context, rootNavigator: false).pop(),
+            onPressed: () => _popLocalDialog(context),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
@@ -527,7 +527,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                 _rebuild(() => _selectedFarm = newFarm);
               }
               if (context.mounted) {
-                Navigator.of(context, rootNavigator: false).pop();
+                _popLocalDialog(context);
               }
             },
             child: const Text('Criar'),
@@ -535,6 +535,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
         ],
       ),
     ).whenComplete(() {
+      SoloforteKeyboardDismiss.dismiss();
       nameController.dispose();
       cityController.dispose();
       stateController.dispose();
@@ -770,7 +771,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                     opt.subtitle,
                     style: TextStyle(color: subtitleColor),
                   ),
-                  onTap: () => Navigator.of(ctx).pop(opt.format),
+                  onTap: () => _popLocalDialog(ctx, opt.format),
                 ),
               ),
             ],
@@ -810,7 +811,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
+            onPressed: () => _popLocalDialog(ctx),
             child: const Text('Cancelar'),
           ),
           FilledButton(
@@ -818,7 +819,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
               final dLat = double.tryParse(latController.text);
               final dLng = double.tryParse(lngController.text);
               if (dLat == null || dLng == null) return;
-              Navigator.of(ctx).pop((dLat, dLng));
+              _popLocalDialog(ctx, (dLat, dLng));
             },
             child: const Text('Aplicar'),
           ),
@@ -842,11 +843,11 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
+            onPressed: () => _popLocalDialog(ctx),
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            onPressed: () => _popLocalDialog(ctx, controller.text.trim()),
             child: const Text('Selecionar'),
           ),
         ],
