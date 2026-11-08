@@ -66,19 +66,11 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
         ? visitState.value!.id
         : null;
     final isIos = soloForteSheetIsIos(context);
-    final sheetBg = isIos
-        ? SoloForteSheetSkinIos.background
-        : Colors.white;
-    final handleColor = isIos
-        ? SoloForteSheetSkinIos.handleColor
-        : context.premiumSurface;
+    final sheetBg = v.sheetBackground;
+    final handleColor = v.handleColor;
     final titleColor = v.titleColor;
-    final closeColor = isIos
-        ? SoloForteSheetSkinIos.arrowColor
-        : context.premiumTextSecondary;
-    final dividerColor = isIos
-        ? SoloForteSheetSkinIos.rowDivider
-        : context.premiumHairline;
+    final closeColor = isIos ? v.arrowColor : v.subtitleColor;
+    final dividerColor = v.dividerColor;
     final sheetRadius = isIos
         ? SoloForteSheetSkinIos.sheetRadius
         : 16.0;
@@ -450,18 +442,12 @@ class _OccurrenceListItem extends StatelessWidget {
     final isIos = soloForteSheetIsIos(context);
     final cardBg = isSelected
         ? color.withValues(alpha: .08)
-        : (isIos
-              ? SoloForteSheetSkinIos.cardBackground
-              : const Color(0xFF1C1C1E));
+        : v.cardBackground;
     final cardBorder = isSelected
         ? color
         : (v.cardBorder);
-    final secondaryText = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : Colors.white54;
-    final mutedText = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : Colors.white24;
+    final secondaryText = v.subtitleColor;
+    final mutedText = v.subtitleColor;
     final cardRadius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
 
     return GestureDetector(
