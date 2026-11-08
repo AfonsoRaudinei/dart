@@ -1,3 +1,5 @@
+import 'package:soloforte_app/core/domain/talhao_condicao.dart';
+
 /// Contrato neutro para comandos sobre talhoes originados do mapa.
 ///
 /// Consumidores externos nao devem importar drawing/ diretamente. A
@@ -34,6 +36,15 @@ abstract interface class IDrawingFieldWriter {
     String? dataPlantio,
     String? dataEmergencia,
     String? cicloDias,
+  });
+
+  /// Grava a condição do talhão (Bom, Atenção, Alerta, Ruim) sem alterar a geometria.
+  ///
+  /// Persiste o ARGB canônico em `cor`. Feature inexistente ou inativa lança
+  /// [StateError].
+  Future<void> updateFieldAvaliacao({
+    required String fieldId,
+    required TalhaoCondicao condicao,
   });
 
   /// Combina dois talhões do mapa em um único polígono.

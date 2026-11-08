@@ -37,3 +37,4 @@ concreta em `drawing/infra/drawing_field_writer_adapter.dart`.
 - Comando `linkFieldToFarm` documentado em ADR-049 (consumidor: hub do cliente).
 - `updateFieldMetadata` inclui `material` (cultivar do talhão, SQLite v43) e também `data_plantio`, `data_emergencia` e `ciclo_dias` (SQLite v48).
   Consumidor: dados do talhão em `consultoria/clients`.
+- `updateFieldAvaliacao` grava a condição do polígono (Bom, Atenção, Alerta, Ruim) no ARGB já existente de `cor`. Sem campo novo no payload remoto. A coluna local `drawings.cor` (SQLite v50) só persiste esse inteiro, que o mapa já lia em memória. Consumidor: check-in em `ui/`.
