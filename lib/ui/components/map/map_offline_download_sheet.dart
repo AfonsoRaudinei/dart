@@ -86,22 +86,12 @@ class _MapOfflineDownloadSheetState extends State<MapOfflineDownloadSheet> {
       safeBottom: MediaQuery.paddingOf(context).bottom,
       keyboard: MediaQuery.viewInsetsOf(context).bottom,
     );
-    final titleColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.titleColor;
-    final bodyColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
-    final ctaBg = isIos
-        ? SoloForteSheetSkinIos.ctaBackground
-        : SoloForteSheetTokens.chipBorderActive;
-    final ctaFg = isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
-    final ghostBorder = isIos
-        ? SoloForteSheetSkinIos.ghostBorder
-        : SoloForteSheetTokens.divider;
-    final ghostText = isIos
-        ? SoloForteSheetSkinIos.ghostText
-        : SoloForteSheetTokens.chipTextInactive;
+    final titleColor = v.titleColor;
+    final bodyColor = v.subtitleColor;
+    final ctaBg = v.ctaBackground;
+    final ctaFg = v.ctaText;
+    final ghostBorder = v.ghostBorder;
+    final ghostText = v.ghostText;
 
     return SafeArea(
       top: false,
@@ -198,18 +188,11 @@ class MapOfflineDownloadProgressSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
     final bottom = MediaQuery.paddingOf(context).bottom;
-    final titleColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.titleColor;
-    final bodyColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
-    final ghostText = isIos
-        ? SoloForteSheetSkinIos.ghostText
-        : SoloForteSheetTokens.chipTextInactive;
+    final titleColor = v.titleColor;
+    final bodyColor = v.subtitleColor;
+    final ghostText = v.ghostText;
 
     return SafeArea(
       top: false,
