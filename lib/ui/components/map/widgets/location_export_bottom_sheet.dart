@@ -215,11 +215,11 @@ class LocationExportBottomSheet extends StatelessWidget {
         child: Container(
           padding: EdgeInsets.fromLTRB(16, 10, 16, 12 + bottomPadding),
           decoration: BoxDecoration(
-            color: PremiumTokens.surfaceDark.withValues(alpha: 0.98),
+            color: v.sheetBackground.withValues(alpha: 0.98),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             border: Border(
               top: BorderSide(
-                color: Colors.white.withValues(alpha: 0.08),
+                color: v.onSheetDivider,
                 width: 0.5,
               ),
             ),
@@ -233,7 +233,7 @@ class LocationExportBottomSheet extends StatelessWidget {
                   height: 5,
                   margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.34),
+                    color: v.handleColor,
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
@@ -241,10 +241,10 @@ class LocationExportBottomSheet extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Column(
                     children: [
-                      const Text(
+                      Text(
                         'Exportar localização',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: v.titleColor,
                           fontSize: 17,
                           fontWeight: FontWeight.w600,
                         ),
@@ -253,7 +253,7 @@ class LocationExportBottomSheet extends StatelessWidget {
                       Text(
                         coordsPreview,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
+                          color: v.subtitleColor,
                           fontSize: 13,
                         ),
                       ),
@@ -296,10 +296,10 @@ class LocationExportBottomSheet extends StatelessWidget {
                   width: double.infinity,
                   child: TextButton(
                     onPressed: () => _dismiss(context),
-                    child: const Text(
+                    child: Text(
                       'Concluído',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: v.ghostText,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -333,13 +333,10 @@ class _ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
-    final arrowColor = isIos
-        ? SoloForteSheetSkinIos.arrowColor
-        : Colors.white.withValues(alpha: 0.32);
-    final dividerColor = isIos
-        ? SoloForteSheetSkinIos.rowDivider
-        : Colors.white.withValues(alpha: 0.08);
+    final v = SoloForteSheetVisuals.of(context);
+    final titleColor = v.titleColor;
+    final arrowColor = v.isIos ? v.arrowColor : v.subtitleColor;
+    final dividerColor = v.isIos ? v.rowDivider : v.onSheetDivider;
 
     return Material(
       color: Colors.transparent,
