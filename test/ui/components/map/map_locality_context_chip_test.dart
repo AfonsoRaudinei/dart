@@ -54,6 +54,20 @@ void main() {
     final positioned = tester.widget<Positioned>(find.byType(Positioned));
     expect(positioned.top, safeTop + kMapLocalityChipTopBelowSafeArea);
     expect(positioned.right, kMapTopControlsReservedRightWidth);
+    expect(kMapTopControlsReservedRightWidth, 188.0);
+
+    final chipBox = tester.renderObject<RenderBox>(
+      find.byKey(const Key('map_locality_context_chip')),
+    );
+    final chipRect = chipBox.localToGlobal(Offset.zero) & chipBox.size;
+    final screenWidth = tester.view.physicalSize.width / tester.view.devicePixelRatio;
+    final toggleRect = Rect.fromLTWH(
+      screenWidth - kMapTopControlsReservedRightWidth,
+      safeTop + kMapTopControlsTopInset,
+      kMapTopControlsReservedRightWidth,
+      kMapTopControlsRowHeight,
+    );
+    expect(chipRect.overlaps(toggleRect), isFalse);
   });
 
   testWidgets('chip oculto quando divisas UF desativadas', (tester) async {
