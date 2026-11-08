@@ -186,9 +186,11 @@ CREATE TABLE referrals (
 
 ## 5. GATEWAY DE PAGAMENTO
 
-**Provedor:** Mercado Pago  
+**Vigente no app:** Adendo 2. O binário não cobra por Mercado Pago. A seção abaixo descreve o gateway que permanece no repositório, fora do funil de compra.
+
+**Provedor (repositório, inativo no app):** Mercado Pago  
 **Métodos:** PIX (aprovação instantânea) + Cartão crédito/débito  
-**Integração:** SDK Mercado Pago Flutter + Edge Function webhook  
+**Integração:** Edge Functions `mercadopago-criar-preferencia` e `mercadopago-webhook` (sem SDK Flutter)  
 
 ### Edge Function: `mercadopago-webhook`
 
@@ -440,6 +442,41 @@ Seções 7 e 10 deste ADR foram alinhadas a esses valores (Set/2026). Pins offli
 ### Consequência
 
 Usuário com plano verificado online nas últimas 24h pode publicar pin de marketing sem rede. Sem verificação no TTL, a publicação é recusada até reconectar. Ao voltar a rede, pins `pending_sync` são reconciliados com o plano vigente.
+
+---
+
+## ADENDO 2 — Pagamento nativo nas lojas
+
+**Data:** 08/11/2026  
+**Status:** APROVADO  
+**Motivação:** plano digital que libera função dentro do app só pode ser cobrado no binário pela loja (StoreKit no iOS, Play Billing no Android). A taxa é a da loja. Checkout Mercado Pago, link ou WebView dentro do app fica fora do funil.
+
+### Decisão
+
+- Compra in-app, quando existir, é só compra nativa da loja. O app não escolhe PIX nem cartão.
+- Prazo fixo, sem renovação automática. A validade continua em `user_plans.expira_em`.
+- Catálogo de referência (o preço cobrado é o cadastrado na loja, não um número fixo no app):
+
+| Plano | Prazo | Referência | ID do produto |
+|---|---|---|---|
+| Bronze | 3 meses | R$ 49,90 | `soloforte_plano_bronze` |
+| Prata | 5 meses | R$ 79,90 | `soloforte_plano_prata` |
+| Ouro | 8 meses | R$ 119,90 | `soloforte_plano_ouro` |
+
+- Apple: assinatura não renovável. Google: produto único consumível, para permitir nova compra quando o prazo acabar.
+- `origem = pagamento` e o id da transação da loja só entram em `user_plans` depois que uma Edge validar o recibo. O cliente não concede plano.
+- Indicação só valida depois desse pagamento de loja concedido no servidor. O webhook Mercado Pago deixa de ser o gatilho do funil do app.
+- Edge Functions `mercadopago-*` permanecem no repositório. `MercadoPagoService.criarPreferenciaPagamento` recusa iOS e Android antes de invocar a Edge.
+
+### O que este adendo não liga
+
+As telas `/planos`, `/planos/pagamento` e `/planos/confirmacao` seguem sem preço e sem chamada à ação de compra.
+
+A entrega da compra na loja não começa enquanto os três produtos não existirem na App Store Connect e na Play Console, com os IDs desta tabela, e enquanto os segredos de verificação (App Store Server API e Play Developer API) não estiverem no Supabase. Sem isso o botão de compra não entra no binário. Não adicionar `in_app_purchase` nem uma Edge que grave `user_plans` sem validar o recibo.
+
+### Consequência
+
+O app é leitor do plano já gravado na conta. A taxa de venda in-app fica com a Apple ou com a Google. Mercado Pago não é o meio de pagamento do aplicativo.
 
 ---
 
