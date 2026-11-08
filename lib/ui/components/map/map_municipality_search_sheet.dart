@@ -68,22 +68,15 @@ class _MapMunicipalitySearchSheetState
   bool _geocoding = false;
   String? _error;
 
-  InputDecoration _fieldDecoration(bool isIos) {
-    final fill = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
+  InputDecoration _fieldDecoration(SoloForteSheetVisuals v) {
+    final isIos = v.isIos;
+    final fill = v.inputFill;
     final radius = isIos
         ? SoloForteSheetSkinIos.cardRadius
         : SoloForteSheetTokens.inputRadius;
-    final hint = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
-    final focus = isIos
-        ? SoloForteSheetSkinIos.iconStroke
-        : SoloForteSheetTokens.chipBorderActive;
-    final side = isIos
-        ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
-        : BorderSide.none;
+    final hint = v.inputHint;
+    final focus = v.focusBorder;
+    final side = v.isDark ? BorderSide.none : BorderSide(color: v.inputBorder);
 
     return InputDecoration(
       filled: true,
@@ -224,46 +217,22 @@ class _MapMunicipalitySearchSheetState
     );
     final isIos = soloForteSheetIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
-    final titleColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.titleColor;
-    final inputText = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.inputText;
-    final hintColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
-    final accent = isIos
-        ? SoloForteSheetSkinIos.iconStroke
-        : SoloForteSheetTokens.chipTextActive;
-    final muted = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.categoryLabel;
-    final listBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
+    final titleColor = v.titleColor;
+    final inputText = v.inputText;
+    final hintColor = v.inputHint;
+    final accent = v.chipTextActive;
+    final muted = v.subtitleColor;
+    final listBg = v.inputFill;
     final listRadius = isIos
         ? SoloForteSheetSkinIos.cardRadius
         : SoloForteSheetTokens.inputRadius;
-    final divider = isIos
-        ? SoloForteSheetSkinIos.rowDivider
-        : SoloForteSheetTokens.divider;
-    final dropdownBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
-    final iconColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.categoryLabel;
-    final ctaBg = isIos
-        ? SoloForteSheetSkinIos.ctaBackground
-        : SoloForteSheetTokens.chipBorderActive;
-    final ctaFg = isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
-    final ghostBorder = isIos
-        ? SoloForteSheetSkinIos.ghostBorder
-        : SoloForteSheetTokens.divider;
-    final ghostText = isIos
-        ? SoloForteSheetSkinIos.ghostText
-        : SoloForteSheetTokens.chipTextInactive;
+    final divider = v.dividerColor;
+    final dropdownBg = v.inputFill;
+    final iconColor = v.subtitleColor;
+    final ctaBg = v.ctaBackground;
+    final ctaFg = v.ctaText;
+    final ghostBorder = v.ghostBorder;
+    final ghostText = v.ghostText;
     final canSubmit = !_geocoding && !_loadingMunicipios;
 
     return SingleChildScrollView(
@@ -294,7 +263,7 @@ class _MapMunicipalitySearchSheetState
               style: TextStyle(color: inputText, fontSize: 16),
               iconEnabledColor: iconColor,
               decoration: _fieldDecoration(
-                isIos,
+                v,
               ).copyWith(labelText: 'Estado (UF)'),
               items: _estados
                   .map(
@@ -354,11 +323,9 @@ class _MapMunicipalitySearchSheetState
                       decoration: BoxDecoration(
                         color: listBg,
                         borderRadius: BorderRadius.circular(listRadius),
-                        border: isIos
-                            ? Border.all(
-                                color: SoloForteSheetSkinIos.cardBorder,
-                              )
-                            : null,
+                        border: v.isDark
+                            ? null
+                            : Border.all(color: v.cardBorder),
                       ),
                       child: ListView.separated(
                         shrinkWrap: true,
