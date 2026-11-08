@@ -9,7 +9,6 @@ import 'package:soloforte_app/modules/drawing/data/repositories/drawing_reposito
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/domain/repositories/i_clients_repository.dart';
 import 'package:soloforte_app/modules/drawing/infra/clients/i_clients_repository_provider.dart';
-import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
 import 'package:soloforte_app/modules/drawing/presentation/providers/drawing_provider.dart';
 import 'package:soloforte_app/ui/components/map/map_sheet_state.dart';
 import 'package:soloforte_app/ui/screens/map/handlers/map_first_query_handler.dart';
