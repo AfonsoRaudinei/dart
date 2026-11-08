@@ -3,8 +3,6 @@ import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
-import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../core/widgets/photo/soloforte_photo_picker_sheet.dart';
 import '../../data/services/marketing_photo_service.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';

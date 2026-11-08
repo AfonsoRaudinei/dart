@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:uuid/uuid.dart';
@@ -23,7 +22,6 @@ class CulturaItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     final tt = Theme.of(context).textTheme;
     final areaFormatted =
         cultura.areaHa % 1 == 0
@@ -115,7 +113,6 @@ class VariedadesCultivaresInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

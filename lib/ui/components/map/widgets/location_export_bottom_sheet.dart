@@ -5,7 +5,6 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/design/sf_icons.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../core/utils/map_location_export.dart';
 import '../../../../core/utils/share_position.dart';
@@ -31,7 +30,6 @@ class LocationExportBottomSheet extends StatelessWidget {
     required double longitude,
     String label = 'Área Visitada',
   }) {
-    final v = SoloForteSheetVisuals.of(context);
     if (!MapLocationExport.isValidCoordinate(latitude, longitude)) {
       return Future.value();
     }
@@ -51,13 +49,11 @@ class LocationExportBottomSheet extends StatelessWidget {
   }
 
   void _dismiss(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     HapticFeedback.lightImpact();
     Navigator.of(context).pop();
   }
 
   Future<void> _openExternalUrl(BuildContext context, String url) async {
-    final v = SoloForteSheetVisuals.of(context);
     HapticFeedback.lightImpact();
     Navigator.of(context).pop();
     final uri = Uri.parse(url);
@@ -74,7 +70,6 @@ class LocationExportBottomSheet extends StatelessWidget {
   }
 
   Future<void> _copyCoordinates(BuildContext context) async {
-    final v = SoloForteSheetVisuals.of(context);
     HapticFeedback.lightImpact();
     Navigator.of(context).pop();
     final text = MapLocationExport.formatDecimalLatLng(latitude, longitude);
@@ -86,7 +81,6 @@ class LocationExportBottomSheet extends StatelessWidget {
   }
 
   Future<void> _shareLocation(BuildContext context) async {
-    final v = SoloForteSheetVisuals.of(context);
     HapticFeedback.lightImpact();
     Navigator.of(context).pop();
     final text = MapLocationExport.shareText(

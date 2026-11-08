@@ -329,7 +329,6 @@ class _CombinedEventsLoaderState extends ConsumerState<_CombinedEventsLoader> {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     if (!_ready) return const SizedBox.shrink();
     return _CombinedReportsComposer(
       clientId: widget.clientId,

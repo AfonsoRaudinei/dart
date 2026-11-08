@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 
 import '../../../core/services/offline_tile_cache_service.dart';
 import '../../../core/ui/sheets/sheet_keyboard_inset.dart';
-import '../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../core/ui/sheets/widgets/sheet_input_field.dart';
 
@@ -37,7 +36,6 @@ Future<void> showMapOfflineDownloadProgressSheet(
   required ValueNotifier<OfflinePrefetchProgress> progress,
   required VoidCallback onCancel,
 }) {
-    final v = SoloForteSheetVisuals.of(context);
   return showSoloForteSheet<void>(
     context: context,
     isScrollControlled: true,

@@ -39,7 +39,6 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     final photosAsync = ref.watch(quickPhotoListProvider);
 
     return photosAsync.when(
@@ -135,7 +134,6 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
     QuickPhotoRecord photo,
     String value,
   ) async {
-    final v = SoloForteSheetVisuals.of(context);
     switch (value) {
       case 'preview':
         await _openPreview(context, photo);
@@ -168,7 +166,6 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
     BuildContext context,
     QuickPhotoRecord photo,
   ) async {
-    final v = SoloForteSheetVisuals.of(context);
     final path = photo.imagePath;
     if (path == null || path.isEmpty || !await File(path).exists()) {
       if (!context.mounted) return;
@@ -202,7 +199,6 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
   }
 
   void _openOnMap(BuildContext context, QuickPhotoRecord photo) {
-    final v = SoloForteSheetVisuals.of(context);
     final lat = photo.latitude;
     final lng = photo.longitude;
     if (lat == null || lng == null) {
@@ -227,7 +223,6 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
     BuildContext context,
     QuickPhotoRecord photo,
   ) async {
-    final v = SoloForteSheetVisuals.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(

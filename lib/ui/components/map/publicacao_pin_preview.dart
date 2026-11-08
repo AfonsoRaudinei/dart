@@ -34,7 +34,6 @@ import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 /// Mapa permanece visível atrás.
 /// Navegação para edição ocorre SOMENTE via CTA explícito.
 void showPublicacaoPreview(BuildContext context, Publicacao publicacao) {
-    final v = SoloForteSheetVisuals.of(context);
   HapticFeedback.lightImpact();
   showSoloForteSheet(
     context: context,

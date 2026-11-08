@@ -81,7 +81,6 @@ class OccurrenceDarkField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
-    final isIos = occurrenceFormIsIos(context);
     final textColor = v.inputText;
     final labelColor = v.inputHint;
     final hintColor = v.inputHint;
@@ -434,7 +433,6 @@ class OccurrenceRadioChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
-    final isIos = occurrenceFormIsIos(context);
     final accent = v.chipBorderActive;
     final idleSurface = v.cardBackground;
     final idleBorder = v.chipBorderInactive;
@@ -488,7 +486,6 @@ class OccurrencePhotoOriginToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [

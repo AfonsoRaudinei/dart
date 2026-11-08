@@ -10,7 +10,6 @@ import '../../../../ui/components/map/map_layer_preferences_section.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../../../core/router/app_routes.dart';
 import 'package:soloforte_app/core/design/sf_icons.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'dart:ui' as ui;
 import '../../../../core/session/local_session_identity.dart';
@@ -33,7 +32,6 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final v = SoloForteSheetVisuals.of(context);
     final userProfile = ref.watch(profileProvider);
     final userProfileAsync = ref.watch(currentUserProfileProvider);
     final currentThemeMode = ref.watch(themeProvider);
@@ -244,7 +242,6 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildSection(BuildContext context, List<Widget> children) {
-    final v = SoloForteSheetVisuals.of(context);
     final List<Widget> dividedChildren = [];
     for (int i = 0; i < children.length; i++) {
       dividedChildren.add(children[i]);
@@ -272,7 +269,6 @@ class SettingsScreen extends ConsumerWidget {
     ProfileState profile,
     AsyncValue<UserProfile?> userProfileAsync,
   ) {
-    final v = SoloForteSheetVisuals.of(context);
     File? imageFile;
     if (profile.imagePath != null && File(profile.imagePath!).existsSync()) {
       imageFile = File(profile.imagePath!);

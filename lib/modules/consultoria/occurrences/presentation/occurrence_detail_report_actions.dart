@@ -11,7 +11,6 @@ import '../../../../core/html_templates/html_report_viewer.dart';
 import '../../../../core/html_templates/relatorio_html_renderer.dart';
 import '../../../../core/html_templates/report_export_service.dart';
 import '../../../../core/router/app_routes.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../core/utils/share_position.dart';
 import '../../../../core/utils/user_facing_error.dart';
@@ -130,7 +129,6 @@ Future<void> _showOccurrenceEditSheet(
   ProviderContainer container,
   Occurrence occurrence,
 ) {
-    final v = SoloForteSheetVisuals.of(context);
   final repository = container.read(occurrenceRepositoryProvider);
   return showSoloForteSheet<void>(
     context: context,
@@ -228,7 +226,6 @@ Future<void> openOccurrenceReportHtml(
   Occurrence occurrence, {
   bool closeParentSheetOnAction = false,
 }) async {
-    final v = SoloForteSheetVisuals.of(context);
   final container = ProviderScope.containerOf(context, listen: false);
   final bodyBuilder = ref.read(htmlReportViewerBodyBuilderProvider);
   try {
@@ -283,7 +280,6 @@ Future<void> exportOccurrenceReportHtml(
   WidgetRef ref,
   Occurrence occurrence,
 ) async {
-    final v = SoloForteSheetVisuals.of(context);
   try {
     final shareOrigin = resolveSharePositionOrigin(context);
     final html = await buildOccurrenceReportHtml(ref, occurrence);

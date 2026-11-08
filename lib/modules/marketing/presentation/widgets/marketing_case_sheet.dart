@@ -45,7 +45,6 @@ class MarketingCaseSheet extends ConsumerWidget {
   }
 
   void _startPinCorrection(BuildContext context, WidgetRef ref) {
-    final v = SoloForteSheetVisuals.of(context);
     HapticFeedback.selectionClick();
     final notifier = ref.read(marketingCasesProvider.notifier);
     final container = ProviderScope.containerOf(context, listen: false);
@@ -77,7 +76,6 @@ class MarketingCaseSheet extends ConsumerWidget {
     MarketingCase marketingCase, {
     bool allowPinCorrection = false,
   }) {
-    final v = SoloForteSheetVisuals.of(context);
     HapticFeedback.lightImpact();
     showSoloForteSheet(
       context: context,
@@ -140,7 +138,6 @@ class MarketingCaseSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final v = SoloForteSheetVisuals.of(context);
     return SoloForteSheetSkinScope(
       variant: _themeVariant(context),
       child: Builder(builder: (context) => _buildSheet(context, ref)),
@@ -609,7 +606,6 @@ class MarketingCaseSheet extends ConsumerWidget {
     required Color titleColor,
     required Color hintColor,
   }) {
-    final v = SoloForteSheetVisuals.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -714,7 +710,6 @@ class MarketingCaseSheet extends ConsumerWidget {
     BuildContext context, {
     required Color titleColor,
   }) {
-    final v = SoloForteSheetVisuals.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

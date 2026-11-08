@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
 import 'package:soloforte_app/modules/ndvi/domain/ndvi_image_utils.dart';
@@ -427,7 +426,6 @@ class _ErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
-    final isIos = v.isIos;
     final textColor = v.isIos ? v.titleColor : null;
     final accent = v.isIos ? v.iconStroke : null;
     return SizedBox(
@@ -492,7 +490,6 @@ class _MaskUnavailable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
-    final isIos = v.isIos;
     return Center(
       child: Icon(
         Icons.filter_b_and_w_outlined,
@@ -509,7 +506,6 @@ class _ImageUnavailable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
-    final isIos = v.isIos;
     return Center(
       child: Icon(
         Icons.satellite_alt_outlined,
@@ -575,7 +571,6 @@ class _ModeBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     final isMask = displayMode == NdviDisplayMode.greenMask;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -600,7 +595,6 @@ class _NdviLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     final items = displayMode == NdviDisplayMode.greenMask
         ? const [
             _LegendItem(color: Colors.white, label: 'Vegetacao'),

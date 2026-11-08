@@ -19,7 +19,6 @@ class LayersSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final v = SoloForteSheetVisuals.of(context);
     // Host do mapa usa preserveMaterialDefaults (Scope forçado em light);
     // re-propaga a variante real do tema para o conteúdo.
     return SoloForteSheetSkinScope(
@@ -32,7 +31,6 @@ class LayersSheet extends ConsumerWidget {
 
   Widget _buildContent(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
-    final isIos = v.isIos;
     final bg = v.sheetBackground;
     final radius = v.sheetRadius;
 

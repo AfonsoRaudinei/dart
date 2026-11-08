@@ -4,7 +4,6 @@ part of 'drawing_sheet.dart';
 
 extension _DrawingSheetBuildersB on _DrawingSheetState {
   Widget _buildSelectedMode(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     final feature = widget.controller.selectedFeature!;
 
     if (_isEditingMetadata) {
@@ -633,7 +632,6 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     BuildContext context,
     DrawingFeature feature,
   ) async {
-    final v = SoloForteSheetVisuals.of(context);
     final format = await _selectExportFormat(context);
     if (format == null || !context.mounted) return;
     final shareOrigin = resolveSharePositionOrigin(context);
@@ -647,7 +645,6 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
   }
 
   Future<void> _exportAll(BuildContext context) async {
-    final v = SoloForteSheetVisuals.of(context);
     final format = await _selectExportFormat(context);
     if (format == null || !context.mounted) return;
     final shareOrigin = resolveSharePositionOrigin(context);

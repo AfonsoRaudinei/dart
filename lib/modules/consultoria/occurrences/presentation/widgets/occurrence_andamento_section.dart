@@ -144,7 +144,6 @@ class _OccurrenceAndamentoSectionState
       return const SizedBox.shrink();
     }
 
-    final isIos = v.isIos;
     final cardBg = v.isDark ? v.sheetBackground : v.cardBackground;
     final cardRadius = v.cardRadius;
     final subtitle = v.subtitleColor;

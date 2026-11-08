@@ -20,7 +20,6 @@ class ActiveVisitSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final v = SoloForteSheetVisuals.of(context);
     // Host de check-in usa preserveMaterialDefaults (Scope forçado em light);
     // re-propaga a variante real do tema para o conteúdo.
     return SoloForteSheetSkinScope(

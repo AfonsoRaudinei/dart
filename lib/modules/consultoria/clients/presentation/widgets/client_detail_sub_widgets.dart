@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../domain/client.dart';
@@ -35,7 +34,6 @@ class _ClientActionButtonState extends State<ClientActionButton> {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -108,7 +106,6 @@ class ClientFarmItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     final displayChevron = showChevron && onTap != null;
 
     return GestureDetector(

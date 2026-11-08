@@ -209,7 +209,6 @@ class VisitActiveCard extends ConsumerWidget {
     VisitFarmDetailSummary? currentFarm,
     VisitFieldDetailSummary? currentTalhao,
   ) {
-    final v = SoloForteSheetVisuals.of(context);
     HapticFeedback.lightImpact();
     showSoloForteSheet(
       context: context,
@@ -242,7 +241,6 @@ class VisitActiveCard extends ConsumerWidget {
     VisitFarmDetailSummary farm,
     VisitFieldDetailSummary? currentTalhao,
   ) {
-    final v = SoloForteSheetVisuals.of(context);
     HapticFeedback.lightImpact();
     showSoloForteSheet(
       context: context,
@@ -272,7 +270,6 @@ class _GlassChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
       child: BackdropFilter(
@@ -310,7 +307,6 @@ class _EditableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -355,7 +351,6 @@ class _EditableRow extends StatelessWidget {
 class _LoadingRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

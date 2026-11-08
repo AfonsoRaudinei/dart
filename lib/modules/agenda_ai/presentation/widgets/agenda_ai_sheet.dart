@@ -9,12 +9,10 @@ import 'package:soloforte_app/core/contracts/i_agenda_ai_launcher_provider.dart'
 import 'package:soloforte_app/core/contracts/i_agenda_ai_recommendation_context_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_ai_visit_writer_provider.dart';
 import 'package:soloforte_app/core/feature_flags/feature_flag_analytics.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/agenda_ai/data/services/agenda_ai_service.dart';
 
 Future<void> showAgendaAiSheet(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
   return showSoloForteSheet<void>(
     context: context,
     isScrollControlled: true,

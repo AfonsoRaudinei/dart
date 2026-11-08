@@ -14,7 +14,6 @@ void showPublicPublicationPreview(
   BuildContext context,
   Publicacao publication,
 ) {
-    final v = SoloForteSheetVisuals.of(context);
   showSoloForteSheet(
     context: context,
     isScrollControlled: true,
@@ -215,7 +214,6 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
   }
 
   Widget _buildClientInfo(BuildContext context, Color subtitle) {
-    final v = SoloForteSheetVisuals.of(context);
     return Row(
       children: [
         Icon(Icons.location_on, size: 16, color: subtitle),
@@ -234,7 +232,6 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
   }
 
   Widget _buildPublicationDate(BuildContext context, Color subtitle) {
-    final v = SoloForteSheetVisuals.of(context);
     final formatter = DateFormat('dd/MM/yyyy • HH:mm');
     return Row(
       children: [
