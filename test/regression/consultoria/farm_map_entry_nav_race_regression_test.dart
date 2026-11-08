@@ -20,32 +20,27 @@ void main() {
     ).readAsStringSync();
   });
 
-  test(
-    'Continuar para desenhar agenda context.go após pop (pós-frame)',
-    () {
-      final popIdx = entrySheetSource.indexOf(
-        'Navigator.of(context, rootNavigator: false).pop()',
-      );
-      final postFrameIdx = entrySheetSource.indexOf(
-        'WidgetsBinding.instance.addPostFrameCallback',
-        popIdx,
-      );
-      final goIdx = entrySheetSource.indexOf('context.go(target)', postFrameIdx);
+  test('Continuar para desenhar agenda context.go após pop (pós-frame)', () {
+    final popIdx = entrySheetSource.indexOf(
+      'Navigator.of(context, rootNavigator: false).pop()',
+    );
+    final postFrameIdx = entrySheetSource.indexOf(
+      'WidgetsBinding.instance.addPostFrameCallback',
+      popIdx,
+    );
+    final goIdx = entrySheetSource.indexOf('context.go(target)', postFrameIdx);
 
-      expect(popIdx, greaterThanOrEqualTo(0));
-      expect(postFrameIdx, greaterThan(popIdx));
-      expect(goIdx, greaterThan(postFrameIdx));
-      expect(entrySheetSource, contains('modo=desenho'));
-    },
-  );
+    expect(popIdx, greaterThanOrEqualTo(0));
+    expect(postFrameIdx, greaterThan(popIdx));
+    expect(goIdx, greaterThan(postFrameIdx));
+    expect(entrySheetSource, contains('modo=desenho'));
+  });
 
   test(
     'Desenhar no Mapa agenda showFarmMapEntrySheet após pop (pós-frame)',
     () {
       final drawStart = talhaoModalSource.indexOf("title: 'Desenhar no Mapa'");
-      final drawEnd = talhaoModalSource.indexOf(
-        "title: 'Importar KML ou KMZ'",
-      );
+      final drawEnd = talhaoModalSource.indexOf("title: 'Importar KML ou KMZ'");
       final drawOption = talhaoModalSource.substring(drawStart, drawEnd);
 
       final popIdx = drawOption.indexOf('.pop()');
@@ -58,4 +53,25 @@ void main() {
       expect(drawOption, contains('FarmMapEntryMode.draw'));
     },
   );
+
+  test('fazenda já conhecida agenda context.go após pop (pós-frame)', () {
+    final drawStart = talhaoModalSource.indexOf("title: 'Desenhar no Mapa'");
+    final drawEnd = talhaoModalSource.indexOf("title: 'Importar KML ou KMZ'");
+    final drawOption = talhaoModalSource.substring(drawStart, drawEnd);
+    final importOption = talhaoModalSource.substring(drawEnd);
+
+    for (final option in [drawOption, importOption]) {
+      final popIdx = option.indexOf('.pop()');
+      final postFrameIdx = option.indexOf('addPostFrameCallback');
+      final goIdx = option.indexOf('context.go(');
+
+      expect(popIdx, greaterThanOrEqualTo(0));
+      expect(postFrameIdx, greaterThan(popIdx));
+      expect(goIdx, greaterThan(postFrameIdx));
+      expect(option, contains('if (farm != null)'));
+    }
+
+    expect(drawOption, contains('FarmMapEntryMode.draw'));
+    expect(importOption, contains('FarmMapEntryMode.import'));
+  });
 }
