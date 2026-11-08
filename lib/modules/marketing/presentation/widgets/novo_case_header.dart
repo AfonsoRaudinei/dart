@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
-import '../../../../core/ui/sheets/soloforte_sheet.dart';
 
 /// Header do NovoCaseSheet com título e coordenadas.
 class NovoCaseHeader extends StatelessWidget {
@@ -22,14 +20,10 @@ class NovoCaseHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
-    final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
-    final subtitleColor =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : const Color(0xFF8E8E93);
-    final iconColor =
-        isIos ? SoloForteSheetSkinIos.iconStroke : Colors.white;
+    final titleColor = v.titleColor;
+    final subtitleColor = v.subtitleColor;
+    final iconColor = v.iconStroke;
 
     return Row(
       children: [
