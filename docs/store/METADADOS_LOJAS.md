@@ -9,12 +9,13 @@ Documento de referência para App Store Connect e Google Play Console.
 | Campo | Valor |
 |-------|-------|
 | **Nome do app** | SoloForte |
-| **Bundle ID / Application ID** | `com.soloforte.app` |
-| **Versão** | 1.0.0 (build 1) |
+| **Bundle ID iOS** | `com.soloforte.soloforteApp` |
+| **Application ID Android** | `com.soloforte.app` |
+| **Versão** | 1.34.0 (build 311) |
 | **Idioma principal** | Português (Brasil) |
-| **Categoria Apple** | Produtividade |
+| **Categoria Apple** | Business (secundária: Productivity) |
 | **Categoria Google** | Negócios |
-| **Classificação etária** | 4+ / Livre (sem conteúdo restrito) |
+| **Classificação etária** | 4+ / Livre (questionário em `APP_STORE_CONNECT.md`) |
 
 ---
 
@@ -71,13 +72,7 @@ https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/suporte.html
 https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/
 ```
 
-## URL de exclusão de conta (Play, Data safety)
-
-```
-https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/exclusao-de-conta.html
-```
-
-Fonte HTML: `docs/legal/github-pages/`. Publicar na raiz do repositório que já serve a primeira URL. Instruções: `docs/legal/github-pages/PUBLICAR.md`.
+Publicar o HTML de `docs/legal/github-pages/` antes de colar essas URLs. Ficha da Apple: `docs/store/APP_STORE_CONNECT.md`.
 
 ---
 
@@ -92,7 +87,7 @@ Fonte HTML: `docs/legal/github-pages/`. Publicar na raiz do repositório que já
 | 5 | Configurações | Sync pendente, privacidade, conta |
 
 **Resoluções:**
-- iPhone 6.7": 1290 × 2796 px
+- iPhone obrigatório: 1179 × 2556 ou 1206 × 2622 (Dynamic Island, tela média)
 - Android phone: 1080 × 1920 px mínimo
 
 Capturar em dispositivo real ou emulador com dados de demonstração.
