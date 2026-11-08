@@ -38,7 +38,6 @@ import '../models/relatorio_status.dart';
 import '../models/relatorio_tecnico.dart';
 import '../providers/relatorio_combinado_providers.dart';
 import '../providers/relatorio_providers.dart' as tech;
-import '../use_cases/publish_relatorio_use_case.dart';
 import 'relatorios_occurrence_location_resolver.dart';
 import '../../../settings/domain/entities/user_profile.dart';
 import '../../../settings/presentation/providers/settings_providers.dart';
@@ -360,78 +359,6 @@ class _RelatorioCard extends ConsumerStatefulWidget {
 }
 
 class _RelatorioCardState extends ConsumerState<_RelatorioCard> {
-  HtmlReportViewerActions _visitViewerActions(ProviderContainer container) {
-    final relatorio = widget.relatorio;
-    final isDraft = relatorio.status == RelatorioStatus.pendente_revisao;
-    final repository = container.read(tech.relatorioRepositoryProvider);
-    return HtmlReportViewerActions(
-      onEdit: isDraft
-          ? (viewerContext) async {
-              Navigator.of(viewerContext).pop();
-              viewerContext.push(
-                '/consultoria/relatorios/${relatorio.id}/edit',
-              );
-            }
-          : null,
-      onPublish: isDraft
-          ? (viewerContext) async {
-              await container.read(publishRelatorioProvider(relatorio.id).future);
-              container.invalidate(_relatoriosTecnicosListProvider);
-              return true;
-            }
-          : null,
-      publishDialogTitle: 'Publicar relatório?',
-      publishDialogMessage: 'O produtor passa a ver este relatório.',
-      onDelete: (viewerContext) async {
-        await repository.softDelete(relatorio.id);
-        container.invalidate(_relatoriosTecnicosListProvider);
-        return true;
-      },
-      deleteDialogTitle: 'Excluir relatório?',
-      deleteDialogMessage: 'A exclusão é lógica e será sincronizada depois.',
-    );
-  }
-
-  Future<void> _openHtml(BuildContext context) async {
-    final relatorio = widget.relatorio;
-    final container = ProviderScope.containerOf(context, listen: false);
-    final bodyBuilder = ref.read(htmlReportViewerBodyBuilderProvider);
-    try {
-      final html = await buildRelatorioVisitHtml(ref, relatorio);
-      if (!context.mounted) return;
-      final whatsAppPhoneDigits =
-          await _clientPhoneDigitsForWhatsApp(ref, relatorio.clientId);
-      if (!context.mounted) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => HtmlReportViewer(
-            title: 'Relatório de Visita',
-            htmlContent: html,
-            fileBaseName: ConsultoriaReportExportData.reportFileBaseName(
-              relatorio,
-            ),
-            jsonData: ConsultoriaReportExportData.reportJson(relatorio),
-            csvData: ConsultoriaReportExportData.reportCsv(relatorio),
-            bodyBuilder: bodyBuilder,
-            whatsAppPhoneDigits: whatsAppPhoneDigits,
-            enableWhatsAppShareLink: true,
-            actions: _visitViewerActions(container),
-          ),
-        ),
-      );
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              userFacingError(e, action: 'Erro ao abrir relatório'),
-            ),
-          ),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final relatorio = widget.relatorio;
@@ -448,7 +375,9 @@ class _RelatorioCardState extends ConsumerState<_RelatorioCard> {
       date: widget.dateFormat.format(relatorio.createdAt.toLocal()),
       statusLabel: statusLabel,
       statusColor: statusColor,
-      onTapAsync: () => _openHtml(context),
+      onTapAsync: () async {
+        await context.push(AppRoutes.reportDetail(relatorio.id));
+      },
     );
   }
 

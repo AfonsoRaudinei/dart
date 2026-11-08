@@ -47,7 +47,7 @@ class _RelatorioFormScreenState extends ConsumerState<RelatorioFormScreen> {
 
       await ref.read(relatorioNotifierProvider.notifier).updateRelatorio(updated);
 
-      // Hub pós-edição: RelatorioDetailScreen (lista usa HtmlReportViewer no tap).
+      // Hub pós-edição: RelatorioDetailScreen (lista abre detalhe via push).
       if (mounted) {
         context.go('/consultoria/relatorios/${widget.relatorioId}');
       }
