@@ -446,19 +446,11 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   Widget _buildOccurrencePinRequiredPlaceholder() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isIos = soloForteSheetIsIos(context);
-        final titleColor = isIos
-            ? SoloForteSheetSkinIos.titleColor
-            : Colors.white;
-        final bodyColor = isIos
-            ? SoloForteSheetSkinIos.subtitleColor
-            : const Color(0xFF8E8E93);
-        final buttonFg = isIos
-            ? SoloForteSheetSkinIos.ghostText
-            : Colors.white70;
-        final buttonSide = isIos
-            ? SoloForteSheetSkinIos.ghostBorder
-            : Colors.white24;
+        final v = SoloForteSheetVisuals.of(context);
+        final titleColor = v.titleColor;
+        final bodyColor = v.subtitleColor;
+        final buttonFg = v.ghostText;
+        final buttonSide = v.ghostBorder;
 
         return SingleChildScrollView(
           controller: _scrollController,
