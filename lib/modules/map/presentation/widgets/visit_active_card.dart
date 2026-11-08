@@ -393,17 +393,13 @@ class _SelectionSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
-    final bg = isIos ? SoloForteSheetSkinIos.background : Colors.white;
-    final handle = isIos
-        ? SoloForteSheetSkinIos.handleColor
-        : const Color(0xFFC5C5C7);
-    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final bg = v.sheetBackground;
+    final handle = v.handleColor;
+    final titleColor = v.titleColor;
     final accent = isIos
         ? SoloForteSheetSkinIos.iconStroke
         : context.themeAccent;
-    final divider = isIos
-        ? SoloForteSheetSkinIos.rowDivider
-        : Colors.black.withValues(alpha: 0.07);
+    final divider = v.dividerColor;
     final radius = isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
 
     return Container(
@@ -463,11 +459,7 @@ class _SelectionSheet extends StatelessWidget {
                       fontWeight: isSelected
                           ? FontWeight.w600
                           : FontWeight.w400,
-                      color: isSelected
-                          ? accent
-                          : (isIos
-                                ? SoloForteSheetSkinIos.titleColor
-                                : context.premiumTextPrimary),
+                      color: isSelected ? accent : v.titleColor,
                       letterSpacing: -0.3,
                     ),
                   ),
