@@ -71,6 +71,11 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
     _motivoFechamentoController.text = existing.motivoFechamento ?? '';
   }
 
+  void _fecharDialog([bool? result]) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    Navigator.of(context).pop(result);
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -242,7 +247,7 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
       ref.invalidate(oportunidadesCarteiraOverviewProvider);
 
       if (mounted) {
-        Navigator.of(context).pop(true);
+        _fecharDialog(true);
       }
     } catch (e) {
       if (mounted) {
@@ -592,7 +597,7 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _salvando ? null : () => Navigator.of(context).pop(false),
+          onPressed: _salvando ? null : () => _fecharDialog(false),
           child: const Text('Cancelar'),
         ),
         FilledButton(
