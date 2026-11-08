@@ -26,22 +26,13 @@ class MarketingClientSelector extends ConsumerWidget {
     final clientsAsync = ref.watch(_marketingClientsAtivosProvider);
     final isIos = soloForteSheetIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
-    final surface = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : const Color(0xFF2C2C2E);
-    final border = isIos
-        ? SoloForteSheetSkinIos.cardBorder
-        : const Color(0xFF3A3A3C);
-    final muted = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : const Color(0xFF8E8E93);
-    final title =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
-    final iconColor =
-        isIos ? SoloForteSheetSkinIos.iconStroke : Colors.white70;
+    final surface = v.cardBackground;
+    final border = v.cardBorder;
+    final muted = v.subtitleColor;
+    final title = v.titleColor;
+    final iconColor = v.iconStroke;
     final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
-    final dropdownBg =
-        isIos ? SoloForteSheetSkinIos.background : const Color(0xFF2C2C2E);
+    final dropdownBg = isIos ? v.sheetBackground : v.cardBackground;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
