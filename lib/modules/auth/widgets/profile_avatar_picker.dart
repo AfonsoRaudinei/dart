@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 class ProfileAvatarPicker extends StatefulWidget {
@@ -53,7 +52,6 @@ class _ProfileAvatarPickerState extends State<ProfileAvatarPicker> {
       context: context,
       showDragHandle: false,
       builder: (BuildContext bc) {
-        final isIos = soloForteSheetIsIos(bc);
         final iconColor =
             v.isIos ? v.iconStroke : null;
         final titleColor =

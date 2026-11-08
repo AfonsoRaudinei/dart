@@ -8,7 +8,6 @@ import '../../../core/contracts/marketing_case_report_snapshot.dart';
 import '../../../core/html_templates/html_report_viewer.dart';
 import '../../../core/html_templates/report_export_service.dart';
 import '../../../core/router/app_routes.dart';
-import '../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../core/utils/share_position.dart';
 import '../../../core/utils/user_facing_error.dart';
 import '../../settings/domain/entities/user_profile.dart';
@@ -147,7 +146,6 @@ Future<void> openMarketingCaseReportHtml(
   bool closeParentSheetOnAction = false,
   BuildContext? parentSheetContext,
 }) async {
-    final v = SoloForteSheetVisuals.of(context);
   final container = ProviderScope.containerOf(context, listen: false);
   final bodyBuilder = ref.read(htmlReportViewerBodyBuilderProvider);
   try {
@@ -191,7 +189,6 @@ Future<void> exportMarketingCaseReportHtml(
   WidgetRef ref,
   MarketingCase marketingCase,
 ) async {
-    final v = SoloForteSheetVisuals.of(context);
   try {
     final shareOrigin = resolveSharePositionOrigin(context);
     final bundle = await _buildBundle(ref, marketingCase);

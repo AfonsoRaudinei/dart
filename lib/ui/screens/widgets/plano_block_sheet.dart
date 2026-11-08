@@ -22,7 +22,6 @@ class PlanoBlockSheet extends StatelessWidget {
     String? planoLabel,
     int? limite,
   }) {
-    final v = SoloForteSheetVisuals.of(context);
     HapticFeedback.heavyImpact();
     showSoloForteSheet(
       context: context,

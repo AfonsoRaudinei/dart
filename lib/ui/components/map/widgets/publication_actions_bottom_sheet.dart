@@ -3,7 +3,6 @@ import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/design/sf_icons.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../theme/premium/design_tokens.dart';
 import '../../premium/premium_glass_panel.dart';
@@ -32,7 +31,6 @@ class PublicationActionsBottomSheet extends StatelessWidget {
     required VoidCallback onAreaVisitada,
     required VoidCallback onOcorrencia,
   }) {
-    final v = SoloForteSheetVisuals.of(context);
     return showSoloForteSheet<void>(
       context: context,
       isScrollControlled: false,
@@ -51,7 +49,6 @@ class PublicationActionsBottomSheet extends StatelessWidget {
   }
 
   void _select(BuildContext context, VoidCallback action) {
-    final v = SoloForteSheetVisuals.of(context);
     HapticFeedback.lightImpact();
     Navigator.of(context).pop();
     action();

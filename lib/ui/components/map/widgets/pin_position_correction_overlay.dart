@@ -6,8 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/design/sf_icons.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
-import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../screens/map/providers/pin_position_correction_provider.dart';
 import '../../../theme/premium/design_tokens.dart';
 

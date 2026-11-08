@@ -181,7 +181,6 @@ class ClientSheetInlineBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     final visuals = ClientSheetVisuals.of(context);
 
     return Container(
@@ -219,7 +218,6 @@ class ClientSheetActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     final visuals = ClientSheetVisuals.of(context);
 
     return DecoratedBox(
@@ -336,7 +334,6 @@ class ClientSheetSectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     final visuals = ClientSheetVisuals.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),

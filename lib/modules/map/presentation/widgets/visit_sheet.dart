@@ -132,7 +132,6 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     return SoloForteSheetSkinScope(
       variant: _visitSheetVariant(context),
       child: Builder(builder: _buildSheet),
@@ -695,7 +694,6 @@ class _TalhaoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     final radius = visuals.cardRadius;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),

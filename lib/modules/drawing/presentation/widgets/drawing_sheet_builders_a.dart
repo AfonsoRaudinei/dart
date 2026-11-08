@@ -131,7 +131,6 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
   }
 
   Future<void> _syncPendingFeatures(BuildContext context) async {
-    final v = SoloForteSheetVisuals.of(context);
     final result = await widget.controller.syncFeatures();
     if (!context.mounted || result == null || result.conflicts.isEmpty) {
       return;
@@ -230,7 +229,6 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
   }
 
   Widget _buildUnionMode(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     return _buildBooleanOpMode(
       context,
       "Unir Áreas",
@@ -240,7 +238,6 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
   }
 
   Widget _buildDifferenceMode(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     return _buildBooleanOpMode(
       context,
       "Subtrair Área",
@@ -250,7 +247,6 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
   }
 
   Widget _buildIntersectionMode(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     return _buildBooleanOpMode(
       context,
       "Interseção",

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
-import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
@@ -85,7 +83,6 @@ class PlanoMarketingSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
         final v = SoloForteSheetVisuals.of(context);
-    final isIos = v.isIos;
     final inactiveBorder = v.cardBorder;
 
     final colors = {

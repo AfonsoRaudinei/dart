@@ -129,7 +129,6 @@ class OccurrenceDetailSheet extends ConsumerWidget {
   }
 
   void _goToMapPin(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     final coords = occurrence.getCoordinates();
     if (coords == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -207,7 +206,6 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     WidgetRef ref,
     Occurrence live,
   ) async {
-    final v = SoloForteSheetVisuals.of(context);
     final coords = live.getCoordinates();
     if (coords == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -258,7 +256,6 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     WidgetRef ref,
     Occurrence live,
   ) async {
-    final v = SoloForteSheetVisuals.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(

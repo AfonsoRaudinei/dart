@@ -3,7 +3,6 @@ import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../domain/entities/marketing_case.dart';
 

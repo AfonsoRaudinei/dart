@@ -14,7 +14,6 @@ import '../../../../core/contracts/i_active_visit_context_lookup_provider.dart';
 import '../../../../core/contracts/i_producer_property_gateway_provider.dart';
 import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/session/user_role.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../modules/marketing/domain/entities/marketing_case.dart';

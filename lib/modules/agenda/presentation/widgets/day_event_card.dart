@@ -4,7 +4,6 @@ import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/enums/event_status.dart';
@@ -31,7 +30,6 @@ class DayEventCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final v = SoloForteSheetVisuals.of(context);
     final theme = Theme.of(context);
 
     final card = Card(

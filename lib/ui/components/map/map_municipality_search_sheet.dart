@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../core/ui/sheets/sheet_keyboard_inset.dart';
-import '../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../core/ui/sheets/widgets/sheet_input_field.dart';
 import '../../../core/services/geocoding/city_geocoder.dart';

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
-import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 class TipoProdutoFormResult {
   const TipoProdutoFormResult({
