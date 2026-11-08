@@ -218,10 +218,10 @@ else
     fi
   done
 
-  if rg -q "NSLocationAlwaysAndWhenInUseUsageDescription" "$INFO_PLIST"; then
-    fail "Info.plist declara NSLocationAlwaysAndWhenInUseUsageDescription"
+  if sf_plutil_has_key "$INFO_PLIST" NSLocationAlwaysAndWhenInUseUsageDescription; then
+    pass "Usage description: NSLocationAlwaysAndWhenInUseUsageDescription"
   else
-    pass "NSLocationAlwaysAndWhenInUseUsageDescription ausente"
+    fail "NSLocationAlwaysAndWhenInUseUsageDescription ausente (ASC 90683)"
   fi
 fi
 
