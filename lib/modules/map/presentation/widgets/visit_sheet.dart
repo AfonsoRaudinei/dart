@@ -6,6 +6,7 @@ import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/contracts/i_visit_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_visit_client_lookup_provider.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 
 final _visitClientsProvider =
     FutureProvider.autoDispose<List<VisitClientSummary>>(
@@ -66,12 +67,6 @@ class VisitSheet extends ConsumerStatefulWidget {
 }
 
 class _VisitSheetState extends ConsumerState<VisitSheet> {
-  static const _sheetBgDark = Color(0xFF1C1C1E);
-  static const _surfaceDark = Color(0xFF2C2C2E);
-  static const _borderDark = Color(0xFF3A3A3C);
-  static const _accentGreen = Color(0xFF4CAF50);
-  static const _buttonActiveDark = Color(0xFF2E7D32);
-
   VisitClientSummary? _selectedClient;
   VisitFarmSummary? _selectedFarm;
   VisitFieldSummary? _selectedTalhao;
@@ -98,16 +93,12 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     final isConfirmEnabled = _selectedClient != null;
     final isNavigateEnabled = _selectedClient != null;
     final isIos = _visitSheetIsIosBlue(context);
-    final sheetBg =
-        isIos ? SoloForteSheetSkinIos.background : _sheetBgDark;
-    final handleColor =
-        isIos ? SoloForteSheetSkinIos.handleColor : Colors.white24;
-    final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
-    final ctaBg =
-        isIos ? SoloForteSheetSkinIos.ctaBackground : _buttonActiveDark;
-    final ctaDisabled =
-        isIos ? SoloForteSheetSkinIos.cardBackground : _surfaceDark;
+    final v = SoloForteSheetVisuals.of(context);
+    final sheetBg = v.sheetBackground;
+    final handleColor = v.handleColor;
+    final titleColor = v.titleColor;
+    final ctaBg = v.ctaBackground;
+    final ctaDisabled = v.cardBackground;
     final ctaRadius =
         isIos ? SoloForteSheetSkinIos.ctaRadius : 14.0;
 
@@ -278,31 +269,21 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(
                         color: isNavigateEnabled
-                            ? (isIos
-                                ? SoloForteSheetSkinIos.iconStroke
-                                : _accentGreen)
-                            : (isIos
-                                ? SoloForteSheetSkinIos.cardBorder
-                                : _borderDark),
+                            ? v.iconStroke
+                            : v.cardBorder,
                         width: 1.5,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(ctaRadius),
                       ),
-                      foregroundColor: isIos
-                          ? SoloForteSheetSkinIos.titleColor
-                          : Colors.white,
+                      foregroundColor: v.titleColor,
                     ),
                     child: Text(
                       'IR ATÉ A ÁREA OU FAZENDA',
                       style: TextStyle(
                         color: isNavigateEnabled
-                            ? (isIos
-                                ? SoloForteSheetSkinIos.titleColor
-                                : Colors.white)
-                            : (isIos
-                                ? SoloForteSheetSkinIos.subtitleColor
-                                : Colors.white24),
+                            ? v.titleColor
+                            : v.subtitleColor,
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
                         letterSpacing: 0.8,
@@ -337,10 +318,8 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                       'CONFIRMAR CHEGADA',
                       style: TextStyle(
                         color: isConfirmEnabled
-                            ? Colors.white
-                            : (isIos
-                                ? SoloForteSheetSkinIos.subtitleColor
-                                : Colors.white24),
+                            ? v.ctaText
+                            : v.subtitleColor,
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
                         letterSpacing: 1.2,
@@ -367,17 +346,14 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     bool isLoading = false,
     String emptyMessage = 'Vazio',
   }) {
-    final surface = isIos ? SoloForteSheetSkinIos.cardBackground : _surfaceDark;
-    final border = isIos ? SoloForteSheetSkinIos.cardBorder : _borderDark;
-    final focus = isIos ? SoloForteSheetSkinIos.iconStroke : _accentGreen;
-    final textColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
-    final muted =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white38;
-    final labelColor =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white54;
-    final iconColor =
-        isIos ? SoloForteSheetSkinIos.arrowColor : Colors.white54;
+    final v = SoloForteSheetVisuals.of(context);
+    final surface = v.cardBackground;
+    final border = v.cardBorder;
+    final focus = v.focusBorder;
+    final textColor = v.titleColor;
+    final muted = v.subtitleColor;
+    final labelColor = v.subtitleColor;
+    final iconColor = v.isIos ? v.arrowColor : v.subtitleColor;
     final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
 
     final baseField = SizedBox(
