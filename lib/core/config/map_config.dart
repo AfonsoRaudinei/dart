@@ -4,6 +4,8 @@
 /// com foco em design limpo estilo iOS/Apple Maps.
 library;
 
+import 'package:flutter_map/flutter_map.dart';
+
 import '../domain/map_models.dart';
 
 class MapLayerTileConfig {
@@ -391,3 +393,18 @@ extension MapStyleExtension on MapStyle {
     }
   }
 }
+
+// ── Gestos flutter_map (mapa privado vs público) ─────────────────────────────
+
+/// Mapa privado em modo explorar: pan, zoom, pinch e rotação com dois dedos.
+const int kPrivateMapExploreInteractionFlags = InteractiveFlag.all;
+
+/// Mapa público: norte fixo — rotação desabilitada.
+const int kPublicMapNorthUpInteractionFlags =
+    InteractiveFlag.all & ~InteractiveFlag.rotate;
+
+/// Desenho freehand / correção de pin: sem arrastar o mapa nem rotacionar.
+const int kPrivateMapDrawingLockedInteractionFlags =
+  InteractiveFlag.all &
+  ~InteractiveFlag.rotate &
+  ~InteractiveFlag.drag;
