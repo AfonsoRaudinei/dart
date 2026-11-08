@@ -4,6 +4,16 @@ Checklist operacional para publicar SoloForte v1.0.0.
 
 ---
 
+## Compra de planos (IAP)
+
+Se esta versão inclui venda de plano no app, seguir **antes** de submeter:
+
+**[`docs/store/PUBLICACAO_COMPRA_LOJAS.md`](PUBLICACAO_COMPRA_LOJAS.md)** — Supabase, produtos nas lojas, sandbox, ordem iOS → Android.
+
+Produtos e textos: [`PRODUTOS_IAP_LOJAS.md`](PRODUTOS_IAP_LOJAS.md).
+
+---
+
 ## Pré-requisitos
 
 - [ ] Fases 1 e 2 concluídas e testadas
