@@ -32,16 +32,10 @@ class ConclusaoBlocoWidget extends StatelessWidget {
         : _blueConc.withValues(alpha: 0.35);
     final headerBg =
         isIos ? SoloForteSheetSkinIos.ctaBackground : _blueConc;
-    final headerFg =
-        isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
-    final headerFgMuted = isIos
-        ? SoloForteSheetSkinIos.ctaText.withValues(alpha: 0.7)
-        : Colors.white70;
-    final fill = isIos
-        ? SoloForteSheetSkinIos.background
-        : Colors.white;
-    final textColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final headerFg = v.ctaText;
+    final headerFgMuted = v.ctaText.withValues(alpha: 0.7);
+    final fill = isIos ? v.sheetBackground : v.inputFill;
+    final textColor = v.inputText;
     final hintColor = isIos
         ? SoloForteSheetSkinIos.subtitleColor
         : _blueConc.withValues(alpha: 0.5);
