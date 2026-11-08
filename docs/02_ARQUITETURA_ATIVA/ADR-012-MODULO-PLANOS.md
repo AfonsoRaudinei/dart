@@ -128,7 +128,6 @@ enum ReferralStatus { pendente, validada, expirada }
 ```dart
 abstract class IPlanoRepository {
   Future<UserPlan?> getPlanoAtivo(String userId);
-  Future<UserPlan> ativarPlano(UserPlan plano);
   Future<List<Referral>> getReferrals(String referrerId);
   Stream<UserPlan?> watchPlanoAtivo(String userId);  // Supabase Realtime
 }
