@@ -202,16 +202,16 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
 
         // 2. Basemap + botão de localização (canto superior direito)
         Positioned(
-          top: safeTop + 12, // Respeita safe area (Dynamic Island / notch)
-          right: 12,
+          top: safeTop + kMapTopControlsTopInset,
+          right: kMapTopControlsRightInset,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (widget.drawingState != DrawingState.editing) ...[
                 _BasemapToggleButton(activeColor: activeColor),
-                const SizedBox(width: 6),
+                const SizedBox(width: kMapTopControlsButtonSpacing),
                 _PinsToggleButton(activeColor: activeColor),
-                const SizedBox(width: 6),
+                const SizedBox(width: kMapTopControlsButtonSpacing),
               ],
               // Botão de Localização com 3 estados
               _LocationButton(
@@ -634,7 +634,7 @@ class _BasemapToggleButtonState extends ConsumerState<_BasemapToggleButton> {
       mainAxisSize: MainAxisSize.min,
       children: [
         _MapButtonLabel(text: _labelText, isVisible: _showLabel),
-        const SizedBox(width: 6),
+        const SizedBox(width: kMapTopControlsToggleLabelButtonGap),
         Semantics(
           button: true,
           label: semanticsLabel,
@@ -701,7 +701,7 @@ class _PinsToggleButtonState extends ConsumerState<_PinsToggleButton> {
       mainAxisSize: MainAxisSize.min,
       children: [
         _MapButtonLabel(text: _labelText, isVisible: _showLabel),
-        const SizedBox(width: 6),
+        const SizedBox(width: kMapTopControlsToggleLabelButtonGap),
         Semantics(
           button: true,
           label: 'Pinos no mapa',
