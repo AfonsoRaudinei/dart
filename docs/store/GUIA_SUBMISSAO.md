@@ -35,15 +35,17 @@ flutter build ipa \
 
 ## 2. Google Play Console
 
-1. Criar app → Nome: **SoloForte**
-2. Upload AAB (Production ou Internal testing primeiro)
-3. **App content → Data safety** — usar `docs/store/DATA_SAFETY_GOOGLE_PLAY.md`
-4. **App content → Privacy policy** — URL HTTPS
-5. **Store listing** — usar `docs/store/METADADOS_LOJAS.md`
-6. Screenshots (mín. 4) — ver METADADOS_LOJAS
-7. **App access** — credenciais demo (`docs/store/CONTA_DEMO_REVIEW.md`)
-8. Content rating questionnaire → provável **Livre**
-9. Enviar para revisão
+Seguir `docs/store/PLAY_CONSOLE.md`.
+
+1. App `com.soloforte.app`
+2. AAB assinado, target SDK 36, conferido em 16 KB
+3. Data safety — `docs/store/DATA_SAFETY_GOOGLE_PLAY.md`
+4. Política de privacidade e link de exclusão das páginas publicadas
+5. Ícone 512, feature graphic 1024×500 e pelo menos 2 screenshots
+6. App access — `docs/store/CONTA_DEMO_REVIEW.md`
+7. Classificação Livre, público 18+, sem anúncio e sem recurso financeiro
+8. Declarar alarmes exatos da agenda
+9. Teste fechado de 12 pessoas por 14 dias, se a conta for pessoal criada após 13/11/2023
 
 ---
 
