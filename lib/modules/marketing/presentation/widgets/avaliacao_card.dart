@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
@@ -89,9 +90,10 @@ class _AvaliacaoCardState extends State<AvaliacaoCard> {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final avaliacao = widget.avaliacao;
     final media = _formatSigned(avaliacao.mediaGanhoPercent);
-    final isIos = soloForteSheetIsIos(context);
+    final isIos = v.isIos;
     final accent = novoCaseAccentColor(context);
 
     return Container(
@@ -175,7 +177,7 @@ class _AvaliacaoCardState extends State<AvaliacaoCard> {
             Divider(
               height: 1,
               color: isIos
-                  ? SoloForteSheetSkinIos.rowDivider
+                  ? v.rowDivider
                   : PremiumTokens.hairlineLight,
             ),
             Padding(
@@ -409,16 +411,17 @@ class _CulturaDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final fillColor = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
+        ? v.cardBackground
+        : v.inputFill;
     final hintColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
+        ? v.subtitleColor
+        : v.inputHint;
     final textColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.inputText;
+        ? v.titleColor
+        : v.inputText;
 
     return DropdownButtonFormField<String>(
       initialValue: value != null && culturas.contains(value) ? value : null,

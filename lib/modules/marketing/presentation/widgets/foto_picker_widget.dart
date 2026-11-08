@@ -132,13 +132,13 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final hasPhoto = widget.url != null && widget.url!.isNotEmpty;
     final isEmpty = !hasPhoto && widget.required;
     final bg = v.cardBackground;
     final border = v.cardBorder;
-    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 14.0;
+    final radius = v.cardRadius;
 
     return GestureDetector(
       onTap: hasPhoto ? null : _pick,
@@ -170,6 +170,7 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
   }
 
   Widget _buildLoading(bool isIos) {
+    final v = SoloForteSheetVisuals.of(context);
     final muted = SoloForteSheetVisuals.of(context).subtitleColor;
     return Center(
       child: Column(
@@ -180,7 +181,7 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
             height: 32,
             child: CircularProgressIndicator(
               strokeWidth: 2.5,
-              color: isIos ? SoloForteSheetSkinIos.iconStroke : null,
+              color: v.isIos ? v.iconStroke : null,
             ),
           ),
           const SizedBox(height: 8),

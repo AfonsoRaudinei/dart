@@ -17,13 +17,13 @@ class NovoCasePublicarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final bg =
-        isIos ? SoloForteSheetSkinIos.ctaBackground : context.themeAccent;
+        isIos ? v.ctaBackground : context.themeAccent;
     final fg = v.ctaText;
     final radius =
-        isIos ? SoloForteSheetSkinIos.ctaRadius : 14.0;
+        v.ctaRadius;
 
     return ElevatedButton.icon(
       onPressed: isLoading ? null : onPressed,

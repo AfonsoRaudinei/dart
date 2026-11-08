@@ -28,9 +28,10 @@ class _AvaliacaoLivreReadOnlyCardState
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final avaliacao = widget.avaliacao;
     final accent = widget.isIos
-        ? SoloForteSheetSkinIos.iconStroke
+        ? v.iconStroke
         : context.themeAccent;
 
     return Container(

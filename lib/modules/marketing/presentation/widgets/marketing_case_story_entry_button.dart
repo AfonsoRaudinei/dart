@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
@@ -19,6 +20,7 @@ class MarketingCaseStoryEntryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return ElevatedButton.icon(
       onPressed: () {
         HapticFeedback.lightImpact();
@@ -31,12 +33,12 @@ class MarketingCaseStoryEntryButton extends StatelessWidget {
       label: const Text('Ver Story / Compartilhar'),
       style: isIos
           ? ElevatedButton.styleFrom(
-              backgroundColor: SoloForteSheetSkinIos.ctaBackground,
-              foregroundColor: SoloForteSheetSkinIos.ctaText,
+              backgroundColor: v.ctaBackground,
+              foregroundColor: v.ctaText,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(
-                  SoloForteSheetSkinIos.ctaRadius,
+                  v.ctaRadius,
                 ),
               ),
               textStyle: const TextStyle(

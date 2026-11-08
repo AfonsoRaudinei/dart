@@ -19,12 +19,12 @@ class CaseTipoSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final selectedBg =
-        isIos ? SoloForteSheetSkinIos.ctaBackground : context.themeAccent;
+        isIos ? v.ctaBackground : context.themeAccent;
     final selectedBorder =
-        isIos ? SoloForteSheetSkinIos.ctaBackground : context.themeAccent;
+        isIos ? v.ctaBackground : context.themeAccent;
     final inactiveBorder = v.cardBorder;
     final selectedFg = v.ctaText;
     final inactiveFg = v.subtitleColor;
@@ -50,7 +50,7 @@ class CaseTipoSelector extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected ? selectedBg : Colors.transparent,
                 borderRadius: BorderRadius.circular(
-                  isIos ? SoloForteSheetSkinIos.ctaRadius : 12,
+                  v.ctaRadius,
                 ),
                 border: Border.all(
                   color: isSelected ? selectedBorder : inactiveBorder,
@@ -84,8 +84,8 @@ class PlanoMarketingSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final inactiveBorder = v.cardBorder;
 
     final colors = {
@@ -112,7 +112,7 @@ class PlanoMarketingSelector extends StatelessWidget {
                     ? color.withValues(alpha: 0.15)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(
-                  isIos ? SoloForteSheetSkinIos.ctaRadius : 12,
+                  v.ctaRadius,
                 ),
                 border: Border.all(
                   color: isSelected ? color : inactiveBorder,
