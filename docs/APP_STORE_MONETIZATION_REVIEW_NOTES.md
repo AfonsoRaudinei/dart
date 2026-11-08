@@ -1,52 +1,36 @@
-# Monetizacao iOS — App Review
+# Monetização — App Store e Play Store
 
-Data: 2026-06-07
-Escopo: Fase 3 de publicacao iOS App Store.
+Data: 2026-11-08
+Escopo: decisão de pagamento nativo nas lojas (ADR-012, Adendo 2).
 
-## Decisao para este release
+## Decisão
 
-O build iOS nao inicia compra de plano digital por Mercado Pago, nao exibe preco
-de plano no iOS e nao apresenta CTA/link para checkout externo.
+O binário iOS e o binário Android não iniciam compra de plano digital por Mercado Pago, não exibem preço de plano e não apresentam chamada à ação nem link para checkout externo.
 
-Motivo: planos digitais que liberam funcionalidade dentro do app entram no risco
-da App Review Guideline 3.1.1 quando comprados por mecanismo externo dentro do
-app. Para este release, o fluxo Mercado Pago permanece apenas para canais nao
-iOS. No iOS, o app mostra somente o status do plano ja existente na conta.
+O meio de pagamento aprovado para o app é o da própria loja: StoreKit no iOS e Play Billing no Android. A taxa é a da loja. O app não escolhe PIX nem cartão.
 
-## Comportamento esperado no iOS
+Essa compra ainda não está no binário. Não há produtos de plano cadastrados nas consoles e não há validação de recibo. Até essa entrega, o app só mostra o status do plano já existente na conta.
 
-- `/planos`: mostra status do plano e retorno ao mapa.
-- `/planos/pagamento`: tela de bloqueio funcional, sem metodo de pagamento.
-- `/planos/confirmacao`: tela de bloqueio funcional, sem abertura de checkout.
-- `MercadoPagoService`: aborta chamadas em iOS antes de invocar Edge Function.
+## Comportamento neste release
 
-## Comportamento mantido fora do iOS
+- `/planos`: status do plano e retorno ao mapa. Sem preço e sem botão de assinar.
+- `/planos/pagamento`: tela de bloqueio, sem método de pagamento.
+- `/planos/confirmacao`: tela de bloqueio, sem abertura de checkout.
+- `MercadoPagoService`: aborta no iOS e no Android antes de invocar a Edge Function.
 
-- Cards de planos com preco continuam disponiveis.
-- Tela de pagamento continua criando preferencia Mercado Pago via Supabase.
-- Confirmacao continua abrindo checkout externo e aguardando webhook.
-- Edge Functions `mercadopago-*` permanecem ativas para canais nao iOS.
+## O que permanece no repositório
 
-## App Store Connect
+As Edge Functions `mercadopago-*` continuam no código e não são o funil de compra do app. Nenhuma tela as chama.
 
-Modelo deste release:
+## Quando a compra na loja entrar
 
-- App iOS sem In-App Purchases configuradas.
-- Nao cadastrar preco de plano digital como IAP enquanto StoreKit nao for
-  implementado.
-- Preco do app: conforme estrategia comercial do app na loja, sem prometer
-  desbloqueio de plano por checkout externo no app.
+1. Cadastrar três produtos de prazo fixo, sem renovação automática, com os mesmos IDs nas duas lojas: `soloforte_plano_bronze` (3 meses), `soloforte_plano_prata` (5 meses), `soloforte_plano_ouro` (8 meses). Na Apple, assinatura não renovável. Na Google, produto único consumível.
+2. O preço em BRL é o cadastrado na loja. Referência atual do catálogo: R$ 49,90, R$ 79,90 e R$ 119,90.
+3. Validar o recibo no servidor e só então gravar `user_plans`. O cliente não concede plano.
+4. Aí as telas passam a mostrar o preço devolvido pela loja e a compra nativa.
 
-Se a compra de plano digital precisar ocorrer dentro do iOS no futuro:
-
-1. Implementar StoreKit / In-App Purchase.
-2. Cadastrar produtos ou assinaturas no App Store Connect.
-3. Migrar validacao de recibo e concessao de plano.
-4. Remover dependencia de Mercado Pago do fluxo iOS.
+Sem os produtos e sem os segredos de verificação, o botão de compra não entra no binário.
 
 ## Nota sugerida ao revisor
 
-O aplicativo iOS nao oferece compra de planos digitais por checkout externo. O
-modulo de planos no iOS exibe apenas o status do plano associado a conta do
-usuario. Fluxos Mercado Pago existentes no codigo sao destinados a canais nao
-iOS e ficam bloqueados no runtime iOS.
+O aplicativo não oferece compra de planos digitais por checkout externo. O módulo de planos exibe apenas o status do plano associado à conta. A compra dentro do app, quando for publicada, usará o faturamento da própria loja.
