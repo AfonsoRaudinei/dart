@@ -63,6 +63,20 @@ void main() {
       );
     });
 
+    test('skin Azul: handle e borda superior neutros (não azuis)', () {
+      expect(SoloForteSheetSkinIos.handleColor, const Color(0xFFC7C7CC));
+      expect(SoloForteSheetSkinIos.handleSize, const Size(36, 4));
+      expect(SoloForteSheetSkinIos.sheetBorder, const Color(0xFFE5E5EA));
+      expect(
+        SoloForteSheetSkinIos.handleColor,
+        SoloForteSheetSkinLight.handleColor,
+      );
+      expect(
+        SoloForteSheetSkinIos.handleSize,
+        SoloForteSheetSkinLight.handleSize,
+      );
+    });
+
     test('soloforte_sheet.dart expõe resolveSoloForteSheetBackgroundColor', () {
       final source = File(
         'lib/core/ui/sheets/soloforte_sheet.dart',
