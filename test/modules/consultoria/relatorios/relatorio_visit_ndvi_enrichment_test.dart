@@ -29,10 +29,13 @@ const _talhoes = [
   TalhaoVisitado(talhaoId: 't3', nomeTalhao: 'Talhão 3'),
 ];
 
-void _expectNoNdvi(List<Map<String, dynamic>> result) {
-  expect(result, hasLength(_talhoes.length));
-  for (var i = 0; i < _talhoes.length; i++) {
-    expect(result[i]['talhaoId'], _talhoes[i].talhaoId);
+void _expectNoNdvi(
+  List<Map<String, dynamic>> result, [
+  List<TalhaoVisitado> talhoes = _talhoes,
+]) {
+  expect(result, hasLength(talhoes.length));
+  for (var i = 0; i < talhoes.length; i++) {
+    expect(result[i]['talhaoId'], talhoes[i].talhaoId);
     expect(result[i].containsKey('ndviImageSrc'), isFalse);
     expect(result[i].containsKey('ndviCaption'), isFalse);
   }
@@ -42,19 +45,24 @@ void main() {
   group('enrichTalhoesWithNdviLookup', () {
     test('lookup que nunca completa respeita o teto global', () async {
       final lookup = _NeverCompletingLookup();
+      final talhoes = [
+        for (var i = 1; i <= 6; i++)
+          TalhaoVisitado(talhaoId: 't$i', nomeTalhao: 'Talhão $i'),
+      ];
       final stopwatch = Stopwatch()..start();
 
       final result = await enrichTalhoesWithNdviLookup(
         lookup,
-        _talhoes,
+        talhoes,
         perFieldTimeout: const Duration(milliseconds: 80),
         totalBudget: const Duration(milliseconds: 120),
       );
 
       stopwatch.stop();
       expect(stopwatch.elapsed, lessThan(const Duration(seconds: 2)));
-      expect(lookup.calls, lessThan(_talhoes.length));
-      _expectNoNdvi(result);
+      // 2 chamadas esperadas; +1 se o Timer do 2º disparar sub-ms antes do Stopwatch fechar o orçamento.
+      expect(lookup.calls, lessThanOrEqualTo(3));
+      _expectNoNdvi(result, talhoes);
     });
 
     test('lookup que lança segue sem imagem', () async {
