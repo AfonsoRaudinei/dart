@@ -92,9 +92,12 @@ class MarketingCaseSheet extends ConsumerWidget {
     );
   }
 
-  /// Host usa [preserveMaterialDefaults]; Scope força isIos=false — detectar Azul via themeId.
-  bool _isIosBlue(BuildContext context) =>
-      Theme.of(context).extension<SoloForteThemeExtension>()?.themeId == 'blue';
+  /// Host usa [preserveMaterialDefaults] (Scope forçado em light) — a variante
+  /// real vem de themeId e é re-propagada para o conteúdo.
+  SoloForteSheetVariant _themeVariant(BuildContext context) =>
+      soloForteSheetVariantFromThemeId(
+        Theme.of(context).extension<SoloForteThemeExtension>()?.themeId,
+      );
 
   Color get _planoColor {
     switch (marketingCase.visibilidade) {
@@ -135,6 +138,13 @@ class MarketingCaseSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    return SoloForteSheetSkinScope(
+      variant: _themeVariant(context),
+      child: Builder(builder: (context) => _buildSheet(context, ref)),
+    );
+  }
+
+  Widget _buildSheet(BuildContext context, WidgetRef ref) {
     final v = SoloForteSheetVisuals.of(context);
     final isIos = v.isIos;
     final sheetBg = v.sheetBackground;
@@ -302,7 +312,7 @@ class MarketingCaseSheet extends ConsumerWidget {
 
                     // ── Foto principal ─────────────────────────
                     if (marketingCase.fotoPrincipalUrl != null)
-                      _buildFoto(marketingCase.fotoPrincipalUrl!, isIos),
+                      _buildFoto(marketingCase.fotoPrincipalUrl!, v),
 
                     // ── Métricas destaque ──────────────────────
                     _buildMetricasRow(context, isIos: isIos),
@@ -465,13 +475,9 @@ class MarketingCaseSheet extends ConsumerWidget {
 
   // ── Builders de seção ────────────────────────────────────────
 
-  Widget _buildFoto(String url, bool isIos) {
-    final placeholderBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
-    final placeholderIcon = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
+  Widget _buildFoto(String url, SoloForteSheetVisuals v) {
+    final placeholderBg = v.cardBackground;
+    final placeholderIcon = v.subtitleColor;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
@@ -637,13 +643,14 @@ class MarketingCaseSheet extends ConsumerWidget {
     required Color titleColor,
     required bool isIos,
   }) {
+    final v = SoloForteSheetVisuals.of(context);
     return Row(
       children: [
         if (marketingCase.fotoAntesUrl != null)
           Expanded(
             child: Column(
               children: [
-                _buildFotoMini(marketingCase.fotoAntesUrl!, isIos),
+                _buildFotoMini(marketingCase.fotoAntesUrl!, v),
                 const SizedBox(height: 4),
                 Text(
                   'Antes',
@@ -661,7 +668,7 @@ class MarketingCaseSheet extends ConsumerWidget {
           Expanded(
             child: Column(
               children: [
-                _buildFotoMini(marketingCase.fotoDepoisUrl!, isIos),
+                _buildFotoMini(marketingCase.fotoDepoisUrl!, v),
                 const SizedBox(height: 4),
                 Text(
                   'Depois',
@@ -680,13 +687,9 @@ class MarketingCaseSheet extends ConsumerWidget {
     );
   }
 
-  Widget _buildFotoMini(String url, bool isIos) {
-    final placeholderBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
-    final placeholderIcon = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
+  Widget _buildFotoMini(String url, SoloForteSheetVisuals v) {
+    final placeholderBg = v.cardBackground;
+    final placeholderIcon = v.subtitleColor;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
@@ -759,6 +762,7 @@ class MarketingCaseSheet extends ConsumerWidget {
     required Color hintColor,
     required bool isIos,
   }) {
+    final v = SoloForteSheetVisuals.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -778,7 +782,7 @@ class MarketingCaseSheet extends ConsumerWidget {
             ),
             child: Icon(
               Icons.person_rounded,
-              color: isIos ? SoloForteSheetSkinIos.iconStroke : Colors.white,
+              color: isIos ? v.iconStroke : v.ctaText,
               size: 22,
             ),
           ),
