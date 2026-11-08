@@ -10,8 +10,6 @@ import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../core/services/offline_tile_cache_service.dart';
 import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/state/map_state.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
-import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../theme/premium/design_tokens.dart';
 
 enum MapOfflineVisualState {
@@ -361,26 +359,17 @@ class MapOfflineStatusCard extends ConsumerWidget {
     final canDownload =
         presentation.canDownloadCurrentArea && onDownloadOfflineArea != null;
     final subtitle = '${mapLayerLabel(snapshot.activeLayer)} • $areasLabel';
-    final isIos = soloForteSheetIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
-    final cardBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : Colors.white.withValues(alpha: 0.06);
-    final cardBorder = isIos
-        ? SoloForteSheetSkinIos.cardBorder
+    final cardBg = v.cardBackground;
+    final cardBorder = v.isIos
+        ? v.cardBorder
         : presentation.accentColor.withValues(alpha: 0.28);
-    final labelMuted = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : Colors.white70;
-    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
-    final subtitleColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : Colors.white.withValues(alpha: 0.62);
-    final downloadIconColor = isIos
-        ? SoloForteSheetSkinIos.iconStroke
-        : Colors.white;
-    final downloadBg = isIos
-        ? SoloForteSheetSkinIos.iconBackground
+    final labelMuted = v.subtitleColor;
+    final titleColor = v.titleColor;
+    final subtitleColor = v.subtitleColor;
+    final downloadIconColor = v.iconStroke;
+    final downloadBg = v.isIos
+        ? v.iconBackground
         : presentation.accentColor.withValues(alpha: 0.18);
 
     return Semantics(
@@ -402,9 +391,7 @@ class MapOfflineStatusCard extends ConsumerWidget {
             children: [
               Icon(
                 presentation.icon,
-                color: isIos
-                    ? SoloForteSheetSkinIos.iconStroke
-                    : presentation.accentColor,
+                color: v.isIos ? v.iconStroke : presentation.accentColor,
                 size: 22,
               ),
               const SizedBox(width: 10),
