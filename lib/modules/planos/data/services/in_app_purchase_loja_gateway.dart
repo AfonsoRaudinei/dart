@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../domain/store_plan_catalog.dart';
@@ -54,9 +55,17 @@ class InAppPurchaseLojaGateway implements LojaCompraGateway {
       _emitir('Este plano não está disponível na loja.', erro: true);
       return;
     }
-    final parametro = PurchaseParam(productDetails: detalhes);
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null || userId.isEmpty) {
+      _emitir('Entre na sua conta para comprar.', erro: true);
+      return;
+    }
+    final parametro = PurchaseParam(
+      productDetails: detalhes,
+      applicationUserName: userId,
+    );
     if (defaultTargetPlatform == TargetPlatform.android) {
-      await _loja.buyConsumable(purchaseParam: parametro);
+      await _loja.buyConsumable(purchaseParam: parametro, autoConsume: false);
     } else {
       await _loja.buyNonConsumable(purchaseParam: parametro);
     }
@@ -114,8 +123,13 @@ class InAppPurchaseLojaGateway implements LojaCompraGateway {
       );
       final dados = resposta.data;
       final status = dados is Map ? dados['status'] : null;
+      if (status == 'other_account') {
+        await _concluir(compra, consumir: true);
+        _emitir('Esta compra está vinculada a outra conta.', erro: true);
+        return;
+      }
       if (status == 'granted' || status == 'already_granted') {
-        await _concluir(compra);
+        await _concluir(compra, consumir: true);
         _emitir('Plano confirmado.', concedido: true);
         return;
       }
@@ -128,7 +142,14 @@ class InAppPurchaseLojaGateway implements LojaCompraGateway {
     }
   }
 
-  Future<void> _concluir(PurchaseDetails compra) async {
+  Future<void> _concluir(PurchaseDetails compra, {bool consumir = false}) async {
+    if (consumir &&
+        defaultTargetPlatform == TargetPlatform.android &&
+        compra is GooglePlayPurchaseDetails) {
+      final android = _loja
+          .getPlatformAddition<InAppPurchaseAndroidPlatformAddition>();
+      await android.consumePurchase(compra);
+    }
     if (compra.pendingCompletePurchase) {
       await _loja.completePurchase(compra);
     }

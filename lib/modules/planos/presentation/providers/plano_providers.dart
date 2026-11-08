@@ -133,6 +133,7 @@ final _planoLogoutInvalidationRegistration = () {
         }
       } catch (_) {}
       ref.invalidate(planoAtivoProvider);
+      ref.invalidate(lojaCompraGatewayProvider);
     },
   );
   return true;
