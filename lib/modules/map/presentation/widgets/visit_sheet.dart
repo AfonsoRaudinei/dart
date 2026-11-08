@@ -7,6 +7,7 @@ import 'package:soloforte_app/core/contracts/i_visit_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_visit_client_lookup_provider.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 final _visitClientsProvider =
     FutureProvider.autoDispose<List<VisitClientSummary>>(
@@ -23,10 +24,13 @@ final _visitFieldsProvider = FutureProvider.family
       return ref.watch(visitClientLookupProvider).listFieldsByFarm(farmId);
     });
 
-/// Host de check-in usa [preserveMaterialDefaults] (DraggableScrollableSheet).
-/// Por isso detecta Azul via [SoloForteThemeExtension.themeId], não só o Scope.
-bool _visitSheetIsIosBlue(BuildContext context) =>
-    Theme.of(context).extension<SoloForteThemeExtension>()?.themeId == 'blue';
+/// Host de check-in usa [preserveMaterialDefaults] (DraggableScrollableSheet),
+/// que força o Scope em `light`. A variante real vem de
+/// [SoloForteThemeExtension.themeId] e é re-propagada para o conteúdo.
+SoloForteSheetVariant _visitSheetVariant(BuildContext context) =>
+    soloForteSheetVariantFromThemeId(
+      Theme.of(context).extension<SoloForteThemeExtension>()?.themeId,
+    );
 
 class VisitSheet extends ConsumerStatefulWidget {
   // Bug 2: areaId e activityType são opcionais — apenas produtor é obrigatório.
@@ -82,6 +86,13 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
 
   @override
   Widget build(BuildContext context) {
+    return SoloForteSheetSkinScope(
+      variant: _visitSheetVariant(context),
+      child: Builder(builder: _buildSheet),
+    );
+  }
+
+  Widget _buildSheet(BuildContext context) {
     final clientsAsync = ref.watch(_visitClientsProvider);
     final farmsAsync = _selectedClient != null
         ? ref.watch(_visitFarmsProvider(_selectedClient!.id))
@@ -92,8 +103,8 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
 
     final isConfirmEnabled = _selectedClient != null;
     final isNavigateEnabled = _selectedClient != null;
-    final isIos = _visitSheetIsIosBlue(context);
     final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final sheetBg = v.sheetBackground;
     final handleColor = v.handleColor;
     final titleColor = v.titleColor;
@@ -175,7 +186,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                       });
                     },
                     isLoading: clientsAsync.isLoading,
-                    isIos: isIos,
+                    v: v,
                   ),
                   const SizedBox(height: 12),
                   _buildDropdown<VisitFarmSummary>(
@@ -192,7 +203,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                     },
                     emptyMessage: 'Nenhuma fazenda encontrada',
                     isLoading: farmsAsync.isLoading,
-                    isIos: isIos,
+                    v: v,
                   ),
                   const SizedBox(height: 12),
                   _buildDropdown<VisitFieldSummary>(
@@ -206,7 +217,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                     },
                     emptyMessage: 'Nenhum talhão encontrado',
                     isLoading: fieldsAsync.isLoading,
-                    isIos: isIos,
+                    v: v,
                   ),
                   const SizedBox(height: 12),
                   _buildDropdown<String>(
@@ -219,7 +230,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                         _selectedActivity = newValue!;
                       });
                     },
-                    isIos: isIos,
+                    v: v,
                   ),
                   const SizedBox(height: kFabSafeArea),
                 ],
@@ -341,12 +352,11 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     required List<T> items,
     required String Function(T) itemLabel,
     required Function(T?) onChanged,
-    required bool isIos,
+    required SoloForteSheetVisuals v,
     bool enabled = true,
     bool isLoading = false,
     String emptyMessage = 'Vazio',
   }) {
-    final v = SoloForteSheetVisuals.of(context);
     final surface = v.cardBackground;
     final border = v.cardBorder;
     final focus = v.focusBorder;
@@ -354,7 +364,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     final muted = v.subtitleColor;
     final labelColor = v.subtitleColor;
     final iconColor = v.isIos ? v.arrowColor : v.subtitleColor;
-    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+    final radius = v.isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
 
     final baseField = SizedBox(
       height: 56,
