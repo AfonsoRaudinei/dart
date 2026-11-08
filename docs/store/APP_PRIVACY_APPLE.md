@@ -12,16 +12,21 @@ Preencher no App Store Connect → App Privacy.
 
 ## Data Linked to You
 
-| Data Type | Purpose | Linked to Identity |
-|-----------|---------|-------------------|
-| Email Address | App Functionality | Yes |
-| Name | App Functionality | Yes |
-| Precise Location | App Functionality | Yes |
-| Photos or Videos | App Functionality | Yes |
-| Audio Data | App Functionality | Yes |
-| Other User Content | App Functionality | Yes |
+Todos: finalidade App Functionality, ligados à identidade, sem tracking.
 
-Áudio da ocorrência (até 30 segundos no ponto) é ligado à identidade, com finalidade de funcionalidade do app, e **não** é usado para tracking. O manifesto declara `NSPrivacyCollectedDataTypeAudioData` com `Linked=true`, `Tracking=false` e purpose `AppFunctionality`.
+| Data Type | No SoloForte |
+|-----------|----------------|
+| Name | Nome da conta |
+| Email Address | E-mail de login |
+| Phone Number | Telefone digitado em cliente ou caso |
+| User ID | Identificador da conta |
+| Precise Location | GPS com o app aberto |
+| Photos or Videos | Fotos de ocorrência, relatório e perfil |
+| Audio Data | Áudio de até 30 segundos na ocorrência |
+| Other User Content | Clientes, fazendas, talhões, visitas, ocorrências e relatórios |
+| Customer Support | Mensagens de feedback |
+
+Não marcar Product Interaction, Crash Data, Contacts, Health, Financial Info nem Advertising Data.
 
 ---
 
@@ -65,4 +70,8 @@ Arquivo incluído em `ios/Runner/PrivacyInfo.xcprivacy`:
 
 ## Privacy Policy URL
 
-Configurar no App Store Connect (mesma URL do app).
+`https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/`
+
+Support URL: `https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/suporte.html`
+
+Ficha completa: `docs/store/APP_STORE_CONNECT.md`.
