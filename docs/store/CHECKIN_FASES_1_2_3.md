@@ -10,7 +10,7 @@ Data: 8 de novembro de 2026 (America/Araguaina). Escopo: binário e documentaç�
 |---|---|
 | `READ_MEDIA_IMAGES`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION` removidas no merge Android (`tools:node="remove"`) | ✅ |
 | `GeolocatorLocationService` mantido (GPS com app aberto) | ✅ |
-| `NSLocationAlwaysAndWhenInUseUsageDescription` ausente no iOS | ✅ |
+| `NSLocationAlwaysAndWhenInUseUsageDescription` presente no iOS (ASC 90683) | ✅ |
 | `NSPrivacyCollectedDataTypeAudioData` no `PrivacyInfo.xcprivacy` | ✅ |
 | `ITSAppUsesNonExemptEncryption = false` | ✅ |
 | `./tool/release_store_check.sh` → Exit 0 | ✅ |
