@@ -247,6 +247,7 @@ lib/
 - Tokens visuais: `lib/core/ui/sheets/sheet_tokens.dart`
 - Não duplicar handles, títulos ou botões de fechar fora do padrão
 - **REGRA-SHEET-BLAST-1:** mudança em `core/ui/sheets/` é transversal (8+ bounded contexts). Antes de alterar: `rg showSoloForteSheet` + `rg 'backgroundColor: Colors.transparent'`. Ver `.agent/AUDITORIA_REGRESSAO_IPA210.md`
+- **REGRA-SHEET-VISUALS-1 / REGRA-SHEET-CONTRAST-1:** conteúdo de sheet resolve cor só por `SoloForteSheetVisuals.of(context)`. Proibido fora de `lib/core/ui/sheets/`: token cru (`SoloForteSheetSkinIos.` / `SoloForteSheetSkinLight.` / `SoloForteSheetTokens.`) e `isIos ? … : Colors.white|black`. Legado só em `tool/sheet_*_legacy_allowlist.txt` (só encolhe). Ver `design/sheets.md` → “Contrato de consumo”.
 - **REGRA-MAP-CHROME-1:** coluna direita do mapa travada em `kMapActionColumnBottomInset` — nunca `mapSheetChromeInsetProvider`. Ver `.agent/Prompt.md`. Host UI: `lib/ui/` (política 4A).
 
 ### O agente NÃO DEVE
