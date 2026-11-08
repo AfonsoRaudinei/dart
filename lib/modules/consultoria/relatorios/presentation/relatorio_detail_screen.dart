@@ -204,7 +204,9 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
                 } else if (value == 'export') {
                   await _exportHtml(context, ref, relatorio);
                 } else if (value == 'edit') {
-                  context.go('/consultoria/relatorios/${widget.relatorioId}/edit');
+                  context.push(
+                    '/consultoria/relatorios/${widget.relatorioId}/edit',
+                  );
                 } else if (value == 'delete') {
                   final confirm = await showDialog<bool>(
                     context: context,

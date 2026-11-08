@@ -325,7 +325,7 @@ class _AgendaPlanejamentoViewState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            onTap: () => context.go(AppRoutes.agendaDay(day)),
+            onTap: () => context.push(AppRoutes.agendaDay(day)),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             child: _buildDayHeader(theme, day, events, isSunday),
           ),

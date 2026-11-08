@@ -368,7 +368,9 @@ class _RelatorioCardState extends ConsumerState<_RelatorioCard> {
       onEdit: isDraft
           ? (viewerContext) async {
               Navigator.of(viewerContext).pop();
-              viewerContext.go('/consultoria/relatorios/${relatorio.id}/edit');
+              viewerContext.push(
+                '/consultoria/relatorios/${relatorio.id}/edit',
+              );
             }
           : null,
       onPublish: isDraft

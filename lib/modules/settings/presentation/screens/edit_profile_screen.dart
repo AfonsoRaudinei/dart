@@ -74,13 +74,7 @@ class EditProfileScreen extends ConsumerWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        leading: IconButton(
-          icon: Icon(Icons.close, color: context.premiumTextPrimary),
-          onPressed: () {
-            SoloforteKeyboardDismiss.dismiss();
-            context.go(AppRoutes.settings);
-          },
-        ),
+        automaticallyImplyLeading: false,
       ),
       body: Center(child: child),
     );
@@ -228,15 +222,7 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        leading: IconButton(
-          icon: Icon(Icons.close, color: context.premiumTextPrimary),
-          onPressed: _saving
-              ? null
-              : () {
-                  SoloforteKeyboardDismiss.dismiss();
-                  context.go(AppRoutes.settings);
-                },
-        ),
+        automaticallyImplyLeading: false,
         actions: [
           if (_saving)
             Padding(

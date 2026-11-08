@@ -45,7 +45,7 @@ class ClientListScreen extends ConsumerWidget {
                 IconButton(
                   onPressed: () {
                     SoloforteKeyboardDismiss.dismiss();
-                    context.go(AppRoutes.clientNew);
+                    context.push(AppRoutes.clientNew);
                   },
                   icon: Icon(SFIcons.add, color: context.themeAccent, size: 28),
                 ),
@@ -241,7 +241,7 @@ class ClientListScreen extends ConsumerWidget {
                         child: GestureDetector(
                           onTap: () {
                             SoloforteKeyboardDismiss.dismiss();
-                            context.go(AppRoutes.clientDetail(client.id));
+                            context.push(AppRoutes.clientDetail(client.id));
                           },
                           child: Container(
                             margin: const EdgeInsets.only(bottom: 12),

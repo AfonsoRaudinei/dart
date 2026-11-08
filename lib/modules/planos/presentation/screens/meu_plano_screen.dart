@@ -331,7 +331,7 @@ class _NavigationRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         onTap: () {
           HapticFeedback.lightImpact();
-          context.go(route);
+          context.push(route);
         },
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),

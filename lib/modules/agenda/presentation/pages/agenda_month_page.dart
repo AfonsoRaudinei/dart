@@ -155,7 +155,7 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
                           onDayTap: (day) {
                             final dayEvents = eventsByDay[day.day] ?? [];
                             if (dayEvents.isNotEmpty) {
-                              context.go(AppRoutes.agendaDay(day));
+                              context.push(AppRoutes.agendaDay(day));
                               return;
                             }
                             showDialog<void>(
