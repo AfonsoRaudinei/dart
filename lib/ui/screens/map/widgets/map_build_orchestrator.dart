@@ -14,6 +14,7 @@ import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/config/map_config.dart';
+import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/session/user_role.dart';
 import '../../../../core/utils/map_logger.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
@@ -55,6 +56,7 @@ import '../../../components/map/map_talhao_selection_toolbar.dart';
 import '../../../components/map/widgets/map_state_boundaries_layer.dart';
 import '../../../components/map/widgets/map_cardinal_flash_overlay.dart';
 import '../../../components/map/widgets/map_locality_context_chip.dart';
+import '../../../components/map/widgets/map_north_reset_compass.dart';
 import '../../../components/map/map_layers_sheet.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../components/map/widgets/producer_map_context_card.dart';
@@ -196,16 +198,14 @@ class MapBuildOrchestrator extends ConsumerWidget {
               mapController: mapController,
               interactionOptions: disableMapDrag
                   ? const InteractionOptions(
-                      flags:
-                          InteractiveFlag.all &
-                          ~InteractiveFlag.rotate &
-                          ~InteractiveFlag.drag,
+                      flags: kPrivateMapDrawingLockedInteractionFlags,
                     )
                   : null,
               onMapReady: () {
                 // Norte para cima no boot — evita câmera residual / IPA antigo
                 // com course-up GNSS deixando norte nas laterais.
                 mapController.rotate(0);
+                ref.read(mapCameraRotationProvider.notifier).state = 0;
                 // ADR-032 F1: _isMapReady → mapReadyStateProvider
                 ref.read(mapReadyStateProvider.notifier).state = true;
                 ref
@@ -369,6 +369,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 if (hasGesture) {
                   onMapUserInteraction?.call();
                 }
+                ref.read(mapCameraRotationProvider.notifier).state = pos.rotation;
                 MapCameraSnapshotThrottle.publish(
                   ProviderScope.containerOf(context, listen: false),
                   MapCameraSnapshot(
@@ -381,15 +382,25 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   final locationMode = ref.read(mapLocationModeProvider);
                   if (locationMode == MapLocationMode.following ||
                       locationMode == MapLocationMode.northLocked) {
+                    final userRotation = pos.rotation;
                     ref.read(mapLocationModeProvider.notifier).state =
                         MapLocationMode.idle;
                     stopFollowing();
+                    // Preserva rotação do gesto — stopFollowing zera para
+                    // north-up residual; em idle o usuário pode ter rotacionado.
+                    if (userRotation.abs() > kMapNorthCompassVisibleRotationDeg) {
+                      mapController.rotate(userRotation);
+                      ref.read(mapCameraRotationProvider.notifier).state =
+                          userRotation;
+                    }
                   }
 
                   MapLogger.logEvent(
-                    'Pan/Zoom: Center=${pos.center.latitude.toStringAsFixed(4)},'
+                    'Pan/Zoom/Rotate: Center='
+                    '${pos.center.latitude.toStringAsFixed(4)},'
                     '${pos.center.longitude.toStringAsFixed(4)} '
-                    'Zoom=${pos.zoom.toStringAsFixed(1)}',
+                    'Zoom=${pos.zoom.toStringAsFixed(1)} '
+                    'Rot=${pos.rotation.toStringAsFixed(1)}',
                   );
                 }
               },
@@ -533,6 +544,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
             onCenterOnUser: centerOnUser,
           ),
           const MapGpsOverlaysHost(),
+          MapNorthResetCompass(mapController: mapController),
           const MapLocalityContextChip(),
           const MapCardinalFlashOverlay(),
           const MapNdviLoadProgressOverlay(),
