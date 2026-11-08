@@ -23,6 +23,10 @@
 `planoAtivoProvider` usa esse cache em falhas não-auth (offline / timeout).
 `AuthException` nunca serve cache.
 
+## Pagamento (Adendo 2)
+
+Compra in-app, quando existir, é só StoreKit ou Play Billing. `MercadoPagoService` recusa iOS e Android. As telas de planos não mostram preço nem chamada à ação enquanto os produtos `soloforte_plano_bronze`, `soloforte_plano_prata` e `soloforte_plano_ouro` não existirem nas duas consoles. Não conceder plano no cliente.
+
 ## Qualidade obrigatoria
 
 - Fluxos financeiros devem ter estados explicitos: pendente, confirmado, erro/cancelado.
