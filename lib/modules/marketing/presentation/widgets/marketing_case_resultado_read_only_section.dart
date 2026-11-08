@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/solo_forte_sheet_visuals.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/entities/marketing_roi_calculation.dart';
@@ -34,6 +35,7 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
     if (roi == null) return const SizedBox.shrink();
     final MarketingRoiCalculation calc = roi;
     final input = calc.input;
+    final v = SoloForteSheetVisuals.of(context);
 
     final heroBg = isIos
         ? SoloForteSheetSkinIos.cardBackground
@@ -50,21 +52,11 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
         ? SoloForteSheetSkinIos.titleColor
         : const Color(0xCCFFFFFF);
 
-    final detailBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
-    final detailBorder = isIos
-        ? SoloForteSheetSkinIos.cardBorder
-        : PremiumTokens.hairlineLight;
-    final sectionLabelColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
-    final lineLabelColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
-    final lineValueColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.inputText;
+    final detailBg = v.cardBackground;
+    final detailBorder = v.cardBorder;
+    final sectionLabelColor = v.subtitleColor;
+    final lineLabelColor = v.subtitleColor;
+    final lineValueColor = v.titleColor;
     final gainColor = isIos
         ? SoloForteSheetSkinIos.iconStroke
         : context.themeAccent;
