@@ -26,6 +26,7 @@ import '../../screens/map/handlers/map_location_handler.dart';
 import '../../screens/map/handlers/visit_check_in_map_focus.dart';
 import 'map_sheet_state.dart'; // 🛡 REFATORAÇÃO: Modelo compartilhado
 import '../../../core/utils/app_logger.dart';
+import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import '../../../core/state/map_ui_providers.dart';
 import '../../../../core/contracts/i_visit_session_lookup.dart';
 import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
@@ -216,6 +217,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   Future<void> _dismissCurrentSheet({
     DrawingCloseIntent intent = DrawingCloseIntent.dismissSheet,
   }) async {
+    SoloforteKeyboardDismiss.dismiss();
     if (widget.state.type == MapSheetType.draw) {
       final decision = await DrawingCloseCoordinator.handle(
         context,
@@ -254,6 +256,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   /// Evita segundo passe com [DrawingCloseIntent.dismissSheet] que cancelaria a
   /// ferramenta armed.
   void _closeDrawingSheetChrome() {
+    SoloforteKeyboardDismiss.dismiss();
     ref.read(occurrenceFormGuardProvider.notifier).state = null;
     widget.onClose();
   }
