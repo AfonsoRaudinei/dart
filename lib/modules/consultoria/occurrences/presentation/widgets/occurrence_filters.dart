@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
-import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/occurrence.dart';
@@ -90,28 +88,15 @@ class OccurrenceFilterSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final accent = isIos
-        ? SoloForteSheetSkinIos.iconStroke
-        : context.themeAccent;
-    final chipBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : Colors.white;
-    final selectedLabel = isIos
-        ? SoloForteSheetSkinIos.ctaText
-        : Colors.white;
-    final unselectedLabel = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : context.premiumTextSecondary;
-    final sectionLabel = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : context.premiumTextSecondary;
-    final barBg = isIos
-        ? SoloForteSheetSkinIos.background.withValues(alpha: 0.9)
-        : context.premiumSurface.withValues(alpha: 0.5);
-    final barBorder = isIos
-        ? SoloForteSheetSkinIos.rowDivider
-        : context.premiumHairline;
+    final v = SoloForteSheetVisuals.of(context);
+    final accent = v.isIos ? v.iconStroke : context.themeAccent;
+    final chipBg = v.cardBackground;
+    final selectedLabel = v.ctaText;
+    final unselectedLabel = v.subtitleColor;
+    final sectionLabel = v.subtitleColor;
+    final barBg = v.sheetBackground.withValues(alpha: 0.9);
+    final barBorder = v.dividerColor;
+    final chipSide = v.isDark ? null : BorderSide(color: v.cardBorder);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -168,9 +153,7 @@ class OccurrenceFilterSelector extends StatelessWidget {
                 selectedColor: accent,
                 backgroundColor: chipBg,
                 checkmarkColor: selectedLabel,
-                side: isIos
-                    ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
-                    : null,
+                side: chipSide,
                 onSelected: (selected) {
                   final newCategories = Set<OccurrenceCategory>.from(
                     filters.categories,
@@ -203,9 +186,7 @@ class OccurrenceFilterSelector extends StatelessWidget {
                 selectedColor: Colors.orange,
                 backgroundColor: chipBg,
                 checkmarkColor: selectedLabel,
-                side: isIos
-                    ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
-                    : null,
+                side: chipSide,
                 onSelected: (selected) {
                   final newStatuses = Set<String>.from(filters.statuses);
                   if (selected) {
@@ -230,9 +211,7 @@ class OccurrenceFilterSelector extends StatelessWidget {
                 selectedColor: accent,
                 backgroundColor: chipBg,
                 checkmarkColor: selectedLabel,
-                side: isIos
-                    ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
-                    : null,
+                side: chipSide,
                 onSelected: (selected) {
                   final newStatuses = Set<String>.from(filters.statuses);
                   if (selected) {
@@ -273,9 +252,7 @@ class OccurrenceFilterSelector extends StatelessWidget {
                   selectedColor: occurrenceAndamentoChipColor(step),
                   backgroundColor: chipBg,
                   checkmarkColor: selectedLabel,
-                  side: isIos
-                      ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
-                      : null,
+                  side: chipSide,
                   onSelected: (selected) {
                     final next = Set<String>.from(filters.andamentos);
                     if (selected) {
@@ -304,9 +281,7 @@ class OccurrenceFilterSelector extends StatelessWidget {
               selectedColor: accent,
               backgroundColor: chipBg,
               checkmarkColor: selectedLabel,
-              side: isIos
-                  ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
-                  : null,
+              side: chipSide,
               onSelected: (selected) {
                 onChanged(filters.copyWith(onlyActiveVisit: selected));
               },
