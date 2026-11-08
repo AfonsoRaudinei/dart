@@ -6,7 +6,6 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../../core/contracts/i_active_visit_context_lookup.dart';
 import '../../../../core/design/sf_icons.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_close_coordinator.dart';
 import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_form_guard.dart';
@@ -86,7 +85,6 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
   @override
   Widget build(BuildContext context) {
     final height = MediaQuery.sizeOf(context).height * 0.88;
-    final isIos = soloForteSheetIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
     final bg = v.sheetBackground;
     return Material(
@@ -104,9 +102,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isIos
-                      ? SoloForteSheetSkinIos.handleColor
-                      : Colors.white24,
+                  color: v.handleColor,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
@@ -114,7 +110,6 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
             const SizedBox(height: 12),
             _MarkKindToggleBar(
               selected: _kind,
-              isIos: isIos,
               labelFor: _label,
               iconFor: _icon,
               onSelected: _select,
@@ -290,14 +285,12 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
 /// Pílulas horizontais (estilo Mail): peek na borda + fade quando há mais conteúdo.
 class _MarkKindToggleBar extends StatefulWidget {
   final MapMarkKind? selected;
-  final bool isIos;
   final String Function(MapMarkKind) labelFor;
   final IconData Function(MapMarkKind) iconFor;
   final ValueChanged<MapMarkKind> onSelected;
 
   const _MarkKindToggleBar({
     required this.selected,
-    required this.isIos,
     required this.labelFor,
     required this.iconFor,
     required this.onSelected,
@@ -370,7 +363,6 @@ class _MarkKindToggleBarState extends State<_MarkKindToggleBar> {
                     icon: widget.iconFor(kind),
                     isSelected: widget.selected == kind,
                     onTap: () => widget.onSelected(kind),
-                    isIos: widget.isIos,
                   );
                 },
               ),
@@ -398,7 +390,6 @@ class _MarkKindToggleBarState extends State<_MarkKindToggleBar> {
                       color: fadeColor,
                       alignment: Alignment.centerRight,
                       showChevron: true,
-                      isIos: widget.isIos,
                     ),
                   ),
                 ),
@@ -414,13 +405,11 @@ class _MarkScrollEdgeFade extends StatelessWidget {
   final Color color;
   final Alignment alignment;
   final bool showChevron;
-  final bool isIos;
 
   const _MarkScrollEdgeFade({
     required this.color,
     required this.alignment,
     this.showChevron = false,
-    this.isIos = false,
   });
 
   @override
@@ -431,9 +420,7 @@ class _MarkScrollEdgeFade extends StatelessWidget {
     final end = alignment == Alignment.centerLeft
         ? Alignment.centerRight
         : Alignment.centerLeft;
-    final chevronColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : Colors.white.withValues(alpha: 0.55);
+    final chevronColor = SoloForteSheetVisuals.of(context).subtitleColor;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -465,31 +452,22 @@ class _MarkToggleSegment extends StatelessWidget {
   final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
-  final bool isIos;
 
   const _MarkToggleSegment({
     required this.label,
     required this.icon,
     required this.isSelected,
     required this.onTap,
-    required this.isIos,
   });
 
   @override
   Widget build(BuildContext context) {
-    final selectedBg = isIos
-        ? SoloForteSheetSkinIos.ctaBackground
-        : const Color(0xFF1976D2);
-    final idleBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : Colors.white.withValues(alpha: 0.08);
-    final idleBorder = isIos
-        ? SoloForteSheetSkinIos.cardBorder
-        : Colors.white.withValues(alpha: 0.06);
-    final idleLabel = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : const Color(0xFFE5E5EA);
-    final selectedLabel = isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+    final v = SoloForteSheetVisuals.of(context);
+    final selectedBg = v.ctaBackground;
+    final idleBg = v.cardBackground;
+    final idleBorder = v.cardBorder;
+    final idleLabel = v.titleColor;
+    final selectedLabel = v.ctaText;
 
     return Material(
       color: Colors.transparent,
