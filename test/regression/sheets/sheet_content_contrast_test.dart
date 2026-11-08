@@ -42,16 +42,6 @@ const _guardedFiles = <String>[
   'lib/modules/marketing/presentation/widgets/avaliacao_card.dart',
 ];
 
-/// Exceções legítimas: `arquivo` → trechos exatos (whitespace normalizado).
-const _allowed = <String, List<String>>{
-  // Card de ROI pinta fundo verde-escuro fixo (#123D2A) fora do Azul.
-  'lib/modules/marketing/presentation/widgets/novo_case_resultado_section.dart':
-      [
-        'isIos ? SoloForteSheetSkinIos.titleColor : Colors.white',
-        'isIos ? SoloForteSheetSkinIos.titleColor : Colors.white',
-      ],
-};
-
 /// Ternário cujo condicional é `isIos`/`soloForteSheetIsIos(...)` e o ramo
 /// `else` é `Colors.white*`, `Colors.black*` ou `SoloForteSheetTokens.titleColor`.
 final _bifurcation = RegExp(
@@ -69,12 +59,10 @@ void main() {
         expect(file.existsSync(), isTrue, reason: 'arquivo ausente: $path');
 
         final source = file.readAsStringSync();
-        final remaining = List<String>.of(_allowed[path] ?? const []);
         final violations = <String>[];
 
         for (final match in _bifurcation.allMatches(source)) {
           final snippet = _normalize(match.group(0)!);
-          if (remaining.remove(snippet)) continue;
           final line = '\n'.allMatches(source.substring(0, match.start)).length + 1;
           violations.add('$path:$line → $snippet');
         }
@@ -90,13 +78,5 @@ void main() {
       });
     }
 
-    test('whitelist não guarda exceções que já não existem', () {
-      for (final entry in _allowed.entries) {
-        final source = _normalize(File(entry.key).readAsStringSync());
-        for (final snippet in entry.value) {
-          expect(source, contains(snippet), reason: '${entry.key}: $snippet');
-        }
-      }
-    });
   });
 }
