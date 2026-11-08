@@ -49,7 +49,7 @@ O `build.gradle.kts` usa `key.properties` quando presente; caso contrário, fall
 ## iOS — distribuição
 
 1. Abra `ios/Runner.xcworkspace` no Xcode.
-2. Confirme **Bundle Identifier:** `com.soloforte.app`
+2. Confirme **Bundle Identifier:** `com.soloforte.soloforteApp`
 3. Selecione certificado **Apple Distribution** e provisioning profile App Store.
 4. Build:
 
@@ -59,9 +59,9 @@ flutter build ipa \
   --dart-define=SUPABASE_ANON_KEY=...
 ```
 
-## Bundle ID unificado
+## Bundle ID / Application ID
 
-- **iOS:** `com.soloforte.app`
+- **iOS:** `com.soloforte.soloforteApp`
 - **Android:** `com.soloforte.app`
 
 ## Checklist pós-build

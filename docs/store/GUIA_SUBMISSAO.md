@@ -51,7 +51,7 @@ Seguir `docs/store/PLAY_CONSOLE.md`.
 
 ## 3. Apple App Store Connect
 
-1. Criar app → Bundle ID `com.soloforte.app`
+1. Criar app → Bundle ID `com.soloforte.soloforteApp`
 2. Upload IPA via Xcode ou Transporter
 3. **App Privacy** — usar `docs/store/APP_PRIVACY_APPLE.md`
 4. **Privacy Policy URL**

@@ -29,7 +29,7 @@ Use este checklist para confirmar que a Fase 1 foi executada conforme o PRD.
 
 ## ÉPICO 5 — Build
 
-- [ ] Bundle ID `com.soloforte.app` (iOS + Android)
+- [ ] Bundle ID iOS `com.soloforte.soloforteApp` / Application ID Android `com.soloforte.app`
 - [ ] Label Android `SoloForte`
 - [ ] Release signing via `key.properties`
 - [ ] ProGuard/R8 habilitado em release
