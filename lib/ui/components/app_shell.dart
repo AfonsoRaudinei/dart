@@ -6,7 +6,7 @@ APP SHELL — ARQUITETURA STACK-BASED (SOLOFORTE)
 Shell global refatorado para arquitetura Stack.
 
 PROBLEMAS RESOLVIDOS:
-1. ✅ Botão verde (SmartButton) não some mais quando menu abre
+1. ✅ SmartButton oculto no mapa enquanto o SideMenu está aberto (não cobre ações)
 2. ✅ SideMenu como overlay controlado, não Drawer do Scaffold
 3. ✅ Botão sempre visível, acima de tudo (z-index correto)
 4. ✅ Deep link handler: recovery + signup com switch explícito
@@ -21,7 +21,7 @@ HIERARQUIA (z-index do Stack):
  └── SmartButton (sempre no topo)
 
 REGRAS:
-- SmartButton: Sempre visível, nunca coberto
+- SmartButton: visível exceto com SideMenu aberto no mapa
 - SideMenu: Overlay controlado via provider, não Drawer
 - Sem dependência de Scaffold endDrawer
 ════════════════════════════════════════════════════════════════════
@@ -37,6 +37,7 @@ import '../../core/session/auth_deep_link.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/session/session_models.dart';
 import '../../core/utils/app_logger.dart';
+import '../../core/state/side_menu_state.dart';
 import '../../modules/consultoria/clients/presentation/farm_map_download_controller.dart';
 import 'public_map/public_access_cta_policy.dart';
 import 'side_menu_overlay.dart';
@@ -271,14 +272,14 @@ class _AppShellState extends ConsumerState<AppShell> {
     final session = ref.watch(sessionControllerProvider);
 
     if (session is SessionUnknown) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final isAuth = session is SessionAuthenticated;
     final path = GoRouterState.of(context).uri.path;
     final isPublicRoute = AppRoutes.publicRoutes.contains(path);
+    final sideMenuOpen = ref.watch(sideMenuOpenProvider);
+    final routeLevel = AppRoutes.getLevel(path);
     final showShellChrome = shouldShowShellChrome(
       isAuthenticated: isAuth,
       isPublicRoute: isPublicRoute,
@@ -292,9 +293,9 @@ class _AppShellState extends ConsumerState<AppShell> {
           previous: previous,
           next: next,
         )) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(item.message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(item.message)));
           ref
               .read(farmMapDownloadControllerProvider.notifier)
               .acknowledgeSnackbar(item.farmId);
@@ -323,7 +324,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           // bottom: MediaQuery.padding.bottom + 16 respeita SafeArea
           // dinâmica de cada dispositivo (iPhone gesture bar = 34px,
           // Android sem barra = 0px), garantindo posição correta em todos.
-          if (showShellChrome)
+          if (showShellChrome && !(sideMenuOpen && routeLevel == RouteLevel.l0))
             Positioned(
               bottom: MediaQuery.of(context).padding.bottom + 16,
               right: 16,
