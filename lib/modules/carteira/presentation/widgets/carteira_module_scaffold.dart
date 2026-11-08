@@ -88,6 +88,7 @@ class CarteiraModuleScaffold extends ConsumerWidget {
     }
 
     HapticFeedback.selectionClick();
+    FocusManager.instance.primaryFocus?.unfocus();
     ref.read(carteiraSegmentProvider.notifier).state = value;
 
     if (onClienteDetail ||

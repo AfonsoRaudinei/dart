@@ -30,6 +30,11 @@ class _CarteiraScreenState extends ConsumerState<CarteiraScreen> {
   @override
   Widget build(BuildContext context) {
     ref.watch(sessionControllerProvider);
+    ref.listen<CarteiraSegment>(carteiraSegmentProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        FocusManager.instance.primaryFocus?.unfocus();
+      }
+    });
     final userId = LocalSessionIdentity.resolveUserId();
     final segment = ref.watch(carteiraSegmentProvider);
 
