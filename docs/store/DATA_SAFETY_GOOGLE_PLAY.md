@@ -43,8 +43,11 @@ Preencher no Play Console → App content → Data safety.
 | ACCESS_FINE_LOCATION | Posição no mapa e visitas de campo |
 | ACCESS_COARSE_LOCATION | Fallback de localização |
 | CAMERA | Fotos de ocorrências e perfil |
-| READ_MEDIA_IMAGES | Galeria para anexos |
 | POST_NOTIFICATIONS | Alertas de geofence (chegada/saída) |
+
+**Fotos da galeria:** o app usa o seletor do sistema. `READ_MEDIA_IMAGES` não é pedida (o manifest a remove no merge com `tools:node="remove"`).
+
+**Serviço de localização:** `FOREGROUND_SERVICE` e `FOREGROUND_SERVICE_LOCATION` não são pedidas. O service `com.baseflow.geolocator.GeolocatorLocationService` permanece só para bind em primeiro plano (GPS com o app aberto, sem `startForeground`).
 
 **Não declarado:** ACCESS_BACKGROUND_LOCATION (removido na v1).
 
