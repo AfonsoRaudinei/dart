@@ -25,8 +25,6 @@ import '../widgets/novo_case_header.dart';
 import '../widgets/novo_case_publicar_button.dart';
 import '../widgets/novo_case_resultado_section.dart';
 import '../../../../core/contracts/i_client_lookup.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
-import '../../../../core/ui/sheets/soloforte_sheet.dart';
 
 class NovoCaseSheet extends ConsumerStatefulWidget {
   final double lat;
@@ -637,13 +635,9 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
   // ── Builders locais ────────────────────────────────────────────
 
   Widget _buildUnidadeDropdown() {
-    final isIos = soloForteSheetIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
-    final dropdownBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
-    final dropdownFg =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final dropdownBg = v.cardBackground;
+    final dropdownFg = v.titleColor;
 
     return DropdownButtonHideUnderline(
       child: DropdownButton<ProdutividadeUnidade>(
@@ -660,23 +654,16 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
         }).toList(),
         style: TextStyle(fontSize: 13, color: dropdownFg),
         dropdownColor: dropdownBg,
-        iconEnabledColor: isIos
-            ? SoloForteSheetSkinIos.subtitleColor
-            : Colors.white54,
+        iconEnabledColor: v.subtitleColor,
       ),
     );
   }
 
   Widget _buildDataCasePicker() {
     final selected = _dataCase;
-    final isIos = soloForteSheetIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
-    final dateColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.inputText;
-    final hintColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
+    final dateColor = v.titleColor;
+    final hintColor = v.subtitleColor;
     return GestureDetector(
       onTap: _selectDataCase,
       child: novoCaseFieldBox(
