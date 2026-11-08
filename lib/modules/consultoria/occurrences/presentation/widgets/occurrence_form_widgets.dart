@@ -36,7 +36,6 @@ class OccurrenceSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
-    final isIos = occurrenceFormIsIos(context);
     return Row(
       children: [
         Text(icon, style: const TextStyle(fontSize: 16)),
@@ -145,7 +144,6 @@ class OccurrenceSliderRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
-    final isIos = occurrenceFormIsIos(context);
     final labelColor = v.onSheetSecondary;
     final inactive = v.onSheetDivider;
     return Padding(
@@ -490,7 +488,6 @@ class OccurrencePhotoOriginToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
@@ -532,7 +529,6 @@ class _OccurrencePhotoOriginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     final isIos = occurrenceFormIsIos(context);
     final surface = isIos
         ? SoloForteSheetSkinIos.iconBackground
