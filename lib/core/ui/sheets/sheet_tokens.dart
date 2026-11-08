@@ -83,12 +83,12 @@ abstract final class SoloForteSheetSkinIos {
   static const Color cardBorder = Color(0xFFB3D9F5);
   static const double cardRadius = 14.0;
 
-  // Handle
-  static const Color handleColor = Color(0xFF7EC8F0);
-  static const Size handleSize = Size(40, 4);
+  // Handle — neutro (mesmo do Verde); azul fica para conteúdo/CTA
+  static const Color handleColor = Color(0xFFC7C7CC);
+  static const Size handleSize = Size(36, 4);
 
-  // Borda superior do sheet
-  static const Color sheetBorder = Color(0xFFB3D9F5);
+  // Borda superior do sheet — hairline neutra
+  static const Color sheetBorder = Color(0xFFE5E5EA);
   static const double sheetRadius = 22.0;
 
   // Ícones — circulares
