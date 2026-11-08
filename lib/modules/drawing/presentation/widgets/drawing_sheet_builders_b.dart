@@ -4,6 +4,7 @@ part of 'drawing_sheet.dart';
 
 extension _DrawingSheetBuildersB on _DrawingSheetState {
   Widget _buildSelectedMode(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final feature = widget.controller.selectedFeature!;
 
     if (_isEditingMetadata) {
@@ -158,6 +159,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
 
   // FORMULÁRIO DE METADADOS (Climate FieldView Style - Hierárquico)
   Widget _buildReviewingMode(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final area = widget.controller.liveAreaHa;
     final perimeter = widget.controller.livePerimeterKm;
     final detectedParts = widget.controller.polygonPartCount(
@@ -165,19 +167,18 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     );
     final isMultiPartSave = detectedParts > 1;
     final f = NumberFormat("##0.##", "pt_BR");
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final sectionLabelStyle = TextStyle(
       color: isIos
-          ? SoloForteSheetSkinIos.titleColor
-          : SoloForteSheetTokens.sectionLabel,
-      fontSize: SoloForteSheetTokens.sectionFontSize,
-      fontWeight: SoloForteSheetTokens.sectionWeight,
+          ? v.titleColor
+          : v.sectionLabel,
+      fontSize: v.sectionFontSize,
+      fontWeight: v.sectionWeight,
     );
-    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : v.titleColor;
+    final titleColor = v.titleColor;
     final muted = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.sectionLabel;
+        ? v.subtitleColor
+        : v.sectionLabel;
     final panelBg = v.cardBackground;
     final panelBorder = v.cardBorder;
     final inputText = v.titleColor;
@@ -297,16 +298,14 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: isIos
-                      ? const BorderSide(
-                          color: SoloForteSheetSkinIos.cardBorder,
+                      ? BorderSide(color: v.cardBorder,
                         )
                       : BorderSide.none,
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: isIos
-                      ? const BorderSide(
-                          color: SoloForteSheetSkinIos.cardBorder,
+                      ? BorderSide(color: v.cardBorder,
                         )
                       : BorderSide.none,
                 ),
@@ -486,8 +485,8 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
   }
 
   Widget _buildClientField() {
-    final clientState = ref.watch(drawingClientProvider);
     final v = SoloForteSheetVisuals.of(context);
+    final clientState = ref.watch(drawingClientProvider);
     final inputText = v.titleColor;
     final inputHint = v.subtitleColor;
     final dropdownBg = v.cardBackground;
@@ -529,8 +528,8 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
   }
 
   Widget _buildFarmField() {
-    final clientState = ref.watch(drawingClientProvider);
     final v = SoloForteSheetVisuals.of(context);
+    final clientState = ref.watch(drawingClientProvider);
     final inputText = v.titleColor;
     final inputHint = v.subtitleColor;
     final dropdownBg = v.cardBackground;
@@ -602,8 +601,8 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
   }
 
   InputDecoration _sheetFieldDecoration({Widget? suffixIcon}) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final fillColor = v.cardBackground;
     final focusBorder = v.accent;
     return InputDecoration(
@@ -614,13 +613,13 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
         borderSide: isIos
-            ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+            ? BorderSide(color: v.cardBorder)
             : BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
         borderSide: isIos
-            ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+            ? BorderSide(color: v.cardBorder)
             : BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
@@ -634,6 +633,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     BuildContext context,
     DrawingFeature feature,
   ) async {
+    final v = SoloForteSheetVisuals.of(context);
     final format = await _selectExportFormat(context);
     if (format == null || !context.mounted) return;
     final shareOrigin = resolveSharePositionOrigin(context);
@@ -647,6 +647,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
   }
 
   Future<void> _exportAll(BuildContext context) async {
+    final v = SoloForteSheetVisuals.of(context);
     final format = await _selectExportFormat(context);
     if (format == null || !context.mounted) return;
     final shareOrigin = resolveSharePositionOrigin(context);
@@ -660,15 +661,15 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
   }
 
   Future<DrawingExportFormat?> _selectExportFormat(BuildContext context) async {
+    final v = SoloForteSheetVisuals.of(context);
     // Sem backgroundColor hardcoded — chrome iOS Azul via showSoloForteSheet.
     return showSoloForteSheet<DrawingExportFormat>(
       context: context,
       builder: (ctx) {
         final isIos = soloForteSheetIsIos(ctx);
-        final v = SoloForteSheetVisuals.of(context);
-        final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
+        final titleColor = v.isIos ? v.titleColor : null;
         final subtitleColor = isIos
-            ? SoloForteSheetSkinIos.subtitleColor
+            ? v.subtitleColor
             : null;
         final iconColor = v.accent;
         return SafeArea(
