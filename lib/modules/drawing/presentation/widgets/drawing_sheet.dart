@@ -311,8 +311,6 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // final theme = Theme.of(context);
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final safeBottom = MediaQuery.of(context).padding.bottom;
 
     // ADR-019: escuta mudancas de clientes para pre-selecao Map-First
@@ -363,132 +361,124 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     final sheetBg = isIos ? Colors.transparent : v.sheetBackground;
     final sheetRadius = isIos ? 0.0 : v.sheetRadius;
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: Container(
-        decoration: BoxDecoration(
-          color: sheetBg,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(sheetRadius),
-          ),
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final hasBoundedHeight = constraints.maxHeight.isFinite;
-            final scrollArea = SoloforteKeyboardDismiss(
-              child: SingleChildScrollView(
-                controller: widget.scrollController,
-                physics: const BouncingScrollPhysics(),
-                child: ListenableBuilder(
-                  listenable: widget.controller,
-                  builder: (context, _) {
-                    // ── GPS Walk: sincronizar métricas a cada novo vértice GPS ────
-                    final gpsSession = ref.watch(gpsWalkProvider);
-                    if (gpsSession != null) {
-                      // Sincroniza pontos do DrawingController → GpsWalkNotifier
-                      final pts = widget.controller.gpsVertices;
-                      if (pts.length != gpsSession.points.length) {
-                        // Schedule post-frame para não chamar durante build
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          ref
-                              .read(gpsWalkProvider.notifier)
-                              .syncFromController(pts);
-                        });
-                      }
-                      return const GpsWalkControlsOverlay();
+    return Container(
+      key: const Key('drawing_sheet_root'),
+      decoration: BoxDecoration(
+        color: sheetBg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final hasBoundedHeight = constraints.maxHeight.isFinite;
+          final scrollArea = SoloforteKeyboardDismiss(
+            child: SingleChildScrollView(
+              controller: widget.scrollController,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              physics: const BouncingScrollPhysics(),
+              child: ListenableBuilder(
+                listenable: widget.controller,
+                builder: (context, _) {
+                  // ── GPS Walk: sincronizar métricas a cada novo vértice GPS ────
+                  final gpsSession = ref.watch(gpsWalkProvider);
+                  if (gpsSession != null) {
+                    // Sincroniza pontos do DrawingController → GpsWalkNotifier
+                    final pts = widget.controller.gpsVertices;
+                    if (pts.length != gpsSession.points.length) {
+                      // Schedule post-frame para não chamar durante build
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        ref
+                            .read(gpsWalkProvider.notifier)
+                            .syncFromController(pts);
+                      });
                     }
+                    return const GpsWalkControlsOverlay();
+                  }
 
-                    final content = Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Always calculate and show metrics if available
-                        _buildMetricsPanel(context),
+                  final content = Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Always calculate and show metrics if available
+                      _buildMetricsPanel(context),
 
-                        if (widget.controller.errorMessage != null)
-                          _buildErrorState(context)
-                        // 🆕 Modo de revisão: Formulário após desenhar
-                        else if (widget.controller.currentState ==
-                            DrawingState.reviewing)
-                          _buildReviewingMode(context)
-                        else if (widget.controller.interactionMode ==
-                            DrawingInteraction.importing)
-                          _buildImportingMode(context)
-                        else if (widget.controller.interactionMode ==
-                            DrawingInteraction.importPreview)
-                          _buildImportPreviewMode(context)
-                        else if (widget.controller.interactionMode ==
-                            DrawingInteraction.unionSelection)
-                          _buildUnionMode(context)
-                        else if (widget.controller.interactionMode ==
-                            DrawingInteraction.differenceSelection)
-                          _buildDifferenceMode(context) // Replaces cut
-                        else if (widget.controller.interactionMode ==
-                            DrawingInteraction.intersectionSelection)
-                          _buildIntersectionMode(context)
-                        else if (widget.controller.interactionMode ==
-                            DrawingInteraction.editing)
-                          _buildEditingMode(context)
-                        else if (widget.controller.selectedFeature != null)
-                          _buildSelectedMode(context)
-                        else
-                          _buildToolsGrid(context),
-                      ],
-                    );
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        bottom: _showsSelectedStickyFooter
-                            ? 24
-                            : kFabSafeArea + safeBottom + 40,
-                      ),
-                      child: content,
-                    );
-                  },
-                ),
+                      if (widget.controller.errorMessage != null)
+                        _buildErrorState(context)
+                      // 🆕 Modo de revisão: Formulário após desenhar
+                      else if (widget.controller.currentState ==
+                          DrawingState.reviewing)
+                        _buildReviewingMode(context)
+                      else if (widget.controller.interactionMode ==
+                          DrawingInteraction.importing)
+                        _buildImportingMode(context)
+                      else if (widget.controller.interactionMode ==
+                          DrawingInteraction.importPreview)
+                        _buildImportPreviewMode(context)
+                      else if (widget.controller.interactionMode ==
+                          DrawingInteraction.unionSelection)
+                        _buildUnionMode(context)
+                      else if (widget.controller.interactionMode ==
+                          DrawingInteraction.differenceSelection)
+                        _buildDifferenceMode(context) // Replaces cut
+                      else if (widget.controller.interactionMode ==
+                          DrawingInteraction.intersectionSelection)
+                        _buildIntersectionMode(context)
+                      else if (widget.controller.interactionMode ==
+                          DrawingInteraction.editing)
+                        _buildEditingMode(context)
+                      else if (widget.controller.selectedFeature != null)
+                        _buildSelectedMode(context)
+                      else
+                        _buildToolsGrid(context),
+                    ],
+                  );
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      bottom: _showsSelectedStickyFooter
+                          ? 24
+                          : kFabSafeArea + safeBottom + 40,
+                    ),
+                    child: content,
+                  );
+                },
               ),
-            );
+            ),
+          );
 
-            return Column(
-              mainAxisSize: hasBoundedHeight
-                  ? MainAxisSize.max
-                  : MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 4. Cabeçalho Fixo (Fonte Única)
-                _SheetHeader(
-                  onBack: _isEditingMetadata
-                      ? () => setState(() => _isEditingMetadata = false)
-                      : null,
-                  onClose: _handleClosePressed,
-                ),
+          return Column(
+            mainAxisSize: hasBoundedHeight
+                ? MainAxisSize.max
+                : MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 4. Cabeçalho Fixo (Fonte Única)
+              _SheetHeader(
+                onBack: _isEditingMetadata
+                    ? () => setState(() => _isEditingMetadata = false)
+                    : null,
+                onClose: _handleClosePressed,
+              ),
 
-                // Conteúdo Dinâmico
-                if (hasBoundedHeight)
-                  Flexible(child: scrollArea)
-                else
-                  scrollArea,
-                ListenableBuilder(
-                  listenable: widget.controller,
-                  builder: (context, _) {
-                    if (!_showsSelectedStickyFooter) {
-                      return const SizedBox.shrink();
-                    }
-                    return _SelectedModeFooter(
-                      safeBottom: safeBottom,
-                      onExit: () =>
-                          _requestClose(DrawingCloseIntent.dismissSheet),
-                      onEdit: () {
-                        HapticFeedback.lightImpact();
-                        widget.controller.startEditMode();
-                      },
-                    );
-                  },
-                ),
-              ],
-            );
-          },
-        ),
+              // Conteúdo Dinâmico
+              if (hasBoundedHeight) Flexible(child: scrollArea) else scrollArea,
+              ListenableBuilder(
+                listenable: widget.controller,
+                builder: (context, _) {
+                  if (!_showsSelectedStickyFooter) {
+                    return const SizedBox.shrink();
+                  }
+                  return _SelectedModeFooter(
+                    safeBottom: safeBottom,
+                    onExit: () =>
+                        _requestClose(DrawingCloseIntent.dismissSheet),
+                    onEdit: () {
+                      HapticFeedback.lightImpact();
+                      widget.controller.startEditMode();
+                    },
+                  );
+                },
+              ),
+            ],
+          );
+        },
       ),
     );
   }
