@@ -4,7 +4,6 @@ import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import '../../../core/constants/layout_constants.dart';
 import '../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../core/ui/sheets/soloforte_sheet.dart';
-import '../../theme/premium/design_tokens.dart';
 
 /// Escolha entre ir para município ou coordenada (chrome do mapa).
 Future<void> showMapGoToLocalSheet(
@@ -25,8 +24,6 @@ Future<void> showMapGoToLocalSheet(
 }
 
 class MapGoToLocalSheet extends StatelessWidget {
-  static const _accent = PremiumTokens.brandGreenDark;
-
   final Future<void> Function() onMunicipalitySearch;
   final Future<void> Function() onCoordinateSearch;
 
@@ -66,9 +63,7 @@ class MapGoToLocalSheet extends StatelessWidget {
                       fontWeight: isIos
                           ? FontWeight.w700
                           : SoloForteSheetTokens.titleWeight,
-                      color: isIos
-                          ? SoloForteSheetSkinIos.titleColor
-                          : SoloForteSheetTokens.titleColor,
+                      color: v.titleColor,
                     ),
                   ),
                 ),
@@ -78,7 +73,7 @@ class MapGoToLocalSheet extends StatelessWidget {
                   child: Text(
                     'Cancelar',
                     style: TextStyle(
-                      color: isIos ? SoloForteSheetSkinIos.ghostText : _accent,
+                      color: v.ghostText,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -89,24 +84,18 @@ class MapGoToLocalSheet extends StatelessWidget {
           ),
           Divider(
             height: 1,
-            color: isIos
-                ? SoloForteSheetSkinIos.rowDivider
-                : SoloForteSheetTokens.divider,
+            color: v.dividerColor,
           ),
           ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 20),
             leading: Icon(
               Icons.location_city_outlined,
-              color: isIos
-                  ? SoloForteSheetSkinIos.iconStroke
-                  : Colors.white70,
+              color: v.isIos ? v.iconStroke : v.subtitleColor,
             ),
             title: Text(
               'Ir para município',
               style: TextStyle(
-                color: isIos
-                    ? SoloForteSheetSkinIos.titleColor
-                    : Colors.white,
+                color: v.titleColor,
               ),
             ),
             onTap: () async {
@@ -118,16 +107,12 @@ class MapGoToLocalSheet extends StatelessWidget {
             contentPadding: const EdgeInsets.symmetric(horizontal: 20),
             leading: Icon(
               Icons.search_rounded,
-              color: isIos
-                  ? SoloForteSheetSkinIos.iconStroke
-                  : Colors.white70,
+              color: v.isIos ? v.iconStroke : v.subtitleColor,
             ),
             title: Text(
               'Ir para coordenada',
               style: TextStyle(
-                color: isIos
-                    ? SoloForteSheetSkinIos.titleColor
-                    : Colors.white,
+                color: v.titleColor,
               ),
             ),
             onTap: () async {
