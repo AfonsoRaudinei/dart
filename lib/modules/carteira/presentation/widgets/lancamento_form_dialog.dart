@@ -19,6 +19,7 @@ class LancamentoFormDialog extends ConsumerStatefulWidget {
   final String clienteId;
   final String clienteNome;
   final double clientAreaHa;
+  final CarteiraLancamento? lancamentoExistente;
 
   const LancamentoFormDialog({
     super.key,
@@ -26,7 +27,10 @@ class LancamentoFormDialog extends ConsumerStatefulWidget {
     required this.clienteId,
     required this.clienteNome,
     required this.clientAreaHa,
+    this.lancamentoExistente,
   });
+
+  bool get emEdicao => lancamentoExistente != null;
 
   @override
   ConsumerState<LancamentoFormDialog> createState() =>
@@ -45,8 +49,27 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
   TipoFechamento? _tipoFechamento;
   bool _salvando = false;
   String? _mensagemErro;
+  String? _erroTipoFechamento;
 
   String get _userId => LocalSessionIdentity.resolveUserId();
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.lancamentoExistente;
+    if (existing == null) return;
+
+    final pct = existing.closedPercent;
+    _percentController.text = pct % 1 == 0
+        ? pct.toInt().toString()
+        : pct.toStringAsFixed(1);
+    _dataLancamento = existing.dataLancamento;
+    _dataFechamento = existing.dataFechamento;
+    _tipoFechamento = existing.tipoFechamento;
+    _observacaoController.text = existing.observacao ?? '';
+    _nomeConcorrenteController.text = existing.nomeConcorrente ?? '';
+    _motivoFechamentoController.text = existing.motivoFechamento ?? '';
+  }
 
   @override
   void dispose() {
@@ -93,20 +116,40 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
 
   Future<void> _salvar() async {
     FocusManager.instance.primaryFocus?.unfocus();
-    setState(() => _mensagemErro = null);
+    setState(() {
+      _mensagemErro = null;
+      _erroTipoFechamento = null;
+    });
 
     if (!(_formKey.currentState?.validate() ?? false)) {
+      if (_tipoFechamento == null) {
+        setState(
+          () => _erroTipoFechamento =
+              'Selecione se foi vendido ou perdido para a concorrência.',
+        );
+      }
       _rolarParaTopo();
       return;
     }
 
-    final percent = double.parse(
+    if (_tipoFechamento == null) {
+      setState(
+        () => _erroTipoFechamento =
+            'Selecione se foi vendido ou perdido para a concorrência.',
+      );
+      _rolarParaTopo();
+      return;
+    }
+
+  final percent = double.parse(
       _percentController.text.trim().replaceAll(',', '.'),
     );
 
+    final nomeConcorrente = _nomeConcorrenteController.text.trim();
     final regraErro = CarteiraLancamento.validarRegrasFechamento(
       closedPercent: percent,
       tipoFechamento: _tipoFechamento,
+      nomeConcorrente: nomeConcorrente,
     );
     if (regraErro != null) {
       setState(() => _mensagemErro = regraErro);
@@ -143,12 +186,13 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
         closedPercent: closedPercent,
       );
 
-      final nomeConcorrente = _nomeConcorrenteController.text.trim();
       final motivoFechamento = _motivoFechamentoController.text.trim();
       final isPerdido = _tipoFechamento == TipoFechamento.perdido;
+      final existente = widget.lancamentoExistente;
+      final agora = DateTime.now();
       final lancamento = CarteiraLancamento.sanitizarCamposConcorrente(
         CarteiraLancamento(
-          id: const Uuid().v4(),
+          id: existente?.id ?? const Uuid().v4(),
           userId: _userId,
           safraId: safra.id,
           categoriaId: widget.categoria.id,
@@ -167,7 +211,8 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
               : null,
           dataFechamento: isPerdido ? _dataFechamento : null,
           dataLancamento: _dataLancamento,
-          createdAt: DateTime.now(),
+          createdAt: existente?.createdAt ?? agora,
+          updatedAt: existente != null ? agora : null,
         ),
       );
       await repo.saveLancamento(lancamento);
@@ -223,12 +268,14 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
     return CarteiraLancamento.validarRegrasFechamento(
       closedPercent: percent,
       tipoFechamento: _tipoFechamento,
+      nomeConcorrente: _nomeConcorrenteController.text.trim(),
     );
   }
 
   void _onTipoFechamentoChanged(TipoFechamento? value) {
     setState(() {
       _tipoFechamento = value;
+      _erroTipoFechamento = null;
       if (value != TipoFechamento.perdido) {
         _nomeConcorrenteController.clear();
         _motivoFechamentoController.clear();
@@ -329,7 +376,7 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                autofocus: true,
+                autofocus: !widget.emEdicao,
                 textInputAction: TextInputAction.next,
                 onChanged: (_) => setState(() {}),
                 validator: _validarPercentual,
@@ -436,6 +483,8 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
               TipoFechamentoToggle(
                 value: _tipoFechamento,
                 onChanged: _onTipoFechamentoChanged,
+                obrigatorio: true,
+                erro: _erroTipoFechamento,
               ),
               const SizedBox(height: 12),
               AnimatedSwitcher(
@@ -490,11 +539,23 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          TextField(
+                          TextFormField(
                             controller: _nomeConcorrenteController,
                             textInputAction: TextInputAction.next,
+                            onChanged: (_) => _formKey.currentState?.validate(),
+                            validator: (_) {
+                              if (_tipoFechamento != TipoFechamento.perdido) {
+                                return null;
+                              }
+                              final nome = _nomeConcorrenteController.text
+                                  .trim();
+                              if (nome.isEmpty) {
+                                return 'Informe quem levou o negócio';
+                              }
+                              return null;
+                            },
                             decoration: const InputDecoration(
-                              labelText: 'Nome do concorrente (opcional)',
+                              labelText: 'Nome do concorrente *',
                               border: OutlineInputBorder(),
                             ),
                           ),
@@ -544,7 +605,7 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Registrar'),
+              : Text(widget.emEdicao ? 'Salvar' : 'Registrar'),
         ),
       ],
     );
