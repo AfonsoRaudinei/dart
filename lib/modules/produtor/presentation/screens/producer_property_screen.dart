@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../data/producer_link_models.dart';
@@ -27,11 +28,13 @@ class _ProducerPropertyScreenState
 
   @override
   void dispose() {
+    SoloforteKeyboardDismiss.dismiss();
     _tokenController.dispose();
     super.dispose();
   }
 
   Future<void> _acceptToken() async {
+    SoloforteKeyboardDismiss.dismiss();
     final token = _tokenController.text.trim();
     if (token.isEmpty || _isSubmitting) return;
 
@@ -144,6 +147,7 @@ class _ProducerPropertyScreenState
   }
 
   void _openDrawing(ProducerOwnProperty property, ProducerOwnFarm farm) {
+    SoloforteKeyboardDismiss.dismiss();
     context.go(
       Uri(
         path: AppRoutes.map,
@@ -160,67 +164,72 @@ class _ProducerPropertyScreenState
   Widget build(BuildContext context) {
     final dashboardAsync = ref.watch(producerPropertyDashboardProvider);
 
-    return Scaffold(
-      backgroundColor: context.premiumBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () => context.go(AppRoutes.map),
-                  ),
-                  const Expanded(
-                    child: Text(
-                      'Minha propriedade',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: () async {
-                  ref.invalidate(producerPropertyDashboardProvider);
-                  await ref.read(producerPropertyDashboardProvider.future);
-                },
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, kFabSafeArea),
+    return SoloforteKeyboardDismiss(
+      child: Scaffold(
+        backgroundColor: context.premiumBackground,
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+                child: Row(
                   children: [
-                    dashboardAsync.when(
-                      data: (dashboard) => _DashboardContent(
-                        dashboard: dashboard,
-                        tokenController: _tokenController,
-                        isSubmittingToken: _isSubmitting,
-                        onSubmitToken: _acceptToken,
-                        onAddFarm: () => _saveFarm(),
-                        onEditFarm: (farm) => _saveFarm(farm: farm),
-                        onDeleteFarm: _deleteFarm,
-                        onAddField: (farm) => _saveField(farm),
-                        onEditField: (farm, field) =>
-                            _saveField(farm, field: field),
-                        onDeleteField: (_, field) => _deleteField(field),
-                        onOpenDrawing: _openDrawing,
-                      ),
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
-                      error: (_, __) => _RetryState(
-                        onRetry: () =>
-                            ref.invalidate(producerPropertyDashboardProvider),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () {
+                        SoloforteKeyboardDismiss.dismiss();
+                        context.go(AppRoutes.map);
+                      },
+                    ),
+                    const Expanded(
+                      child: Text(
+                        'Minha propriedade',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(producerPropertyDashboardProvider);
+                    await ref.read(producerPropertyDashboardProvider.future);
+                  },
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, kFabSafeArea),
+                    children: [
+                      dashboardAsync.when(
+                        data: (dashboard) => _DashboardContent(
+                          dashboard: dashboard,
+                          tokenController: _tokenController,
+                          isSubmittingToken: _isSubmitting,
+                          onSubmitToken: _acceptToken,
+                          onAddFarm: () => _saveFarm(),
+                          onEditFarm: (farm) => _saveFarm(farm: farm),
+                          onDeleteFarm: _deleteFarm,
+                          onAddField: (farm) => _saveField(farm),
+                          onEditField: (farm, field) =>
+                              _saveField(farm, field: field),
+                          onDeleteField: (_, field) => _deleteField(field),
+                          onOpenDrawing: _openDrawing,
+                        ),
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (_, __) => _RetryState(
+                          onRetry: () =>
+                              ref.invalidate(producerPropertyDashboardProvider),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

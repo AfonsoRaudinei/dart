@@ -25,13 +25,17 @@ Future<_FarmFormData?> _showFarmFormDialog(
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(),
+          onPressed: () {
+            SoloforteKeyboardDismiss.dismiss();
+            Navigator.of(dialogContext).pop();
+          },
           child: const Text('Cancelar'),
         ),
         FilledButton(
           onPressed: () {
             final name = nameController.text.trim();
             if (name.isEmpty) return;
+            SoloforteKeyboardDismiss.dismiss();
             Navigator.of(dialogContext).pop(
               _FarmFormData(
                 name: name,
@@ -46,6 +50,7 @@ Future<_FarmFormData?> _showFarmFormDialog(
       ],
     ),
   ).whenComplete(() {
+    SoloforteKeyboardDismiss.dismiss();
     nameController.dispose();
     cityController.dispose();
     stateController.dispose();
@@ -98,13 +103,17 @@ Future<_FieldFormData?> _showFieldFormDialog(
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(),
+          onPressed: () {
+            SoloforteKeyboardDismiss.dismiss();
+            Navigator.of(dialogContext).pop();
+          },
           child: const Text('Cancelar'),
         ),
         FilledButton(
           onPressed: () {
             final name = nameController.text.trim();
             if (name.isEmpty) return;
+            SoloforteKeyboardDismiss.dismiss();
             Navigator.of(dialogContext).pop(
               _FieldFormData(
                 name: name,
@@ -117,6 +126,7 @@ Future<_FieldFormData?> _showFieldFormDialog(
       ],
     ),
   ).whenComplete(() {
+    SoloforteKeyboardDismiss.dismiss();
     nameController.dispose();
     areaController.dispose();
   });
