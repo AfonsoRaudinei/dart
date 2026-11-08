@@ -93,6 +93,11 @@ final mapCameraSnapshotProvider = StateProvider.autoDispose<MapCameraSnapshot?>(
   (ref) => null,
 );
 
+/// Rotação atual da câmera (graus, 0 = norte para cima) — bússola / reset norte.
+final mapCameraRotationProvider = StateProvider.autoDispose<double>(
+  (ref) => 0,
+);
+
 /// Altura do chrome inferior do mapa (sheet stack) — reservado para padding de
 /// câmera/mapa no futuro. A coluna de ações **não** consome este valor
 /// (REGRA-MAP-CHROME-1: posição travada em [kMapActionColumnBottomInset]).
