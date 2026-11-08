@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -13,6 +14,7 @@ import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/agenda_ai/data/services/agenda_ai_service.dart';
 
 Future<void> showAgendaAiSheet(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
   return showSoloForteSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -275,39 +277,40 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final maxHeight = (screenHeight - keyboard).clamp(280.0, screenHeight);
     final height = (screenHeight * 0.86).clamp(280.0, maxHeight);
-    final isIos = soloForteSheetIsIos(context);
+    final isIos = v.isIos;
     // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final sheetBg = isIos ? Colors.transparent : const Color(0xFF1C1C1E);
-    final sheetRadius = isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
+    final sheetRadius = v.sheetRadius;
     final handleColor = isIos
-        ? SoloForteSheetSkinIos.handleColor
+        ? v.handleColor
         : const Color(0xFF3A3A3C);
-    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final titleColor = v.isIos ? v.titleColor : null;
     final iconColor = isIos
-        ? SoloForteSheetSkinIos.iconStroke
+        ? v.iconStroke
         : const Color(0xFF34C759);
     final chatPanelBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
+        ? v.cardBackground
         : const Color(0xFFF7F7F9);
-    final chatPanelRadius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+    final chatPanelRadius = v.cardRadius;
     final userBubble = isIos
-        ? SoloForteSheetSkinIos.badgeBackground
+        ? v.badgeBackground
         : const Color(0xFFE7F7EC);
-    final aiBubble = isIos ? Colors.white : Colors.white;
-    final inputFill = isIos ? Colors.white : const Color(0xFF2C2C2E);
+    final aiBubble = v.isDark ? v.inputFill : Colors.white;
+    final inputFill = v.isIos ? v.cardBackground : v.inputFill;
     final inputHint = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
+        ? v.subtitleColor
         : const Color(0xFF8E8E93);
     final ctaBg = isIos
-        ? SoloForteSheetSkinIos.ctaBackground
+        ? v.ctaBackground
         : const Color(0xFFF59E0B);
-    final ctaFg = isIos ? SoloForteSheetSkinIos.ctaText : Colors.black;
-    final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 12.0;
-    final chatTextColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final ctaFg = v.ctaText;
+    final ctaRadius = v.ctaRadius;
+    final chatTextColor = v.isIos ? v.titleColor : null;
 
     return Padding(
       padding: EdgeInsets.only(bottom: keyboard),
@@ -319,8 +322,8 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
             top: Radius.circular(sheetRadius),
           ),
           border: isIos
-              ? const Border(
-                  top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+              ? Border(
+                  top: BorderSide(color: v.sheetBorder),
                 )
               : null,
         ),
@@ -328,8 +331,8 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
           children: [
             const SizedBox(height: 10),
             Container(
-              width: isIos ? SoloForteSheetSkinIos.handleSize.width : 36,
-              height: isIos ? SoloForteSheetSkinIos.handleSize.height : 4,
+              width: v.handleSize.width,
+              height: v.handleSize.height,
               decoration: BoxDecoration(
                 color: handleColor,
                 borderRadius: BorderRadius.circular(999),
@@ -358,7 +361,7 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
               child: _loading
                   ? Center(
                       child: CircularProgressIndicator(
-                        color: isIos ? SoloForteSheetSkinIos.iconStroke : null,
+                        color: v.isIos ? v.iconStroke : null,
                       ),
                     )
                   : _error != null
@@ -381,15 +384,15 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
                         if (_recommendations.isEmpty)
                           Card(
                             color: isIos
-                                ? SoloForteSheetSkinIos.cardBackground
+                                ? v.cardBackground
                                 : null,
                             shape: isIos
                                 ? RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(
-                                      SoloForteSheetSkinIos.cardRadius,
+                                      v.cardRadius,
                                     ),
-                                    side: const BorderSide(
-                                      color: SoloForteSheetSkinIos.cardBorder,
+                                    side: BorderSide(
+                                      color: v.cardBorder,
                                     ),
                                   )
                                 : null,
@@ -405,15 +408,14 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
                           ..._recommendations.map(
                             (rec) => Card(
                               color: isIos
-                                  ? SoloForteSheetSkinIos.cardBackground
+                                  ? v.cardBackground
                                   : null,
                               shape: isIos
                                   ? RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(
-                                        SoloForteSheetSkinIos.cardRadius,
+                                        v.cardRadius,
                                       ),
-                                      side: const BorderSide(
-                                        color: SoloForteSheetSkinIos.cardBorder,
+                                      side: BorderSide(color: v.cardBorder,
                                       ),
                                     )
                                   : null,
@@ -426,7 +428,7 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
                                   rec['reason'] as String? ?? '',
                                   style: TextStyle(
                                     color: isIos
-                                        ? SoloForteSheetSkinIos.subtitleColor
+                                        ? v.subtitleColor
                                         : null,
                                   ),
                                 ),
@@ -436,17 +438,13 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
                                         height: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: isIos
-                                              ? SoloForteSheetSkinIos.iconStroke
-                                              : null,
+                                          color: v.isIos ? v.iconStroke : null,
                                         ),
                                       )
                                     : IconButton(
                                         icon: Icon(
                                           Icons.add_task,
-                                          color: isIos
-                                              ? SoloForteSheetSkinIos.iconStroke
-                                              : null,
+                                          color: v.isIos ? v.iconStroke : null,
                                         ),
                                         onPressed: () =>
                                             _createVisitFromRecommendation(rec),
@@ -472,7 +470,7 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
                             ),
                             border: isIos
                                 ? Border.all(
-                                    color: SoloForteSheetSkinIos.cardBorder,
+                                    color: v.cardBorder,
                                   )
                                 : null,
                           ),
@@ -503,8 +501,7 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
                                         borderRadius: BorderRadius.circular(10),
                                         border: isIos
                                             ? Border.all(
-                                                color: SoloForteSheetSkinIos
-                                                    .cardBorder,
+                                                color: v.cardBorder,
                                               )
                                             : null,
                                       ),
@@ -534,9 +531,8 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
                                         fillColor: inputFill,
                                         border: OutlineInputBorder(
                                           borderSide: isIos
-                                              ? const BorderSide(
-                                                  color: SoloForteSheetSkinIos
-                                                      .cardBorder,
+                                              ? BorderSide(
+                                                  color: v.cardBorder,
                                                 )
                                               : BorderSide.none,
                                           borderRadius: const BorderRadius.all(
@@ -545,9 +541,8 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
                                         ),
                                         enabledBorder: OutlineInputBorder(
                                           borderSide: isIos
-                                              ? const BorderSide(
-                                                  color: SoloForteSheetSkinIos
-                                                      .cardBorder,
+                                              ? BorderSide(
+                                                  color: v.cardBorder,
                                                 )
                                               : BorderSide.none,
                                           borderRadius: const BorderRadius.all(
