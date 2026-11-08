@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
+import 'package:soloforte_app/core/domain/talhao_condicao.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/modules/drawing/data/data_sources/drawing_local_store.dart';
@@ -330,6 +331,23 @@ void main() {
       expect(updated.properties.dataEmergencia, isNull);
       expect(updated.properties.cicloDias, isNull);
       expect(updated.properties.cultura, 'Milho');
+    });
+
+    test('grava a condição em cor e mantém a geometria', () async {
+      const fieldId = 'drawing-condicao';
+      final feature = _feature(fieldId, syncStatus: SyncStatus.synced);
+      await repository.saveFeature(feature);
+
+      await adapter.updateFieldAvaliacao(
+        fieldId: fieldId,
+        condicao: TalhaoCondicao.alerta,
+      );
+
+      final updated = await repository.getFeatureById(fieldId);
+      expect(updated, isNotNull);
+      expect(updated!.properties.cor, TalhaoCondicao.alerta.argb);
+      expect(updated.geometry.toJson(), feature.geometry.toJson());
+      expect(updated.properties.syncStatus, SyncStatus.local_only);
     });
 
     test('ciclo inválido lança StateError', () async {
