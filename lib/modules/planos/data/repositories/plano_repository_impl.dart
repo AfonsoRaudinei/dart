@@ -31,17 +31,6 @@ class PlanoRepositoryImpl implements IPlanoRepository {
   }
 
   @override
-  Future<UserPlan> ativarPlano(UserPlan plano) async {
-    final response = await _client
-        .from('user_plans')
-        .insert(plano.toJson())
-        .select()
-        .single();
-
-    return UserPlan.fromJson(response);
-  }
-
-  @override
   Future<List<Referral>> getReferrals(String referrerId) async {
     final response = await _client
         .from('referrals')
