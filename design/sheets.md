@@ -1,3 +1,16 @@
+## Contrato de consumo (Nov/2026)
+
+- Conteúdo de sheet resolve cor **só** por `SoloForteSheetVisuals.of(context)` (`lib/core/ui/sheets/solo_forte_sheet_visuals.dart`) — vale para Verde, Azul e Black.
+- Proibido fora de `lib/core/ui/sheets/`:
+  - `isIos ? … : Colors.white` / `Colors.black` / `SoloForteSheetTokens.titleColor` (**REGRA-SHEET-CONTRAST-1**);
+  - tokens crus `SoloForteSheetSkinIos.` / `SoloForteSheetSkinLight.` / `SoloForteSheetTokens.` (**REGRA-SHEET-VISUALS-1**);
+  - paleta nova (hex local) para fundo, texto, card, handle ou borda de sheet.
+- Token novo: entra em `sheet_tokens.dart` + getter em `SoloForteSheetVisuals` resolvendo os 3 temas. Feature nova não inventa token; só consome Visuals.
+- Skin Azul: handle (`#C7C7CC`, 36×4) e borda superior (`#E5E5EA`) neutros, iguais ao Verde; o azul fica para conteúdo e CTA.
+- Legado congelado (ratchet, só encolhe): `tool/sheet_contrast_legacy_allowlist.txt` e `tool/sheet_tokens_legacy_allowlist.txt`. Arquivo novo com o padrão → `arch_check` falha; arquivo migrado → `warn` pedindo remoção da allowlist.
+
+---
+
 # PROMPT CIRÚRGICO — feat: SheetSkin iOS para Tema Azul
 
 **Agente:** Engenheiro Sênior Flutter/Dart — Top 0,1% **Módulos tocados:** `core/ui/sheets/` + `ui/theme/premium/premium_app_theme.dart` **Tipo:** feature · skin condicional por tema ativo · ThemeExtension semântica **Risco:** **Alto após Fase 2** (blast radius 20+ callers) **Versão base:** v1.34.0+210 · arch_check Exit 0 **Auditoria IPA 210:** `.agent/AUDITORIA_REGRESSAO_IPA210.md`
