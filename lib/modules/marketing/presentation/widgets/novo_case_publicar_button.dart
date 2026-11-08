@@ -21,7 +21,7 @@ class NovoCasePublicarButton extends StatelessWidget {
     final v = SoloForteSheetVisuals.of(context);
     final bg =
         isIos ? SoloForteSheetSkinIos.ctaBackground : context.themeAccent;
-    final fg = isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+    final fg = v.ctaText;
     final radius =
         isIos ? SoloForteSheetSkinIos.ctaRadius : 14.0;
 
