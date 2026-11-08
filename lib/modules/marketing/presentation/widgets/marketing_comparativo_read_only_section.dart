@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/solo_forte_sheet_visuals.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/parametro_comparativo.dart';
 import 'comparativo_chart.dart';
@@ -28,18 +29,11 @@ class _MarketingComparativoReadOnlySectionState
 
   @override
   Widget build(BuildContext context) {
-    final cardBg = widget.isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
-    final cardBorder = widget.isIos
-        ? SoloForteSheetSkinIos.cardBorder
-        : PremiumTokens.hairlineLight;
-    final sectionLabelColor = widget.isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
-    final titleColor = widget.isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.inputText;
+    final v = SoloForteSheetVisuals.of(context);
+    final cardBg = v.cardBackground;
+    final cardBorder = v.cardBorder;
+    final sectionLabelColor = v.subtitleColor;
+    final titleColor = v.titleColor;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -110,6 +104,7 @@ class _ParametroReadOnlyRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final unit = parametro.unidade == null || parametro.unidade!.isEmpty
         ? ''
         : ' ${parametro.unidade}';
@@ -120,12 +115,8 @@ class _ParametroReadOnlyRow extends StatelessWidget {
         ? PremiumTokens.alertError
         : parametro.isPositivo
         ? (isIos ? SoloForteSheetSkinIos.iconStroke : context.themeAccent)
-        : (isIos
-              ? SoloForteSheetSkinIos.subtitleColor
-              : SoloForteSheetTokens.inputHint);
-    final textColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.inputText;
+        : v.subtitleColor;
+    final textColor = v.titleColor;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
