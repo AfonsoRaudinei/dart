@@ -9,6 +9,16 @@ import '../../../../core/domain/cultura_tipo.dart';
 import '../../../../core/ui/cultura_material_fields.dart';
 import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 
+/// Padding inferior do form. Host do mapa já encolhe o detent pelo teclado.
+@visibleForTesting
+double drawingInfoEditSheetBottomPadding({
+  required bool embedded,
+  required double keyboardInset,
+  double extra = 24,
+}) {
+  return (embedded ? 0.0 : keyboardInset) + extra;
+}
+
 /// Bottom sheet para editar as informações básicas de um talhão:
 /// nome, cliente, fazenda, área (read-only), cultura e safra.
 ///
@@ -179,10 +189,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
     final inputBg = v.cardBackground;
     final hintColor = v.inputHint;
     final divColor = v.rowDivider;
-    final textStyle = TextStyle(
-      color: v.onSheetPrimary,
-      fontSize: 14,
-    );
+    final textStyle = TextStyle(color: v.onSheetPrimary, fontSize: 14);
     final labelStyle = TextStyle(
       color: v.onSheetSecondary,
       fontSize: 12,
@@ -193,9 +200,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
       fontSize: 17,
       fontWeight: FontWeight.w600,
     );
-    final mutedText = textStyle.copyWith(
-      color: v.onSheetSecondary,
-    );
+    final mutedText = textStyle.copyWith(color: v.onSheetSecondary);
 
     return Container(
       decoration: BoxDecoration(
@@ -206,7 +211,10 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
         left: 16,
         right: 16,
         top: 12,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        bottom: drawingInfoEditSheetBottomPadding(
+          embedded: widget.embedded,
+          keyboardInset: MediaQuery.viewInsetsOf(context).bottom,
+        ),
       ),
       child: Form(
         key: _formKey,
@@ -227,10 +235,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                 ),
               ),
 
-            Text(
-              'Editar Informações',
-              style: titleStyle,
-            ),
+            Text('Editar Informações', style: titleStyle),
             const SizedBox(height: 20),
 
             // Nome
@@ -239,6 +244,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
             TextFormField(
               controller: _nomeCtrl,
               style: textStyle,
+              scrollPadding: const EdgeInsets.only(bottom: 80),
               decoration: InputDecoration(
                 filled: true,
                 fillColor: inputBg,
@@ -264,9 +270,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
               decoration: BoxDecoration(
                 color: inputBg,
                 borderRadius: BorderRadius.circular(8),
-                border: isIos
-                    ? Border.all(color: v.cardBorder)
-                    : null,
+                border: isIos ? Border.all(color: v.cardBorder) : null,
               ),
               child: Text(
                 widget.feature.properties.areaHa.toStringAsFixed(2),
@@ -299,9 +303,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                     items: [
                       const DropdownMenuItem<Client>(
                         value: null,
-                        child: Text(
-                          '— Nenhum —',
-                        ),
+                        child: Text('— Nenhum —'),
                       ),
                       ...clientState.clients.map(
                         (c) => DropdownMenuItem(value: c, child: Text(c.name)),
@@ -392,14 +394,8 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                   child: OutlinedButton(
                     onPressed: _close,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: isIos
-                          ? v.ghostText
-                          : v.onSheetSecondary,
-                      side: BorderSide(
-                        color: isIos
-                            ? v.ghostBorder
-                            : divColor,
-                      ),
+                      foregroundColor: isIos ? v.ghostText : v.onSheetSecondary,
+                      side: BorderSide(color: isIos ? v.ghostBorder : divColor),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
