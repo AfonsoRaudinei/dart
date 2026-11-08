@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/visit.dart';
 import '../../domain/enums/event_type.dart';
@@ -64,6 +65,11 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
     } catch (_) {
       // Falha silenciosa: coordenadas permanecem null.
     }
+  }
+
+  void _fecharDialog([bool? result]) {
+    SoloforteKeyboardDismiss.dismiss();
+    Navigator.of(context).pop(result);
   }
 
   Future<void> _selectDate() async {
@@ -190,6 +196,7 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
           await DistanceWarningDialog.show(context, warning);
         }
 
+        SoloforteKeyboardDismiss.dismiss();
         navigator.pop(true);
         messenger.showSnackBar(
           const SnackBar(
@@ -394,7 +401,7 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          onPressed: _isLoading ? null : () => _fecharDialog(),
           child: const Text('Cancelar'),
         ),
         ElevatedButton(

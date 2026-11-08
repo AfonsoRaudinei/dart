@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/visit.dart';
@@ -57,6 +58,11 @@ class _VisitEditDialogState extends ConsumerState<VisitEditDialog> {
   void dispose() {
     _tituloController.dispose();
     super.dispose();
+  }
+
+  void _fecharDialog([bool? result]) {
+    SoloforteKeyboardDismiss.dismiss();
+    Navigator.of(context).pop(result);
   }
 
   Future<void> _selectDate() async {
@@ -176,6 +182,7 @@ class _VisitEditDialogState extends ConsumerState<VisitEditDialog> {
           await DistanceWarningDialog.show(context, warning);
         }
 
+        SoloforteKeyboardDismiss.dismiss();
         navigator.pop(true);
         messenger.showSnackBar(
           const SnackBar(
@@ -373,7 +380,7 @@ class _VisitEditDialogState extends ConsumerState<VisitEditDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          onPressed: _isLoading ? null : () => _fecharDialog(),
           child: const Text('Cancelar'),
         ),
         ElevatedButton(
