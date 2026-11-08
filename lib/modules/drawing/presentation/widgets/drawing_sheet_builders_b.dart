@@ -168,16 +168,12 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     final f = NumberFormat("##0.##", "pt_BR");
     final isIos = v.isIos;
     final sectionLabelStyle = TextStyle(
-      color: isIos
-          ? v.titleColor
-          : v.sectionLabel,
+      color: isIos ? v.titleColor : v.sectionLabel,
       fontSize: v.sectionFontSize,
       fontWeight: v.sectionWeight,
     );
     final titleColor = v.titleColor;
-    final muted = isIos
-        ? v.subtitleColor
-        : v.sectionLabel;
+    final muted = isIos ? v.subtitleColor : v.sectionLabel;
     final panelBg = v.cardBackground;
     final panelBorder = v.cardBorder;
     final inputText = v.titleColor;
@@ -283,6 +279,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
             TextFormField(
               controller: _nomeController,
               style: TextStyle(color: inputText),
+              scrollPadding: const EdgeInsets.only(bottom: 80),
               decoration: InputDecoration(
                 hintText: isMultiPartSave ? 'Ex: Talhão' : 'Ex: Talhão Norte',
                 hintStyle: TextStyle(color: inputHint),
@@ -297,15 +294,13 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: isIos
-                      ? BorderSide(color: v.cardBorder,
-                        )
+                      ? BorderSide(color: v.cardBorder)
                       : BorderSide.none,
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: isIos
-                      ? BorderSide(color: v.cardBorder,
-                        )
+                      ? BorderSide(color: v.cardBorder)
                       : BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
@@ -600,7 +595,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
   }
 
   InputDecoration _sheetFieldDecoration({Widget? suffixIcon}) {
-        final v = SoloForteSheetVisuals.of(context);
+    final v = SoloForteSheetVisuals.of(context);
     final isIos = v.isIos;
     final fillColor = v.cardBackground;
     final focusBorder = v.accent;
@@ -611,15 +606,11 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       suffixIcon: suffixIcon,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: isIos
-            ? BorderSide(color: v.cardBorder)
-            : BorderSide.none,
+        borderSide: isIos ? BorderSide(color: v.cardBorder) : BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: isIos
-            ? BorderSide(color: v.cardBorder)
-            : BorderSide.none,
+        borderSide: isIos ? BorderSide(color: v.cardBorder) : BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
@@ -665,9 +656,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       builder: (ctx) {
         final isIos = soloForteSheetIsIos(ctx);
         final titleColor = v.isIos ? v.titleColor : null;
-        final subtitleColor = isIos
-            ? v.subtitleColor
-            : null;
+        final subtitleColor = isIos ? v.subtitleColor : null;
         final iconColor = v.accent;
         return SafeArea(
           child: Column(
