@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -8,6 +9,7 @@ import 'package:soloforte_app/core/html_templates/report_export_service.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/utils/share_position.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/domain/occurrence.dart';
+import 'package:soloforte_app/modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/widgets/occurrence_detail_sheet.dart';
 
 /// Smoke tests P0 — proxy automatizado dos cenários de release desta sessão.
@@ -158,7 +160,14 @@ void main() {
         ],
       );
 
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            occurrencesListProvider.overrideWith((ref) async => [occurrence]),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('abrir-ocorrencia'));
@@ -185,11 +194,17 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => TextButton(
-              onPressed: () => OccurrenceDetailSheet.show(context, occurrence),
-              child: const Text('abrir-mapa'),
+        ProviderScope(
+          overrides: [
+            occurrencesListProvider.overrideWith((ref) async => [occurrence]),
+          ],
+          child: MaterialApp(
+            home: Builder(
+              builder: (context) => TextButton(
+                onPressed: () =>
+                    OccurrenceDetailSheet.show(context, occurrence),
+                child: const Text('abrir-mapa'),
+              ),
             ),
           ),
         ),

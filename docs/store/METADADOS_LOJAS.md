@@ -62,16 +62,22 @@ agrícola,campo,consultoria,mapa,visitas,ocorrências,offline,fazenda,talhão,ag
 ## URL de suporte
 
 ```
-mailto:privacidade@soloforte.app
+https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/suporte.html
 ```
 
 ## URL política de privacidade
 
 ```
-https://raw.githubusercontent.com/AfonsoRaudinei/dart/main/docs/legal/politica-de-privacidade.md
+https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/
 ```
 
-*(Substituir por domínio HTTPS próprio antes da submissão final.)*
+## URL de exclusão de conta (Play, Data safety)
+
+```
+https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/exclusao-de-conta.html
+```
+
+Fonte HTML: `docs/legal/github-pages/`. Publicar na raiz do repositório que já serve a primeira URL. Instruções: `docs/legal/github-pages/PUBLICAR.md`.
 
 ---
 

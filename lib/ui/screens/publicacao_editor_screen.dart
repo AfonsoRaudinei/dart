@@ -95,7 +95,7 @@ class _PublicacaoEditorScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Publicação salva com sucesso!'),
+          content: const Text('Publicação salva com sucesso!'),
           backgroundColor: context.themeAccent,
         ),
       );

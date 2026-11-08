@@ -4,21 +4,27 @@ import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/entities/carteira_lancamento.dart';
 
-/// Toggle compacto e opcional entre [Vendido] e [Perdido para concorrência].
-///
-/// Toque no rótulo ativo novamente para limpar a seleção (negociação em aberto).
+/// Toggle entre [Vendido] e [Perdido para concorrência].
 class TipoFechamentoToggle extends StatelessWidget {
   const TipoFechamentoToggle({
     super.key,
     required this.value,
     required this.onChanged,
+    this.obrigatorio = false,
+    this.erro,
   });
 
   final TipoFechamento? value;
   final ValueChanged<TipoFechamento?> onChanged;
+  final bool obrigatorio;
+  final String? erro;
 
   void _select(TipoFechamento tipo) {
     HapticFeedback.selectionClick();
+    if (obrigatorio) {
+      onChanged(tipo);
+      return;
+    }
     onChanged(value == tipo ? null : tipo);
   }
 
@@ -35,7 +41,7 @@ class TipoFechamentoToggle extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Tipo de fechamento (opcional)',
+          obrigatorio ? 'Tipo de fechamento *' : 'Tipo de fechamento (opcional)',
           style: TextStyle(fontSize: 12, color: hintColor),
         ),
         const SizedBox(height: 6),
@@ -63,11 +69,21 @@ class TipoFechamentoToggle extends StatelessWidget {
             ],
           ),
         ),
-        if (value == null) ...[
+        if (!obrigatorio && value == null) ...[
           const SizedBox(height: 4),
           Text(
             'Negociação em aberto',
             style: TextStyle(fontSize: 11, color: hintColor),
+          ),
+        ],
+        if (erro != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            erro!,
+            style: TextStyle(
+              fontSize: 11,
+              color: Theme.of(context).colorScheme.error,
+            ),
           ),
         ],
       ],

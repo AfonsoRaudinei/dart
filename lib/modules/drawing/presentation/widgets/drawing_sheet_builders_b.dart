@@ -544,7 +544,6 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
 
   Widget _buildClientField() {
     final clientState = ref.watch(drawingClientProvider);
-    final isIos = soloForteSheetIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
     final inputText = v.titleColor;
     final inputHint = v.subtitleColor;
@@ -598,7 +597,6 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
 
   Widget _buildFarmField() {
     final clientState = ref.watch(drawingClientProvider);
-    final isIos = soloForteSheetIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
     final inputText = v.titleColor;
     final inputHint = v.subtitleColor;

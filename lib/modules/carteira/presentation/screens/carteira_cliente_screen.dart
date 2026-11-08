@@ -238,22 +238,44 @@ class _CategoriaClienteItemState extends ConsumerState<_CategoriaClienteItem> {
     }
   }
 
-  Future<void> _abrirLancamento() async {
+  Future<void> _abrirLancamento({CarteiraLancamento? lancamento}) async {
     final saved = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (_) => LancamentoFormDialog(
         categoria: widget.categoria,
         clienteId: widget.clienteId,
         clienteNome: widget.clienteNome,
         clientAreaHa: widget.clientAreaHa,
+        lancamentoExistente: lancamento,
       ),
     );
 
     if (!mounted || saved != true) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Lançamento registrado com sucesso.')),
+      SnackBar(
+        content: Text(
+          lancamento == null
+              ? 'Lançamento registrado com sucesso.'
+              : 'Lançamento atualizado com sucesso.',
+        ),
+      ),
     );
+  }
+
+  String _rotuloTipoFechamento(CarteiraLancamento lancamento) {
+    switch (lancamento.tipoFechamento) {
+      case TipoFechamento.vendido:
+        return 'Vendido';
+      case TipoFechamento.perdido:
+        final concorrente = (lancamento.nomeConcorrente ?? '').trim();
+        return concorrente.isEmpty
+            ? 'Perdido p/ conc.'
+            : 'Perdido p/ conc. ($concorrente)';
+      case null:
+        return 'Fechamento pendente';
+    }
   }
 
   String _rotuloLancamento(CarteiraLancamento lancamento) {
@@ -470,15 +492,42 @@ class _CategoriaClienteItemState extends ConsumerState<_CategoriaClienteItem> {
                           final fmt =
                               '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
                           final valorLabel = _rotuloLancamento(l);
+                          final fechamentoLabel = _rotuloTipoFechamento(l);
+                          final motivo = (l.motivoFechamento ?? '').trim();
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 2),
-                            child: Text(
-                              '$fmt · $valorLabel'
-                              '${l.observacao != null ? ' · ${l.observacao}' : ''}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    '$fmt · $valorLabel · $fechamentoLabel'
+                                    '${l.observacao != null ? ' · ${l.observacao}' : ''}'
+                                    '${motivo.isNotEmpty ? ' · $motivo' : ''}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: 'Editar lançamento',
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 32,
+                                    minHeight: 32,
+                                  ),
+                                  icon: Icon(
+                                    Icons.edit_outlined,
+                                    size: 16,
+                                    color: Colors.grey[600],
+                                  ),
+                                  onPressed: () => _abrirLancamento(
+                                    lancamento: l,
+                                  ),
+                                ),
+                              ],
                             ),
                           );
                         }).toList(),

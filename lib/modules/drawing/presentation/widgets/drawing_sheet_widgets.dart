@@ -196,7 +196,6 @@ class _MetricItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
     final valueColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
     final labelColor =
         isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.grey;
@@ -233,7 +232,6 @@ class _FormatButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
     final surface = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : Colors.grey[50];
