@@ -79,5 +79,21 @@ void main() {
         isNot(equals(kPrivateMapExploreInteractionFlags)),
       );
     });
+
+    test('mapa privado explorar amortece gestos multi-dedo', () {
+      expect(
+        kPrivateMapExploreInteractionOptions.enableMultiFingerGestureRace,
+        isTrue,
+        reason: 'um gesto vence por vez — menos mapa “flutuando”',
+      );
+      expect(
+        kPrivateMapExploreInteractionOptions.rotationThreshold,
+        greaterThan(20),
+      );
+      expect(
+        kPrivateMapExploreInteractionOptions.pinchMoveThreshold,
+        greaterThan(40),
+      );
+    });
   });
 }
