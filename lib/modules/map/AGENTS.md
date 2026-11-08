@@ -41,8 +41,9 @@
 ## Padrão de bottom sheets
 
 - Usar `showSoloForteSheet` de `lib/core/ui/sheets/soloforte_sheet.dart`.
-- Usar `SoloForteSheetTokens` de `lib/core/ui/sheets/sheet_tokens.dart` para fundo, texto, inputs e divisores.
-- Não duplicar handle, título, botão de fechar ou criar controles claros/brancos dentro de sheets escuros.
+- Cores do conteúdo (fundo, texto, inputs, chips, divisores, CTA) via `SoloForteSheetVisuals.of(context)` — resolve Verde (claro), Azul (skin iOS) e Black (escuro).
+- `SoloForteSheetTokens` / `SoloForteSheetSkinIos` / `SoloForteSheetSkinLight` (`sheet_tokens.dart`) são a fonte dos valores, mas só se consomem dentro de `lib/core/ui/sheets/`; feature nova não usa token cru nem cria paleta (ver `design/sheets.md`). Proibido `isIos ? … : Colors.white`.
+- Não duplicar handle, título, botão de fechar; não criar controles Material brancos/escuros fixos que ignorem o tema.
 
 ## Qualidade obrigatoria
 
