@@ -205,7 +205,6 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
     return Text(
       label,
       style: TextStyle(
@@ -228,7 +227,6 @@ class _FilterGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -264,7 +262,6 @@ class _AgendaFilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
     final unselectedFill = isIos
         ? SoloForteSheetSkinIos.background
         : context.premiumSurface;
