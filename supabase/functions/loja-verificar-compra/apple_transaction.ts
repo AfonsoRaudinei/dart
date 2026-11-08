@@ -24,7 +24,7 @@ export function decodeJwsPayload(jws: string): Record<string, unknown> {
 
 export async function verifyApplePurchase(
   deps: AppleVerifyDeps,
-  input: { productId: string; transactionId: string },
+  input: { productId: string; transactionId: string; userId: string },
 ): Promise<AppleVerifyResult> {
   if (!deps.issuerId || !deps.keyId || !deps.privateKeyPem) {
     return { ok: false, reason: 'apple_not_configured' }
@@ -64,5 +64,9 @@ export async function verifyApplePurchase(
     return { ok: false, reason: 'transaction_mismatch' }
   }
   if (claims.revocationDate != null) return { ok: false, reason: 'revoked' }
+  const account = String(claims.appAccountToken ?? '').toLowerCase()
+  if (!account || account !== input.userId.toLowerCase()) {
+    return { ok: false, reason: 'account_mismatch' }
+  }
   return { ok: true, productId: input.productId, transactionId: input.transactionId }
 }
