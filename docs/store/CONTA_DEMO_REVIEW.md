@@ -8,19 +8,17 @@ Fornecer estas credenciais nos campos "App Review Information" / "Instruções p
 
 | Campo | Valor |
 |-------|-------|
-| **E-mail** | `review@soloforte.app` *(criar no Supabase Auth)* |
+| **E-mail** | `review@soloforte.app` |
 | **Senha** | `ReviewSolo2026!` *(alterar antes de submeter)* |
 
 ---
 
-## Pré-requisitos no Supabase
+## Status no Supabase (produção — pyoejhhkjlrjijiviryq)
 
-1. Criar usuário `review@soloforte.app` com e-mail confirmado
-2. Popular dados demo:
-   - 1 cliente "Fazenda Demo"
-   - 1 fazenda com 1 talhão (geometria simples)
-   - 1 visita finalizada (opcional)
-3. Executar schemas: `supabase_schema.sql`, `auth_delete_account.sql`, `feedback_table.sql`
+- [x] Usuário `review@soloforte.app` criado, e-mail confirmado
+- [x] Cliente demo "Fazenda Demo" criado
+- [x] Fazenda demo (50 ha) com 1 talhão "Talhão Demo 01" (geometria simples, 10 ha)
+- [x] Edge Function `delete-user` publicada e atualizada (v15)
 
 ---
 
@@ -50,4 +48,3 @@ privacidade@soloforte.app
 
 - Não usar conta pessoal real para review.
 - Rotacionar senha após aprovação ou rejeição.
-- Se e-mail confirmation estiver ativo, confirmar manualmente no Supabase Dashboard.
