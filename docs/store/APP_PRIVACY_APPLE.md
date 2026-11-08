@@ -18,7 +18,10 @@ Preencher no App Store Connect → App Privacy.
 | Name | App Functionality | Yes |
 | Precise Location | App Functionality | Yes |
 | Photos or Videos | App Functionality | Yes |
+| Audio Data | App Functionality | Yes |
 | Other User Content | App Functionality | Yes |
+
+Áudio da ocorrência (até 30 segundos no ponto) é ligado à identidade, com finalidade de funcionalidade do app, e **não** é usado para tracking. O manifesto declara `NSPrivacyCollectedDataTypeAudioData` com `Linked=true`, `Tracking=false` e purpose `AppFunctionality`.
 
 ---
 
