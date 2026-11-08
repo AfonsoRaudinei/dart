@@ -132,6 +132,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return SoloForteSheetSkinScope(
       variant: _visitSheetVariant(context),
       child: Builder(builder: _buildSheet),
@@ -139,6 +140,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
   }
 
   Widget _buildSheet(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final clientsAsync = ref.watch(_visitClientsProvider);
     final farmsAsync = _selectedClient != null
         ? ref.watch(_visitFarmsProvider(_selectedClient!.id))
@@ -146,14 +148,13 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
 
     final isConfirmEnabled = _selectedClient != null;
     final isNavigateEnabled = _selectedClient != null;
-    final v = SoloForteSheetVisuals.of(context);
     final isIos = v.isIos;
     final sheetBg = v.sheetBackground;
     final handleColor = v.handleColor;
     final titleColor = v.titleColor;
     final ctaBg = v.ctaBackground;
     final ctaDisabled = v.cardBackground;
-    final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 14.0;
+    final ctaRadius = v.ctaRadius;
 
     // P5: Pré-selecionar cliente quando aberto via /map?modo=visita&clienteId=X
     if (widget.preSelectedClienteId != null && _selectedClient == null) {
@@ -174,11 +175,11 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
       decoration: BoxDecoration(
         color: sheetBg,
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(isIos ? SoloForteSheetSkinIos.sheetRadius : 20),
+          top: Radius.circular(v.sheetRadius),
         ),
         border: isIos
-            ? const Border(
-                top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+            ? Border(
+                top: BorderSide(color: v.sheetBorder),
               )
             : null,
       ),
@@ -188,8 +189,8 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
           Center(
             child: Container(
               margin: const EdgeInsets.only(top: 12),
-              width: isIos ? SoloForteSheetSkinIos.handleSize.width : 40,
-              height: isIos ? SoloForteSheetSkinIos.handleSize.height : 4,
+              width: v.handleSize.width,
+              height: v.handleSize.height,
               decoration: BoxDecoration(
                 color: handleColor,
                 borderRadius: BorderRadius.circular(999),
@@ -462,10 +463,11 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
   }
 
   Widget _buildTalhaoPicker(SoloForteSheetVisuals v) {
+    final v = SoloForteSheetVisuals.of(context);
     final enabled = _selectedFarm != null;
     final surface = v.cardBackground;
     final border = v.cardBorder;
-    final radius = v.isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+    final radius = v.cardRadius;
     final items = enabled ? _visibleTalhoes() : const <VisitTalhaoOption>[];
 
     return Column(
@@ -541,6 +543,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
   }
 
   Widget _buildCondicao(SoloForteSheetVisuals v) {
+    final v = SoloForteSheetVisuals.of(context);
     final selected = _selectedTalhao;
     if (selected == null) return const SizedBox.shrink();
     if (!selected.canRate) {
@@ -585,6 +588,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     bool isLoading = false,
     String emptyMessage = 'Vazio',
   }) {
+    final v = SoloForteSheetVisuals.of(context);
     final surface = v.cardBackground;
     final border = v.cardBorder;
     final focus = v.focusBorder;
@@ -592,7 +596,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     final muted = v.subtitleColor;
     final labelColor = v.subtitleColor;
     final iconColor = v.isIos ? v.arrowColor : v.subtitleColor;
-    final radius = v.isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+    final radius = v.cardRadius;
 
     final baseField = SizedBox(
       height: 56,
@@ -691,7 +695,8 @@ class _TalhaoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = visuals.isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+    final v = SoloForteSheetVisuals.of(context);
+    final radius = visuals.cardRadius;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(

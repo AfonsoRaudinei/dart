@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
@@ -26,15 +27,16 @@ class NdviTalhaoSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final v = SoloForteSheetVisuals.of(context);
     ref.watch(ndviEnsureCurrentDateProvider(fieldId));
     final ndviAsync = ref.watch(ndviImagesProvider(fieldId));
-    final isIos = soloForteSheetIsIos(context);
+    final isIos = v.isIos;
     final scheme = Theme.of(context).colorScheme;
     final titleColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
+        ? v.titleColor
         : scheme.onSurface;
     final subtitleColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
+        ? v.subtitleColor
         : scheme.onSurfaceVariant;
 
     return Column(
@@ -424,9 +426,10 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final textColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
-    final accent = isIos ? SoloForteSheetSkinIos.iconStroke : null;
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
+    final textColor = v.isIos ? v.titleColor : null;
+    final accent = v.isIos ? v.iconStroke : null;
     return SizedBox(
       height: 300,
       child: Column(
@@ -455,7 +458,8 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     return SizedBox(
       height: 220,
       child: Column(
@@ -466,7 +470,7 @@ class _EmptyState extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: isIos
-                  ? SoloForteSheetSkinIos.subtitleColor
+                  ? v.subtitleColor
                   : Colors.grey,
             ),
           ),
@@ -487,11 +491,12 @@ class _MaskUnavailable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     return Center(
       child: Icon(
         Icons.filter_b_and_w_outlined,
-        color: isIos ? SoloForteSheetSkinIos.iconStroke : Colors.white,
+        color: v.iconStroke,
         size: 48,
       ),
     );
@@ -503,11 +508,12 @@ class _ImageUnavailable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     return Center(
       child: Icon(
         Icons.satellite_alt_outlined,
-        color: isIos ? SoloForteSheetSkinIos.iconStroke : Colors.white,
+        color: v.iconStroke,
         size: 48,
       ),
     );
@@ -522,20 +528,21 @@ class _InfoPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: isIos
-            ? SoloForteSheetSkinIos.cardBackground
+            ? v.cardBackground
             : scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(
-          isIos ? SoloForteSheetSkinIos.cardRadius : 999,
+          v.cardRadius,
         ),
         border: Border.all(
           color: isIos
-              ? SoloForteSheetSkinIos.cardBorder
+              ? v.cardBorder
               : scheme.outlineVariant,
         ),
       ),
@@ -545,14 +552,14 @@ class _InfoPill extends StatelessWidget {
           Icon(
             icon,
             size: 14,
-            color: isIos ? SoloForteSheetSkinIos.iconStroke : scheme.onSurfaceVariant,
+            color: isIos ? v.iconStroke : scheme.onSurfaceVariant,
           ),
           const SizedBox(width: 6),
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w600,
-              color: isIos ? SoloForteSheetSkinIos.titleColor : scheme.onSurface,
+              color: isIos ? v.titleColor : scheme.onSurface,
             ),
           ),
         ],
@@ -568,6 +575,7 @@ class _ModeBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final isMask = displayMode == NdviDisplayMode.greenMask;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -592,6 +600,7 @@ class _NdviLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final items = displayMode == NdviDisplayMode.greenMask
         ? const [
             _LegendItem(color: Colors.white, label: 'Vegetacao'),
@@ -618,6 +627,7 @@ class _LegendChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -629,7 +639,7 @@ class _LegendChip extends StatelessWidget {
             borderRadius: BorderRadius.circular(3),
             border: Border.all(
               color: soloForteSheetIsIos(context)
-                  ? SoloForteSheetSkinIos.cardBorder
+                  ? v.cardBorder
                   : Colors.white24,
             ),
           ),
@@ -639,7 +649,7 @@ class _LegendChip extends StatelessWidget {
           item.label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: soloForteSheetIsIos(context)
-                ? SoloForteSheetSkinIos.subtitleColor
+                ? v.subtitleColor
                 : null,
           ),
         ),
