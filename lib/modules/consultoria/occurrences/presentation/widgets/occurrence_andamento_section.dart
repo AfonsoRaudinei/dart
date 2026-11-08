@@ -1,11 +1,10 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/services/sync_status_contract.dart';
 import '../../../../../core/ui/sheets/sheet_tokens.dart';
-import '../../../../../core/ui/sheets/soloforte_sheet.dart';
+import '../../../../../core/ui/sheets/solo_forte_sheet_visuals.dart';
 import '../../domain/occurrence.dart';
 import '../../domain/occurrence_andamento.dart';
 import '../controllers/occurrence_controller.dart';
@@ -144,14 +143,16 @@ class _OccurrenceAndamentoSectionState
       return const SizedBox.shrink();
     }
 
-    final isIos = soloForteSheetIsIos(context);
-    final cardBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : const Color(0xFF1C1C1E);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
+    final cardBg = v.isDark ? v.sheetBackground : v.cardBackground;
     final cardRadius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
-    final subtitle = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : Colors.white54;
+    final subtitle = v.subtitleColor;
+    final inputFill = switch (v.variant) {
+      SoloForteSheetVariant.ios => v.iconBackground,
+      SoloForteSheetVariant.light => v.sheetBackground,
+      SoloForteSheetVariant.dark => v.inputFill,
+    };
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -159,9 +160,7 @@ class _OccurrenceAndamentoSectionState
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(cardRadius),
-          border: isIos
-              ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
-              : null,
+          border: v.isDark ? null : Border.all(color: v.cardBorder),
         ),
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
         child: Column(
@@ -207,20 +206,20 @@ class _OccurrenceAndamentoSectionState
                     : 'Não informado',
                 style: TextStyle(
                   fontSize: 15,
-                  color: isIos ? CupertinoColors.label : Colors.white,
+                  color: v.titleColor,
                 ),
               )
             else
               TextField(
                 controller: _responsavelCtrl,
                 textInputAction: TextInputAction.done,
+                style: TextStyle(color: v.inputText),
                 decoration: InputDecoration(
                   hintText: 'Quem está cuidando?',
+                  hintStyle: TextStyle(color: v.inputHint),
                   isDense: true,
                   filled: true,
-                  fillColor: isIos
-                      ? SoloForteSheetSkinIos.iconBackground
-                      : const Color(0xFF2C2C2E),
+                  fillColor: inputFill,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide.none,
