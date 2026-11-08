@@ -23,7 +23,9 @@ import '../../screens/map/providers/occurrence_form_guard_provider.dart';
 import '../../../modules/dashboard/services/location_service.dart';
 import '../../../modules/dashboard/domain/location_settings.dart';
 import '../../screens/map/handlers/map_location_handler.dart';
+import '../../../modules/dashboard/providers/location_providers.dart';
 import '../../screens/map/handlers/visit_check_in_map_focus.dart';
+import '../../screens/map/handlers/visit_check_in_talhoes.dart';
 import 'map_sheet_state.dart'; // 🛡 REFATORAÇÃO: Modelo compartilhado
 import '../../../core/utils/app_logger.dart';
 import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
@@ -625,7 +627,15 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     }
 
     // Iniciar visita
+    final userPosition = ref
+        .watch(locationStreamProvider)
+        .valueOrNull
+        ?.position;
     return VisitSheet(
+      userPosition: userPosition,
+      loadTalhoes: (farmId) => loadVisitTalhaoOptions(ref, farmId),
+      onRateTalhao: (talhaoId, condicao) =>
+          applyVisitTalhaoCondicao(ref, fieldId: talhaoId, condicao: condicao),
       onNavigateToArea: buildVisitCheckInNavigateHandler(ref, widget.onClose),
       onConfirm: (clientId, farmId, areaId, activity) async {
         final locationService = LocationService();

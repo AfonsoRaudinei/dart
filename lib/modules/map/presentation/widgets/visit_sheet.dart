@@ -2,8 +2,10 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/contracts/i_visit_client_lookup.dart';
+import 'package:soloforte_app/core/domain/talhao_condicao.dart';
 import 'package:soloforte_app/core/contracts/i_visit_client_lookup_provider.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
@@ -19,10 +21,35 @@ final _visitFarmsProvider = FutureProvider.family
       return ref.watch(visitClientLookupProvider).listFarmsByClient(clientId);
     });
 
-final _visitFieldsProvider = FutureProvider.family
-    .autoDispose<List<VisitFieldSummary>, String>((ref, farmId) {
-      return ref.watch(visitClientLookupProvider).listFieldsByFarm(farmId);
-    });
+/// Talhão mostrado no check-in. [canRate] só é verdadeiro para polígono desenhado.
+class VisitTalhaoOption {
+  const VisitTalhaoOption({
+    required this.id,
+    required this.name,
+    required this.areaHa,
+    required this.canRate,
+    required this.condicao,
+    this.centroid,
+  });
+
+  final String id;
+  final String name;
+  final double areaHa;
+  final bool canRate;
+  final TalhaoCondicao condicao;
+  final LatLng? centroid;
+
+  VisitTalhaoOption copyWith({TalhaoCondicao? condicao}) {
+    return VisitTalhaoOption(
+      id: id,
+      name: name,
+      areaHa: areaHa,
+      canRate: canRate,
+      condicao: condicao ?? this.condicao,
+      centroid: centroid,
+    );
+  }
+}
 
 /// Host de check-in usa [preserveMaterialDefaults] (DraggableScrollableSheet),
 /// que força o Scope em `light`. A variante real vem de
@@ -58,10 +85,18 @@ class VisitSheet extends ConsumerStatefulWidget {
   // Bug 1: scrollController do DraggableScrollableSheet para expandir via drag.
   final ScrollController? scrollController;
 
+  final Future<List<VisitTalhaoOption>> Function(String farmId) loadTalhoes;
+  final Future<void> Function(String talhaoId, TalhaoCondicao condicao)
+  onRateTalhao;
+  final LatLng? userPosition;
+
   const VisitSheet({
     super.key,
     required this.onConfirm,
     required this.onNavigateToArea,
+    required this.loadTalhoes,
+    required this.onRateTalhao,
+    this.userPosition,
     this.preSelectedClienteId,
     this.scrollController,
   });
@@ -73,8 +108,13 @@ class VisitSheet extends ConsumerStatefulWidget {
 class _VisitSheetState extends ConsumerState<VisitSheet> {
   VisitClientSummary? _selectedClient;
   VisitFarmSummary? _selectedFarm;
-  VisitFieldSummary? _selectedTalhao;
+  VisitTalhaoOption? _selectedTalhao;
   String _selectedActivity = 'Monitoramento';
+  String _talhaoQuery = '';
+  final _talhaoSearchController = TextEditingController();
+  List<VisitTalhaoOption> _talhoes = const [];
+  bool _loadingTalhoes = false;
+  int _talhaoLoadGeneration = 0;
 
   final List<String> _activities = [
     'Monitoramento',
@@ -83,6 +123,12 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     'Colheita',
     'Outro',
   ];
+
+  @override
+  void dispose() {
+    _talhaoSearchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,9 +143,6 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     final farmsAsync = _selectedClient != null
         ? ref.watch(_visitFarmsProvider(_selectedClient!.id))
         : const AsyncData<List<VisitFarmSummary>>([]);
-    final fieldsAsync = _selectedFarm != null
-        ? ref.watch(_visitFieldsProvider(_selectedFarm!.id))
-        : const AsyncData<List<VisitFieldSummary>>([]);
 
     final isConfirmEnabled = _selectedClient != null;
     final isNavigateEnabled = _selectedClient != null;
@@ -110,8 +153,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     final titleColor = v.titleColor;
     final ctaBg = v.ctaBackground;
     final ctaDisabled = v.cardBackground;
-    final ctaRadius =
-        isIos ? SoloForteSheetSkinIos.ctaRadius : 14.0;
+    final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 14.0;
 
     // P5: Pré-selecionar cliente quando aberto via /map?modo=visita&clienteId=X
     if (widget.preSelectedClienteId != null && _selectedClient == null) {
@@ -183,7 +225,11 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                         _selectedClient = c;
                         _selectedFarm = null;
                         _selectedTalhao = null;
+                        _talhaoQuery = '';
+                        _talhoes = const [];
                       });
+                      _talhaoSearchController.clear();
+                      _loadTalhoes(null);
                     },
                     isLoading: clientsAsync.isLoading,
                     v: v,
@@ -199,26 +245,21 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                       setState(() {
                         _selectedFarm = f;
                         _selectedTalhao = null;
+                        _talhaoQuery = '';
                       });
+                      _talhaoSearchController.clear();
+                      _loadTalhoes(f?.id);
                     },
                     emptyMessage: 'Nenhuma fazenda encontrada',
                     isLoading: farmsAsync.isLoading,
                     v: v,
                   ),
                   const SizedBox(height: 12),
-                  _buildDropdown<VisitFieldSummary>(
-                    label: 'Área / Talhão',
-                    value: _selectedTalhao,
-                    items: fieldsAsync.valueOrNull ?? [],
-                    itemLabel: (t) => t.name,
-                    enabled: _selectedFarm != null,
-                    onChanged: (t) {
-                      setState(() => _selectedTalhao = t);
-                    },
-                    emptyMessage: 'Nenhum talhão encontrado',
-                    isLoading: fieldsAsync.isLoading,
-                    v: v,
-                  ),
+                  _buildTalhaoPicker(v),
+                  if (_selectedTalhao != null) ...[
+                    const SizedBox(height: 12),
+                    _buildCondicao(v),
+                  ],
                   const SizedBox(height: 12),
                   _buildDropdown<String>(
                     label: 'Atividade',
@@ -279,9 +320,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                         : null,
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(
-                        color: isNavigateEnabled
-                            ? v.iconStroke
-                            : v.cardBorder,
+                        color: isNavigateEnabled ? v.iconStroke : v.cardBorder,
                         width: 1.5,
                       ),
                       shape: RoundedRectangleBorder(
@@ -328,9 +367,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                     child: Text(
                       'CONFIRMAR CHEGADA',
                       style: TextStyle(
-                        color: isConfirmEnabled
-                            ? v.ctaText
-                            : v.subtitleColor,
+                        color: isConfirmEnabled ? v.ctaText : v.subtitleColor,
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
                         letterSpacing: 1.2,
@@ -343,6 +380,197 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _loadTalhoes(String? farmId) async {
+    final generation = ++_talhaoLoadGeneration;
+    if (farmId == null || farmId.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _talhoes = const [];
+        _loadingTalhoes = false;
+      });
+      return;
+    }
+
+    setState(() => _loadingTalhoes = true);
+    final items = await widget.loadTalhoes(farmId);
+    if (!mounted || generation != _talhaoLoadGeneration) return;
+    setState(() {
+      _talhoes = items;
+      _loadingTalhoes = false;
+      final selectedId = _selectedTalhao?.id;
+      _selectedTalhao = selectedId == null
+          ? null
+          : items.where((item) => item.id == selectedId).firstOrNull;
+    });
+  }
+
+  List<VisitTalhaoOption> _visibleTalhoes() {
+    final query = _talhaoQuery.trim().toLowerCase();
+    final items = _talhoes.where((item) {
+      if (query.isEmpty) return true;
+      return item.name.toLowerCase().contains(query);
+    }).toList();
+    final user = widget.userPosition;
+    if (user == null) {
+      items.sort(
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      );
+      return items;
+    }
+    final distance = const Distance();
+    double metersOf(VisitTalhaoOption item) {
+      final centroid = item.centroid;
+      if (centroid == null) return double.infinity;
+      return distance.as(LengthUnit.Meter, user, centroid);
+    }
+
+    items.sort((a, b) => metersOf(a).compareTo(metersOf(b)));
+    return items;
+  }
+
+  String _talhaoSubtitle(VisitTalhaoOption item) {
+    final area = '${item.areaHa.toStringAsFixed(2)} ha';
+    final user = widget.userPosition;
+    final centroid = item.centroid;
+    final distance = user == null || centroid == null
+        ? null
+        : const Distance().as(LengthUnit.Kilometer, user, centroid);
+    final base = distance == null
+        ? area
+        : '$area · ${distance.toStringAsFixed(2)} km';
+    return item.canRate ? base : '$base · sem polígono';
+  }
+
+  Future<void> _rate(TalhaoCondicao condicao) async {
+    final selected = _selectedTalhao;
+    if (selected == null || !selected.canRate) return;
+    try {
+      await widget.onRateTalhao(selected.id, condicao);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível marcar a condição.')),
+      );
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _selectedTalhao = selected.copyWith(condicao: condicao));
+    await _loadTalhoes(_selectedFarm?.id);
+  }
+
+  Widget _buildTalhaoPicker(SoloForteSheetVisuals v) {
+    final enabled = _selectedFarm != null;
+    final surface = v.cardBackground;
+    final border = v.cardBorder;
+    final radius = v.isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+    final items = enabled ? _visibleTalhoes() : const <VisitTalhaoOption>[];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Área / Talhão',
+          style: TextStyle(color: v.subtitleColor, fontSize: 12),
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: _talhaoSearchController,
+          enabled: enabled,
+          onChanged: (value) => setState(() => _talhaoQuery = value),
+          style: TextStyle(color: v.titleColor, fontSize: 16),
+          decoration: InputDecoration(
+            hintText: enabled
+                ? 'Buscar talhão'
+                : 'Selecione a fazenda primeiro',
+            hintStyle: TextStyle(color: v.subtitleColor, fontSize: 16),
+            prefixIcon: Icon(Icons.search, color: v.subtitleColor),
+            filled: true,
+            fillColor: surface,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(radius),
+              borderSide: BorderSide(color: border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(radius),
+              borderSide: BorderSide(color: border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(radius),
+              borderSide: BorderSide(color: v.focusBorder, width: 1.5),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(radius),
+              borderSide: BorderSide(color: border),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (!enabled)
+          Text(
+            'Selecione a fazenda para ver os talhões.',
+            style: TextStyle(color: v.subtitleColor, fontSize: 13),
+          )
+        else if (_loadingTalhoes)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text(
+              'Carregando...',
+              style: TextStyle(color: v.subtitleColor, fontSize: 14),
+            ),
+          )
+        else if (items.isEmpty)
+          Text(
+            'Nenhum talhão encontrado',
+            style: TextStyle(color: v.subtitleColor, fontSize: 14),
+          )
+        else
+          for (final item in items)
+            _TalhaoTile(
+              item: item,
+              subtitle: _talhaoSubtitle(item),
+              selected: item.id == _selectedTalhao?.id,
+              visuals: v,
+              onTap: () => setState(() => _selectedTalhao = item),
+            ),
+      ],
+    );
+  }
+
+  Widget _buildCondicao(SoloForteSheetVisuals v) {
+    final selected = _selectedTalhao;
+    if (selected == null) return const SizedBox.shrink();
+    if (!selected.canRate) {
+      return Text(
+        'Desenhe o talhão no mapa para marcar a condição.',
+        style: TextStyle(color: v.subtitleColor, fontSize: 13),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Condição',
+          style: TextStyle(color: v.subtitleColor, fontSize: 12),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final condicao in TalhaoCondicao.values)
+              _CondicaoChip(
+                condicao: condicao,
+                selected: selected.condicao == condicao,
+                onTap: () => _rate(condicao),
+              ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -413,7 +641,10 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
               }).toList(),
         onChanged: enabled ? onChanged : null,
         hint: isLoading
-            ? Text('Carregando...', style: TextStyle(color: muted, fontSize: 16))
+            ? Text(
+                'Carregando...',
+                style: TextStyle(color: muted, fontSize: 16),
+              )
             : (!enabled
                   ? Text(
                       'Selecione o anterior primeiro',
@@ -439,6 +670,130 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
         const SizedBox(height: 6),
         if (!enabled) Opacity(opacity: 0.45, child: baseField) else baseField,
       ],
+    );
+  }
+}
+
+class _TalhaoTile extends StatelessWidget {
+  const _TalhaoTile({
+    required this.item,
+    required this.subtitle,
+    required this.selected,
+    required this.visuals,
+    required this.onTap,
+  });
+
+  final VisitTalhaoOption item;
+  final String subtitle;
+  final bool selected;
+  final SoloForteSheetVisuals visuals;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = visuals.isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: visuals.cardBackground,
+        borderRadius: BorderRadius.circular(radius),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(radius),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(radius),
+              border: Border.all(
+                color: selected ? visuals.focusBorder : visuals.cardBorder,
+                width: selected ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.name,
+                        style: TextStyle(
+                          color: visuals.titleColor,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: visuals.subtitleColor,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (item.canRate)
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: Color(item.condicao.argb),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CondicaoChip extends StatelessWidget {
+  const _CondicaoChip({
+    required this.condicao,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final TalhaoCondicao condicao;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fill = Color(condicao.argb);
+    final onFill = fill.computeLuminance() > 0.6
+        ? const Color(0xFF1D1D1F)
+        : const Color(0xFFFFFFFF);
+    return Material(
+      color: fill,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected ? onFill : const Color(0x00000000),
+              width: 2,
+            ),
+          ),
+          child: Text(
+            condicao.label,
+            style: TextStyle(
+              color: onFill,
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

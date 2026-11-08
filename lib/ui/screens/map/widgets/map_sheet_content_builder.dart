@@ -7,7 +7,9 @@ import '../../../../modules/visitas/presentation/controllers/visit_controller.da
 import '../../../../ui/components/map/map_sheet_state.dart';
 import '../../../../ui/components/map/map_layers_sheet.dart';
 import 'active_visit_sheet.dart';
+import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../handlers/visit_check_in_map_focus.dart';
+import '../handlers/visit_check_in_talhoes.dart';
 
 /// Constrói o widget de conteúdo correto para cada [MapSheetType].
 ///
@@ -59,8 +61,19 @@ Widget buildSheetContent(
           if (isActive) {
             return const ActiveVisitSheet();
           }
+          final userPosition = widgetRef
+              .watch(locationStreamProvider)
+              .valueOrNull
+              ?.position;
           return VisitSheet(
             preSelectedClienteId: state.preSelectedClienteId,
+            userPosition: userPosition,
+            loadTalhoes: (farmId) => loadVisitTalhaoOptions(widgetRef, farmId),
+            onRateTalhao: (talhaoId, condicao) => applyVisitTalhaoCondicao(
+              widgetRef,
+              fieldId: talhaoId,
+              condicao: condicao,
+            ),
             // Bug 1: scrollController conecta DraggableScrollableSheet ao
             // SingleChildScrollView interno para expansão correta via drag.
             scrollController: scrollController,
