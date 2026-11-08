@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/modules/marketing/domain/entities/parametro_comparativo.dart';
 import 'package:soloforte_app/modules/marketing/presentation/widgets/comparativo_chart.dart';
 
@@ -8,8 +9,15 @@ void main() {
   testWidgets('ComparativoChart usa texto legivel no sheet escuro', (
     tester,
   ) async {
+  final sheetTheme = ThemeData(
+      brightness: Brightness.dark,
+      extensions: const [SoloForteThemeExtension(themeId: 'black')],
+      colorScheme: const ColorScheme.dark(primary: Color(0xFF1428A0)),
+    );
+
     await tester.pumpWidget(
       MaterialApp(
+        theme: sheetTheme,
         home: Scaffold(
           backgroundColor: SoloForteSheetTokens.sheetBackground,
           body: ComparativoChart(
@@ -33,8 +41,9 @@ void main() {
     final overviewText = tester.widget<Text>(find.text('Visão Geral'));
     final accent = Theme.of(tester.element(find.text('Visão Geral'))).colorScheme.primary;
 
-    expect(legendText.style?.color, SoloForteSheetTokens.inputText);
-    expect(valueText.style?.color, SoloForteSheetTokens.inputText);
+    final onDark = SoloForteSheetVisuals.of(tester.element(find.byType(ComparativoChart))).inputText;
+    expect(legendText.style?.color, onDark);
+    expect(valueText.style?.color, onDark);
     expect(overviewText.style?.color, accent);
   });
 }
