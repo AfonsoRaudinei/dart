@@ -156,4 +156,36 @@ void main() {
     expect(controller.currentState, DrawingState.idle);
     expect(controller.currentTool, DrawingTool.none);
   });
+
+  testWidgets('DrawingSheet não aplica AnimatedPadding de teclado', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1179, 2556);
+    tester.view.devicePixelRatio = 3;
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetViewInsets);
+
+    final controller = DrawingController(repository: _MockDrawingRepository());
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: DrawingSheet(
+              controller: controller,
+              onClose: () {},
+              onSaved: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('drawing_sheet_root')), findsOneWidget);
+    expect(find.byType(AnimatedPadding), findsNothing);
+  });
 }

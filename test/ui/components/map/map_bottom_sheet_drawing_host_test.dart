@@ -285,6 +285,33 @@ void main() {
 
     expect(hostKey.currentState!.closeCount, 3);
   });
+
+  testWidgets('teclado levanta o host acima da área do teclado', (
+    tester,
+  ) async {
+    final controller = await _createController();
+    addTearDown(controller.dispose);
+
+    await _pumpHost(tester, GlobalKey<_MapBottomSheetHostState>(), controller);
+
+    const keyboardLogical = 300.0;
+    tester.view.viewInsets = FakeViewPadding(
+      bottom: keyboardLogical * tester.view.devicePixelRatio,
+    );
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+
+    final screenHeight = tester.getSize(find.byType(Scaffold)).height;
+    final sheetRect = tester.getRect(
+      find.byKey(const Key('map_bottom_sheet_root')),
+    );
+    expect(
+      sheetRect.bottom,
+      lessThanOrEqualTo(screenHeight - keyboardLogical + 0.5),
+    );
+    expect(find.byType(AnimatedPadding), findsNothing);
+  });
 }
 
 Future<void> _pumpHost(
@@ -347,6 +374,7 @@ class _MapBottomSheetHostState extends State<_MapBottomSheetHost> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           Positioned.fill(child: Container(color: Colors.black12)),
