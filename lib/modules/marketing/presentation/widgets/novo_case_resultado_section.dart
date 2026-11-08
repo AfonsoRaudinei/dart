@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
-import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../domain/entities/marketing_roi_calculation.dart';
 import '../../domain/enums/produtividade_unidade.dart';
 import '../widgets/foto_picker_widget.dart';
@@ -39,7 +37,6 @@ class NovoCaseResultadoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -175,6 +172,10 @@ class _RoiInputRow extends StatelessWidget {
   }
 }
 
+/// Texto sobre fundo pinado [#123D2A] no tema Verde (fora do Azul).
+const _roiOnDarkPrimary = Color(0xFFFFFFFF);
+const _roiOnDarkLabel = Color(0xCCFFFFFF);
+
 class _RoiPreviewCard extends StatelessWidget {
   final TextEditingController prodSemProdutoCtrl;
   final TextEditingController prodComProdutoCtrl;
@@ -204,13 +205,10 @@ class _RoiPreviewCard extends StatelessWidget {
     final cardBg = isIos
         ? v.cardBackground
         : const Color(0xFF123D2A);
-    final titleColor =
-        v.onSheetPrimary;
-    final lineLabelColor = isIos
-        ? v.subtitleColor
-        : const Color(0xCCFFFFFF);
-    final lineValueColor =
-        v.onSheetPrimary;
+    final titleColor = isIos ? v.titleColor : _roiOnDarkPrimary;
+    final lineLabelColor =
+        isIos ? v.subtitleColor : _roiOnDarkLabel;
+    final lineValueColor = isIos ? v.titleColor : _roiOnDarkPrimary;
     final radius = v.cardRadius;
 
     return Padding(
