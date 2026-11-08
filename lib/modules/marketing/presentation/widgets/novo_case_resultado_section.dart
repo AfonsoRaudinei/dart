@@ -132,13 +132,9 @@ class _RoiInputRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
-    final dropdownBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
-    final dropdownFg =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final dropdownBg = v.cardBackground;
+    final dropdownFg = v.titleColor;
 
     return Row(
       children: [
@@ -157,9 +153,7 @@ class _RoiInputRow extends StatelessWidget {
             value: unidade,
             dropdownColor: dropdownBg,
             style: TextStyle(fontSize: 13, color: dropdownFg),
-            iconEnabledColor: isIos
-                ? SoloForteSheetSkinIos.subtitleColor
-                : Colors.white54,
+            iconEnabledColor: v.subtitleColor,
             onChanged: (value) {
               if (value == null) return;
               onUnidadeChanged(value);
@@ -205,7 +199,6 @@ class _RoiPreviewCard extends StatelessWidget {
     if (input == null || !input.isComplete) return const SizedBox.shrink();
     final roi = MarketingRoiCalculation(input);
     final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
     final cardBg = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : const Color(0xFF123D2A);
