@@ -13,6 +13,7 @@ import '../../../../modules/settings/presentation/providers/settings_providers.d
 import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/config/brazil_satellite_mosaic_overlay.dart';
 import '../../../../core/config/cerrado_satellite_overlay.dart';
+import '../../../../core/domain/map_basemap_labels.dart';
 import '../../../../core/domain/map_models.dart';
 import '../../../../core/services/inpe_stac_acquisition_label_service.dart';
 import '../../../../core/state/map_state.dart';
@@ -589,14 +590,12 @@ class _BasemapToggleButtonState extends ConsumerState<_BasemapToggleButton> {
   }
 
   String _shortLabelFor(LayerType layer) {
-    switch (layer) {
-      case LayerType.standard:
-        return 'Mapa';
-      case LayerType.satellite:
-        return 'Satélite';
-      case LayerType.satelliteUpdated:
-        return 'Satélite atualizado';
-    }
+    return shortBasemapLayerLabel(
+      layer,
+      inpeAcquisitionPeriod: layer == LayerType.satelliteUpdated
+          ? (_cerradoDateLabel ?? CerradoSatelliteOverlay.acquisitionLabel)
+          : null,
+    );
   }
 
   String _hintFor(LayerType layer) {
