@@ -1,8 +1,8 @@
 /// Define os níveis de navegação do SmartButton.
 ///
 /// - [l0]: Mapa (raiz) — ícone ☰, abre SideMenu
-/// - [l1]: Módulos raiz — ícone ←, vai para /map via go()
-/// - [l2Plus]: Subtelas — ícone ←, usa pop() com fallback para /map
+/// - [l1]: Módulos raiz — ícone ←, pop se houver pilha; senão /map
+/// - [l2Plus]: Subtelas — ícone ←, pop; senão [parentFallbackRoute]
 /// - [public]: Rotas públicas — CTA "Acessar SoloForte"
 enum RouteLevel { l0, l1, l2Plus, public }
 
@@ -130,5 +130,78 @@ class AppRoutes {
   /// SideMenu SOMENTE disponível no L0 (Mapa).
   static bool canOpenSideMenu(String path) {
     return getLevel(path) == RouteLevel.l0;
+  }
+
+  /// Path sem query (SmartButton e fallback de pilha).
+  static String pathOnly(String uriPathOrFull) {
+    final q = uriPathOrFull.indexOf('?');
+    return q < 0 ? uriPathOrFull : uriPathOrFull.substring(0, q);
+  }
+
+  /// Rota pai quando [GoRouter] não tem pilha (deep link / `go` legado).
+  /// Usado só no SmartButton (REGRA-NAV-1).
+  static String parentFallbackRoute(String uriPath) {
+    final p = pathOnly(uriPath);
+
+    if (p.startsWith('$carteira/cliente/') ||
+        p.startsWith('$carteira/oportunidades/')) {
+      return carteira;
+    }
+
+    if (p == '$agenda/day' || p.startsWith('$agenda/event/')) {
+      return agenda;
+    }
+
+    if (p == clientNew) {
+      return clients;
+    }
+
+    final clientDetailMatch = RegExp(r'^/consultoria/clientes/([^/]+)$');
+    final clientMatch = clientDetailMatch.firstMatch(p);
+    if (clientMatch != null) {
+      return clients;
+    }
+
+    final farmMatch = RegExp(
+      r'^/consultoria/clientes/([^/]+)/fazendas/([^/]+)$',
+    ).firstMatch(p);
+    if (farmMatch != null) {
+      return clientDetail(farmMatch.group(1)!);
+    }
+
+    final fieldMatch = RegExp(
+      r'^/consultoria/clientes/([^/]+)/fazendas/([^/]+)/talhoes/([^/]+)$',
+    ).firstMatch(p);
+    if (fieldMatch != null) {
+      return farmDetail(fieldMatch.group(1)!, fieldMatch.group(2)!);
+    }
+
+    final reportEditMatch = RegExp(
+      r'^/consultoria/relatorios/([^/]+)/edit$',
+    ).firstMatch(p);
+    if (reportEditMatch != null) {
+      return reportDetail(reportEditMatch.group(1)!);
+    }
+
+    final reportDetailMatch = RegExp(r'^/consultoria/relatorios/([^/]+)$');
+    if (reportDetailMatch.hasMatch(p)) {
+      return reports;
+    }
+
+    if (p == settingsEditProfile) {
+      return settings;
+    }
+
+    if (p == planosPagamento ||
+        p == planosConfirmacao ||
+        p == planosIndicacoes) {
+      return meuPlano;
+    }
+
+    if (p == '/publicacoes/edit') {
+      return map;
+    }
+
+    return map;
   }
 }
