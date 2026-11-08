@@ -29,21 +29,10 @@ class FieldDetailScreen extends ConsumerWidget {
                 horizontal: 16.0,
                 vertical: 8.0,
               ),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Talhão',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
+              child: Text(
+                'Talhão',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.headlineMedium,
               ),
             ),
             Expanded(

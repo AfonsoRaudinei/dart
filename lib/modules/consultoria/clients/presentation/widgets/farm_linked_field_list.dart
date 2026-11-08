@@ -195,7 +195,7 @@ class FarmLinkedFieldList extends ConsumerWidget {
       return;
     }
 
-    context.go(AppRoutes.fieldDetail(clientId, farmId, field.id));
+    context.push(AppRoutes.fieldDetail(clientId, farmId, field.id));
   }
 
   Future<void> _confirmDeleteDrawing(

@@ -108,19 +108,9 @@ class _RelatorioFormScreenState extends ConsumerState<RelatorioFormScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(24),
                 children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back),
-                        onPressed: () => context.go(
-                            '/consultoria/relatorios/${widget.relatorioId}'),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Editar Relatório',
-                        style: theme.textTheme.headlineMedium,
-                      ),
-                    ],
+                  Text(
+                    'Editar Relatório',
+                    style: theme.textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 24),
                   TextFormField(

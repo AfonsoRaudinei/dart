@@ -13,7 +13,6 @@ import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_p
 import 'package:soloforte_app/modules/carteira/presentation/widgets/categoria_form_dialog.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_module_scaffold.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_segment_bar.dart';
-import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_keyboard_dismiss.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/lancamento_form_dialog.dart';
 
 class CarteiraClienteScreen extends ConsumerWidget {
@@ -46,13 +45,6 @@ class CarteiraClienteScreen extends ConsumerWidget {
         error: (_, __) => 'Carteira do Cliente',
       ),
       forceSegment: CarteiraSegment.clientes,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () {
-          CarteiraKeyboardDismiss.dismiss();
-          context.go(AppRoutes.carteira);
-        },
-      ),
       body: categoriasAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) =>

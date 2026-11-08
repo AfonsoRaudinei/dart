@@ -392,10 +392,7 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.go('/consultoria/clientes'),
-          ),
+          const SizedBox(width: 48),
           const Text(
             'Novo Cliente',
             style: TextStyle(
