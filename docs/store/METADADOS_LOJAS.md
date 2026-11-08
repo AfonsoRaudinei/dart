@@ -62,16 +62,22 @@ agrícola,campo,consultoria,mapa,visitas,ocorrências,offline,fazenda,talhão,ag
 ## URL de suporte
 
 ```
-mailto:privacidade@soloforte.app
+https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/suporte.html
 ```
+
+*(App Store exige HTTPS no campo Support URL — `mailto:` não é aceito.)*
 
 ## URL política de privacidade
 
 ```
-https://raw.githubusercontent.com/AfonsoRaudinei/dart/main/docs/legal/politica-de-privacidade.md
+https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/
 ```
 
-*(Substituir por domínio HTTPS próprio antes da submissão final.)*
+## URL de exclusão de conta (Google Play)
+
+```
+https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/exclusao-de-conta.html
+```
 
 ---
 
