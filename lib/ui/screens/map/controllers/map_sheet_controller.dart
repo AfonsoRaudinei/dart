@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/state/map_ui_providers.dart';
@@ -33,6 +34,7 @@ class MapSheetController {
     void Function(MapSheetState? s, String reason) setSheetState,
     void Function(bool v) setModalOpen,
   ) {
+    final v = SoloForteSheetVisuals.of(context);
     if (ref.read(isModalOpenProvider)) return;
     if (!context.mounted) return;
     setModalOpen(true);
@@ -82,10 +84,10 @@ class MapSheetController {
                   ?.themeId ==
               'blue';
           final hostBg = isBlue
-              ? SoloForteSheetSkinIos.background
-              : SoloForteSheetTokens.sheetBackground;
+              ? v.sheetBackground
+              : v.sheetBackground;
           final hostRadius =
-              isBlue ? SoloForteSheetSkinIos.sheetRadius : 24.0;
+              isBlue ? v.sheetRadius : 24.0;
 
           if (isCheckIn) {
             return ClipRRect(
@@ -108,8 +110,8 @@ class MapSheetController {
                 top: Radius.circular(hostRadius),
               ),
               border: isBlue
-                  ? const Border(
-                      top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+                  ? Border(
+                      top: BorderSide(color: v.sheetBorder),
                     )
                   : null,
             ),
@@ -119,14 +121,14 @@ class MapSheetController {
                   child: Container(
                     margin: const EdgeInsets.symmetric(vertical: 8),
                     width: isBlue
-                        ? SoloForteSheetSkinIos.handleSize.width
+                        ? v.handleSize.width
                         : 36,
                     height: isBlue
-                        ? SoloForteSheetSkinIos.handleSize.height
+                        ? v.handleSize.height
                         : 4,
                     decoration: BoxDecoration(
                       color: isBlue
-                          ? SoloForteSheetSkinIos.handleColor
+                          ? v.handleColor
                           : Theme.of(context)
                               .dividerColor
                               .withValues(alpha: 0.3),

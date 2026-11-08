@@ -734,6 +734,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     AppLogger.debug(
       'MapBottomSheet BUILD | type=${widget.state.type}',
       tag: 'MapSheet',
@@ -745,7 +746,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     final sheetRadius = visuals.sheetRadius;
     final sheetBg = visuals.sheetBackground;
     final topBorder = isIos
-        ? SoloForteSheetSkinIos.sheetBorder
+        ? v.sheetBorder
         : Theme.of(context).dividerColor.withValues(alpha: 0.1);
     final handleColor = visuals.handleColor;
     final handleWidth = visuals.handleSize.width;

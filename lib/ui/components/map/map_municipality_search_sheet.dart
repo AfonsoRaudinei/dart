@@ -72,8 +72,8 @@ class _MapMunicipalitySearchSheetState
     final isIos = v.isIos;
     final fill = v.inputFill;
     final radius = isIos
-        ? SoloForteSheetSkinIos.cardRadius
-        : SoloForteSheetTokens.inputRadius;
+        ? v.cardRadius
+        : v.inputRadius;
     final hint = v.inputHint;
     final focus = v.focusBorder;
     final side = v.isDark ? BorderSide.none : BorderSide(color: v.inputBorder);
@@ -215,8 +215,8 @@ class _MapMunicipalitySearchSheetState
       safeBottom: MediaQuery.paddingOf(context).bottom,
       keyboard: MediaQuery.viewInsetsOf(context).bottom,
     );
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final titleColor = v.titleColor;
     final inputText = v.inputText;
     final hintColor = v.inputHint;
@@ -224,8 +224,8 @@ class _MapMunicipalitySearchSheetState
     final muted = v.subtitleColor;
     final listBg = v.inputFill;
     final listRadius = isIos
-        ? SoloForteSheetSkinIos.cardRadius
-        : SoloForteSheetTokens.inputRadius;
+        ? v.cardRadius
+        : v.inputRadius;
     final divider = v.dividerColor;
     final dropdownBg = v.inputFill;
     final iconColor = v.subtitleColor;
@@ -245,8 +245,8 @@ class _MapMunicipalitySearchSheetState
           Text(
             'Ir para município',
             style: TextStyle(
-              fontSize: SoloForteSheetTokens.titleFontSize,
-              fontWeight: SoloForteSheetTokens.titleWeight,
+              fontSize: v.titleFontSize,
+              fontWeight: v.titleWeight,
               color: titleColor,
             ),
           ),
@@ -379,9 +379,7 @@ class _MapMunicipalitySearchSheetState
                       minimumSize: const Size.fromHeight(48),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(
-                          isIos
-                              ? SoloForteSheetSkinIos.ghostRadius
-                              : SoloForteSheetTokens.chipRadius,
+                          v.ghostRadius,
                         ),
                       ),
                     ),
@@ -401,8 +399,8 @@ class _MapMunicipalitySearchSheetState
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(
                           isIos
-                              ? SoloForteSheetSkinIos.ctaRadius
-                              : SoloForteSheetTokens.chipRadius,
+                              ? v.ctaRadius
+                              : v.chipRadius,
                         ),
                       ),
                     ),

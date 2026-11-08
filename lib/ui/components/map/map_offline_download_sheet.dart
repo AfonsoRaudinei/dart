@@ -37,6 +37,7 @@ Future<void> showMapOfflineDownloadProgressSheet(
   required ValueNotifier<OfflinePrefetchProgress> progress,
   required VoidCallback onCancel,
 }) {
+    final v = SoloForteSheetVisuals.of(context);
   return showSoloForteSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -80,8 +81,8 @@ class _MapOfflineDownloadSheetState extends State<MapOfflineDownloadSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final bottom = sheetFormKeyboardBottomPadding(
       safeBottom: MediaQuery.paddingOf(context).bottom,
       keyboard: MediaQuery.viewInsetsOf(context).bottom,
@@ -106,8 +107,8 @@ class _MapOfflineDownloadSheetState extends State<MapOfflineDownloadSheet> {
               'Baixar área offline',
               style: TextStyle(
                 color: titleColor,
-                fontSize: SoloForteSheetTokens.titleFontSize,
-                fontWeight: SoloForteSheetTokens.titleWeight,
+                fontSize: v.titleFontSize,
+                fontWeight: v.titleWeight,
               ),
             ),
             const SizedBox(height: 8),
@@ -138,9 +139,7 @@ class _MapOfflineDownloadSheetState extends State<MapOfflineDownloadSheet> {
                       minimumSize: const Size.fromHeight(48),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(
-                          isIos
-                              ? SoloForteSheetSkinIos.ghostRadius
-                              : SoloForteSheetTokens.chipRadius,
+                          v.ghostRadius,
                         ),
                       ),
                     ),
@@ -158,8 +157,8 @@ class _MapOfflineDownloadSheetState extends State<MapOfflineDownloadSheet> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(
                           isIos
-                              ? SoloForteSheetSkinIos.ctaRadius
-                              : SoloForteSheetTokens.chipRadius,
+                              ? v.ctaRadius
+                              : v.chipRadius,
                         ),
                       ),
                     ),
@@ -209,8 +208,8 @@ class MapOfflineDownloadProgressSheet extends StatelessWidget {
                   'Baixando área offline',
                   style: TextStyle(
                     color: titleColor,
-                    fontSize: SoloForteSheetTokens.titleFontSize,
-                    fontWeight: SoloForteSheetTokens.titleWeight,
+                    fontSize: v.titleFontSize,
+                    fontWeight: v.titleWeight,
                   ),
                 ),
                 const SizedBox(height: 16),

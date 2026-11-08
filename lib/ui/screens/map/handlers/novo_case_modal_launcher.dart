@@ -2,6 +2,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -39,6 +40,7 @@ class NovoCaseModalLauncher {
     required WidgetRef ref,
     CaseTipo? initialTipo,
   }) async {
+    final v = SoloForteSheetVisuals.of(context);
     if (!context.mounted) return;
     final activeVisitContext = await _loadActiveVisitContext(ref);
     if (!context.mounted) return;
@@ -104,11 +106,11 @@ class NovoCaseModalLauncher {
               Center(
                 child: Container(
                   margin: const EdgeInsets.symmetric(vertical: 8),
-                  width: isIos ? SoloForteSheetSkinIos.handleSize.width : 36,
-                  height: isIos ? SoloForteSheetSkinIos.handleSize.height : 4,
+                  width: v.handleSize.width,
+                  height: v.handleSize.height,
                   decoration: BoxDecoration(
                     color: isIos
-                        ? SoloForteSheetSkinIos.handleColor
+                        ? v.handleColor
                         : Theme.of(sheetContext)
                             .dividerColor
                             .withValues(alpha: 0.3),

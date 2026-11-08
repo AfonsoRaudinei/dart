@@ -32,6 +32,7 @@ class PublicationActionsBottomSheet extends StatelessWidget {
     required VoidCallback onAreaVisitada,
     required VoidCallback onOcorrencia,
   }) {
+    final v = SoloForteSheetVisuals.of(context);
     return showSoloForteSheet<void>(
       context: context,
       isScrollControlled: false,
@@ -50,6 +51,7 @@ class PublicationActionsBottomSheet extends StatelessWidget {
   }
 
   void _select(BuildContext context, VoidCallback action) {
+    final v = SoloForteSheetVisuals.of(context);
     HapticFeedback.lightImpact();
     Navigator.of(context).pop();
     action();
@@ -58,8 +60,8 @@ class PublicationActionsBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
 
     if (isIos) {
       return SafeArea(
@@ -68,10 +70,10 @@ class PublicationActionsBottomSheet extends StatelessWidget {
           padding: EdgeInsets.fromLTRB(16, 0, 16, 12 + bottomPadding),
           child: Container(
             decoration: BoxDecoration(
-              color: SoloForteSheetSkinIos.cardBackground,
+              color: v.cardBackground,
               borderRadius:
-                  BorderRadius.circular(SoloForteSheetSkinIos.cardRadius),
-              border: Border.all(color: SoloForteSheetSkinIos.cardBorder),
+                  BorderRadius.circular(v.cardRadius),
+              border: Border.all(color: v.cardBorder),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -79,35 +81,35 @@ class PublicationActionsBottomSheet extends StatelessWidget {
                 _ActionRow(
                   icon: SFIcons.barChart,
                   title: 'Resultado',
-                  color: SoloForteSheetSkinIos.iconStroke,
+                  color: v.iconStroke,
                   isIos: true,
                   onTap: () => _select(context, onResultado),
                 ),
                 _ActionRow(
                   icon: SFIcons.compareArrows,
                   title: 'Antes/Depois',
-                  color: SoloForteSheetSkinIos.iconStroke,
+                  color: v.iconStroke,
                   isIos: true,
                   onTap: () => _select(context, onAntesDepois),
                 ),
                 _ActionRow(
                   icon: SFIcons.science,
                   title: 'Avaliação',
-                  color: SoloForteSheetSkinIos.iconStroke,
+                  color: v.iconStroke,
                   isIos: true,
                   onTap: () => _select(context, onAvaliacao),
                 ),
                 _ActionRow(
                   icon: SFIcons.pinFill,
                   title: 'Área Visitada',
-                  color: SoloForteSheetSkinIos.iconStroke,
+                  color: v.iconStroke,
                   isIos: true,
                   onTap: () => _select(context, onAreaVisitada),
                 ),
                 _ActionRow(
                   icon: SFIcons.warning,
                   title: 'Ocorrência',
-                  color: SoloForteSheetSkinIos.iconStroke,
+                  color: v.iconStroke,
                   isIos: true,
                   showDivider: false,
                   onTap: () => _select(context, onOcorrencia),
@@ -232,13 +234,13 @@ class _ActionRow extends StatelessWidget {
                     height: 34,
                     decoration: BoxDecoration(
                       color: isIos
-                          ? SoloForteSheetSkinIos.iconBackground
+                          ? v.iconBackground
                           : color.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(isIos ? 999 : 10),
                     ),
                     child: Icon(
                       icon,
-                      color: isIos ? SoloForteSheetSkinIos.iconStroke : color,
+                      color: isIos ? v.iconStroke : color,
                       size: 20,
                     ),
                   ),
