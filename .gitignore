@@ -42,6 +42,10 @@ nosync/
 android/app/debug/
 android/app/profile/
 android/app/release/
+android/key.properties
+android/keystore/
+*.jks
+*.keystore
 
 # iOS/macOS related
 **/ios/Pods/
