@@ -5,20 +5,13 @@ import 'package:soloforte_app/modules/carteira/presentation/widgets/tipo_fechame
 
 void main() {
   group('CarteiraLancamento.validarRegrasFechamento', () {
-    test('permite negociação em aberto com qualquer percentual', () {
+    test('exige tipo de fechamento', () {
       expect(
         CarteiraLancamento.validarRegrasFechamento(
           closedPercent: 50,
           tipoFechamento: null,
         ),
-        isNull,
-      );
-      expect(
-        CarteiraLancamento.validarRegrasFechamento(
-          closedPercent: 0,
-          tipoFechamento: null,
-        ),
-        isNull,
+        isNotNull,
       );
     });
 
@@ -39,13 +32,21 @@ void main() {
       );
     });
 
-    test('exige 0% quando perdido para concorrência', () {
+    test('exige 0% e concorrente quando perdido para concorrência', () {
+      expect(
+        CarteiraLancamento.validarRegrasFechamento(
+          closedPercent: 0,
+          tipoFechamento: TipoFechamento.perdido,
+          nomeConcorrente: 'Concorrente A',
+        ),
+        isNull,
+      );
       expect(
         CarteiraLancamento.validarRegrasFechamento(
           closedPercent: 0,
           tipoFechamento: TipoFechamento.perdido,
         ),
-        isNull,
+        isNotNull,
       );
       expect(
         CarteiraLancamento.validarRegrasFechamento(
@@ -108,7 +109,7 @@ void main() {
     });
   });
 
-  testWidgets('TipoFechamentoToggle alterna seleção e permite limpar', (
+  testWidgets('TipoFechamentoToggle opcional permite limpar seleção', (
     tester,
   ) async {
     await tester.pumpWidget(const MaterialApp(home: _ToggleHarness()));
@@ -126,10 +127,27 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Negociação em aberto'), findsOneWidget);
   });
+
+  testWidgets('TipoFechamentoToggle obrigatório não limpa ao retocar', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: _ToggleHarness(obrigatorio: true)),
+    );
+
+    await tester.tap(find.text('Vendido'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Vendido'));
+    await tester.pumpAndSettle();
+    expect(find.text('Negociação em aberto'), findsNothing);
+  });
 }
 
 class _ToggleHarness extends StatefulWidget {
-  const _ToggleHarness();
+  const _ToggleHarness({this.obrigatorio = false});
+
+  final bool obrigatorio;
 
   @override
   State<_ToggleHarness> createState() => _ToggleHarnessState();
@@ -143,6 +161,7 @@ class _ToggleHarnessState extends State<_ToggleHarness> {
     return Scaffold(
       body: TipoFechamentoToggle(
         value: _selected,
+        obrigatorio: widget.obrigatorio,
         onChanged: (value) => setState(() => _selected = value),
       ),
     );
