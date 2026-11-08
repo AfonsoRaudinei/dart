@@ -1,55 +1,64 @@
-# Google Play — Data Safety Form
+# Google Play — Data Safety
 
-Preencher no Play Console → App content → Data safety.
+Preencher em Play Console → App content → Data safety. Visão da ficha: `docs/store/PLAY_CONSOLE.md`.
 
----
+O app coleta dados. Não compartilha com terceiros: o Supabase trata os dados a pedido do SoloForte, e a Play não classifica esse processamento como sharing.
 
-## O app coleta ou compartilha dados?
-
-**Sim** — os tipos abaixo são coletados.
+Criptografia em trânsito: sim (HTTPS). Exclusão pedida pelo usuário: sim.
 
 ---
 
-## Tipos de dados
+## Tipos
 
-| Tipo | Coletado | Compartilhado | Obrigatório | Finalidade |
-|------|----------|---------------|-------------|------------|
-| **E-mail** | Sim | Não | Sim (conta) | Autenticação |
-| **Nome** | Sim | Não | Sim (conta) | Identificação do usuário |
-| **Localização precisa** | Sim | Não | Sim (funcionalidade) | Mapa, visitas, ocorrências |
-| **Fotos** | Sim | Não | Opcional | Ocorrências e perfil |
-| **Outros conteúdos gerados pelo usuário** | Sim | Não | Opcional | Dados agrícolas, relatórios, feedback |
-| **Identificadores do app** | Sim | Não | Sim | Sessão / sync |
-| **Diagnóstico (crash logs)** | Não* | Não | — | — |
+Finalidade de todos: funcionalidade do app. Nenhum é usado para publicidade.
 
-\* Nenhum SDK de crash analytics integrado na v1.0.0.
+| Tipo na ficha | Coletado | Obrigatório | No SoloForte |
+|---|---|---|---|
+| Precise location | Sim | O usuário pode recusar | GPS com o app aberto |
+| Approximate location | Sim | O usuário pode escolher a aproximada | Quando o Android concede só a aproximada |
+| Name | Sim | Sim, para a conta | Nome da conta |
+| Email address | Sim | Sim, para a conta | Login |
+| User IDs | Sim | Sim | Identificador da conta |
+| Phone number | Sim | Opcional | Número digitado em cliente ou caso |
+| Photos | Sim | Opcional | Fotos de ocorrência, relatório e perfil |
+| Voice or sound recordings | Sim | Opcional | Áudio de até 30 segundos na ocorrência |
+| Other user-generated content | Sim | Opcional | Clientes, fazendas, talhões, visitas, ocorrências e relatórios |
+| Customer support | Sim | Opcional | Mensagens de feedback |
 
----
+Não marcar: vídeos, arquivos em geral, contatos, saúde, dados financeiros, mensagens, calendário, crash logs, diagnósticos, interações do app, histórico de busca, ID de publicidade.
 
-## Segurança dos dados
-
-| Pergunta | Resposta |
-|----------|----------|
-| Dados criptografados em trânsito | **Sim** (HTTPS / TLS) |
-| Usuário pode solicitar exclusão | **Sim** (Configurações → Excluir conta) |
-| Compromisso Families / crianças | App não direcionado a crianças |
+Os dados ficam na conta. Não marcar “processed ephemerally”.
 
 ---
 
-## Permissões declaradas no manifest
+## Exclusão
 
-| Permissão | Justificativa |
-|-----------|---------------|
-| ACCESS_FINE_LOCATION | Posição no mapa e visitas de campo |
-| ACCESS_COARSE_LOCATION | Fallback de localização |
-| CAMERA | Fotos de ocorrências e perfil |
-| READ_MEDIA_IMAGES | Galeria para anexos |
-| POST_NOTIFICATIONS | Alertas de geofence (chegada/saída) |
-
-**Não declarado:** ACCESS_BACKGROUND_LOCATION (removido na v1).
+| Campo | Valor |
+|---|---|
+| O usuário pode pedir exclusão | Sim |
+| No app | Configurações → Excluir minha conta |
+| Link web | `https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/exclusao-de-conta.html` |
 
 ---
 
-## URL da política de privacidade
+## Permissões do AAB que deve ser enviado
 
-Mesma URL configurada em `AppConfig.privacyPolicyUrl` / Metadados das lojas.
+| Permissão | Uso |
+|---|---|
+| ACCESS_FINE_LOCATION | Mapa, visitas e ocorrências, com o app aberto |
+| ACCESS_COARSE_LOCATION | Quando o usuário concede só a localização aproximada |
+| CAMERA | Foto de campo |
+| RECORD_AUDIO | Áudio da ocorrência |
+| POST_NOTIFICATIONS | Lembretes da agenda |
+| SCHEDULE_EXACT_ALARM | Horário do lembrete; se negado, o app usa alarme inexato |
+| READ_EXTERNAL_STORAGE | Só até o Android 12 (`maxSdkVersion=32`) |
+
+`READ_MEDIA_IMAGES`, `FOREGROUND_SERVICE` e `FOREGROUND_SERVICE_LOCATION` não são pedidas no AAB da Fase 1. Foto da galeria entra pelo seletor do sistema. Sem `ACCESS_BACKGROUND_LOCATION`.
+
+---
+
+## Política de privacidade
+
+```
+https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/
+```
