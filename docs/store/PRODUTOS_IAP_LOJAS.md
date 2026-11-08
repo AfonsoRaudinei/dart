@@ -15,7 +15,7 @@ O preço cobrado é o cadastrado na loja. O app mostra o texto devolvido pela lo
 ## Apple App Store Connect
 
 - App: **SoloForte** · Bundle `com.soloforte.soloforteApp`
-- Tipo: **Auto-Renewable Subscription** → na prática use o grupo de **Non-Renewing Subscription** (assinatura com prazo fixo, sem renovação automática)
+- Tipo: **Non-Renewing Subscription** (In-App Purchases — prazo fixo 3/6/12 meses, **sem** renovação automática e **sem** Subscription Group)
 - Duração na ficha Apple: 3 meses / 6 meses / 12 meses (escolhas permitidas pela Apple)
 
 **Nome de exibição (sugestão)**
