@@ -59,6 +59,16 @@ Consultoria agrícola de campo com mapa, visitas, ocorrências, fotos, áudio e 
 
 **Price:** Free
 
+### Compras no app (planos)
+
+Só marque produtos na versão se o binário já inclui compra nativa (ver `main` pós PR #431).
+
+- Guia completo: [`PUBLICACAO_COMPRA_LOJAS.md`](PUBLICACAO_COMPRA_LOJAS.md)
+- IDs e copy: [`PRODUTOS_IAP_LOJAS.md`](PRODUTOS_IAP_LOJAS.md)
+- Nota ao revisor: [`APP_STORE_MONETIZATION_REVIEW_NOTES.md`](../APP_STORE_MONETIZATION_REVIEW_NOTES.md)
+
+Três assinaturas **não renováveis**: `soloforte_plano_bronze` (3 meses), `soloforte_plano_prata` (6 meses), `soloforte_plano_ouro` (12 meses). Associar à versão em revisão.
+
 ---
 
 ## 4. Classificação etária

@@ -4,6 +4,8 @@ Respostas para colar no Google Play Console. Fontes oficiais consultadas em 8 de
 
 Application ID: **`com.soloforte.app`**. Versão no `pubspec.yaml`: **1.34.0 (311)**.
 
+**Compras no app (planos):** após o iOS em revisão, cadastrar os mesmos IDs como produto consumível — [`PRODUTOS_IAP_LOJAS.md`](PRODUTOS_IAP_LOJAS.md) e [`PUBLICACAO_COMPRA_LOJAS.md`](PUBLICACAO_COMPRA_LOJAS.md). Exigir secret `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` no Supabase antes de testar compra.
+
 O AAB desta linha remove `READ_MEDIA_IMAGES`, `FOREGROUND_SERVICE` e `FOREGROUND_SERVICE_LOCATION` no merge (`tools:node="remove"`). O `targetSdk` do Flutter 3.41.6 é **36**. Assinar com `android/key.properties` (fora do git).
 
 AAB conferido em 8 de novembro de 2026: `app-release.aab`, versão 1.34.0 (311), 58 MB. O manifesto do bundle não contém essas três permissões. As 9 bibliotecas nativas têm alinhamento de página de 16 KB. A assinatura é a de release (`CN=Raudinei Afonso Silva Pereira, O=SoloForte, C=BR`). Cópia: `~/.soloforte-release/store-1.34.0-311/app-release.aab`. No App Bundle Explorer, a Play repete a checagem de 16 KB depois do upload.
