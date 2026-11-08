@@ -19,7 +19,7 @@ export type GoogleVerifyDeps = {
 
 export async function verifyGooglePurchase(
   deps: GoogleVerifyDeps,
-  input: { productId: string; purchaseToken: string },
+  input: { productId: string; purchaseToken: string; userId: string },
 ): Promise<GoogleVerifyResult> {
   if (!deps.serviceAccount?.client_email || !deps.serviceAccount.private_key) {
     return { ok: false, reason: 'google_not_configured' }
@@ -58,6 +58,10 @@ export async function verifyGooglePurchase(
   if (!purchaseResponse.ok) return { ok: false, reason: 'google_http_error' }
   const purchase = await purchaseResponse.json()
   if (purchase.purchaseState !== 0) return { ok: false, reason: 'not_purchased' }
+  const account = String(purchase.obfuscatedExternalAccountId ?? '')
+  if (!account || account !== input.userId) {
+    return { ok: false, reason: 'account_mismatch' }
+  }
   const orderId = String(purchase.orderId ?? '')
   if (!orderId) return { ok: false, reason: 'transaction_mismatch' }
   return { ok: true, productId: input.productId, orderId }

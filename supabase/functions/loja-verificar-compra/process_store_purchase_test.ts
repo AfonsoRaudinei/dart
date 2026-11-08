@@ -46,7 +46,9 @@ class MemoryWriter implements StorePlanWriter {
 
   findByPaymentId(paymentId: string): Promise<ExistingStorePlan | null> {
     const row = this.rows.find((item) => item.payment_id === paymentId)
-    return Promise.resolve(row ? { plano: row.plano, expira_em: row.expira_em } : null)
+    return Promise.resolve(row
+      ? { plano: row.plano, expira_em: row.expira_em, user_id: row.user_id }
+      : null)
   }
 
   deactivateActivePlans(userId: string): Promise<void> {
@@ -146,6 +148,7 @@ Deno.test('Apple aprovado grava bronze por 3 meses e não duplica', async () => 
       bundleId: 'com.soloforte.soloforteApp',
       productId: 'soloforte_plano_bronze',
       transactionId: 'tx-1',
+      appAccountToken: 'user-1',
     })
     if (url.includes('sandbox')) {
       return Promise.resolve(new Response(JSON.stringify({ signedTransactionInfo: payload }), { status: 200 }))
@@ -195,6 +198,7 @@ Deno.test('Google cancelado não grava; comprado grava o orderId', async () => {
     return Promise.resolve(new Response(JSON.stringify({
       purchaseState: state,
       orderId: 'GPA.1',
+      obfuscatedExternalAccountId: 'user-1',
     }), { status: 200 }))
   }
   const deps = {
@@ -231,4 +235,41 @@ Deno.test('Google cancelado não grava; comprado grava o orderId', async () => {
     assertEquals(bought.row.payment_id, 'GPA.1')
     assertEquals(bought.row.expira_em, '2027-11-08T15:00:00.000Z')
   }
+})
+
+Deno.test('recibo de outra conta não concede o plano', async () => {
+  const writer = new MemoryWriter()
+  writer.rows.push({
+    user_id: 'outra-conta',
+    plano: 'bronze',
+    origem: 'pagamento',
+    expira_em: '2027-02-08T15:00:00.000Z',
+    ativo: true,
+    payment_id: 'tx-1',
+  })
+  const pem = await es256Pem()
+  const fetchImpl: AppleVerifyDeps['fetch'] = () => Promise.resolve(new Response(JSON.stringify({
+    signedTransactionInfo: jws({
+      bundleId: 'com.soloforte.soloforteApp',
+      productId: 'soloforte_plano_bronze',
+      transactionId: 'tx-1',
+      appAccountToken: 'user-1',
+    }),
+  }), { status: 200 }))
+  const result = await processStorePurchase({
+    now: () => NOW,
+    writer,
+    referrals: new MemoryReferrals(),
+    apple: appleDeps(pem, fetchImpl),
+    google: { fetch, serviceAccount: null, now: () => NOW },
+  }, {
+    userId: 'user-1',
+    platform: 'ios',
+    productId: 'soloforte_plano_bronze',
+    transactionId: 'tx-1',
+    verificationData: '',
+  })
+  assertEquals(result.kind, 'other_account')
+  assertEquals(writer.rows.length, 1)
+  assertEquals(writer.deactivated.length, 0)
 })

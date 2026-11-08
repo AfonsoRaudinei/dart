@@ -9,7 +9,11 @@ export type StorePlanInsertRow = {
   payment_id: string
 }
 
-export type ExistingStorePlan = { plano: string; expira_em: string }
+export type ExistingStorePlan = {
+  plano: string
+  expira_em: string
+  user_id: string
+}
 
 export type StorePlanWriter = {
   findByPaymentId(paymentId: string): Promise<ExistingStorePlan | null>
@@ -20,6 +24,7 @@ export type StorePlanWriter = {
 export type GrantStorePlanResult =
   | { kind: 'granted'; row: StorePlanInsertRow }
   | { kind: 'already_granted'; existing: ExistingStorePlan }
+  | { kind: 'other_account' }
   | { kind: 'rejected'; reason: string }
 
 export async function grantStorePlan(
@@ -32,7 +37,10 @@ export async function grantStorePlan(
   }
 
   const existing = await writer.findByPaymentId(input.transactionId)
-  if (existing) return { kind: 'already_granted', existing }
+  if (existing) {
+    if (existing.user_id !== input.userId) return { kind: 'other_account' }
+    return { kind: 'already_granted', existing }
+  }
 
   const expiraEm = addMonths(input.now, plan.months)
   await writer.deactivateActivePlans(input.userId)

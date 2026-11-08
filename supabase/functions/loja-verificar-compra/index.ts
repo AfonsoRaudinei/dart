@@ -61,12 +61,16 @@ serve(async (req) => {
       async findByPaymentId(paymentId) {
         const { data } = await admin
           .from("user_plans")
-          .select("plano, expira_em")
+          .select("plano, expira_em, user_id")
           .eq("payment_id", paymentId)
           .limit(1)
         const row = data?.[0]
         if (!row) return null
-        return { plano: String(row.plano), expira_em: String(row.expira_em) }
+        return {
+          plano: String(row.plano),
+          expira_em: String(row.expira_em),
+          user_id: String(row.user_id),
+        }
       },
       async deactivateActivePlans(userId) {
         await admin.from("user_plans").update({ ativo: false }).eq("user_id", userId).eq("ativo", true)
@@ -152,6 +156,9 @@ serve(async (req) => {
 
   if (result.kind === "rejected") {
     return json({ error: result.reason }, statusForReason(result.reason))
+  }
+  if (result.kind === "other_account") {
+    return json({ status: "other_account" }, 200)
   }
   if (result.kind === "already_granted") {
     return json({

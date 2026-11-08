@@ -31,12 +31,14 @@ export async function processStorePurchase(
     const verified = await verifyApplePurchase(deps.apple, {
       productId: input.productId,
       transactionId: input.transactionId,
+      userId: input.userId,
     })
     if (!verified.ok) return { kind: 'rejected', reason: verified.reason }
   } else if (input.platform === 'android') {
     const verified = await verifyGooglePurchase(deps.google, {
       productId: input.productId,
       purchaseToken: input.verificationData,
+      userId: input.userId,
     })
     if (!verified.ok) return { kind: 'rejected', reason: verified.reason }
     input = { ...input, transactionId: verified.orderId }
