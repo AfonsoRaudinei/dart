@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/ui/components/map/widgets/map_locality_context_chip.dart';
@@ -47,6 +48,12 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(const Key('map_locality_context_chip')), findsOneWidget);
+
+    final chipFinder = find.byType(MapLocalityContextChip);
+    final safeTop = MediaQuery.paddingOf(tester.element(chipFinder)).top;
+    final positioned = tester.widget<Positioned>(find.byType(Positioned));
+    expect(positioned.top, safeTop + kMapLocalityChipTopBelowSafeArea);
+    expect(positioned.right, kMapTopControlsReservedRightWidth);
   });
 
   testWidgets('chip oculto quando divisas UF desativadas', (tester) async {
