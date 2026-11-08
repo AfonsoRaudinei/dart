@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import 'drawing_models.dart';
+import 'package:soloforte_app/core/domain/talhao_condicao.dart';
 
 /// Define os estados puramente visuais que um talhão/desenho pode assumir no mapa.
 enum FieldVisualState {
@@ -138,30 +139,40 @@ extension DrawingFeatureStyle on DrawingFeature {
     return FieldVisualState.standard;
   }
 
+  /// Preenchimento segue a condição. Sync e rascunho mudam só a borda.
+  FieldStyle _condicaoFill({
+    required bool dashed,
+    Color? borderColor,
+    double borderWidth = 3.0,
+  }) {
+    final fill = Color(TalhaoCondicao.resolve(properties.cor).argb);
+    return FieldStyle(
+      fillColor: fill,
+      borderColor: borderColor ?? _emphasizeBorder(fill),
+      borderWidth: borderWidth,
+      isDashed: dashed,
+      fillOpacity: 0.26,
+    );
+  }
+
   FieldStyle get style {
     switch (visualState) {
-      case FieldVisualState.standard:
-        // 🆕 Se tiver cor personalizada definida (via grupo ou manual), usa ela
-        if (properties.cor != null) {
-          final customColor = Color(properties.cor!);
-          return FieldStyle(
-            fillColor: customColor,
-            borderColor: _emphasizeBorder(customColor),
-            borderWidth: 3.0,
-            fillOpacity: 0.26,
-          );
-        }
-        return FieldStyle.standard;
       case FieldVisualState.draft:
-        return FieldStyle.draft;
+        return _condicaoFill(dashed: true, borderWidth: 2.5);
       case FieldVisualState.pendingSync:
-        return FieldStyle.pendingSync;
+        return _condicaoFill(dashed: true, borderWidth: 2.5);
       case FieldVisualState.conflict:
-        return FieldStyle.conflict;
+        return _condicaoFill(
+          dashed: false,
+          borderColor: const Color(0xFFB00020),
+          borderWidth: 3.5,
+        );
       case FieldVisualState.archived:
         return FieldStyle.archived;
-      default:
-        return FieldStyle.standard;
+      case FieldVisualState.standard:
+      case FieldVisualState.selected:
+      case FieldVisualState.editing:
+        return _condicaoFill(dashed: false);
     }
   }
 }

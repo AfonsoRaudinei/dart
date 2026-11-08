@@ -40,8 +40,9 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       onIntersection: widget.controller.startIntersectionMode,
       onSplitPolygons: widget.controller.polygonPartCount(feature.geometry) > 1
           ? () async {
-              final count =
-                  widget.controller.polygonPartCount(feature.geometry);
+              final count = widget.controller.polygonPartCount(
+                feature.geometry,
+              );
               await widget.controller.splitSelectedFeature();
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
@@ -118,9 +119,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
             child: Text(
               'Arraste os pontos para modificar a área.\nUse os controles laterais para salvar, desfazer, refazer ou cancelar.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: v.subtitleColor,
-              ),
+              style: TextStyle(color: v.subtitleColor),
             ),
           ),
           const SizedBox(height: 12),
@@ -161,8 +160,9 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
   Widget _buildReviewingMode(BuildContext context) {
     final area = widget.controller.liveAreaHa;
     final perimeter = widget.controller.livePerimeterKm;
-    final detectedParts =
-        widget.controller.polygonPartCount(widget.controller.liveGeometry);
+    final detectedParts = widget.controller.polygonPartCount(
+      widget.controller.liveGeometry,
+    );
     final isMultiPartSave = detectedParts > 1;
     final f = NumberFormat("##0.##", "pt_BR");
     final isIos = soloForteSheetIsIos(context);
@@ -174,9 +174,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       fontSize: SoloForteSheetTokens.sectionFontSize,
       fontWeight: SoloForteSheetTokens.sectionWeight,
     );
-    final titleColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : v.titleColor;
+    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : v.titleColor;
     final muted = isIos
         ? SoloForteSheetSkinIos.subtitleColor
         : SoloForteSheetTokens.sectionLabel;
@@ -215,18 +213,12 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.save_outlined,
-                    color: context.themeAccent,
-                  ),
+                  Icon(Icons.save_outlined, color: context.themeAccent),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Revise os dados e toque em salvar para criar o desenho no mapa.',
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        color: muted,
-                      ),
+                      style: TextStyle(fontSize: 13.5, color: muted),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -305,13 +297,17 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: isIos
-                      ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+                      ? const BorderSide(
+                          color: SoloForteSheetSkinIos.cardBorder,
+                        )
                       : BorderSide.none,
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: isIos
-                      ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+                      ? const BorderSide(
+                          color: SoloForteSheetSkinIos.cardBorder,
+                        )
                       : BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
@@ -321,60 +317,6 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
               ),
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Informe o nome' : null,
-            ),
-            const SizedBox(height: 16),
-
-            Row(
-              children: [
-                // Seletor de cor simplificado
-                _ColorOption(
-                  color: _selectedColor,
-                  selected: _selectedColor,
-                  onTap: (_) {},
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _ColorOption(
-                          color: context.themeAccent,
-                          selected: _selectedColor,
-                          onTap: (c) {
-                            HapticFeedback.selectionClick();
-                            _rebuild(() => _selectedColor = c);
-                          },
-                        ),
-                        _ColorOption(
-                          color: Colors.blue,
-                          selected: _selectedColor,
-                          onTap: (c) {
-                            HapticFeedback.selectionClick();
-                            _rebuild(() => _selectedColor = c);
-                          },
-                        ),
-                        _ColorOption(
-                          color: Colors.amber,
-                          selected: _selectedColor,
-                          onTap: (c) {
-                            HapticFeedback.selectionClick();
-                            _rebuild(() => _selectedColor = c);
-                          },
-                        ),
-                        _ColorOption(
-                          color: Colors.redAccent,
-                          selected: _selectedColor,
-                          onTap: (c) {
-                            HapticFeedback.selectionClick();
-                            _rebuild(() => _selectedColor = c);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
             ),
             const SizedBox(height: 24),
 
@@ -557,16 +499,9 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
           'Cliente selecionado';
       return InputDecorator(
         decoration: _sheetFieldDecoration(
-          suffixIcon: Icon(
-            Icons.lock_outline,
-            size: 18,
-            color: inputHint,
-          ),
+          suffixIcon: Icon(Icons.lock_outline, size: 18, color: inputHint),
         ),
-        child: Text(
-          name,
-          style: TextStyle(color: inputText),
-        ),
+        child: Text(name, style: TextStyle(color: inputText)),
       );
     }
 
@@ -576,10 +511,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       dropdownColor: dropdownBg,
       style: TextStyle(color: inputText),
       iconEnabledColor: inputHint,
-      hint: Text(
-        'Selecione o cliente...',
-        style: TextStyle(color: inputHint),
-      ),
+      hint: Text('Selecione o cliente...', style: TextStyle(color: inputHint)),
       items: clientState.clients.map((c) {
         return DropdownMenuItem(value: c, child: Text(c.name));
       }).toList(),
@@ -610,16 +542,9 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
           'Fazenda selecionada';
       return InputDecorator(
         decoration: _sheetFieldDecoration(
-          suffixIcon: Icon(
-            Icons.lock_outline,
-            size: 18,
-            color: inputHint,
-          ),
+          suffixIcon: Icon(Icons.lock_outline, size: 18, color: inputHint),
         ),
-        child: Text(
-          name,
-          style: TextStyle(color: inputText),
-        ),
+        child: Text(name, style: TextStyle(color: inputText)),
       );
     }
 
@@ -629,10 +554,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       dropdownColor: dropdownBg,
       style: TextStyle(color: inputText),
       iconEnabledColor: inputHint,
-      hint: Text(
-        'Selecione a fazenda...',
-        style: TextStyle(color: inputHint),
-      ),
+      hint: Text('Selecione a fazenda...', style: TextStyle(color: inputHint)),
       items: [
         ...clientState.farms.map(
           (f) => DropdownMenuItem(value: f, child: Text(f.name)),
@@ -676,7 +598,6 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     _rebuild(() {
       if (!preserveContextClient) _selectedClient = null;
       if (!preserveContextFarm) _selectedFarm = null;
-      _selectedColor = context.themeAccent;
     });
   }
 
@@ -745,10 +666,10 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       builder: (ctx) {
         final isIos = soloForteSheetIsIos(ctx);
         final v = SoloForteSheetVisuals.of(context);
-        final titleColor =
-            isIos ? SoloForteSheetSkinIos.titleColor : null;
-        final subtitleColor =
-            isIos ? SoloForteSheetSkinIos.subtitleColor : null;
+        final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
+        final subtitleColor = isIos
+            ? SoloForteSheetSkinIos.subtitleColor
+            : null;
         final iconColor = v.accent;
         return SafeArea(
           child: Column(

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:latlong2/latlong.dart';
 import '../coordinators/drawing_close_coordinator.dart';
 import '../controllers/drawing_controller.dart';
 import '../../domain/models/drawing_models.dart';
@@ -18,7 +17,6 @@ import 'package:soloforte_app/core/session/user_role.dart';
 import '../providers/drawing_client_provider.dart';
 import '../providers/gps_walk_providers.dart';
 import '../providers/drawing_export_provider.dart';
-import '../../../dashboard/providers/location_providers.dart';
 import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../core/utils/share_position.dart';
@@ -28,6 +26,7 @@ import 'drawing_info_edit_sheet.dart';
 import 'drawing_delete_undo_snackbar.dart';
 import 'drawing_review_metrics_panel.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
+import 'package:soloforte_app/core/domain/talhao_condicao.dart';
 import 'gps_walk_controls_overlay.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/solo_forte_sheet_visuals.dart';
@@ -100,8 +99,6 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     }
     return !role.toUserRole().isProdutor;
   }
-
-  Color _selectedColor = PremiumTokens.brandGreen;
 
   final _nomeController = TextEditingController();
   final _descricaoController = TextEditingController();
@@ -534,7 +531,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
         clienteId: _selectedClient!.id,
         fazendaId: _selectedFarm?.id,
         grupo: _selectedFarm?.name,
-        cor: _selectedColor.toARGB32(),
+        cor: TalhaoCondicao.bom.argb,
       );
     } finally {
       if (mounted) {

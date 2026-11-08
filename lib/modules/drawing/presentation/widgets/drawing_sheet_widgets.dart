@@ -86,10 +86,10 @@ class _SheetHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
-    final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : v.titleColor;
-    final iconColor =
-        isIos ? SoloForteSheetSkinIos.iconStroke : Theme.of(context).colorScheme.onSurface;
+    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : v.titleColor;
+    final iconColor = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : Theme.of(context).colorScheme.onSurface;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -133,10 +133,9 @@ class _SheetHeader extends StatelessWidget {
           height: 1,
           color: isIos
               ? SoloForteSheetSkinIos.rowDivider
-              : Theme.of(context)
-                  .colorScheme
-                  .outlineVariant
-                  .withValues(alpha: 0.5),
+              : Theme.of(
+                  context,
+                ).colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ],
     );
@@ -197,8 +196,9 @@ class _MetricItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
     final valueColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
-    final labelColor =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.grey;
+    final labelColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : Colors.grey;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,15 +235,11 @@ class _FormatButton extends StatelessWidget {
     final surface = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : Colors.grey[50];
-    final border = isIos
-        ? SoloForteSheetSkinIos.cardBorder
-        : Colors.grey[300]!;
+    final border = isIos ? SoloForteSheetSkinIos.cardBorder : Colors.grey[300]!;
     final iconColor = isIos
         ? SoloForteSheetSkinIos.iconStroke
         : Theme.of(context).primaryColor;
-    final labelColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : null;
+    final labelColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
     final sublabelColor = isIos
         ? SoloForteSheetSkinIos.subtitleColor
         : Colors.grey;
@@ -268,10 +264,7 @@ class _FormatButton extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               label,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: labelColor,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, color: labelColor),
             ),
             if (sublabel != null) ...[
               const SizedBox(height: 4),
@@ -282,55 +275,6 @@ class _FormatButton extends StatelessWidget {
             ],
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ColorOption extends StatelessWidget {
-  final Color color;
-  final Color selected;
-  final ValueChanged<Color> onTap;
-
-  const _ColorOption({
-    required this.color,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isSelected = color.toARGB32() == selected.toARGB32();
-    return GestureDetector(
-      onTap: () => onTap(color),
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: isSelected
-              ? Border.all(color: Colors.white, width: 3)
-              : Border.all(color: Colors.grey[200]!, width: 1),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: isSelected
-            ? Container(
-                margin: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.black12, width: 1),
-                ),
-              )
-            : null,
       ),
     );
   }
