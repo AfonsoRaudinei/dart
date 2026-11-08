@@ -452,9 +452,7 @@ class _OccurrenceCreationSheetState
         ? SoloForteSheetSkinIos.iconStroke
         : context.themeAccent;
     final titleColor = v.onSheetPrimary;
-    final muted = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : const Color(0xFF8E8E93);
+    final muted = v.subtitleColor;
     return Material(
       color: sheetBg,
       child: Column(
@@ -528,9 +526,7 @@ class _OccurrenceCreationSheetState
                   icon: Icon(
                     Icons.person_outline,
                     size: 18,
-                    color: isIos
-                        ? SoloForteSheetSkinIos.iconStroke
-                        : Colors.white70,
+                    color: isIos ? v.iconStroke : v.subtitleColor,
                   ),
                   label: _isAreaVisitada ? 'Cliente (opcional)' : 'Cliente',
                 ),
@@ -587,26 +583,19 @@ class _OccurrenceCreationSheetState
                                 shape: BoxShape.circle,
                                 color: isSelected
                                     ? selectedColor.withValues(alpha: 0.2)
-                                    : (isIos
-                                          ? SoloForteSheetSkinIos.cardBackground
-                                          : Colors.grey[800]),
+                                    : v.cardBackground,
                                 border: isSelected
                                     ? Border.all(color: selectedColor, width: 2)
-                                    : (isIos
-                                          ? Border.all(
-                                              color: SoloForteSheetSkinIos
-                                                  .cardBorder,
-                                            )
-                                          : null),
+                                    : (v.isDark
+                                          ? null
+                                          : Border.all(color: v.cardBorder)),
                               ),
                               child: Icon(
                                 cat.icon,
                                 size: 22,
                                 color: isSelected
                                     ? selectedColor
-                                    : (isIos
-                                          ? SoloForteSheetSkinIos.subtitleColor
-                                          : Colors.white70),
+                                    : v.subtitleColor,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -618,10 +607,7 @@ class _OccurrenceCreationSheetState
                                   fontSize: 11,
                                   color: isSelected
                                       ? selectedColor
-                                      : (isIos
-                                            ? SoloForteSheetSkinIos
-                                                  .subtitleColor
-                                            : Colors.white70),
+                                      : v.subtitleColor,
                                 ),
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
@@ -824,9 +810,7 @@ class _OccurrenceCreationSheetState
                   TextButton(
                     onPressed: _isSaving ? null : _handleCancel,
                     style: TextButton.styleFrom(
-                      foregroundColor: isIos
-                          ? SoloForteSheetSkinIos.ghostText
-                          : Colors.white70,
+                      foregroundColor: v.ghostText,
                       minimumSize: const Size(44, 44),
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                     ),
@@ -843,12 +827,8 @@ class _OccurrenceCreationSheetState
                     child: ElevatedButton(
                       onPressed: _isSaving ? null : _submit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isIos
-                            ? SoloForteSheetSkinIos.ctaBackground
-                            : context.themeAccent,
-                        foregroundColor: isIos
-                            ? SoloForteSheetSkinIos.ctaText
-                            : Colors.black,
+                        backgroundColor: v.ctaBackground,
+                        foregroundColor: v.ctaText,
                         minimumSize: const Size(48, 44),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
@@ -863,9 +843,7 @@ class _OccurrenceCreationSheetState
                               height: 22,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2.2,
-                                color: isIos
-                                    ? SoloForteSheetSkinIos.ctaText
-                                    : Colors.black87,
+                                color: v.ctaText,
                               ),
                             )
                           : Text(
