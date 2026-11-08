@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 import '../../../../core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -50,7 +51,7 @@ class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
     final metasAsync = ref.watch(metasSafraAtivaProvider);
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16 + kFabSafeArea),
       children: [
         const _SectionLabel('Valor do grão'),
         const SizedBox(height: 8),
