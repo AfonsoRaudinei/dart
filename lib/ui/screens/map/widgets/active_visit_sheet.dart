@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design/sf_icons.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/solo_forte_sheet_visuals.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
@@ -22,12 +23,10 @@ class ActiveVisitSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isIos = _isIosBlue(context);
-    final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : null;
-    final ghostFg =
-        isIos ? SoloForteSheetSkinIos.ghostText : Colors.white70;
-    final ghostBorder =
-        isIos ? SoloForteSheetSkinIos.ghostBorder : Colors.white24;
+    final v = SoloForteSheetVisuals.of(context);
+    final titleColor = v.titleColor;
+    final ghostFg = v.ghostText;
+    final ghostBorder = v.ghostBorder;
 
     return Padding(
       padding: const EdgeInsets.all(24),
