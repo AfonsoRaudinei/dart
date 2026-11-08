@@ -22,6 +22,9 @@ class SoloForteSheetVisuals {
   bool get isDark => variant == SoloForteSheetVariant.dark;
   bool get isLight => variant == SoloForteSheetVariant.light;
 
+  /// Alias legado (`Skin*.background`) — preferir [sheetBackground] em código novo.
+  Color get background => sheetBackground;
+
   Color get sheetBackground => switch (variant) {
         SoloForteSheetVariant.ios => SoloForteSheetSkinIos.background,
         SoloForteSheetVariant.light => SoloForteSheetSkinLight.background,
@@ -148,6 +151,9 @@ class SoloForteSheetVisuals {
 
   Color get iconStroke => chipBorderActive;
 
+  double get iconRadius =>
+      isIos ? SoloForteSheetSkinIos.iconRadius : inputRadius;
+
   Color get iconBackground => switch (variant) {
         SoloForteSheetVariant.ios => SoloForteSheetSkinIos.iconBackground,
         SoloForteSheetVariant.light => accent.withValues(alpha: 0.12),
@@ -214,4 +220,46 @@ class SoloForteSheetVisuals {
   Color get onSheetDivider => isDark
       ? Colors.white.withValues(alpha: 0.12)
       : dividerColor;
+
+  double get titleFontSize => switch (variant) {
+        SoloForteSheetVariant.ios => 16.0,
+        _ => SoloForteSheetTokens.titleFontSize,
+      };
+
+  FontWeight get titleWeight => SoloForteSheetTokens.titleWeight;
+
+  double get sectionFontSize => switch (variant) {
+        SoloForteSheetVariant.light =>
+          SoloForteSheetSkinLight.sectionFontSize,
+        _ => SoloForteSheetTokens.sectionFontSize,
+      };
+
+  FontWeight get sectionWeight => switch (variant) {
+        SoloForteSheetVariant.light => SoloForteSheetSkinLight.sectionWeight,
+        _ => SoloForteSheetTokens.sectionWeight,
+      };
+
+  Color get sectionLabel => titleColor;
+
+  EdgeInsets get inputPadding => SoloForteSheetTokens.inputPadding;
+
+  double get chipBorderWidth => SoloForteSheetTokens.chipBorderWidth;
+
+  Color get badgeBackground => switch (variant) {
+        SoloForteSheetVariant.ios => SoloForteSheetSkinIos.badgeBackground,
+        SoloForteSheetVariant.light => accent.withValues(alpha: 0.12),
+        SoloForteSheetVariant.dark => SoloForteSheetTokens.categoryBackground,
+      };
+
+  Color get badgeText => switch (variant) {
+        SoloForteSheetVariant.ios => SoloForteSheetSkinIos.badgeText,
+        SoloForteSheetVariant.light => accent,
+        SoloForteSheetVariant.dark => subtitleColor,
+      };
+
+  Color get badgeBorder => switch (variant) {
+        SoloForteSheetVariant.ios => SoloForteSheetSkinIos.badgeBorder,
+        SoloForteSheetVariant.light => cardBorder,
+        SoloForteSheetVariant.dark => chipBorderInactive,
+      };
 }
