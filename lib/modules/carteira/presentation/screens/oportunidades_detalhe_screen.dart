@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/modules/carteira/domain/oportunidades_aggregation.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_keyboard_dismiss.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_module_scaffold.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_segment_bar.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/oportunidades_chart_card.dart';
@@ -33,6 +34,7 @@ class OportunidadesDetalheScreen extends ConsumerWidget {
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
         onPressed: () {
+          CarteiraKeyboardDismiss.dismiss();
           ref.read(carteiraSegmentProvider.notifier).state =
               CarteiraSegment.oportunidades;
           context.go(AppRoutes.carteira);

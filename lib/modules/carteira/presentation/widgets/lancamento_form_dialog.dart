@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import '../../domain/entities/carteira_lancamento.dart';
 import '../../domain/entities/categoria_global.dart';
 import '../providers/carteira_providers.dart';
+import 'carteira_keyboard_dismiss.dart';
 import 'tipo_fechamento_toggle.dart';
 
 /// Dialog para registrar um lançamento de realizado.
@@ -103,6 +104,11 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
     if (picked != null) {
       setState(() => _dataFechamento = picked);
     }
+  }
+
+  void _fecharDialog([bool? result]) {
+    CarteiraKeyboardDismiss.dismiss();
+    Navigator.of(context).pop(result);
   }
 
   void _rolarParaTopo() {
@@ -242,7 +248,7 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
       ref.invalidate(oportunidadesCarteiraOverviewProvider);
 
       if (mounted) {
-        Navigator.of(context).pop(true);
+        _fecharDialog(true);
       }
     } catch (e) {
       if (mounted) {
@@ -592,7 +598,7 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _salvando ? null : () => Navigator.of(context).pop(false),
+          onPressed: _salvando ? null : () => _fecharDialog(false),
           child: const Text('Cancelar'),
         ),
         FilledButton(

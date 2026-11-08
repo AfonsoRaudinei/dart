@@ -23,6 +23,12 @@ class CarteiraMetasTab extends ConsumerStatefulWidget {
 }
 
 class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
+  @override
+  void deactivate() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    super.deactivate();
+  }
+
   String get _userId => LocalSessionIdentity.resolveUserId();
 
   Future<void> _abrirNovaSafra() async {
@@ -268,6 +274,7 @@ class _ValorGraoInlineItemState extends ConsumerState<_ValorGraoInlineItem> {
   }
 
   void _cancelarEdicao() {
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() {
       _editando = false;
       _feedback = null;
