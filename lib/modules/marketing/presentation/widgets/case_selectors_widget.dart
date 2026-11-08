@@ -25,12 +25,9 @@ class CaseTipoSelector extends StatelessWidget {
         isIos ? SoloForteSheetSkinIos.ctaBackground : context.themeAccent;
     final selectedBorder =
         isIos ? SoloForteSheetSkinIos.ctaBackground : context.themeAccent;
-    final inactiveBorder =
-        isIos ? SoloForteSheetSkinIos.cardBorder : PremiumTokens.hairlineLight;
-    final selectedFg =
-        isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
-    final inactiveFg =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : const Color(0xFF8E8E93);
+    final inactiveBorder = v.cardBorder;
+    final selectedFg = v.ctaText;
+    final inactiveFg = v.subtitleColor;
 
     final labels = {
       CaseTipo.resultado: 'Resultado',
@@ -89,8 +86,7 @@ class PlanoMarketingSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
-    final inactiveBorder =
-        isIos ? SoloForteSheetSkinIos.cardBorder : PremiumTokens.hairlineLight;
+    final inactiveBorder = v.cardBorder;
 
     final colors = {
       PlanoMarketing.ouro: const Color(0xFFFFB800),
