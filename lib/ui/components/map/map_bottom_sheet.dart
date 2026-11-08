@@ -82,6 +82,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   bool _initialDetentSynced = false;
   OccurrenceFormGuard? _occurrenceFormGuard;
   DrawingState? _lastDrawingState;
+  double _lastKeyboardInset = 0;
 
   @override
   void initState() {
@@ -103,13 +104,23 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_initialDetentSynced) return;
-    _initialDetentSynced = true;
-    _syncInitialDetentHeight();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _publishChromeInset(_getSheetHeight());
-    });
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    if (!_initialDetentSynced) {
+      _initialDetentSynced = true;
+      _lastKeyboardInset = keyboard;
+      _syncInitialDetentHeight();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _publishChromeInset(_getSheetHeight());
+      });
+      return;
+    }
+    if ((keyboard - _lastKeyboardInset).abs() > 0.5) {
+      _lastKeyboardInset = keyboard;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _syncHeightToCurrentDetent();
+      });
+    }
   }
 
   void _syncInitialDetentHeight() {
@@ -119,6 +130,10 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
   SheetDetent _resolveInitialDetent() {
     if (widget.state.isCreatingOccurrence || widget.creationLocation != null) {
+      return SheetDetent.expanded;
+    }
+    if (widget.state.type == MapSheetType.draw &&
+        widget.drawingController.currentState == DrawingState.reviewing) {
       return SheetDetent.expanded;
     }
     return SheetDetent.medium;
@@ -201,9 +216,17 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     final enteredEditing =
         next == DrawingState.editing &&
         _lastDrawingState != DrawingState.editing;
+    final enteredReviewing =
+        next == DrawingState.reviewing &&
+        _lastDrawingState != DrawingState.reviewing;
     _lastDrawingState = next;
-    if (!enteredEditing) return;
-    _closeDrawingSheetChrome();
+    if (enteredEditing) {
+      _closeDrawingSheetChrome();
+      return;
+    }
+    if (enteredReviewing) {
+      _syncHeightToCurrentDetent(targetDetent: SheetDetent.expanded);
+    }
   }
 
   void _collapseDrawingSheetWhileEditing() {
@@ -288,16 +311,26 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   }
 
   void _animateToDetent(SheetDetent targetDetent) {
-    if (_currentDetent == targetDetent) return;
+    _syncHeightToCurrentDetent(targetDetent: targetDetent);
+  }
 
-    final startHeight = _getSheetHeight();
-    setState(() => _currentDetent = targetDetent);
-    final endHeight = _getSheetHeight();
+  /// Recalcula a altura do detent atual (mesmo detent).
+  /// Usado quando o teclado abre/fecha — `_animateToDetent` sozinho abortava.
+  void _syncHeightToCurrentDetent({SheetDetent? targetDetent}) {
+    if (!mounted) return;
+    final startHeight = _heightAnimation.value;
+    if (targetDetent != null) {
+      _currentDetent = targetDetent;
+    }
+    final endHeight = _getDetentHeight(_currentDetent);
+    if ((startHeight - endHeight).abs() < 0.5) return;
 
-    _heightAnimation =
-        Tween<double>(begin: startHeight, end: endHeight).animate(
-          CurvedAnimation(parent: _heightController, curve: Curves.easeOut),
-        )..addListener(_onHeightTick);
+    setState(() {
+      _heightAnimation =
+          Tween<double>(begin: startHeight, end: endHeight).animate(
+            CurvedAnimation(parent: _heightController, curve: Curves.easeOut),
+          )..addListener(_onHeightTick);
+    });
 
     _heightController.forward(from: 0).whenComplete(() {
       _heightAnimation.removeListener(_onHeightTick);
@@ -752,91 +785,98 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     final handleWidth = visuals.handleSize.width;
     final handleHeight = visuals.handleSize.height;
 
-    return SoloForteSheetSkinScope(
-      variant: variant,
-      child: GestureDetector(
-        key: const Key('map_bottom_sheet_root'),
-        onVerticalDragStart: _handleDragStart,
-        onVerticalDragUpdate: _handleVerticalDrag,
-        onVerticalDragEnd: _handleDragEnd,
-        child: AnimatedBuilder(
-          animation: _heightAnimation,
-          builder: (context, child) {
-            final showContent = _shouldShowSheetContent(_heightAnimation.value);
-            return SizedBox(
-              height: _heightAnimation.value,
-              child: PremiumGlassPanel(
-                isDark: !isIos,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(sheetRadius),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: sheetBg,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(sheetRadius),
-                    ),
-                    border: Border(
-                      top: BorderSide(color: topBorder, width: 0.5),
-                    ),
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboardInset),
+      child: SoloForteSheetSkinScope(
+        variant: variant,
+        child: GestureDetector(
+          key: const Key('map_bottom_sheet_root'),
+          onVerticalDragStart: _handleDragStart,
+          onVerticalDragUpdate: _handleVerticalDrag,
+          onVerticalDragEnd: _handleDragEnd,
+          child: AnimatedBuilder(
+            animation: _heightAnimation,
+            builder: (context, child) {
+              final showContent = _shouldShowSheetContent(
+                _heightAnimation.value,
+              );
+              return SizedBox(
+                height: _heightAnimation.value,
+                child: PremiumGlassPanel(
+                  isDark: !isIos,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(sheetRadius),
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Handle (alça) - área de drag expandida
-                      GestureDetector(
-                        key: const Key('map_bottom_sheet_handle'),
-                        onTap: _handleHandleTap,
-                        child: Container(
-                          padding: const EdgeInsets.only(
-                            top: 14,
-                            bottom: 20,
-                          ), // Hit area + margin
-                          child: Center(
-                            child: Container(
-                              width: handleWidth,
-                              height: handleHeight,
-                              decoration: BoxDecoration(
-                                color: handleColor,
-                                borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: sheetBg,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(sheetRadius),
+                      ),
+                      border: Border(
+                        top: BorderSide(color: topBorder, width: 0.5),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Handle (alça) - área de drag expandida
+                        GestureDetector(
+                          key: const Key('map_bottom_sheet_handle'),
+                          onTap: _handleHandleTap,
+                          child: Container(
+                            padding: const EdgeInsets.only(
+                              top: 14,
+                              bottom: 20,
+                            ), // Hit area + margin
+                            child: Center(
+                              child: Container(
+                                width: handleWidth,
+                                height: handleHeight,
+                                decoration: BoxDecoration(
+                                  color: handleColor,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
 
-                      // Conteúdo da tab selecionada com cross-fade
-                      if (showContent)
-                        Expanded(
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            switchInCurve: Curves.easeOut,
-                            switchOutCurve: Curves.easeIn,
-                            transitionBuilder: (child, animation) {
-                              return FadeTransition(
-                                opacity: animation,
-                                child: SlideTransition(
-                                  position: Tween<Offset>(
-                                    begin: const Offset(0.05, 0),
-                                    end: Offset.zero,
-                                  ).animate(animation),
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: Container(
-                              key: ValueKey(_tabContentKey()),
-                              child: _buildTabContent(),
+                        // Conteúdo da tab selecionada com cross-fade
+                        if (showContent)
+                          Expanded(
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 200),
+                              switchInCurve: Curves.easeOut,
+                              switchOutCurve: Curves.easeIn,
+                              transitionBuilder: (child, animation) {
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(0.05, 0),
+                                      end: Offset.zero,
+                                    ).animate(animation),
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                key: ValueKey(_tabContentKey()),
+                                child: _buildTabContent(),
+                              ),
                             ),
                           ),
-                        ),
-                      // Navegação agora no FloatingDockWidget externo
-                    ],
+                        // Navegação agora no FloatingDockWidget externo
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
