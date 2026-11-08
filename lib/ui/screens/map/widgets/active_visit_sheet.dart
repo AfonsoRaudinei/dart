@@ -20,6 +20,7 @@ class ActiveVisitSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final v = SoloForteSheetVisuals.of(context);
     // Host de check-in usa preserveMaterialDefaults (Scope forçado em light);
     // re-propaga a variante real do tema para o conteúdo.
     return SoloForteSheetSkinScope(
@@ -46,7 +47,7 @@ class ActiveVisitSheet extends ConsumerWidget {
             SFIcons.checkCircle,
             size: 64,
             color: isIos
-                ? SoloForteSheetSkinIos.ctaBackground
+                ? v.ctaBackground
                 : PremiumTokens.brandGreen,
           ),
           const SizedBox(height: 16),
@@ -90,7 +91,7 @@ class ActiveVisitSheet extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(
-                  isIos ? SoloForteSheetSkinIos.ctaRadius : 12,
+                  v.ctaRadius,
                 ),
               ),
             ),
@@ -106,7 +107,7 @@ class ActiveVisitSheet extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(
-                    SoloForteSheetSkinIos.ghostRadius,
+                    v.ghostRadius,
                   ),
                 ),
               ),

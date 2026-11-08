@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:intl/intl.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import '../../../core/domain/publicacao.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
@@ -14,6 +14,7 @@ void showPublicPublicationPreview(
   BuildContext context,
   Publicacao publication,
 ) {
+    final v = SoloForteSheetVisuals.of(context);
   showSoloForteSheet(
     context: context,
     isScrollControlled: true,
@@ -30,20 +31,19 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final bg = isIos
-        ? SoloForteSheetSkinIos.background
-        : SoloForteSheetTokens.sheetBackground;
-    final radius = isIos
-        ? SoloForteSheetSkinIos.sheetRadius
-        : SoloForteSheetTokens.borderRadius;
+        ? v.sheetBackground
+        : v.sheetBackground;
+    final radius = v.sheetRadius;
     final handleColor = isIos
-        ? SoloForteSheetSkinIos.handleColor
+        ? v.handleColor
         : context.premiumHairline;
     final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : null;
+        v.isIos ? v.titleColor : null;
     final subtitle = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
+        ? v.subtitleColor
         : context.premiumTextSecondary;
 
     return Container(
@@ -54,8 +54,8 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
         color: bg,
         borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
         border: isIos
-            ? const Border(
-                top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+            ? Border(
+                top: BorderSide(color: v.sheetBorder),
               )
             : null,
       ),
@@ -65,8 +65,8 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
           // Handle
           Container(
             margin: const EdgeInsets.only(top: 12),
-            width: isIos ? SoloForteSheetSkinIos.handleSize.width : 40,
-            height: isIos ? SoloForteSheetSkinIos.handleSize.height : 4,
+            width: v.handleSize.width,
+            height: v.handleSize.height,
             decoration: BoxDecoration(
               color: handleColor,
               borderRadius: BorderRadius.circular(2),
@@ -145,16 +145,17 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
     bool isIos,
     Color subtitle,
   ) {
+    final v = SoloForteSheetVisuals.of(context);
     final surface = isIos
-        ? SoloForteSheetSkinIos.cardBackground
+        ? v.cardBackground
         : context.premiumSurface;
     final progress = isIos
-        ? SoloForteSheetSkinIos.ctaBackground
+        ? v.ctaBackground
         : PremiumTokens.brandGreen;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(
-        isIos ? SoloForteSheetSkinIos.cardRadius : 16,
+        v.cardRadius,
       ),
       child: AspectRatio(
         aspectRatio: 16 / 9,
@@ -188,15 +189,16 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
   }
 
   Widget _buildTypeBadge(BuildContext context, bool isIos) {
+    final v = SoloForteSheetVisuals.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4),
       decoration: BoxDecoration(
         color: isIos
-            ? SoloForteSheetSkinIos.badgeBackground
+            ? v.badgeBackground
             : _getTypeColor(publication.type).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: isIos
-            ? Border.all(color: SoloForteSheetSkinIos.badgeBorder)
+            ? Border.all(color: v.badgeBorder)
             : null,
       ),
       child: Text(
@@ -204,7 +206,7 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
         style: TextStyle(
           fontSize: 12,
           color: isIos
-              ? SoloForteSheetSkinIos.badgeText
+              ? v.badgeText
               : _getTypeColor(publication.type),
           fontWeight: FontWeight.w500,
         ),
@@ -213,6 +215,7 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
   }
 
   Widget _buildClientInfo(BuildContext context, Color subtitle) {
+    final v = SoloForteSheetVisuals.of(context);
     return Row(
       children: [
         Icon(Icons.location_on, size: 16, color: subtitle),
@@ -231,6 +234,7 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
   }
 
   Widget _buildPublicationDate(BuildContext context, Color subtitle) {
+    final v = SoloForteSheetVisuals.of(context);
     final formatter = DateFormat('dd/MM/yyyy • HH:mm');
     return Row(
       children: [
@@ -253,8 +257,9 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
     Color? titleColor,
     Color subtitle,
   ) {
+    final v = SoloForteSheetVisuals.of(context);
     final surface = isIos
-        ? SoloForteSheetSkinIos.cardBackground
+        ? v.cardBackground
         : context.premiumSurface;
 
     return Column(
@@ -279,7 +284,7 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
               final media = publication.media[index];
               return ClipRRect(
                 borderRadius: BorderRadius.circular(
-                  isIos ? SoloForteSheetSkinIos.cardRadius : 12,
+                  v.cardRadius,
                 ),
                 child: AspectRatio(
                   aspectRatio: 1,

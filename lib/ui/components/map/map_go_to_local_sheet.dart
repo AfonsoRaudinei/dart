@@ -35,12 +35,10 @@ class MapGoToLocalSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final bg = v.sheetBackground;
-    final radius = isIos
-        ? SoloForteSheetSkinIos.sheetRadius
-        : SoloForteSheetTokens.borderRadius;
+    final radius = v.sheetRadius;
 
     return Material(
       color: bg,
@@ -59,10 +57,8 @@ class MapGoToLocalSheet extends StatelessWidget {
                   child: Text(
                     'Ir para local',
                     style: TextStyle(
-                      fontSize: isIos ? 16 : SoloForteSheetTokens.titleFontSize,
-                      fontWeight: isIos
-                          ? FontWeight.w700
-                          : SoloForteSheetTokens.titleWeight,
+                      fontSize: v.titleFontSize,
+                      fontWeight: v.titleWeight,
                       color: v.titleColor,
                     ),
                   ),
