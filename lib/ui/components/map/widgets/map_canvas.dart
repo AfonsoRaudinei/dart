@@ -45,7 +45,7 @@ class MapCanvas extends StatelessWidget {
         interactionOptions:
             interactionOptions ??
             const InteractionOptions(
-              flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+              flags: kPrivateMapExploreInteractionFlags,
             ),
       ),
       children: children,
