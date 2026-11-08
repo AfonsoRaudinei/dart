@@ -140,9 +140,6 @@ class _ThrowingPlanoRepo implements IPlanoRepository {
   Future<UserPlan> getPlanoAtivo(String userId) async => throw error;
 
   @override
-  Future<UserPlan> ativarPlano(UserPlan plano) => throw UnimplementedError();
-
-  @override
   Future<List<Referral>> getReferrals(String referrerId) async => const [];
 
   @override

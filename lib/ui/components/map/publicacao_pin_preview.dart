@@ -6,7 +6,6 @@ import '../../../../core/design/sf_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import '../../../core/domain/publicacao.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
@@ -53,12 +52,12 @@ class _PublicacaoPreviewSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final bg = v.sheetBackground;
-    final radius = isIos ? SoloForteSheetSkinIos.sheetRadius : 16.0;
+    final radius = v.sheetRadius;
     final handleColor = isIos
-        ? SoloForteSheetSkinIos.handleColor
+        ? v.handleColor
         : context.premiumSurface;
 
     return DraggableScrollableSheet(
@@ -73,8 +72,8 @@ class _PublicacaoPreviewSheet extends StatelessWidget {
             color: bg,
             borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
             border: isIos
-                ? const Border(
-                    top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+                ? Border(
+                    top: BorderSide(color: v.sheetBorder),
                   )
                 : null,
             boxShadow: const [
@@ -93,8 +92,8 @@ class _PublicacaoPreviewSheet extends StatelessWidget {
               Center(
                 child: Container(
                   margin: const EdgeInsets.only(top: 12, bottom: 8),
-                  width: isIos ? SoloForteSheetSkinIos.handleSize.width : 40,
-                  height: isIos ? SoloForteSheetSkinIos.handleSize.height : 4,
+                  width: v.handleSize.width,
+                  height: v.handleSize.height,
                   decoration: BoxDecoration(
                     color: handleColor,
                     borderRadius: BorderRadius.circular(2),
@@ -130,13 +129,14 @@ class _CoverSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final cover = publicacao.coverMedia;
     final hasCover = cover.path.isNotEmpty;
-    final isIos = soloForteSheetIsIos(context);
+    final isIos = v.isIos;
     final surface = isIos
-        ? SoloForteSheetSkinIos.cardBackground
+        ? v.cardBackground
         : context.premiumSurface;
-    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 10.0;
+    final radius = v.cardRadius;
 
     return Container(
       height: 160,
@@ -145,7 +145,7 @@ class _CoverSection extends StatelessWidget {
         color: surface,
         borderRadius: BorderRadius.circular(radius),
         border: isIos
-            ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+            ? Border.all(color: v.cardBorder)
             : null,
       ),
       child: ClipRRect(
@@ -163,12 +163,13 @@ class _CoverSection extends StatelessWidget {
   }
 
   Widget _placeholder(BuildContext context, bool isIos) {
+    final v = SoloForteSheetVisuals.of(context);
     return Center(
       child: Icon(
         SFIcons.image,
         size: 48,
         color: isIos
-            ? SoloForteSheetSkinIos.subtitleColor
+            ? v.subtitleColor
             : context.premiumTextTertiary,
       ),
     );
@@ -182,9 +183,10 @@ class _HeaderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : null;
+        v.isIos ? v.titleColor : null;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -196,18 +198,18 @@ class _HeaderSection extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: isIos
-                  ? SoloForteSheetSkinIos.badgeBackground
+                  ? v.badgeBackground
                   : _getTypeColor().withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
               border: isIos
-                  ? Border.all(color: SoloForteSheetSkinIos.badgeBorder)
+                  ? Border.all(color: v.badgeBorder)
                   : null,
             ),
             child: Text(
               _getTypeLabel(),
               style: TextStyle(
                 color: isIos
-                    ? SoloForteSheetSkinIos.badgeText
+                    ? v.badgeText
                     : _getTypeColor(),
                 fontSize: 10.0,
                 fontWeight: FontWeight.w500,
@@ -269,12 +271,13 @@ class _InfoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final subtitle = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
+        ? v.subtitleColor
         : context.premiumTextSecondary;
     final tertiary = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
+        ? v.subtitleColor
         : context.premiumTextTertiary;
 
     return Padding(
@@ -376,11 +379,12 @@ class _CTASection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final ctaBg = isIos
-        ? SoloForteSheetSkinIos.ctaBackground
+        ? v.ctaBackground
         : PremiumTokens.brandGreen;
-    final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 10.0;
+    final ctaRadius = v.ctaRadius;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),

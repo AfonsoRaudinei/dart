@@ -139,14 +139,13 @@ class _OccurrenceAndamentoSectionState
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     if (widget.occurrence.status == 'draft') {
       return const SizedBox.shrink();
     }
 
-    final v = SoloForteSheetVisuals.of(context);
-    final isIos = v.isIos;
     final cardBg = v.isDark ? v.sheetBackground : v.cardBackground;
-    final cardRadius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+    final cardRadius = v.cardRadius;
     final subtitle = v.subtitleColor;
     final inputFill = switch (v.variant) {
       SoloForteSheetVariant.ios => v.iconBackground,

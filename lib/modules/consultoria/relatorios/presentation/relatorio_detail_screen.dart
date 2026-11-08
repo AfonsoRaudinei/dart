@@ -24,9 +24,8 @@ import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 ///
 /// Rota: [AppRoutes.relatorioDetail] (/consultoria/relatorios/:id) — L2+
 ///
-/// **Entrada:** retorno do formulário `/edit` após salvar ou voltar
-/// ([RelatorioFormScreen]). A lista em [RelatoriosScreen] abre HTML direto
-/// no tap do card — não navega para esta tela.
+/// **Entrada:** lista Visitas via `push` no card; formulário `/edit` após salvar;
+/// pré-visualização HTML pelo menu ⋮ nesta tela.
 ///
 /// Layout: CustomScrollView com slivers
 ///
@@ -204,7 +203,9 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
                 } else if (value == 'export') {
                   await _exportHtml(context, ref, relatorio);
                 } else if (value == 'edit') {
-                  context.go('/consultoria/relatorios/${widget.relatorioId}/edit');
+                  context.push(
+                    '/consultoria/relatorios/${widget.relatorioId}/edit',
+                  );
                 } else if (value == 'delete') {
                   final confirm = await showDialog<bool>(
                     context: context,

@@ -45,10 +45,6 @@ class CarteiraClienteScreen extends ConsumerWidget {
         error: (_, __) => 'Carteira do Cliente',
       ),
       forceSegment: CarteiraSegment.clientes,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () => context.go(AppRoutes.carteira),
-      ),
       body: categoriasAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) =>

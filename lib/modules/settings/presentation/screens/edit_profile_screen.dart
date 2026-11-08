@@ -18,6 +18,7 @@ import '../../domain/entities/user_profile.dart';
 import '../providers/user_profile_provider.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
+import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 
 class EditProfileScreen extends ConsumerWidget {
   const EditProfileScreen({super.key});
@@ -36,9 +37,7 @@ class EditProfileScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Não foi possível carregar o perfil.',
-            ),
+            const Text('Não foi possível carregar o perfil.'),
             const SizedBox(height: 16),
             OutlinedButton(
               onPressed: () => ref.invalidate(currentUserProfileProvider),
@@ -50,9 +49,7 @@ class EditProfileScreen extends ConsumerWidget {
       data: (profile) => profile == null
           ? _profileStateScaffold(
               context,
-              child: const Text(
-                'Usuário não autenticado.',
-              ),
+              child: const Text('Usuário não autenticado.'),
             )
           : _EditProfileForm(
               key: ValueKey('${profile.id}-${profile.updatedAt}'),
@@ -77,10 +74,7 @@ class EditProfileScreen extends ConsumerWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        leading: IconButton(
-          icon: Icon(Icons.close, color: context.premiumTextPrimary),
-          onPressed: () => context.go(AppRoutes.settings),
-        ),
+        automaticallyImplyLeading: false,
       ),
       body: Center(child: child),
     );
@@ -155,7 +149,10 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
 
     // Nenhum campo mudou — fechar sem gravar
     if (changedFields.isEmpty) {
-      if (mounted) context.go(AppRoutes.settings);
+      if (mounted) {
+        SoloforteKeyboardDismiss.dismiss();
+        context.go(AppRoutes.settings);
+      }
       return;
     }
 
@@ -181,6 +178,7 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
 
       if (mounted) {
         HapticFeedback.lightImpact();
+        SoloforteKeyboardDismiss.dismiss();
         context.go(AppRoutes.settings);
       }
     } catch (e) {
@@ -188,9 +186,7 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
         setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              userFacingError(e, action: 'Erro ao salvar perfil'),
-            ),
+            content: Text(userFacingError(e, action: 'Erro ao salvar perfil')),
             backgroundColor: const Color(0xFFFF3B30),
           ),
         );
@@ -226,10 +222,7 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        leading: IconButton(
-          icon: Icon(Icons.close, color: context.premiumTextPrimary),
-          onPressed: _saving ? null : () => context.go(AppRoutes.settings),
-        ),
+        automaticallyImplyLeading: false,
         actions: [
           if (_saving)
             Padding(
@@ -259,67 +252,72 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
             ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          children: [
-            _sectionHeader('INFORMAÇÕES DA CONTA', hintColor),
-            _card(cardColor, [
-              _readonlyRow('E-mail', profile.email, hintColor),
-              Divider(height: 1, color: dividerColor),
-              _readonlyRow('Perfil', role.label, hintColor),
-              Divider(height: 1, color: dividerColor),
-              _readonlyRow('Cadastrado em', createdAtStr, hintColor),
-            ]),
+      body: SoloforteKeyboardDismiss(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            children: [
+              _sectionHeader('INFORMAÇÕES DA CONTA', hintColor),
+              _card(cardColor, [
+                _readonlyRow('E-mail', profile.email, hintColor),
+                Divider(height: 1, color: dividerColor),
+                _readonlyRow('Perfil', role.label, hintColor),
+                Divider(height: 1, color: dividerColor),
+                _readonlyRow('Cadastrado em', createdAtStr, hintColor),
+              ]),
 
-            _sectionHeader('DADOS EDITÁVEIS', hintColor),
-            _card(cardColor, [
-              _editableField(
-                context: context,
-                controller: _fullNameCtrl,
-                label: 'Nome completo',
-                hint: 'Seu nome',
-                hintColor: hintColor,
-                enabled: !_saving,
-              ),
-              Divider(height: 1, color: dividerColor),
-              _editableField(
-                context: context,
-                controller: _phoneCtrl,
-                label: 'Telefone',
-                hint: '(00) 00000-0000',
-                hintColor: hintColor,
-                keyboardType: TextInputType.phone,
-                enabled: !_saving,
-              ),
-              Divider(height: 1, color: dividerColor),
-              if (canEditProfessionalId) ...[
+              _sectionHeader('DADOS EDITÁVEIS', hintColor),
+              _card(cardColor, [
                 _editableField(
                   context: context,
-                  controller: _creaCtrl,
-                  label: 'CREA / CFT',
-                  hint: 'Número do registro',
+                  controller: _fullNameCtrl,
+                  label: 'Nome completo',
+                  hint: 'Seu nome',
                   hintColor: hintColor,
                   enabled: !_saving,
                 ),
-              ] else ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  child: Text(
-                    'Dados profissionais adicionais disponíveis apenas para consultor.',
-                    style: TextStyle(
-                      color: hintColor,
-                      fontSize: 13,
-                      height: 1.35,
+                Divider(height: 1, color: dividerColor),
+                _editableField(
+                  context: context,
+                  controller: _phoneCtrl,
+                  label: 'Telefone',
+                  hint: '(00) 00000-0000',
+                  hintColor: hintColor,
+                  keyboardType: TextInputType.phone,
+                  enabled: !_saving,
+                ),
+                Divider(height: 1, color: dividerColor),
+                if (canEditProfessionalId) ...[
+                  _editableField(
+                    context: context,
+                    controller: _creaCtrl,
+                    label: 'CREA / CFT',
+                    hint: 'Número do registro',
+                    hintColor: hintColor,
+                    enabled: !_saving,
+                  ),
+                ] else ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    child: Text(
+                      'Dados profissionais adicionais disponíveis apenas para consultor.',
+                      style: TextStyle(
+                        color: hintColor,
+                        fontSize: 13,
+                        height: 1.35,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ]),
+                ],
+              ]),
 
-            const SizedBox(height: 40),
-          ],
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );
@@ -356,10 +354,7 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
           child: Text(label, style: TextStyle(color: hintColor, fontSize: 14)),
         ),
         Expanded(
-          child: Text(
-            value,
-            style: TextStyle(color: hintColor, fontSize: 14),
-          ),
+          child: Text(value, style: TextStyle(color: hintColor, fontSize: 14)),
         ),
       ],
     ),
@@ -385,7 +380,10 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
         children: [
           SizedBox(
             width: 110,
-            child: Text(label, style: TextStyle(color: hintColor, fontSize: 14)),
+            child: Text(
+              label,
+              style: TextStyle(color: hintColor, fontSize: 14),
+            ),
           ),
           Expanded(
             child: TextFormField(

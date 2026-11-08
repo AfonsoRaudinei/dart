@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/widgets/occurrence_form_widgets.dart';
 
 class OccurrenceClientSelector extends StatelessWidget {
@@ -25,7 +24,7 @@ class OccurrenceClientSelector extends StatelessWidget {
     final muted = v.subtitleColor;
     final title = v.onSheetPrimary;
     final iconColor = isIos ? v.iconStroke : v.subtitleColor;
-    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+    final radius = v.cardRadius;
     final dropdownBg = isIos ? v.sheetBackground : v.cardBackground;
 
     return Container(

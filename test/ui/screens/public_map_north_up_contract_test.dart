@@ -1,37 +1,99 @@
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/core/config/map_config.dart';
 
-/// Contrato norte-acima: mapa privado (MapCanvas) e mapa público usam a mesma
-/// máscara de flags — rotate desabilitado.
-///
-/// Espelha:
-/// - lib/ui/components/map/widgets/map_canvas.dart
-/// - lib/ui/screens/public_map_screen.dart
+/// Contrato de flags de gesto: mapa público permanece norte-acima;
+/// mapa privado (MapCanvas) habilita rotação em modo explorar.
 void main() {
-  group('contrato norte-acima (InteractiveFlag)', () {
-    const northUpFlags = InteractiveFlag.all & ~InteractiveFlag.rotate;
-
-    test('remove InteractiveFlag.rotate e mantém pan/zoom', () {
+  group('contrato flags de gesto (InteractiveFlag)', () {
+    test('mapa público remove rotate e mantém pan/zoom', () {
       expect(
-        InteractiveFlag.hasFlag(northUpFlags, InteractiveFlag.rotate),
+        InteractiveFlag.hasFlag(
+          kPublicMapNorthUpInteractionFlags,
+          InteractiveFlag.rotate,
+        ),
         isFalse,
-        reason: 'gesto de rotação deve estar desabilitado',
+        reason: 'mapa público: gesto de rotação desabilitado',
       );
       expect(
-        InteractiveFlag.hasFlag(northUpFlags, InteractiveFlag.drag),
+        InteractiveFlag.hasFlag(
+          kPublicMapNorthUpInteractionFlags,
+          InteractiveFlag.drag,
+        ),
         isTrue,
       );
       expect(
-        InteractiveFlag.hasFlag(northUpFlags, InteractiveFlag.pinchZoom),
+        InteractiveFlag.hasFlag(
+          kPublicMapNorthUpInteractionFlags,
+          InteractiveFlag.pinchZoom,
+        ),
         isTrue,
       );
     });
 
-    test('máscara pública espelha MapCanvas (all & ~rotate)', () {
-      const publicFlags = InteractiveFlag.all & ~InteractiveFlag.rotate;
-      const privateFlags = InteractiveFlag.all & ~InteractiveFlag.rotate;
-      expect(publicFlags, privateFlags);
-      expect(publicFlags, northUpFlags);
+    test('mapa privado (explorar) inclui rotate', () {
+      expect(
+        InteractiveFlag.hasFlag(
+          kPrivateMapExploreInteractionFlags,
+          InteractiveFlag.rotate,
+        ),
+        isTrue,
+        reason: 'mapa privado idle: rotação com dois dedos habilitada',
+      );
+      expect(
+        InteractiveFlag.hasFlag(
+          kPrivateMapExploreInteractionFlags,
+          InteractiveFlag.drag,
+        ),
+        isTrue,
+      );
+    });
+
+    test('mapa privado (desenho/pin) desliga rotate e drag', () {
+      expect(
+        InteractiveFlag.hasFlag(
+          kPrivateMapDrawingLockedInteractionFlags,
+          InteractiveFlag.rotate,
+        ),
+        isFalse,
+      );
+      expect(
+        InteractiveFlag.hasFlag(
+          kPrivateMapDrawingLockedInteractionFlags,
+          InteractiveFlag.drag,
+        ),
+        isFalse,
+      );
+      expect(
+        InteractiveFlag.hasFlag(
+          kPrivateMapDrawingLockedInteractionFlags,
+          InteractiveFlag.pinchZoom,
+        ),
+        isTrue,
+      );
+    });
+
+    test('público e privado explorar divergem na rotação', () {
+      expect(
+        kPublicMapNorthUpInteractionFlags,
+        isNot(equals(kPrivateMapExploreInteractionFlags)),
+      );
+    });
+
+    test('mapa privado explorar amortece gestos multi-dedo', () {
+      expect(
+        kPrivateMapExploreInteractionOptions.enableMultiFingerGestureRace,
+        isTrue,
+        reason: 'um gesto vence por vez — menos mapa “flutuando”',
+      );
+      expect(
+        kPrivateMapExploreInteractionOptions.rotationThreshold,
+        greaterThan(20),
+      );
+      expect(
+        kPrivateMapExploreInteractionOptions.pinchMoveThreshold,
+        greaterThan(40),
+      );
     });
   });
 }

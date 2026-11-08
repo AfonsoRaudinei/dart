@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
-import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 
 /// Botão de publicar extraído do NovoCaseSheet.
@@ -17,13 +15,13 @@ class NovoCasePublicarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final bg =
-        isIos ? SoloForteSheetSkinIos.ctaBackground : context.themeAccent;
+        isIos ? v.ctaBackground : context.themeAccent;
     final fg = v.ctaText;
     final radius =
-        isIos ? SoloForteSheetSkinIos.ctaRadius : 14.0;
+        v.ctaRadius;
 
     return ElevatedButton.icon(
       onPressed: isLoading ? null : onPressed,

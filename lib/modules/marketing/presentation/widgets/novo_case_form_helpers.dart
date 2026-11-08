@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 
@@ -8,20 +7,23 @@ import '../../../../ui/theme/premium/design_tokens.dart';
 /// Funções top-level e widget auxiliar — sem estado, sem providers.
 
 Color novoCasePrimaryTextColor(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
   return soloForteSheetIsIos(context)
-      ? SoloForteSheetSkinIos.titleColor
-      : SoloForteSheetTokens.inputText;
+      ? v.titleColor
+      : v.inputText;
 }
 
 Color novoCaseSecondaryTextColor(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
   return soloForteSheetIsIos(context)
-      ? SoloForteSheetSkinIos.subtitleColor
-      : SoloForteSheetTokens.inputHint;
+      ? v.subtitleColor
+      : v.inputHint;
 }
 
 Color novoCaseAccentColor(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
   return soloForteSheetIsIos(context)
-      ? SoloForteSheetSkinIos.iconStroke
+      ? v.iconStroke
       : context.themeAccent;
 }
 
@@ -29,14 +31,15 @@ BoxDecoration novoCaseInnerCardDecoration(
   BuildContext context, {
   bool selected = false,
 }) {
+    final v = SoloForteSheetVisuals.of(context);
   if (soloForteSheetIsIos(context)) {
     return BoxDecoration(
-      color: SoloForteSheetSkinIos.cardBackground,
-      borderRadius: BorderRadius.circular(SoloForteSheetSkinIos.cardRadius),
+      color: v.cardBackground,
+      borderRadius: BorderRadius.circular(v.cardRadius),
       border: Border.all(
         color: selected
-            ? SoloForteSheetSkinIos.iconStroke
-            : SoloForteSheetSkinIos.cardBorder,
+            ? v.iconStroke
+            : v.cardBorder,
       ),
       boxShadow: selected
           ? const [
@@ -50,7 +53,7 @@ BoxDecoration novoCaseInnerCardDecoration(
     );
   }
   return BoxDecoration(
-    color: SoloForteSheetTokens.inputBackground,
+    color: v.inputFill,
     borderRadius: BorderRadius.circular(16),
     border: Border.all(
       color: selected
@@ -78,7 +81,7 @@ ButtonStyle novoCaseGhostOutlinedButtonStyle(BuildContext context) {
     ),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(
-        v.isIos ? SoloForteSheetSkinIos.ghostRadius : 16,
+        v.isIos ? v.ghostRadius : 16,
       ),
     ),
     minimumSize: const Size.fromHeight(48),
@@ -93,8 +96,8 @@ Widget novoCaseSectionLabel(String label) {
         label.toUpperCase(),
         style: TextStyle(
           color: v.titleColor,
-          fontWeight: SoloForteSheetTokens.sectionWeight,
-          fontSize: SoloForteSheetTokens.sectionFontSize,
+          fontWeight: v.sectionWeight,
+          fontSize: v.sectionFontSize,
         ),
       );
     },
@@ -110,7 +113,7 @@ Widget novoCaseFieldBox({required Widget child}) {
         decoration: BoxDecoration(
           color: v.cardBackground,
           borderRadius: BorderRadius.circular(
-            v.isIos ? SoloForteSheetSkinIos.cardRadius : 14,
+            v.cardRadius,
           ),
           border: Border.all(
             color: v.cardBorder,

@@ -1,12 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/design/sf_icons.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
-import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../screens/map/providers/pin_position_correction_provider.dart';
 import '../../../theme/premium/design_tokens.dart';
 
@@ -16,11 +15,12 @@ class PinPositionCorrectionOverlay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final v = SoloForteSheetVisuals.of(context);
     final session = ref.watch(pinPositionCorrectionProvider);
     if (session == null) return const SizedBox.shrink();
 
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final isIos = soloForteSheetIsIos(context);
+    final isIos = v.isIos;
 
     return Positioned(
       left: 16,
@@ -32,13 +32,13 @@ class PinPositionCorrectionOverlay extends ConsumerWidget {
           decoration: BoxDecoration(
             color: isIos
                 ? CupertinoColors.systemBackground.resolveFrom(context)
-                : Colors.white.withValues(alpha: 0.92),
+                : v.sheetBackground.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(
-              isIos ? SoloForteSheetSkinIos.ghostRadius + 3 : 16,
+              isIos ? v.ghostRadius + 3 : 16,
             ),
             border: Border.all(
               color: isIos
-                  ? SoloForteSheetSkinIos.ghostBorder.withValues(alpha: 0.55)
+                  ? v.ghostBorder.withValues(alpha: 0.55)
                   : PremiumTokens.hairlineLight,
             ),
             boxShadow: [
@@ -63,13 +63,12 @@ class PinPositionCorrectionOverlay extends ConsumerWidget {
                       },
                       style: isIos
                           ? OutlinedButton.styleFrom(
-                              foregroundColor: SoloForteSheetSkinIos.ghostText,
-                              side: const BorderSide(
-                                color: SoloForteSheetSkinIos.ghostBorder,
+                              foregroundColor: v.ghostText,
+                              side: BorderSide(color: v.ghostBorder,
                               ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(
-                                  SoloForteSheetSkinIos.ghostRadius,
+                                  v.ghostRadius,
                                 ),
                               ),
                             )
@@ -85,16 +84,12 @@ class PinPositionCorrectionOverlay extends ConsumerWidget {
                     child: FilledButton.icon(
                       style: FilledButton.styleFrom(
                         backgroundColor: isIos
-                            ? SoloForteSheetSkinIos.ctaBackground
+                            ? v.ctaBackground
                             : PremiumTokens.brandGreen,
-                        foregroundColor: isIos
-                            ? SoloForteSheetSkinIos.ctaText
-                            : Colors.white,
+                        foregroundColor: v.ctaText,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
-                            isIos
-                                ? SoloForteSheetSkinIos.ctaRadius
-                                : 12,
+                            v.ctaRadius,
                           ),
                         ),
                       ),

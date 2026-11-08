@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer.dart';
+import 'package:soloforte_app/core/domain/talhao_condicao.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_actions_sheet.dart';
 
@@ -46,6 +47,12 @@ class _FakeDrawingFieldWriter implements IDrawingFieldWriter {
     updatedMaterial = material;
     updatedSafra = safra;
   }
+
+  @override
+  Future<void> updateFieldAvaliacao({
+    required String fieldId,
+    required TalhaoCondicao condicao,
+  }) async {}
 
   @override
   Future<void> unionDrawingFields({

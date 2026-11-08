@@ -417,6 +417,34 @@ void main() {
     );
   });
 
+  group('map top controls layout constants', () {
+    test('fileira topo usa constantes canônicas (sem literais 12/6)', () {
+      final overlay = File(
+        'lib/ui/components/map/widgets/map_controls_overlay.dart',
+      ).readAsStringSync();
+      final location = File(
+        'lib/ui/components/map/widgets/map_controls_location_button.dart',
+      ).readAsStringSync();
+
+      expect(overlay.contains('top: safeTop + kMapTopControlsTopInset'), isTrue);
+      expect(overlay.contains('right: kMapTopControlsRightInset'), isTrue);
+      expect(
+        overlay.contains('SizedBox(width: kMapTopControlsButtonSpacing)'),
+        isTrue,
+      );
+      expect(
+        overlay.contains('SizedBox(width: kMapTopControlsToggleLabelButtonGap)'),
+        isTrue,
+      );
+      expect(
+        location.contains(
+          'SizedBox(width: kMapTopControlsLocationLabelButtonGap)',
+        ),
+        isTrue,
+      );
+    });
+  });
+
   group('map status indicator', () {
     test('topo direito é circular com _IconOffSlash; coluna direita permanece r=12', () {
       final overlay = File(

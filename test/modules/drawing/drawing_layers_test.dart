@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
+import 'package:soloforte_app/core/domain/talhao_condicao.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_visual_style.dart';
 import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
@@ -180,10 +181,9 @@ void main() {
 
     expect(
       polygon.color,
-      FieldStyle.standard.fillColor.withValues(alpha: 0.28),
+      Color(TalhaoCondicao.bom.argb).withValues(alpha: 0.26),
     );
-    expect(polygon.borderColor, FieldStyle.standard.borderColor);
-    expect(polygon.borderStrokeWidth, FieldStyle.standard.borderWidth);
+    expect(polygon.borderStrokeWidth, 3.0);
   });
 
   testWidgets('poligono selecionado preserva destaque visual de selecao', (
@@ -215,15 +215,13 @@ void main() {
 
     expect(
       polygon.color,
-      FieldStyle.selected.fillColor.withValues(alpha: 0.34),
+      Color(TalhaoCondicao.bom.argb).withValues(alpha: 0.26),
     );
     expect(polygon.borderColor, FieldStyle.selected.borderColor);
     expect(polygon.borderStrokeWidth, FieldStyle.selected.borderWidth);
   });
 
-  testWidgets('cor personalizada mantem preenchimento e reforca a borda', (
-    tester,
-  ) async {
+  testWidgets('cor fora da paleta aparece como Bom', (tester) async {
     const customColor = Color(0xFF4CAF50);
     final repository = _Repository([
       _feature(
@@ -251,7 +249,10 @@ void main() {
     final polygonLayer = tester.widget<PolygonLayer>(find.byType(PolygonLayer));
     final polygon = polygonLayer.polygons.single;
 
-    expect(polygon.color, customColor.withValues(alpha: 0.26));
+    expect(
+      polygon.color,
+      Color(TalhaoCondicao.bom.argb).withValues(alpha: 0.26),
+    );
     expect(polygon.borderColor, isNot(customColor));
     expect(polygon.borderStrokeWidth, 3.0);
   });

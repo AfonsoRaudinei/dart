@@ -1,16 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import {
+    resolveMetodoPagamento,
+} from './payment_methods_for_metodo.ts'
+import {
+    PLANOS_CATALOG,
+    buildMercadoPagoPreferencePayload,
+    type PlanoKey,
+} from './preference_payload.ts'
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const PLANOS = {
-    bronze: { title: 'Plano Bronze SoloForte', price: 49.90, months: 3 },
-    prata: { title: 'Plano Prata SoloForte', price: 79.90, months: 5 },
-    ouro: { title: 'Plano Ouro SoloForte', price: 119.90, months: 8 },
-}
+const PLANOS = PLANOS_CATALOG
 
 serve(async (req) => {
     // CORS HTTP OPTIONS
@@ -52,7 +56,7 @@ serve(async (req) => {
         }
 
         const body = await req.json()
-        const { plano } = body
+        const { plano, metodo: metodoRaw } = body
 
         if (!plano || !PLANOS[plano as keyof typeof PLANOS]) {
             return new Response(JSON.stringify({ error: 'Plano inválido ou ausente.' }), {
@@ -61,30 +65,32 @@ serve(async (req) => {
             })
         }
 
-        const planoData = PLANOS[plano as keyof typeof PLANOS]
+        const metodoResult = resolveMetodoPagamento(metodoRaw)
+        if ('error' in metodoResult) {
+            return new Response(JSON.stringify({ error: metodoResult.error }), {
+                status: 400,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            })
+        }
+        const metodoAplicado = metodoResult.metodo
+        if (metodoAplicado === 'todos') {
+            console.info(
+                '[mercadopago-criar-preferencia] metodo ausente — preference sem restrição de meio de pagamento',
+            )
+        }
+
         const mpAccessToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN')
 
         if (!mpAccessToken) {
             throw new Error('MERCADOPAGO_ACCESS_TOKEN não configurado no servidor.')
         }
 
-        // Montando a requisição para o MercadoPago
-        const mpPayload = {
-            items: [{
-                title: planoData.title,
-                quantity: 1,
-                currency_id: 'BRL',
-                unit_price: planoData.price
-            }],
-            external_reference: `${user.id}:${plano}`,
-            notification_url: `${supabaseUrl}/functions/v1/mercadopago-webhook`,
-            back_urls: {
-                success: "soloforte://planos/confirmacao",
-                failure: "soloforte://planos/pagamento",
-                pending: "soloforte://planos/pagamento"
-            },
-            auto_return: "approved"
-        }
+        const mpPayload = buildMercadoPagoPreferencePayload({
+            userId: user.id,
+            plano: plano as PlanoKey,
+            metodoAplicado,
+            supabaseUrl,
+        })
 
         const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
             method: 'POST',
@@ -103,7 +109,10 @@ serve(async (req) => {
 
         const mpData = await mpResponse.json()
 
-        return new Response(JSON.stringify({ init_point: mpData.init_point }), {
+        return new Response(JSON.stringify({
+            init_point: mpData.init_point,
+            metodo_aplicado: metodoAplicado,
+        }), {
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })

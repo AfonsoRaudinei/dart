@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 
-import '../../../../core/ui/sheets/sheet_tokens.dart';
-import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/parametro_comparativo.dart';
 import 'novo_case_form_helpers.dart';
@@ -67,11 +66,12 @@ class _ParametroCardState extends State<ParametroCard> {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final delta = widget.parametro.deltaPercent;
-    final isIos = soloForteSheetIsIos(context);
+    final isIos = v.isIos;
     final neutralDeltaColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
+        ? v.subtitleColor
+        : v.inputHint;
     final deltaColor = widget.parametro.isPositivo
         ? context.themeAccent
         : widget.parametro.isNegativo

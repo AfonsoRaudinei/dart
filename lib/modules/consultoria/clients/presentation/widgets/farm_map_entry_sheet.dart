@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
@@ -187,25 +187,26 @@ class _FarmMapEntrySheetState extends State<FarmMapEntrySheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : null;
+        v.isIos ? v.titleColor : null;
     final subtitleColor =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.black54;
+        v.isIos ? v.subtitleColor : v.inputHint;
     final ctaBg = isIos
-        ? SoloForteSheetSkinIos.ctaBackground
+        ? v.ctaBackground
         : context.themeAccent;
     final ctaFg =
-        isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+        v.ctaText;
     final ctaRadius =
-        isIos ? SoloForteSheetSkinIos.ctaRadius : 8.0;
+        v.ctaRadius;
     // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final sheetBg =
-        isIos ? Colors.transparent : Colors.white;
+        v.isIos ? Colors.transparent : v.sheetBackground;
     final sheetRadius =
-        isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
+        v.sheetRadius;
     final handleColor = isIos
-        ? SoloForteSheetSkinIos.handleColor
+        ? v.handleColor
         : const Color(0xFFC5C5C7);
 
     return Container(
@@ -227,12 +228,8 @@ class _FarmMapEntrySheetState extends State<FarmMapEntrySheet> {
               children: [
                 Center(
                   child: Container(
-                    width: isIos
-                        ? SoloForteSheetSkinIos.handleSize.width
-                        : 36,
-                    height: isIos
-                        ? SoloForteSheetSkinIos.handleSize.height
-                        : 5,
+                    width: v.handleSize.width,
+                    height: v.handleSize.height,
                     margin: const EdgeInsets.only(bottom: 20),
                     decoration: BoxDecoration(
                       color: handleColor,
@@ -294,18 +291,19 @@ class _FarmMapEntrySheetState extends State<FarmMapEntrySheet> {
   }
 
   Widget _buildClientSummary(bool isIos) {
+    final v = SoloForteSheetVisuals.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isIos
-            ? SoloForteSheetSkinIos.cardBackground
+            ? v.cardBackground
             : const Color(0xFFF7F7FA),
         borderRadius: BorderRadius.circular(
-          isIos ? SoloForteSheetSkinIos.cardRadius : 16,
+          v.cardRadius,
         ),
         border: isIos
-            ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+            ? Border.all(color: v.cardBorder)
             : null,
       ),
       child: Column(
@@ -317,8 +315,8 @@ class _FarmMapEntrySheetState extends State<FarmMapEntrySheet> {
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: isIos
-                  ? SoloForteSheetSkinIos.subtitleColor
-                  : Colors.black45,
+                  ? v.subtitleColor
+                  : v.inputHint,
             ),
           ),
           const SizedBox(height: 4),
@@ -327,7 +325,7 @@ class _FarmMapEntrySheetState extends State<FarmMapEntrySheet> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: isIos ? SoloForteSheetSkinIos.titleColor : null,
+              color: v.isIos ? v.titleColor : null,
             ),
           ),
         ],
@@ -336,23 +334,24 @@ class _FarmMapEntrySheetState extends State<FarmMapEntrySheet> {
   }
 
   Widget _buildFarmList(bool isIos) {
+    final v = SoloForteSheetVisuals.of(context);
     final accent =
-        isIos ? SoloForteSheetSkinIos.iconStroke : context.themeAccent;
+        isIos ? v.iconStroke : context.themeAccent;
     final selectedBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
+        ? v.cardBackground
         : const Color(0xFFEFFAF2);
     final unselectedBg =
-        isIos ? SoloForteSheetSkinIos.background : Colors.white;
+        isIos ? v.sheetBackground : v.cardBackground;
     final unselectedBorder = isIos
-        ? SoloForteSheetSkinIos.cardBorder
+        ? v.cardBorder
         : const Color(0xFFE2E2E8);
     final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : null;
+        v.isIos ? v.titleColor : null;
     final mutedColor =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.black54;
+        v.isIos ? v.subtitleColor : v.inputHint;
     final unchecked =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.black38;
-    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
+        v.isIos ? v.subtitleColor : v.inputHint;
+    final radius = v.cardRadius;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -448,9 +447,10 @@ class _FarmMapEntrySheetState extends State<FarmMapEntrySheet> {
   }
 
   Widget _buildToggleAction(bool isIos) {
+    final v = SoloForteSheetVisuals.of(context);
     final hasFarms = _farms.isNotEmpty;
     final accent =
-        isIos ? SoloForteSheetSkinIos.iconStroke : context.themeAccent;
+        isIos ? v.iconStroke : context.themeAccent;
     return TextButton.icon(
       onPressed: () {
         setState(() {
@@ -474,6 +474,7 @@ class _FarmMapEntrySheetState extends State<FarmMapEntrySheet> {
   }
 
   Widget _buildCreateForm(bool isIos) {
+    final v = SoloForteSheetVisuals.of(context);
     return Form(
       key: _formKey,
       child: Column(
@@ -484,7 +485,7 @@ class _FarmMapEntrySheetState extends State<FarmMapEntrySheet> {
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: isIos ? SoloForteSheetSkinIos.titleColor : null,
+              color: v.isIos ? v.titleColor : null,
             ),
           ),
           const SizedBox(height: 12),

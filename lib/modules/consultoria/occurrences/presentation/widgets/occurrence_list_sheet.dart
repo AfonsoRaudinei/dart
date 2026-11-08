@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
-import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -65,15 +63,13 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
     final activeVisitId = visitState.value?.isActive == true
         ? visitState.value!.id
         : null;
-    final isIos = soloForteSheetIsIos(context);
+    final isIos = v.isIos;
     final sheetBg = v.sheetBackground;
     final handleColor = v.handleColor;
     final titleColor = v.titleColor;
     final closeColor = isIos ? v.arrowColor : v.subtitleColor;
     final dividerColor = v.dividerColor;
-    final sheetRadius = isIos
-        ? SoloForteSheetSkinIos.sheetRadius
-        : 16.0;
+    final sheetRadius = v.sheetRadius;
 
     return Stack(
       children: [
@@ -86,9 +82,9 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
                     topRight: Radius.circular(sheetRadius),
                   ),
                   border: isIos
-                      ? const Border(
+                      ? Border(
                           top: BorderSide(
-                            color: SoloForteSheetSkinIos.sheetBorder,
+                            color: v.sheetBorder,
                           ),
                         )
                       : null,
@@ -110,8 +106,8 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
               if (widget.showHandle) ...[
                 Container(
                   margin: const EdgeInsets.only(top: 12),
-                  width: isIos ? SoloForteSheetSkinIos.handleSize.width : 40,
-                  height: isIos ? SoloForteSheetSkinIos.handleSize.height : 4,
+                  width: v.handleSize.width,
+                  height: v.handleSize.height,
                   decoration: BoxDecoration(
                     color: handleColor,
                     borderRadius: BorderRadius.circular(2),
@@ -350,9 +346,9 @@ class _OccurrenceListItem extends StatelessWidget {
         final metrics = catEntry.value as Map<String, dynamic>;
         for (final m in metrics.entries) {
           if (m.key == 'incidencia' || m.key == 'severidade') continue;
-          final v = m.value as int;
-          if (v > 0) {
-            return '${_metricDisplayName(m.key)}: ${kSliderLabels[v.clamp(0, 3)]}';
+          final metricValue = m.value as int;
+          if (metricValue > 0) {
+            return '${_metricDisplayName(m.key)}: ${kSliderLabels[metricValue.clamp(0, 3)]}';
           }
         }
       }
@@ -439,7 +435,7 @@ class _OccurrenceListItem extends StatelessWidget {
     final campoAcimaLimite = occurrenceCampoNivelAcimaDoLimite(occurrence);
     final syncColor = _syncColor();
     final hasPhoto = allPhotoPaths(occurrence).isNotEmpty;
-    final isIos = soloForteSheetIsIos(context);
+    final isIos = v.isIos;
     final cardBg = isSelected
         ? color.withValues(alpha: .08)
         : v.cardBackground;
@@ -448,7 +444,7 @@ class _OccurrenceListItem extends StatelessWidget {
         : (v.cardBorder);
     final secondaryText = v.subtitleColor;
     final mutedText = v.subtitleColor;
-    final cardRadius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+    final cardRadius = v.cardRadius;
 
     return GestureDetector(
       onTap: onTap,
@@ -545,7 +541,7 @@ class _OccurrenceListItem extends StatelessWidget {
                             _MiniChip(
                               label: '📊 $estadioLinha',
                               color: isIos
-                                  ? SoloForteSheetSkinIos.iconStroke
+                                  ? v.iconStroke
                                   : context.themeAccent,
                             ),
                           if (occurrence.cultivar != null) ...[
@@ -651,7 +647,7 @@ class _OccurrenceListItem extends StatelessWidget {
                           _MiniChip(
                             label: '✓ Em Visita',
                             color: isIos
-                                ? SoloForteSheetSkinIos.iconStroke
+                                ? v.iconStroke
                                 : context.themeAccent,
                           ),
                         const Spacer(),

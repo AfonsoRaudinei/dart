@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 
 import '../../../core/constants/layout_constants.dart';
-import '../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../core/ui/sheets/soloforte_sheet.dart';
 
 /// Escolha entre ir para município ou coordenada (chrome do mapa).
@@ -35,12 +34,9 @@ class MapGoToLocalSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
     final bg = v.sheetBackground;
-    final radius = isIos
-        ? SoloForteSheetSkinIos.sheetRadius
-        : SoloForteSheetTokens.borderRadius;
+    final radius = v.sheetRadius;
 
     return Material(
       color: bg,
@@ -59,10 +55,8 @@ class MapGoToLocalSheet extends StatelessWidget {
                   child: Text(
                     'Ir para local',
                     style: TextStyle(
-                      fontSize: isIos ? 16 : SoloForteSheetTokens.titleFontSize,
-                      fontWeight: isIos
-                          ? FontWeight.w700
-                          : SoloForteSheetTokens.titleWeight,
+                      fontSize: v.titleFontSize,
+                      fontWeight: v.titleWeight,
                       color: v.titleColor,
                     ),
                   ),

@@ -24,7 +24,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 49,
+      version: 50,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -212,6 +212,9 @@ class DatabaseHelper {
         case 49:
           await DatabaseMigrations.migrateToV49(db);
           break;
+        case 50:
+          await DatabaseMigrations.migrateToV50(db);
+          break;
       }
     }
   }
@@ -221,8 +224,7 @@ class DatabaseHelper {
     Database db,
     int fromVersion,
     int toVersion,
-  ) =>
-      _runMigrations(db, fromVersion, toVersion);
+  ) => _runMigrations(db, fromVersion, toVersion);
 
   Future<void> _validateSchema(Database db) async {
     if (!kDebugMode) return;
@@ -256,10 +258,7 @@ class DatabaseHelper {
   Future<void> clearUserLocalData(String userId) async {
     final normalized = userId.trim();
     if (normalized.isEmpty) {
-      AppLogger.warning(
-        'clearUserLocalData ignorado: userId vazio',
-        tag: 'DB',
-      );
+      AppLogger.warning('clearUserLocalData ignorado: userId vazio', tag: 'DB');
       return;
     }
 
@@ -384,10 +383,17 @@ class DatabaseHelper {
           [userId],
         );
         if (count > 0) {
-          AppLogger.debug('repairOrphanUserIds: $count linhas em $table', tag: 'DB');
+          AppLogger.debug(
+            'repairOrphanUserIds: $count linhas em $table',
+            tag: 'DB',
+          );
         }
       } catch (e) {
-        AppLogger.error('repairOrphanUserIds erro em $table', tag: 'DB', error: e);
+        AppLogger.error(
+          'repairOrphanUserIds erro em $table',
+          tag: 'DB',
+          error: e,
+        );
       }
     }
   }

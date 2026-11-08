@@ -102,7 +102,7 @@ class MapFirstQueryHandler {
         'query_param_modo_importar',
       );
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(drawingControllerProvider).startImportMode();
+        ref.read(drawingControllerProvider).pickImportFile();
       });
       return;
     }

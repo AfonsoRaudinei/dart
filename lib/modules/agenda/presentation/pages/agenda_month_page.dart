@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_ai_launcher_provider.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
@@ -32,10 +33,18 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
   void initState() {
     super.initState();
     _currentMonth = DateTime(DateTime.now().year, DateTime.now().month);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SoloforteKeyboardDismiss.dismiss();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AgendaView>(agendaViewProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        SoloforteKeyboardDismiss.dismiss();
+      }
+    });
     _scheduleDeepLinks(GoRouterState.of(context).uri);
     final agendaState = ref.watch(agendaProvider);
     final filters = ref.watch(agendaFiltersProvider);
@@ -146,7 +155,7 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
                           onDayTap: (day) {
                             final dayEvents = eventsByDay[day.day] ?? [];
                             if (dayEvents.isNotEmpty) {
-                              context.go(AppRoutes.agendaDay(day));
+                              context.push(AppRoutes.agendaDay(day));
                               return;
                             }
                             showDialog<void>(
@@ -186,7 +195,7 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
           : const AgendaIndicadoresView(),
     );
 
-    return scaffold;
+    return SoloforteKeyboardDismiss(child: scaffold);
   }
 
   void _scheduleDeepLinks(Uri uri) {

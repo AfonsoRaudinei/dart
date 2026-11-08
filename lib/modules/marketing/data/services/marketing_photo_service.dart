@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:soloforte_app/core/session/local_session_identity.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -143,6 +143,7 @@ class MarketingPhotoService {
 
   /// Diálogo de escolha de origem (Câmera / Galeria)
   Future<ImageSource?> _showSourceDialog(BuildContext context) async {
+    final v = SoloForteSheetVisuals.of(context);
     return showSoloForteSheet<ImageSource>(
       context: context,
       useRootNavigator: true,
@@ -151,19 +152,17 @@ class MarketingPhotoService {
       builder: (sheetContext) {
         final isIos = soloForteSheetIsIos(sheetContext);
         final cardBg = isIos
-            ? SoloForteSheetSkinIos.cardBackground
+            ? v.cardBackground
             : Theme.of(sheetContext).scaffoldBackgroundColor;
         final titleColor =
-            isIos ? SoloForteSheetSkinIos.titleColor : null;
+            v.isIos ? v.titleColor : null;
         final subColor =
-            isIos ? SoloForteSheetSkinIos.subtitleColor : null;
+            isIos ? v.subtitleColor : null;
         final iconBg =
-            isIos ? SoloForteSheetSkinIos.iconBackground : Colors.blue.shade50;
+            isIos ? v.iconBackground : Colors.blue.shade50;
         final iconFg =
-            isIos ? SoloForteSheetSkinIos.iconStroke : Colors.blue.shade600;
-        final radius = isIos
-            ? SoloForteSheetSkinIos.sheetRadius
-            : 20.0;
+            isIos ? v.iconStroke : Colors.blue.shade600;
+        final radius = v.sheetRadius;
 
         return Container(
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
@@ -171,23 +170,19 @@ class MarketingPhotoService {
             color: cardBg,
             borderRadius: BorderRadius.circular(radius),
             border: isIos
-                ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+                ? Border.all(color: v.cardBorder)
                 : null,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: isIos
-                    ? SoloForteSheetSkinIos.handleSize.width
-                    : 36,
-                height: isIos
-                    ? SoloForteSheetSkinIos.handleSize.height
-                    : 4,
+                width: v.handleSize.width,
+                height: v.handleSize.height,
                 margin: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   color: isIos
-                      ? SoloForteSheetSkinIos.handleColor
+                      ? v.handleColor
                       : Colors.grey.shade300,
                   borderRadius: BorderRadius.circular(999),
                 ),
@@ -227,14 +222,14 @@ class MarketingPhotoService {
                   height: 44,
                   decoration: BoxDecoration(
                     color: isIos
-                        ? SoloForteSheetSkinIos.iconBackground
+                        ? v.iconBackground
                         : Colors.purple.shade50,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.photo_library_rounded,
                     color: isIos
-                        ? SoloForteSheetSkinIos.iconStroke
+                        ? v.iconStroke
                         : Colors.purple.shade600,
                   ),
                 ),

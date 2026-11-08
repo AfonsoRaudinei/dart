@@ -47,7 +47,7 @@ class _RelatorioFormScreenState extends ConsumerState<RelatorioFormScreen> {
 
       await ref.read(relatorioNotifierProvider.notifier).updateRelatorio(updated);
 
-      // Hub pós-edição: RelatorioDetailScreen (lista usa HtmlReportViewer no tap).
+      // Hub pós-edição: RelatorioDetailScreen (lista abre detalhe via push).
       if (mounted) {
         context.go('/consultoria/relatorios/${widget.relatorioId}');
       }
@@ -108,19 +108,9 @@ class _RelatorioFormScreenState extends ConsumerState<RelatorioFormScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(24),
                 children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back),
-                        onPressed: () => context.go(
-                            '/consultoria/relatorios/${widget.relatorioId}'),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Editar Relatório',
-                        style: theme.textTheme.headlineMedium,
-                      ),
-                    ],
+                  Text(
+                    'Editar Relatório',
+                    style: theme.textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 24),
                   TextFormField(

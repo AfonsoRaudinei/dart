@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,7 +8,6 @@ import '../../../core/contracts/marketing_case_report_snapshot.dart';
 import '../../../core/html_templates/html_report_viewer.dart';
 import '../../../core/html_templates/report_export_service.dart';
 import '../../../core/router/app_routes.dart';
-import '../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../core/utils/share_position.dart';
 import '../../../core/utils/user_facing_error.dart';
 import '../../settings/domain/entities/user_profile.dart';
@@ -235,13 +235,14 @@ class MarketingCaseReportActionsRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final v = SoloForteSheetVisuals.of(context);
     final iosButtonStyle = isIos
         ? OutlinedButton.styleFrom(
-            foregroundColor: SoloForteSheetSkinIos.ghostText,
-            side: const BorderSide(color: SoloForteSheetSkinIos.ghostBorder),
+            foregroundColor: v.ghostText,
+            side: BorderSide(color: v.ghostBorder),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(
-                SoloForteSheetSkinIos.ghostRadius,
+                v.ghostRadius,
               ),
             ),
           )

@@ -69,13 +69,6 @@ class AgendaEventDetailPage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Detalhes do Evento'),
         automaticallyImplyLeading: false,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () => context.go(
-            AppRoutes.agendaDay(event.dataInicioPlanejada),
-          ),
-          tooltip: 'Voltar',
-        ),
         actions: [
           if (!event.status.isFinished)
             IconButton(

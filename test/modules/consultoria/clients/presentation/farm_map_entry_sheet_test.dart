@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/client_detail_sub_widgets.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/farm_map_entry_sheet.dart';
 
 void main() {
@@ -50,8 +52,61 @@ void main() {
 
     expect(uri.path, '/map');
     expect(uri.queryParameters['modo'], 'importar');
+    expect(uri.queryParameters['clienteId'], client.id);
     expect(uri.queryParameters['fazendaId'], 'farm-2');
+    expect(uri.queryParameters['fazendaNome'], 'Fazenda Boa Vista');
   });
+
+  testWidgets(
+    'fazenda já conhecida abre importação sem pedir a fazenda de novo',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final farm = Farm(
+        id: 'farm-2',
+        name: 'Fazenda Boa Vista',
+        city: 'Pugmil',
+        state: 'TO',
+        totalAreaHa: 95,
+      );
+      final router = GoRouter(
+        initialLocation: '/cliente',
+        routes: [
+          GoRoute(
+            path: '/cliente',
+            builder: (context, state) => Scaffold(
+              body: TextButton(
+                onPressed: () =>
+                    showAdicionarTalhaoModal(context, client, farm: farm),
+                child: const Text('abrir'),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: '/map',
+            builder: (context, state) => Text(state.uri.toString()),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.tap(find.text('abrir'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Importar KML ou KMZ'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Preparar importação'), findsNothing);
+      final location = router.state.uri;
+      expect(location.path, '/map');
+      expect(location.queryParameters['modo'], 'importar');
+      expect(location.queryParameters['fazendaId'], 'farm-2');
+      expect(location.queryParameters['clienteId'], client.id);
+    },
+  );
 
   testWidgets('continua com fazenda existente selecionada', (tester) async {
     tester.view.physicalSize = const Size(800, 1600);

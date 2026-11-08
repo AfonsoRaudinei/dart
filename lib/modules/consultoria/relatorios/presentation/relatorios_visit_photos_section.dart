@@ -259,6 +259,7 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
     BuildContext context,
     QuickPhotoRecord photo,
   ) async {
+    final v = SoloForteSheetVisuals.of(context);
     final path = photo.imagePath;
     final hasFile = await _fileExists(photo);
 
@@ -280,17 +281,17 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
       builder: (sheetContext) {
         final isIos = soloForteSheetIsIos(sheetContext);
         final sheetBg = isIos
-            ? SoloForteSheetSkinIos.background
-            : SoloForteSheetTokens.sheetBackground;
+            ? v.sheetBackground
+            : v.sheetBackground;
         final titleColor = isIos
             ? const Color(0xFF1D1D1F)
-            : SoloForteSheetTokens.titleColor;
+            : v.titleColor;
         final subtitleColor = isIos
             ? const Color(0xFF636366)
             : const Color(0xFFAEAEB2);
         final dividerColor = isIos
             ? const Color(0xFFE5E5EA)
-            : SoloForteSheetTokens.divider;
+            : v.dividerColor;
 
         return Material(
           color: sheetBg,
@@ -309,8 +310,8 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
                         Text(
                           QuickPhotoRepository.typeLabel(photo.type),
                           style: TextStyle(
-                            fontSize: SoloForteSheetTokens.titleFontSize,
-                            fontWeight: SoloForteSheetTokens.titleWeight,
+                            fontSize: v.titleFontSize,
+                            fontWeight: v.titleWeight,
                             color: titleColor,
                           ),
                         ),

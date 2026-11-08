@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
-import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../domain/entities/marketing_roi_calculation.dart';
 import '../../domain/enums/produtividade_unidade.dart';
 import '../widgets/foto_picker_widget.dart';
@@ -174,6 +172,10 @@ class _RoiInputRow extends StatelessWidget {
   }
 }
 
+/// Texto sobre fundo pinado [#123D2A] no tema Verde (fora do Azul).
+const _roiOnDarkPrimary = Color(0xFFFFFFFF);
+const _roiOnDarkLabel = Color(0xCCFFFFFF);
+
 class _RoiPreviewCard extends StatelessWidget {
   final TextEditingController prodSemProdutoCtrl;
   final TextEditingController prodComProdutoCtrl;
@@ -195,21 +197,19 @@ class _RoiPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final input = _input;
     if (input == null || !input.isComplete) return const SizedBox.shrink();
     final roi = MarketingRoiCalculation(input);
-    final isIos = soloForteSheetIsIos(context);
+    final isIos = v.isIos;
     final cardBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
+        ? v.cardBackground
         : const Color(0xFF123D2A);
-    final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
-    final lineLabelColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : const Color(0xCCFFFFFF);
-    final lineValueColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
-    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 18.0;
+    final titleColor = isIos ? v.titleColor : _roiOnDarkPrimary;
+    final lineLabelColor =
+        isIos ? v.subtitleColor : _roiOnDarkLabel;
+    final lineValueColor = isIos ? v.titleColor : _roiOnDarkPrimary;
+    final radius = v.cardRadius;
 
     return Padding(
       padding: const EdgeInsets.only(top: 16),
@@ -219,7 +219,7 @@ class _RoiPreviewCard extends StatelessWidget {
           color: cardBg,
           borderRadius: BorderRadius.circular(radius),
           border: isIos
-              ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+              ? Border.all(color: v.cardBorder)
               : null,
           boxShadow: isIos
               ? null

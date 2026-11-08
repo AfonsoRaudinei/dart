@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
-import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 
 class TipoProdutoFormResult {
   const TipoProdutoFormResult({
@@ -33,28 +32,27 @@ class _TipoProdutoFormDialogState extends State<TipoProdutoFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final color = isIos
-        ? SoloForteSheetSkinIos.iconStroke
+        ? v.iconStroke
         : Theme.of(context).colorScheme.primary;
     // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final sheetBg = isIos
         ? Colors.transparent
         : Theme.of(context).colorScheme.surface;
-    final sheetRadius = isIos
-        ? SoloForteSheetSkinIos.sheetRadius
-        : 24.0;
+    final sheetRadius = v.sheetRadius;
     final handleColor = isIos
-        ? SoloForteSheetSkinIos.handleColor
+        ? v.handleColor
         : Colors.grey.shade300;
-    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final titleColor = v.isIos ? v.titleColor : null;
     final subColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
+        ? v.subtitleColor
         : Colors.grey[600];
-    final ctaBg = isIos ? SoloForteSheetSkinIos.ctaBackground : null;
-    final ctaFg = isIos ? SoloForteSheetSkinIos.ctaText : null;
-    final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 20.0;
-    final ghostColor = isIos ? SoloForteSheetSkinIos.ghostText : null;
+    final ctaBg = isIos ? v.ctaBackground : null;
+    final ctaFg = isIos ? v.ctaText : null;
+    final ctaRadius = v.ctaRadius;
+    final ghostColor = isIos ? v.ghostText : null;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -65,8 +63,8 @@ class _TipoProdutoFormDialogState extends State<TipoProdutoFormDialog> {
           color: sheetBg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
           border: isIos
-              ? const Border(
-                  top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+              ? Border(
+                  top: BorderSide(color: v.sheetBorder),
                 )
               : null,
         ),
@@ -75,12 +73,8 @@ class _TipoProdutoFormDialogState extends State<TipoProdutoFormDialog> {
           children: [
             Container(
               margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: isIos
-                  ? SoloForteSheetSkinIos.handleSize.width
-                  : 40,
-              height: isIos
-                  ? SoloForteSheetSkinIos.handleSize.height
-                  : 4,
+              width: v.handleSize.width,
+              height: v.handleSize.height,
               decoration: BoxDecoration(
                 color: handleColor,
                 borderRadius: BorderRadius.circular(2),
@@ -121,16 +115,14 @@ class _TipoProdutoFormDialogState extends State<TipoProdutoFormDialog> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: isIos
-                              ? const BorderSide(
-                                  color: SoloForteSheetSkinIos.cardBorder,
+                              ? BorderSide(color: v.cardBorder,
                                 )
                               : const BorderSide(),
                         ),
                         enabledBorder: isIos
                             ? OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: SoloForteSheetSkinIos.cardBorder,
+                                borderSide: BorderSide(color: v.cardBorder,
                                 ),
                               )
                             : null,

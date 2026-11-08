@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
 
@@ -49,15 +49,14 @@ class PlanoBlockSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final titleColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : Colors.white;
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
+    final titleColor = v.onSheetPrimary;
     final bodyColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
+        ? v.subtitleColor
         : const Color(0xFF8E8E93);
     final handleColor = isIos
-        ? SoloForteSheetSkinIos.handleColor
+        ? v.handleColor
         : const Color(0xFF3A3A3C);
 
     return SafeArea(
@@ -67,12 +66,8 @@ class PlanoBlockSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: isIos
-                  ? SoloForteSheetSkinIos.handleSize.width
-                  : 36,
-              height: isIos
-                  ? SoloForteSheetSkinIos.handleSize.height
-                  : 4,
+              width: v.handleSize.width,
+              height: v.handleSize.height,
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
                 color: handleColor,

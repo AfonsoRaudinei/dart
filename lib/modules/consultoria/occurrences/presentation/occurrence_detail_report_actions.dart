@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,7 +11,6 @@ import '../../../../core/html_templates/html_report_viewer.dart';
 import '../../../../core/html_templates/relatorio_html_renderer.dart';
 import '../../../../core/html_templates/report_export_service.dart';
 import '../../../../core/router/app_routes.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../core/utils/share_position.dart';
 import '../../../../core/utils/user_facing_error.dart';
@@ -344,6 +344,7 @@ class OccurrenceDetailExportLocationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: SizedBox(
@@ -353,13 +354,12 @@ class OccurrenceDetailExportLocationButton extends StatelessWidget {
           onPressed: () => onExportLocation(context, occurrence),
           style: isIos
               ? OutlinedButton.styleFrom(
-                  foregroundColor: SoloForteSheetSkinIos.ghostText,
-                  side: const BorderSide(
-                    color: SoloForteSheetSkinIos.ghostBorder,
+                  foregroundColor: v.ghostText,
+                  side: BorderSide(color: v.ghostBorder,
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(
-                      SoloForteSheetSkinIos.ghostRadius,
+                      v.ghostRadius,
                     ),
                   ),
                 )
@@ -367,7 +367,7 @@ class OccurrenceDetailExportLocationButton extends StatelessWidget {
           icon: Icon(
             Icons.ios_share_outlined,
             size: 18,
-            color: isIos ? SoloForteSheetSkinIos.iconStroke : accentColor,
+            color: isIos ? v.iconStroke : accentColor,
           ),
           label: const Text('Exportar localização'),
         ),
@@ -391,13 +391,14 @@ class OccurrenceDetailReportActionsRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final v = SoloForteSheetVisuals.of(context);
     final iosButtonStyle = isIos
         ? OutlinedButton.styleFrom(
-            foregroundColor: SoloForteSheetSkinIos.ghostText,
-            side: const BorderSide(color: SoloForteSheetSkinIos.ghostBorder),
+            foregroundColor: v.ghostText,
+            side: BorderSide(color: v.ghostBorder),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(
-                SoloForteSheetSkinIos.ghostRadius,
+                v.ghostRadius,
               ),
             ),
           )

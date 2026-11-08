@@ -98,6 +98,27 @@ raise SystemExit(0 if sys.argv[2] in data else 1)
 PY
 }
 
+# Exit 0 quando a permissão está ausente ou toda ocorrência tem tools:node="remove".
+sf_manifest_permission_not_requested() {
+  local manifest="$1"
+  local perm="$2"
+  python3 - <<'PY' "$manifest" "$perm"
+import sys
+import xml.etree.ElementTree as ET
+
+path, perm = sys.argv[1], sys.argv[2]
+android_name = "{http://schemas.android.com/apk/res/android}name"
+tools_node = "{http://schemas.android.com/tools}node"
+root = ET.parse(path).getroot()
+for el in root.iter("uses-permission"):
+    if el.attrib.get(android_name) != perm:
+        continue
+    if el.attrib.get(tools_node) != "remove":
+        raise SystemExit(1)
+raise SystemExit(0)
+PY
+}
+
 PRIVACY_MANIFEST="$ROOT/ios/Runner/PrivacyInfo.xcprivacy"
 INFO_PLIST="$ROOT/ios/Runner/Info.plist"
 PBXPROJ="$ROOT/ios/Runner.xcodeproj/project.pbxproj"
@@ -161,6 +182,12 @@ PY
   else
     warn "NSPrivacyCollectedDataTypes com poucas entradas — alinhar com docs/store/APP_PRIVACY_APPLE.md"
   fi
+
+  if sf_plutil_json_contains "$PRIVACY_MANIFEST" NSPrivacyCollectedDataTypes NSPrivacyCollectedDataTypeAudioData; then
+    pass "NSPrivacyCollectedDataTypeAudioData declarado"
+  else
+    fail "PrivacyInfo sem NSPrivacyCollectedDataTypeAudioData"
+  fi
 fi
 
 # ── iOS: Info.plist ───────────────────────────────────────────────────────────
@@ -190,6 +217,12 @@ else
       warn "Usage description ausente: $KEY"
     fi
   done
+
+  if sf_plutil_has_key "$INFO_PLIST" NSLocationAlwaysAndWhenInUseUsageDescription; then
+    pass "Usage description: NSLocationAlwaysAndWhenInUseUsageDescription"
+  else
+    fail "NSLocationAlwaysAndWhenInUseUsageDescription ausente (ASC 90683)"
+  fi
 fi
 
 # ── Android: SCHEDULE_EXACT_ALARM ────────────────────────────────────────────
@@ -224,6 +257,26 @@ if [[ -f "$ROOT/docs/android/SCHEDULE_EXACT_ALARM_PLAY_CONSOLE.md" ]]; then
   pass "Documentação Play Console presente"
 else
   warn "docs/android/SCHEDULE_EXACT_ALARM_PLAY_CONSOLE.md ausente"
+fi
+
+# ── Android: permissões que Play rejeita ─────────────────────────────────────
+echo ""
+echo -e "── ${CYAN}Android${NC} permissões removidas do merge ───────────────────────"
+
+if [[ ! -f "$ANDROID_MANIFEST" ]]; then
+  fail "AndroidManifest.xml ausente"
+else
+  for PERM in \
+    android.permission.READ_MEDIA_IMAGES \
+    android.permission.FOREGROUND_SERVICE \
+    android.permission.FOREGROUND_SERVICE_LOCATION
+  do
+    if sf_manifest_permission_not_requested "$ANDROID_MANIFEST" "$PERM"; then
+      pass "Não pedida (ausente ou tools:node=remove): $PERM"
+    else
+      fail "Manifest pede $PERM sem tools:node=\"remove\""
+    fi
+  done
 fi
 
 # ── IPA opcional ─────────────────────────────────────────────────────────────

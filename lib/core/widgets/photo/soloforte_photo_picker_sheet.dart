@@ -2,12 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../design/sf_icons.dart';
 import '../../image/vegetal_filter.dart';
-import '../../ui/sheets/sheet_tokens.dart';
 import '../../ui/sheets/soloforte_sheet.dart';
 import '../../utils/app_logger.dart';
 
@@ -114,13 +114,14 @@ class SoloFortePhotoPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final cardBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
+        ? v.cardBackground
         : Theme.of(context).scaffoldBackgroundColor;
-    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
-    final subColor = isIos ? SoloForteSheetSkinIos.subtitleColor : null;
-    final radius = isIos ? SoloForteSheetSkinIos.sheetRadius : 20.0;
+    final titleColor = v.isIos ? v.titleColor : null;
+    final subColor = isIos ? v.subtitleColor : null;
+    final radius = v.sheetRadius;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
@@ -128,19 +129,19 @@ class SoloFortePhotoPickerSheet extends StatelessWidget {
         color: cardBg,
         borderRadius: BorderRadius.circular(radius),
         border: isIos
-            ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+            ? Border.all(color: v.cardBorder)
             : null,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: isIos ? SoloForteSheetSkinIos.handleSize.width : 36,
-            height: isIos ? SoloForteSheetSkinIos.handleSize.height : 4,
+            width: v.handleSize.width,
+            height: v.handleSize.height,
             margin: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
               color: isIos
-                  ? SoloForteSheetSkinIos.handleColor
+                  ? v.handleColor
                   : Colors.grey.shade300,
               borderRadius: BorderRadius.circular(999),
             ),
@@ -160,10 +161,10 @@ class SoloFortePhotoPickerSheet extends StatelessWidget {
           _PhotoPickerTile(
             icon: Icons.camera_alt,
             iconBg: isIos
-                ? SoloForteSheetSkinIos.iconBackground
+                ? v.iconBackground
                 : Colors.blue.shade50,
             iconFg: isIos
-                ? SoloForteSheetSkinIos.iconStroke
+                ? v.iconStroke
                 : Colors.blue.shade600,
             title: 'Câmera',
             subtitle: 'Tirar nova foto',
@@ -175,10 +176,10 @@ class SoloFortePhotoPickerSheet extends StatelessWidget {
           _PhotoPickerTile(
             icon: Icons.photo_library,
             iconBg: isIos
-                ? SoloForteSheetSkinIos.iconBackground
+                ? v.iconBackground
                 : Colors.purple.shade50,
             iconFg: isIos
-                ? SoloForteSheetSkinIos.iconStroke
+                ? v.iconStroke
                 : Colors.purple.shade600,
             title: 'Galeria',
             subtitle: 'Escolher da biblioteca de fotos',
@@ -190,10 +191,10 @@ class SoloFortePhotoPickerSheet extends StatelessWidget {
           _PhotoPickerTile(
             icon: SFIcons.leaf,
             iconBg: isIos
-                ? SoloForteSheetSkinIos.iconBackground
+                ? v.iconBackground
                 : Colors.green.shade50,
             iconFg: isIos
-                ? SoloForteSheetSkinIos.iconStroke
+                ? v.iconStroke
                 : Colors.green.shade700,
             title: 'Inversão vegetal',
             subtitle: 'Câmera com filtro de inversão',

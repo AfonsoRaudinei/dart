@@ -9,7 +9,6 @@ import 'package:soloforte_app/core/access/producer_create_context_resolver.dart'
 import 'package:soloforte_app/core/widgets/photo/soloforte_photo_picker_sheet.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_keyboard_inset.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
@@ -449,7 +448,7 @@ class _OccurrenceCreationSheetState
     final isIos = occurrenceFormIsIos(context);
     final sheetBg = v.sheetBackground;
     final accent = isIos
-        ? SoloForteSheetSkinIos.iconStroke
+        ? v.iconStroke
         : context.themeAccent;
     final titleColor = v.onSheetPrimary;
     final muted = v.subtitleColor;
@@ -652,7 +651,7 @@ class _OccurrenceCreationSheetState
                       decoration: BoxDecoration(
                         color: v.inputFill,
                         borderRadius: BorderRadius.circular(
-                          isIos ? SoloForteSheetSkinIos.cardRadius : 12,
+                          v.cardRadius,
                         ),
                         border: Border.all(color: v.cardBorder),
                       ),
@@ -733,7 +732,7 @@ class _OccurrenceCreationSheetState
                                   ? color.withValues(alpha: .18)
                                   : v.cardBackground,
                               borderRadius: BorderRadius.circular(
-                                isIos ? SoloForteSheetSkinIos.cardRadius : 16,
+                                v.cardRadius,
                               ),
                               border: Border.all(
                                 color: sel ? color : v.chipBorderInactive,
@@ -833,7 +832,7 @@ class _OccurrenceCreationSheetState
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
-                            SoloForteSheetSkinIos.ctaRadius,
+                            v.ctaRadius,
                           ),
                         ),
                       ),

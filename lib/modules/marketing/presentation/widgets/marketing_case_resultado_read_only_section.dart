@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/solo_forte_sheet_visuals.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/marketing_case.dart';
@@ -38,18 +37,18 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
     final v = SoloForteSheetVisuals.of(context);
 
     final heroBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
+        ? v.cardBackground
         : const Color(0xFF123D2A);
     final heroRadius =
-        isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
+        v.cardRadius;
     final heroLabelColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
+        ? v.subtitleColor
         : const Color(0xCCFFFFFF);
     final heroValueColor = isIos
-        ? SoloForteSheetSkinIos.iconStroke
+        ? v.iconStroke
         : context.themeAccent;
     final heroSubColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
+        ? v.titleColor
         : const Color(0xCCFFFFFF);
 
     final detailBg = v.cardBackground;
@@ -58,7 +57,7 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
     final lineLabelColor = v.subtitleColor;
     final lineValueColor = v.titleColor;
     final gainColor = isIos
-        ? SoloForteSheetSkinIos.iconStroke
+        ? v.iconStroke
         : context.themeAccent;
 
     return Column(
@@ -72,7 +71,7 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
             borderRadius: BorderRadius.circular(heroRadius),
             border: Border.all(
               color: isIos
-                  ? SoloForteSheetSkinIos.cardBorder
+                  ? v.cardBorder
                   : context.themeAccent.withValues(alpha: 0.35),
             ),
           ),
@@ -115,7 +114,7 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
           decoration: BoxDecoration(
             color: detailBg,
             borderRadius: BorderRadius.circular(
-              isIos ? SoloForteSheetSkinIos.cardRadius : 16,
+              v.cardRadius,
             ),
             border: Border.all(color: detailBorder),
           ),
@@ -206,6 +205,7 @@ class _SheetRoiLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -215,7 +215,7 @@ class _SheetRoiLine extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
-                color: labelColor ?? SoloForteSheetTokens.inputHint,
+                color: labelColor ?? v.inputHint,
                 fontSize: 13,
               ),
             ),
@@ -226,7 +226,7 @@ class _SheetRoiLine extends StatelessWidget {
               value,
               textAlign: TextAlign.right,
               style: TextStyle(
-                color: valueColor ?? SoloForteSheetTokens.inputText,
+                color: valueColor ?? v.inputText,
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
               ),

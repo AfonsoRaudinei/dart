@@ -415,43 +415,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
             ),
           ],
         ),
-        Positioned(
-          top: MediaQuery.of(context).padding.top + 8,
-          left: 12,
-          child: _buildBotaoVoltar(context),
-        ),
       ],
-    );
-  }
-
-  Widget _buildBotaoVoltar(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.go(AppRoutes.clients),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withAlpha(230),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(20),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.arrow_back_ios, size: 16),
-            SizedBox(width: 4),
-            Text(
-              'Clientes',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

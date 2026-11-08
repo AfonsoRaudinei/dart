@@ -5,7 +5,6 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/design/sf_icons.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../core/utils/map_location_export.dart';
 import '../../../../core/utils/share_position.dart';
@@ -97,9 +96,9 @@ class LocationExportBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final isIos = soloForteSheetIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final isIos = v.isIos;
     final coordsPreview = MapLocationExport.formatDecimalLatLng(
       latitude,
       longitude,
@@ -115,10 +114,10 @@ class LocationExportBottomSheet extends StatelessWidget {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: SoloForteSheetSkinIos.cardBackground,
+                  color: v.cardBackground,
                   borderRadius:
-                      BorderRadius.circular(SoloForteSheetSkinIos.cardRadius),
-                  border: Border.all(color: SoloForteSheetSkinIos.cardBorder),
+                      BorderRadius.circular(v.cardRadius),
+                  border: Border.all(color: v.cardBorder),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -128,10 +127,10 @@ class LocationExportBottomSheet extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Exportar localização',
                             style: TextStyle(
-                              color: SoloForteSheetSkinIos.titleColor,
+                              color: v.titleColor,
                               fontSize: 17,
                               fontWeight: FontWeight.w600,
                             ),
@@ -139,8 +138,8 @@ class LocationExportBottomSheet extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             coordsPreview,
-                            style: const TextStyle(
-                              color: SoloForteSheetSkinIos.subtitleColor,
+                            style: TextStyle(
+                              color: v.subtitleColor,
                               fontSize: 13,
                             ),
                           ),
@@ -150,7 +149,7 @@ class LocationExportBottomSheet extends StatelessWidget {
                     _ActionRow(
                       icon: SFIcons.map,
                       title: 'Google Maps',
-                      color: SoloForteSheetSkinIos.iconStroke,
+                      color: v.iconStroke,
                       isIos: true,
                       onTap: () => _openExternalUrl(
                         context,
@@ -160,7 +159,7 @@ class LocationExportBottomSheet extends StatelessWidget {
                     _ActionRow(
                       icon: SFIcons.pinFill,
                       title: 'Apple Maps',
-                      color: SoloForteSheetSkinIos.iconStroke,
+                      color: v.iconStroke,
                       isIos: true,
                       onTap: () => _openExternalUrl(
                         context,
@@ -170,14 +169,14 @@ class LocationExportBottomSheet extends StatelessWidget {
                     _ActionRow(
                       icon: SFIcons.assignment,
                       title: 'Copiar coordenadas',
-                      color: SoloForteSheetSkinIos.iconStroke,
+                      color: v.iconStroke,
                       isIos: true,
                       onTap: () => _copyCoordinates(context),
                     ),
                     _ActionRow(
                       icon: Icons.ios_share_outlined,
                       title: 'Compartilhar',
-                      color: SoloForteSheetSkinIos.iconStroke,
+                      color: v.iconStroke,
                       isIos: true,
                       showDivider: false,
                       onTap: () => _shareLocation(context),
@@ -191,10 +190,10 @@ class LocationExportBottomSheet extends StatelessWidget {
                 height: 50,
                 child: TextButton(
                   onPressed: () => _dismiss(context),
-                  child: const Text(
+                  child: Text(
                     'Concluído',
                     style: TextStyle(
-                      color: SoloForteSheetSkinIos.titleColor,
+                      color: v.titleColor,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -356,13 +355,13 @@ class _ActionRow extends StatelessWidget {
                     height: 34,
                     decoration: BoxDecoration(
                       color: isIos
-                          ? SoloForteSheetSkinIos.iconBackground
+                          ? v.iconBackground
                           : color.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(isIos ? 999 : 10),
                     ),
                     child: Icon(
                       icon,
-                      color: isIos ? SoloForteSheetSkinIos.iconStroke : color,
+                      color: isIos ? v.iconStroke : color,
                       size: 20,
                     ),
                   ),

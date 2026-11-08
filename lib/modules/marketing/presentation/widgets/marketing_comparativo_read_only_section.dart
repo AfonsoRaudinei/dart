@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/solo_forte_sheet_visuals.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/parametro_comparativo.dart';
@@ -43,7 +42,7 @@ class _MarketingComparativoReadOnlySectionState
           decoration: BoxDecoration(
             color: cardBg,
             borderRadius: BorderRadius.circular(
-              widget.isIos ? SoloForteSheetSkinIos.cardRadius : 16,
+              v.cardRadius,
             ),
             border: Border.all(color: cardBorder),
           ),
@@ -114,7 +113,7 @@ class _ParametroReadOnlyRow extends StatelessWidget {
     final deltaColor = parametro.isNegativo
         ? PremiumTokens.alertError
         : parametro.isPositivo
-        ? (isIos ? SoloForteSheetSkinIos.iconStroke : context.themeAccent)
+        ? (isIos ? v.iconStroke : context.themeAccent)
         : v.subtitleColor;
     final textColor = v.titleColor;
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../domain/entities/avaliacao_item.dart';
 import 'avaliacao_card.dart';
@@ -79,6 +79,7 @@ class NovoCaseAvaliacaoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -129,7 +130,7 @@ class NovoCaseAvaliacaoSection extends StatelessWidget {
             icon: Icons.notes_rounded,
             label: 'Adicionar Conclusão Técnica',
             color: soloForteSheetIsIos(context)
-                ? SoloForteSheetSkinIos.iconStroke
+                ? v.iconStroke
                 : const Color(0xFF0057FF),
             onTap: onAddConclusao,
           )

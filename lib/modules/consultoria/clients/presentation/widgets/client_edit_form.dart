@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:image_picker/image_picker.dart';

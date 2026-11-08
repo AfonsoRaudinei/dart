@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer.dart';
+import 'package:soloforte_app/core/domain/talhao_condicao.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
@@ -38,6 +39,12 @@ class _FakeDrawingFieldWriter implements IDrawingFieldWriter {
     String? dataPlantio,
     String? dataEmergencia,
     String? cicloDias,
+  }) async {}
+
+  @override
+  Future<void> updateFieldAvaliacao({
+    required String fieldId,
+    required TalhaoCondicao condicao,
   }) async {}
 
   @override

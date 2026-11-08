@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../core/config/map_config.dart';
+import '../../../../core/domain/map_basemap_labels.dart';
 import '../../../../core/domain/map_models.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../core/services/offline_tile_cache_service.dart';
@@ -146,14 +147,7 @@ MapOfflineStatusPresentation buildMapOfflineStatusPresentation({
 }
 
 String mapLayerLabel(LayerType layerType) {
-  switch (layerType) {
-    case LayerType.standard:
-      return 'Mapa';
-    case LayerType.satellite:
-      return 'Satélite';
-    case LayerType.satelliteUpdated:
-      return 'Satélite atualizado';
-  }
+  return shortBasemapLayerLabel(layerType);
 }
 
 class _OfflineStatusSnapshot {
@@ -501,6 +495,33 @@ Future<void> _confirmDeleteSavedMaps(
   await ref.read(offlineMapAreasProvider.notifier).deleteAreas(areaIds);
 }
 
+@visibleForTesting
+Color offlineMapCoveragePolygonBorderColor({required bool viewportCovered}) {
+  return viewportCovered
+      ? PremiumTokens.brandGreen
+      : const Color(0xFF0A84FF);
+}
+
+@visibleForTesting
+Polygon buildOfflineMapCoveragePolygon({
+  required OfflineMapAreaConfig area,
+  required bool viewportCovered,
+}) {
+  return Polygon(
+    points: [
+      LatLng(area.south, area.west),
+      LatLng(area.north, area.west),
+      LatLng(area.north, area.east),
+      LatLng(area.south, area.east),
+    ],
+    color: Colors.transparent,
+    borderColor: offlineMapCoveragePolygonBorderColor(
+      viewportCovered: viewportCovered,
+    ),
+    borderStrokeWidth: 2.2,
+  );
+}
+
 class MapOfflineCoverageLayer extends ConsumerWidget {
   const MapOfflineCoverageLayer({super.key});
 
@@ -529,32 +550,14 @@ class MapOfflineCoverageLayer extends ConsumerWidget {
       child: PolygonLayer(
         polygons: [
           for (final area in areas)
-            Polygon(
-              points: [
-                LatLng(area.south, area.west),
-                LatLng(area.north, area.west),
-                LatLng(area.north, area.east),
-                LatLng(area.south, area.east),
-              ],
-              color:
-                  area.covers(
-                    layerKey: layerKey,
-                    lat: center?.latitude ?? area.south,
-                    lng: center?.longitude ?? area.west,
-                    zoom: zoom,
-                  )
-                  ? PremiumTokens.brandGreen.withValues(alpha: 0.14)
-                  : const Color(0x990A84FF).withValues(alpha: 0.12),
-              borderColor:
-                  area.covers(
-                    layerKey: layerKey,
-                    lat: center?.latitude ?? area.south,
-                    lng: center?.longitude ?? area.west,
-                    zoom: zoom,
-                  )
-                  ? PremiumTokens.brandGreen
-                  : const Color(0xFF0A84FF),
-              borderStrokeWidth: 2.2,
+            buildOfflineMapCoveragePolygon(
+              area: area,
+              viewportCovered: area.covers(
+                layerKey: layerKey,
+                lat: center?.latitude ?? area.south,
+                lng: center?.longitude ?? area.west,
+                zoom: zoom,
+              ),
             ),
         ],
       ),

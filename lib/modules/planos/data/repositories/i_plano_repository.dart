@@ -12,9 +12,6 @@ abstract class IPlanoRepository {
   /// Retorna o plano ativo do usuário, ou [UserPlan.free()] se não possui plano.
   Future<UserPlan> getPlanoAtivo(String userId);
 
-  /// Ativa um plano para o usuário (inserção no Supabase).
-  Future<UserPlan> ativarPlano(UserPlan plano);
-
   /// Lista todas as indicações feitas pelo [referrerId].
   Future<List<Referral>> getReferrals(String referrerId);
 

@@ -3,7 +3,6 @@ import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/ui/sheets/sheet_keyboard_inset.dart';
-import '../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../core/ui/sheets/widgets/sheet_input_field.dart';
 
@@ -47,8 +46,8 @@ class _MapCoordinateSearchSheetState extends State<MapCoordinateSearchSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final bottom = sheetFormKeyboardBottomPadding(
       safeBottom: MediaQuery.paddingOf(context).bottom,
       keyboard: MediaQuery.viewInsetsOf(context).bottom,
@@ -73,8 +72,8 @@ class _MapCoordinateSearchSheetState extends State<MapCoordinateSearchSheet> {
               'Ir para coordenada',
               style: TextStyle(
                 color: titleColor,
-                fontSize: SoloForteSheetTokens.titleFontSize,
-                fontWeight: SoloForteSheetTokens.titleWeight,
+                fontSize: v.titleFontSize,
+                fontWeight: v.titleWeight,
               ),
             ),
             const SizedBox(height: 8),
@@ -99,9 +98,7 @@ class _MapCoordinateSearchSheetState extends State<MapCoordinateSearchSheet> {
                       minimumSize: const Size.fromHeight(48),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(
-                          isIos
-                              ? SoloForteSheetSkinIos.ghostRadius
-                              : SoloForteSheetTokens.chipRadius,
+                          v.ghostRadius,
                         ),
                       ),
                     ),
@@ -119,8 +116,8 @@ class _MapCoordinateSearchSheetState extends State<MapCoordinateSearchSheet> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(
                           isIos
-                              ? SoloForteSheetSkinIos.ctaRadius
-                              : SoloForteSheetTokens.chipRadius,
+                              ? v.ctaRadius
+                              : v.chipRadius,
                         ),
                       ),
                     ),

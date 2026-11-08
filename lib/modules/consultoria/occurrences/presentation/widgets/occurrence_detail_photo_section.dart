@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 
-import '../../../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/occurrence.dart';
 import '../../domain/occurrence_photo_paths.dart';
@@ -24,6 +24,7 @@ class OccurrenceDetailPhotoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final photoPaths = allPhotoPaths(occurrence);
     if (photoPaths.isEmpty) return const SizedBox.shrink();
 
@@ -35,7 +36,7 @@ class OccurrenceDetailPhotoSection extends StatelessWidget {
           color: cardBg,
           borderRadius: BorderRadius.circular(cardRadius),
           border: isIos
-              ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+              ? Border.all(color: v.cardBorder)
               : null,
         ),
         child: Column(
@@ -48,7 +49,7 @@ class OccurrenceDetailPhotoSection extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.2,
                 color: isIos
-                    ? SoloForteSheetSkinIos.subtitleColor
+                    ? v.subtitleColor
                     : (isDark
                         ? PremiumTokens.textSecondaryDark
                         : context.premiumTextSecondary),

@@ -5,10 +5,11 @@ import 'package:go_router/go_router.dart';
 
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_keyboard_dismiss.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_segment_bar.dart';
 
 /// Shell do módulo Carteira — AppBar + segment bar fixo + corpo scrollável.
-class CarteiraModuleScaffold extends ConsumerWidget {
+class CarteiraModuleScaffold extends ConsumerStatefulWidget {
   const CarteiraModuleScaffold({
     super.key,
     required this.title,
@@ -23,15 +24,29 @@ class CarteiraModuleScaffold extends ConsumerWidget {
   final CarteiraSegment? forceSegment;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CarteiraModuleScaffold> createState() =>
+      _CarteiraModuleScaffoldState();
+}
+
+class _CarteiraModuleScaffoldState extends ConsumerState<CarteiraModuleScaffold> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      CarteiraKeyboardDismiss.dismiss();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final CarteiraSegment segment =
-        forceSegment ?? ref.watch(carteiraSegmentProvider);
+        widget.forceSegment ?? ref.watch(carteiraSegmentProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
-        leading: leading,
-        automaticallyImplyLeading: leading != null,
+        title: Text(widget.title),
+        leading: widget.leading,
+        automaticallyImplyLeading: widget.leading != null,
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -57,7 +72,9 @@ class CarteiraModuleScaffold extends ConsumerWidget {
               ],
             ),
           ),
-          Expanded(child: body),
+          Expanded(
+            child: CarteiraKeyboardDismiss(child: widget.body),
+          ),
         ],
       ),
     );
@@ -79,15 +96,18 @@ class CarteiraModuleScaffold extends ConsumerWidget {
 
     if (current == value) {
       if (onClienteDetail && value == CarteiraSegment.clientes) {
+        CarteiraKeyboardDismiss.dismiss();
         context.go(AppRoutes.carteira);
       }
       if (onOportunidadesDetail && value == CarteiraSegment.oportunidades) {
+        CarteiraKeyboardDismiss.dismiss();
         context.go(AppRoutes.carteira);
       }
       return;
     }
 
     HapticFeedback.selectionClick();
+    CarteiraKeyboardDismiss.dismiss();
     ref.read(carteiraSegmentProvider.notifier).state = value;
 
     if (onClienteDetail ||

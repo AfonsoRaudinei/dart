@@ -171,8 +171,8 @@ class MarketingCaseSheet extends ConsumerWidget {
               top: Radius.circular(sheetRadius),
             ),
             border: isIos
-                ? const Border(
-                    top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+                ? Border(
+                    top: BorderSide(color: v.sheetBorder),
                   )
                 : null,
           ),
@@ -183,12 +183,8 @@ class MarketingCaseSheet extends ConsumerWidget {
               Center(
                 child: Container(
                   margin: const EdgeInsets.symmetric(vertical: 12),
-                  width: isIos
-                      ? SoloForteSheetSkinIos.handleSize.width
-                      : 36,
-                  height: isIos
-                      ? SoloForteSheetSkinIos.handleSize.height
-                      : 4,
+                  width: v.handleSize.width,
+                  height: v.handleSize.height,
                   decoration: BoxDecoration(
                     color: handleColor,
                     borderRadius: BorderRadius.circular(2),
@@ -243,7 +239,7 @@ class MarketingCaseSheet extends ConsumerWidget {
                           ),
                           decoration: BoxDecoration(
                             color: (isIos
-                                    ? SoloForteSheetSkinIos.iconStroke
+                                    ? v.iconStroke
                                     : context.themeAccent)
                                 .withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
@@ -252,7 +248,7 @@ class MarketingCaseSheet extends ConsumerWidget {
                             _tipoLabel,
                             style: TextStyle(
                               color: isIos
-                                  ? SoloForteSheetSkinIos.iconStroke
+                                  ? v.iconStroke
                                   : context.themeAccent,
                               fontWeight: FontWeight.w600,
                               fontSize: 11,
@@ -435,13 +431,12 @@ class MarketingCaseSheet extends ConsumerWidget {
                           style: isIos
                               ? OutlinedButton.styleFrom(
                                   foregroundColor:
-                                      SoloForteSheetSkinIos.ghostText,
-                                  side: const BorderSide(
-                                    color: SoloForteSheetSkinIos.ghostBorder,
+                                      v.ghostText,
+                                  side: BorderSide(color: v.ghostBorder,
                                   ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(
-                                      SoloForteSheetSkinIos.ghostRadius,
+                                      v.ghostRadius,
                                     ),
                                   ),
                                 )
@@ -450,7 +445,7 @@ class MarketingCaseSheet extends ConsumerWidget {
                             Icons.open_with_rounded,
                             size: 18,
                             color: isIos
-                                ? SoloForteSheetSkinIos.iconStroke
+                                ? v.iconStroke
                                 : context.themeAccent,
                           ),
                           label: const Text('Corrigir posição'),
@@ -503,9 +498,10 @@ class MarketingCaseSheet extends ConsumerWidget {
   }
 
   Widget _buildMetricasRow(BuildContext context, {required bool isIos}) {
+    final v = SoloForteSheetVisuals.of(context);
     final items = <_MetricaItem>[];
     final roiAccent = isIos
-        ? SoloForteSheetSkinIos.iconStroke
+        ? v.iconStroke
         : const Color(0xFF34C759);
 
     final resultadoRoi = marketingCase.computeRoi();
@@ -525,7 +521,7 @@ class MarketingCaseSheet extends ConsumerWidget {
           value:
               '${marketingCase.produtividadeValor!.toStringAsFixed(1)} ${marketingCase.produtividadeUnidade?.toValue() ?? ''}',
           icon: Icons.bar_chart_rounded,
-          color: isIos ? SoloForteSheetSkinIos.iconStroke : context.themeAccent,
+          color: isIos ? v.iconStroke : context.themeAccent,
         ),
       );
     }
@@ -547,18 +543,18 @@ class MarketingCaseSheet extends ConsumerWidget {
           .map(
             (item) {
               final chipBg = isIos
-                  ? SoloForteSheetSkinIos.cardBackground
+                  ? v.cardBackground
                   : item.color.withValues(alpha: 0.08);
               final chipBorder = isIos
-                  ? SoloForteSheetSkinIos.cardBorder
+                  ? v.cardBorder
                   : item.color.withValues(alpha: 0.2);
               final labelColor = isIos
-                  ? SoloForteSheetSkinIos.subtitleColor
+                  ? v.subtitleColor
                   : item.color.withValues(alpha: 0.85);
               final valueColor =
-                  isIos ? SoloForteSheetSkinIos.iconStroke : item.color;
+                  isIos ? v.iconStroke : item.color;
               final iconColor =
-                  isIos ? SoloForteSheetSkinIos.iconStroke : item.color;
+                  isIos ? v.iconStroke : item.color;
 
               return Expanded(
               child: Container(
@@ -567,7 +563,7 @@ class MarketingCaseSheet extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: chipBg,
                   borderRadius: BorderRadius.circular(
-                    isIos ? SoloForteSheetSkinIos.cardRadius : 14,
+                    v.cardRadius,
                   ),
                   border: Border.all(color: chipBorder),
                 ),
@@ -676,7 +672,7 @@ class MarketingCaseSheet extends ConsumerWidget {
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: isIos
-                        ? SoloForteSheetSkinIos.iconStroke
+                        ? v.iconStroke
                         : context.themeAccent,
                   ),
                 ),
@@ -777,7 +773,7 @@ class MarketingCaseSheet extends ConsumerWidget {
             height: 44,
             decoration: BoxDecoration(
               gradient: isIos ? null : PremiumTokens.brandGradient,
-              color: isIos ? SoloForteSheetSkinIos.iconBackground : null,
+              color: isIos ? v.iconBackground : null,
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -812,7 +808,7 @@ class MarketingCaseSheet extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.phone_outlined),
               color: isIos
-                  ? SoloForteSheetSkinIos.iconStroke
+                  ? v.iconStroke
                   : context.themeAccent,
               onPressed: () => HapticFeedback.lightImpact(),
             ),

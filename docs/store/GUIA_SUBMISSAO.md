@@ -4,6 +4,16 @@ Checklist operacional para publicar SoloForte v1.0.0.
 
 ---
 
+## Compra de planos (IAP)
+
+Se esta versão inclui venda de plano no app, seguir **antes** de submeter:
+
+**[`docs/store/PUBLICACAO_COMPRA_LOJAS.md`](PUBLICACAO_COMPRA_LOJAS.md)** — Supabase, produtos nas lojas, sandbox, ordem iOS → Android.
+
+Produtos e textos: [`PRODUTOS_IAP_LOJAS.md`](PRODUTOS_IAP_LOJAS.md).
+
+---
+
 ## Pré-requisitos
 
 - [ ] Fases 1 e 2 concluídas e testadas
@@ -51,14 +61,16 @@ Seguir `docs/store/PLAY_CONSOLE.md`.
 
 ## 3. Apple App Store Connect
 
-1. Criar app → Bundle ID `com.soloforte.soloforteApp`
-2. Upload IPA via Xcode ou Transporter
-3. **App Privacy** — usar `docs/store/APP_PRIVACY_APPLE.md`
-4. **Privacy Policy URL**
-5. Metadados — usar `docs/store/METADADOS_LOJAS.md`
-6. Screenshots 6.7" + opcional iPad
-7. **App Review Information** — demo account + notas
-8. Export compliance → No (ITSAppUsesNonExemptEncryption)
+Seguir `docs/store/APP_STORE_CONNECT.md`.
+
+1. App com bundle `com.soloforte.soloforteApp` (só iPhone)
+2. Upload IPA 1.34.0 com build maior que o último aceito
+3. App Privacy — `docs/store/APP_PRIVACY_APPLE.md`
+4. Privacy Policy URL e Support URL das páginas publicadas
+5. Screenshots 1179 × 2556 ou 1206 × 2622
+6. App Review Information — `docs/store/CONTA_DEMO_REVIEW.md`
+7. Export compliance → No
+8. Disponibilidade Brasil e DSA conforme o guia
 9. Submit for Review
 
 ---

@@ -238,9 +238,8 @@ class _ClientFarmWithTalhoesSectionState
               ),
               const Spacer(),
               TextButton.icon(
-                onPressed: () => context.go(
-                  farmMapCreateUri(clientId: client.id, farmId: farm.id),
-                ),
+                onPressed: () =>
+                    showAdicionarTalhaoModal(context, client, farm: farm),
                 icon: Icon(Icons.add, color: context.themeAccent),
                 label: Text(
                   'Novo',

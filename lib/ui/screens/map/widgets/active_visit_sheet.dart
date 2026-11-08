@@ -46,7 +46,7 @@ class ActiveVisitSheet extends ConsumerWidget {
             SFIcons.checkCircle,
             size: 64,
             color: isIos
-                ? SoloForteSheetSkinIos.ctaBackground
+                ? v.ctaBackground
                 : PremiumTokens.brandGreen,
           ),
           const SizedBox(height: 16),
@@ -90,7 +90,7 @@ class ActiveVisitSheet extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(
-                  isIos ? SoloForteSheetSkinIos.ctaRadius : 12,
+                  v.ctaRadius,
                 ),
               ),
             ),
@@ -106,7 +106,7 @@ class ActiveVisitSheet extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(
-                    SoloForteSheetSkinIos.ghostRadius,
+                    v.ghostRadius,
                   ),
                 ),
               ),

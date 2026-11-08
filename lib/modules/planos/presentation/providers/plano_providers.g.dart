@@ -40,6 +40,41 @@ final referralServiceProvider = Provider<ReferralService>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ReferralServiceRef = ProviderRef<ReferralService>;
+String _$mercadoPagoServiceHash() =>
+    r'3bb951336a1a3459c58dafd17792ff356138c4f5';
+
+/// See also [mercadoPagoService].
+@ProviderFor(mercadoPagoService)
+final mercadoPagoServiceProvider = Provider<MercadoPagoService>.internal(
+  mercadoPagoService,
+  name: r'mercadoPagoServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$mercadoPagoServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef MercadoPagoServiceRef = ProviderRef<MercadoPagoService>;
+String _$lojaCompraGatewayHash() => r'2971e9c4e33b3ed2cd139e824ec2d8c18abae514';
+
+/// See also [lojaCompraGateway].
+@ProviderFor(lojaCompraGateway)
+final lojaCompraGatewayProvider = Provider<LojaCompraGateway>.internal(
+  lojaCompraGateway,
+  name: r'lojaCompraGatewayProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$lojaCompraGatewayHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef LojaCompraGatewayRef = ProviderRef<LojaCompraGateway>;
 String _$planoLocalCacheHash() => r'775591c8f21a1a6334602ce7868786ce9a61e9ee';
 
 /// Cache local do último plano verificado online (TTL 24h — ADR-012 Adendo 1).

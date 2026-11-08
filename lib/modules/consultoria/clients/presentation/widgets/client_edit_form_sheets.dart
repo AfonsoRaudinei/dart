@@ -7,9 +7,9 @@ extension _ClientEditFormSheets on _ClientEditFormState {
       showDragHandle: false,
       useSafeArea: false,
       builder: (ctx) {
-        final ios = soloForteSheetIsIos(ctx);
-        final icon = ios ? SoloForteSheetSkinIos.iconStroke : null;
-        final title = ios ? SoloForteSheetSkinIos.titleColor : null;
+        final v = SoloForteSheetVisuals.of(ctx);
+        final icon = v.isIos ? v.iconStroke : null;
+        final title = v.isIos ? v.titleColor : null;
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -47,28 +47,28 @@ extension _ClientEditFormSheets on _ClientEditFormState {
     );
   }
 
-  ThemeData _lightFormTheme(bool isIos) => ThemeData.light().copyWith(
-        colorScheme: ColorScheme.light(
-          primary: isIos
-              ? SoloForteSheetSkinIos.ctaBackground
-              : context.themeAccent,
-        ),
-      );
+  ThemeData _lightFormTheme(bool isIos) {
+    final v = SoloForteSheetVisuals.of(context);
+    return ThemeData.light().copyWith(
+      colorScheme: ColorScheme.light(
+        primary: isIos ? v.ctaBackground : context.themeAccent,
+      ),
+    );
+  }
 
-  ButtonStyle _sheetCtaStyle(bool isIos) => ElevatedButton.styleFrom(
-        backgroundColor: isIos
-            ? SoloForteSheetSkinIos.ctaBackground
-            : context.themeAccent,
-        foregroundColor:
-            isIos ? SoloForteSheetSkinIos.ctaText : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            isIos ? SoloForteSheetSkinIos.ctaRadius : 8,
-          ),
-        ),
-      );
+  ButtonStyle _sheetCtaStyle(bool isIos) {
+    final v = SoloForteSheetVisuals.of(context);
+    return ElevatedButton.styleFrom(
+      backgroundColor: isIos ? v.ctaBackground : context.themeAccent,
+      foregroundColor: v.ctaText,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(v.ctaRadius),
+      ),
+    );
+  }
 
   Future<void> _abrirBottomSheetArea() async {
+    final v = SoloForteSheetVisuals.of(context);
     final formKey = GlobalKey<FormState>();
     final areaCtrl = TextEditingController();
     String? tipoSelecionado;
@@ -79,11 +79,10 @@ extension _ClientEditFormSheets on _ClientEditFormState {
       showDragHandle: false,
       useSafeArea: false,
       builder: (ctx) {
-        final ios = soloForteSheetIsIos(ctx);
-        final titleColor = ios ? SoloForteSheetSkinIos.titleColor : null;
+        final titleColor = v.isIos ? v.titleColor : null;
         return StatefulBuilder(
           builder: (ctx, setModalState) => Theme(
-            data: _lightFormTheme(ios),
+            data: _lightFormTheme(v.isIos),
             child: Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(ctx).viewInsets.bottom,
@@ -140,7 +139,7 @@ extension _ClientEditFormSheets on _ClientEditFormState {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          style: _sheetCtaStyle(ios),
+                          style: _sheetCtaStyle(v.isIos),
                           onPressed: () {
                             if (formKey.currentState?.validate() != true) {
                               return;

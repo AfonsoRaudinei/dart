@@ -3,12 +3,9 @@
 // Rota: /planos/pagamento — checkout oculto (decisão C).
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:soloforte_app/core/constants/layout_constants.dart';
-import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 class PagamentoScreen extends ConsumerWidget {
@@ -47,20 +44,6 @@ class PagamentoScreen extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 14,
                     color: context.premiumTextSecondary,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                TextButton(
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    context.go(AppRoutes.planos);
-                  },
-                  child: Text(
-                    'Voltar aos planos',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: primary,
-                    ),
                   ),
                 ),
                 const SizedBox(height: kFabSafeArea),

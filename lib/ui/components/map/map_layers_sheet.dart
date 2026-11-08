@@ -31,11 +31,8 @@ class LayersSheet extends ConsumerWidget {
 
   Widget _buildContent(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
-    final isIos = v.isIos;
     final bg = v.sheetBackground;
-    final radius = isIos
-        ? SoloForteSheetSkinIos.sheetRadius
-        : SoloForteSheetTokens.borderRadius;
+    final radius = v.sheetRadius;
 
     return Material(
       color: bg,
@@ -53,10 +50,8 @@ class LayersSheet extends ConsumerWidget {
                   child: Text(
                     'Camadas',
                     style: TextStyle(
-                      fontSize: isIos ? 16 : SoloForteSheetTokens.titleFontSize,
-                      fontWeight: isIos
-                          ? FontWeight.w700
-                          : SoloForteSheetTokens.titleWeight,
+                      fontSize: v.titleFontSize,
+                      fontWeight: v.titleWeight,
                       color: v.titleColor,
                     ),
                   ),

@@ -13,10 +13,10 @@ class _SelectedModeFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final footerBg = isIos
-        ? SoloForteSheetSkinIos.background
+        ? v.sheetBackground
         : v.sheetBackground;
     final topBorder = v.cardBorder;
 
@@ -45,9 +45,9 @@ class _SelectedModeFooter extends StatelessWidget {
               onPressed: onEdit,
               style: isIos
                   ? OutlinedButton.styleFrom(
-                      foregroundColor: SoloForteSheetSkinIos.ghostText,
-                      side: const BorderSide(
-                        color: SoloForteSheetSkinIos.ghostBorder,
+                      foregroundColor: v.ghostText,
+                      side: BorderSide(
+                        color: v.ghostBorder,
                       ),
                     )
                   : null,
@@ -61,7 +61,7 @@ class _SelectedModeFooter extends StatelessWidget {
               onPressed: onExit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: isIos
-                    ? SoloForteSheetSkinIos.ctaBackground
+                    ? v.ctaBackground
                     : context.themeAccent,
               ),
               child: const Text(
@@ -84,12 +84,12 @@ class _SheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
-    final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : v.titleColor;
-    final iconColor =
-        isIos ? SoloForteSheetSkinIos.iconStroke : Theme.of(context).colorScheme.onSurface;
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
+    final titleColor = v.titleColor;
+    final iconColor = isIos
+        ? v.iconStroke
+        : Theme.of(context).colorScheme.onSurface;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -132,11 +132,10 @@ class _SheetHeader extends StatelessWidget {
         Divider(
           height: 1,
           color: isIos
-              ? SoloForteSheetSkinIos.rowDivider
-              : Theme.of(context)
-                  .colorScheme
-                  .outlineVariant
-                  .withValues(alpha: 0.5),
+              ? v.rowDivider
+              : Theme.of(
+                  context,
+                ).colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ],
     );
@@ -195,10 +194,12 @@ class _MetricItem extends StatelessWidget {
   const _MetricItem({required this.label, required this.value});
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final valueColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
-    final labelColor =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.grey;
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
+    final valueColor = v.isIos ? v.titleColor : null;
+    final labelColor = isIos
+        ? v.subtitleColor
+        : Colors.grey;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,34 +232,31 @@ class _FormatButton extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final surface = isIos
-        ? SoloForteSheetSkinIos.cardBackground
+        ? v.cardBackground
         : Colors.grey[50];
-    final border = isIos
-        ? SoloForteSheetSkinIos.cardBorder
-        : Colors.grey[300]!;
+    final border = isIos ? v.cardBorder : Colors.grey[300]!;
     final iconColor = isIos
-        ? SoloForteSheetSkinIos.iconStroke
+        ? v.iconStroke
         : Theme.of(context).primaryColor;
-    final labelColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : null;
+    final labelColor = v.isIos ? v.titleColor : null;
     final sublabelColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
+        ? v.subtitleColor
         : Colors.grey;
 
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(
-        isIos ? SoloForteSheetSkinIos.cardRadius : 12,
+        v.cardRadius,
       ),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 24),
         decoration: BoxDecoration(
           color: surface,
           borderRadius: BorderRadius.circular(
-            isIos ? SoloForteSheetSkinIos.cardRadius : 12,
+            v.cardRadius,
           ),
           border: Border.all(color: border),
         ),
@@ -268,10 +266,7 @@ class _FormatButton extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               label,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: labelColor,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, color: labelColor),
             ),
             if (sublabel != null) ...[
               const SizedBox(height: 4),
@@ -282,55 +277,6 @@ class _FormatButton extends StatelessWidget {
             ],
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ColorOption extends StatelessWidget {
-  final Color color;
-  final Color selected;
-  final ValueChanged<Color> onTap;
-
-  const _ColorOption({
-    required this.color,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isSelected = color.toARGB32() == selected.toARGB32();
-    return GestureDetector(
-      onTap: () => onTap(color),
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: isSelected
-              ? Border.all(color: Colors.white, width: 3)
-              : Border.all(color: Colors.grey[200]!, width: 1),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: isSelected
-            ? Container(
-                margin: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.black12, width: 1),
-                ),
-              )
-            : null,
       ),
     );
   }

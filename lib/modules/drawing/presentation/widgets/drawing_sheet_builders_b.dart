@@ -40,8 +40,9 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       onIntersection: widget.controller.startIntersectionMode,
       onSplitPolygons: widget.controller.polygonPartCount(feature.geometry) > 1
           ? () async {
-              final count =
-                  widget.controller.polygonPartCount(feature.geometry);
+              final count = widget.controller.polygonPartCount(
+                feature.geometry,
+              );
               await widget.controller.splitSelectedFeature();
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
@@ -118,9 +119,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
             child: Text(
               'Arraste os pontos para modificar a área.\nUse os controles laterais para salvar, desfazer, refazer ou cancelar.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: v.subtitleColor,
-              ),
+              style: TextStyle(color: v.subtitleColor),
             ),
           ),
           const SizedBox(height: 12),
@@ -159,27 +158,22 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
 
   // FORMULÁRIO DE METADADOS (Climate FieldView Style - Hierárquico)
   Widget _buildReviewingMode(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final area = widget.controller.liveAreaHa;
     final perimeter = widget.controller.livePerimeterKm;
-    final detectedParts =
-        widget.controller.polygonPartCount(widget.controller.liveGeometry);
+    final detectedParts = widget.controller.polygonPartCount(
+      widget.controller.liveGeometry,
+    );
     final isMultiPartSave = detectedParts > 1;
     final f = NumberFormat("##0.##", "pt_BR");
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final sectionLabelStyle = TextStyle(
-      color: isIos
-          ? SoloForteSheetSkinIos.titleColor
-          : SoloForteSheetTokens.sectionLabel,
-      fontSize: SoloForteSheetTokens.sectionFontSize,
-      fontWeight: SoloForteSheetTokens.sectionWeight,
+      color: isIos ? v.titleColor : v.sectionLabel,
+      fontSize: v.sectionFontSize,
+      fontWeight: v.sectionWeight,
     );
-    final titleColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : v.titleColor;
-    final muted = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.sectionLabel;
+    final titleColor = v.titleColor;
+    final muted = isIos ? v.subtitleColor : v.sectionLabel;
     final panelBg = v.cardBackground;
     final panelBorder = v.cardBorder;
     final inputText = v.titleColor;
@@ -215,18 +209,12 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.save_outlined,
-                    color: context.themeAccent,
-                  ),
+                  Icon(Icons.save_outlined, color: context.themeAccent),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Revise os dados e toque em salvar para criar o desenho no mapa.',
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        color: muted,
-                      ),
+                      style: TextStyle(fontSize: 13.5, color: muted),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -291,6 +279,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
             TextFormField(
               controller: _nomeController,
               style: TextStyle(color: inputText),
+              scrollPadding: const EdgeInsets.only(bottom: 80),
               decoration: InputDecoration(
                 hintText: isMultiPartSave ? 'Ex: Talhão' : 'Ex: Talhão Norte',
                 hintStyle: TextStyle(color: inputHint),
@@ -305,13 +294,13 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: isIos
-                      ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+                      ? BorderSide(color: v.cardBorder)
                       : BorderSide.none,
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: isIos
-                      ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+                      ? BorderSide(color: v.cardBorder)
                       : BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
@@ -321,60 +310,6 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
               ),
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Informe o nome' : null,
-            ),
-            const SizedBox(height: 16),
-
-            Row(
-              children: [
-                // Seletor de cor simplificado
-                _ColorOption(
-                  color: _selectedColor,
-                  selected: _selectedColor,
-                  onTap: (_) {},
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _ColorOption(
-                          color: context.themeAccent,
-                          selected: _selectedColor,
-                          onTap: (c) {
-                            HapticFeedback.selectionClick();
-                            _rebuild(() => _selectedColor = c);
-                          },
-                        ),
-                        _ColorOption(
-                          color: Colors.blue,
-                          selected: _selectedColor,
-                          onTap: (c) {
-                            HapticFeedback.selectionClick();
-                            _rebuild(() => _selectedColor = c);
-                          },
-                        ),
-                        _ColorOption(
-                          color: Colors.amber,
-                          selected: _selectedColor,
-                          onTap: (c) {
-                            HapticFeedback.selectionClick();
-                            _rebuild(() => _selectedColor = c);
-                          },
-                        ),
-                        _ColorOption(
-                          color: Colors.redAccent,
-                          selected: _selectedColor,
-                          onTap: (c) {
-                            HapticFeedback.selectionClick();
-                            _rebuild(() => _selectedColor = c);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
             ),
             const SizedBox(height: 24),
 
@@ -496,7 +431,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context, rootNavigator: false).pop(),
+            onPressed: () => _popLocalDialog(context),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
@@ -527,7 +462,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                 _rebuild(() => _selectedFarm = newFarm);
               }
               if (context.mounted) {
-                Navigator.of(context, rootNavigator: false).pop();
+                _popLocalDialog(context);
               }
             },
             child: const Text('Criar'),
@@ -535,6 +470,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
         ],
       ),
     ).whenComplete(() {
+      SoloforteKeyboardDismiss.dismiss();
       nameController.dispose();
       cityController.dispose();
       stateController.dispose();
@@ -543,8 +479,8 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
   }
 
   Widget _buildClientField() {
-    final clientState = ref.watch(drawingClientProvider);
     final v = SoloForteSheetVisuals.of(context);
+    final clientState = ref.watch(drawingClientProvider);
     final inputText = v.titleColor;
     final inputHint = v.subtitleColor;
     final dropdownBg = v.cardBackground;
@@ -556,16 +492,9 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
           'Cliente selecionado';
       return InputDecorator(
         decoration: _sheetFieldDecoration(
-          suffixIcon: Icon(
-            Icons.lock_outline,
-            size: 18,
-            color: inputHint,
-          ),
+          suffixIcon: Icon(Icons.lock_outline, size: 18, color: inputHint),
         ),
-        child: Text(
-          name,
-          style: TextStyle(color: inputText),
-        ),
+        child: Text(name, style: TextStyle(color: inputText)),
       );
     }
 
@@ -575,10 +504,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       dropdownColor: dropdownBg,
       style: TextStyle(color: inputText),
       iconEnabledColor: inputHint,
-      hint: Text(
-        'Selecione o cliente...',
-        style: TextStyle(color: inputHint),
-      ),
+      hint: Text('Selecione o cliente...', style: TextStyle(color: inputHint)),
       items: clientState.clients.map((c) {
         return DropdownMenuItem(value: c, child: Text(c.name));
       }).toList(),
@@ -596,8 +522,8 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
   }
 
   Widget _buildFarmField() {
-    final clientState = ref.watch(drawingClientProvider);
     final v = SoloForteSheetVisuals.of(context);
+    final clientState = ref.watch(drawingClientProvider);
     final inputText = v.titleColor;
     final inputHint = v.subtitleColor;
     final dropdownBg = v.cardBackground;
@@ -609,16 +535,9 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
           'Fazenda selecionada';
       return InputDecorator(
         decoration: _sheetFieldDecoration(
-          suffixIcon: Icon(
-            Icons.lock_outline,
-            size: 18,
-            color: inputHint,
-          ),
+          suffixIcon: Icon(Icons.lock_outline, size: 18, color: inputHint),
         ),
-        child: Text(
-          name,
-          style: TextStyle(color: inputText),
-        ),
+        child: Text(name, style: TextStyle(color: inputText)),
       );
     }
 
@@ -628,10 +547,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       dropdownColor: dropdownBg,
       style: TextStyle(color: inputText),
       iconEnabledColor: inputHint,
-      hint: Text(
-        'Selecione a fazenda...',
-        style: TextStyle(color: inputHint),
-      ),
+      hint: Text('Selecione a fazenda...', style: TextStyle(color: inputHint)),
       items: [
         ...clientState.farms.map(
           (f) => DropdownMenuItem(value: f, child: Text(f.name)),
@@ -675,13 +591,12 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     _rebuild(() {
       if (!preserveContextClient) _selectedClient = null;
       if (!preserveContextFarm) _selectedFarm = null;
-      _selectedColor = context.themeAccent;
     });
   }
 
   InputDecoration _sheetFieldDecoration({Widget? suffixIcon}) {
-    final isIos = soloForteSheetIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final fillColor = v.cardBackground;
     final focusBorder = v.accent;
     return InputDecoration(
@@ -691,15 +606,11 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       suffixIcon: suffixIcon,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: isIos
-            ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
-            : BorderSide.none,
+        borderSide: isIos ? BorderSide(color: v.cardBorder) : BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: isIos
-            ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
-            : BorderSide.none,
+        borderSide: isIos ? BorderSide(color: v.cardBorder) : BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
@@ -738,16 +649,14 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
   }
 
   Future<DrawingExportFormat?> _selectExportFormat(BuildContext context) async {
+    final v = SoloForteSheetVisuals.of(context);
     // Sem backgroundColor hardcoded — chrome iOS Azul via showSoloForteSheet.
     return showSoloForteSheet<DrawingExportFormat>(
       context: context,
       builder: (ctx) {
         final isIos = soloForteSheetIsIos(ctx);
-        final v = SoloForteSheetVisuals.of(context);
-        final titleColor =
-            isIos ? SoloForteSheetSkinIos.titleColor : null;
-        final subtitleColor =
-            isIos ? SoloForteSheetSkinIos.subtitleColor : null;
+        final titleColor = v.isIos ? v.titleColor : null;
+        final subtitleColor = isIos ? v.subtitleColor : null;
         final iconColor = v.accent;
         return SafeArea(
           child: Column(
@@ -770,7 +679,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                     opt.subtitle,
                     style: TextStyle(color: subtitleColor),
                   ),
-                  onTap: () => Navigator.of(ctx).pop(opt.format),
+                  onTap: () => _popLocalDialog(ctx, opt.format),
                 ),
               ),
             ],
@@ -810,7 +719,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
+            onPressed: () => _popLocalDialog(ctx),
             child: const Text('Cancelar'),
           ),
           FilledButton(
@@ -818,7 +727,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
               final dLat = double.tryParse(latController.text);
               final dLng = double.tryParse(lngController.text);
               if (dLat == null || dLng == null) return;
-              Navigator.of(ctx).pop((dLat, dLng));
+              _popLocalDialog(ctx, (dLat, dLng));
             },
             child: const Text('Aplicar'),
           ),
@@ -842,11 +751,11 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
+            onPressed: () => _popLocalDialog(ctx),
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            onPressed: () => _popLocalDialog(ctx, controller.text.trim()),
             child: const Text('Selecionar'),
           ),
         ],

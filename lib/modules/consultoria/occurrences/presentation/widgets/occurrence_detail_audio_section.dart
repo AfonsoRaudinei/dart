@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:soloforte_app/core/utils/local_media_path_resolver.dart';
 
-import '../../../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/occurrence.dart';
 
@@ -110,12 +110,12 @@ class _OccurrenceDetailAudioSectionState
     if (mounted) setState(() => _playing = true);
   }
 
-  Color get _secondaryColor => widget.isIos
-      ? SoloForteSheetSkinIos.subtitleColor
-      : PremiumTokens.textSecondaryDark;
-
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
+    final secondaryColor = widget.isIos
+        ? v.subtitleColor
+        : PremiumTokens.textSecondaryDark;
     final future = _resolvedFuture;
     if (future == null) return const SizedBox.shrink();
     final sec = widget.occurrence.audioDurationSec;
@@ -131,7 +131,7 @@ class _OccurrenceDetailAudioSectionState
           color: widget.cardBg,
           borderRadius: BorderRadius.circular(widget.cardRadius),
           border: widget.isIos
-              ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+              ? Border.all(color: v.cardBorder)
               : null,
         ),
         child: FutureBuilder<String?>(
@@ -150,7 +150,7 @@ class _OccurrenceDetailAudioSectionState
                           ? Icons.stop_circle_outlined
                           : Icons.play_arrow_rounded,
                       color: widget.isIos
-                          ? SoloForteSheetSkinIos.iconStroke
+                          ? v.iconStroke
                           : context.themeAccent,
                     ),
                   )
@@ -166,7 +166,7 @@ class _OccurrenceDetailAudioSectionState
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: widget.isIos
-                              ? SoloForteSheetSkinIos.subtitleColor
+                              ? v.subtitleColor
                               : (widget.isDark
                                     ? PremiumTokens.textSecondaryDark
                                     : context.premiumTextSecondary),
@@ -177,7 +177,7 @@ class _OccurrenceDetailAudioSectionState
                           subtitle,
                           style: TextStyle(
                             fontSize: 12,
-                            color: _secondaryColor,
+                            color: secondaryColor,
                           ),
                         ),
                       if (missing)
@@ -185,7 +185,7 @@ class _OccurrenceDetailAudioSectionState
                           OccurrenceDetailAudioSection.missingLocalFileLabel,
                           style: TextStyle(
                             fontSize: 12,
-                            color: _secondaryColor,
+                            color: secondaryColor,
                           ),
                         ),
                     ],

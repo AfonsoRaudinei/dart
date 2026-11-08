@@ -43,10 +43,7 @@ class MapCanvas extends StatelessWidget {
         onLongPress: onLongPress,
         onPositionChanged: onPositionChanged,
         interactionOptions:
-            interactionOptions ??
-            const InteractionOptions(
-              flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-            ),
+            interactionOptions ?? kPrivateMapExploreInteractionOptions,
       ),
       children: children,
     );

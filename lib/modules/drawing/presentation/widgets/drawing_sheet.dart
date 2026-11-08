@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:latlong2/latlong.dart';
 import '../coordinators/drawing_close_coordinator.dart';
 import '../controllers/drawing_controller.dart';
 import '../../domain/models/drawing_models.dart';
@@ -18,7 +17,6 @@ import 'package:soloforte_app/core/session/user_role.dart';
 import '../providers/drawing_client_provider.dart';
 import '../providers/gps_walk_providers.dart';
 import '../providers/drawing_export_provider.dart';
-import '../../../dashboard/providers/location_providers.dart';
 import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../core/utils/share_position.dart';
@@ -28,9 +26,10 @@ import 'drawing_info_edit_sheet.dart';
 import 'drawing_delete_undo_snackbar.dart';
 import 'drawing_review_metrics_panel.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
+import 'package:soloforte_app/core/domain/talhao_condicao.dart';
 import 'gps_walk_controls_overlay.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/solo_forte_sheet_visuals.dart';
+import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import '../../../../ui/components/sync/conflict_resolution_dialog.dart';
 
 part 'drawing_sheet_builders_a.dart';
@@ -99,8 +98,6 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     }
     return !role.toUserRole().isProdutor;
   }
-
-  Color _selectedColor = PremiumTokens.brandGreen;
 
   final _nomeController = TextEditingController();
   final _descricaoController = TextEditingController();
@@ -201,6 +198,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     // 1A: X / dismiss durante edição só recolhe o sheet — não cancela vértices.
     if (intent == DrawingCloseIntent.dismissSheet &&
         widget.controller.currentState == DrawingState.editing) {
+      SoloforteKeyboardDismiss.dismiss();
       widget.onCollapseWhileEditing?.call();
       return;
     }
@@ -211,6 +209,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       intent: intent,
     );
     if (!mounted || !decision.shouldCloseSheet) return;
+    SoloforteKeyboardDismiss.dismiss();
     _emitCloseCallback(
       preferSavedCallback: preferSavedCallback,
       savedFeature: savedFeature,
@@ -234,6 +233,16 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
   Future<void> _handleClosePressed() async {
     await _requestClose(DrawingCloseIntent.dismissSheet);
+  }
+
+  void _popLocalDialog(BuildContext context, [Object? result]) {
+    SoloforteKeyboardDismiss.dismiss();
+    final navigator = Navigator.of(context, rootNavigator: false);
+    if (result != null) {
+      navigator.pop(result);
+    } else {
+      navigator.pop();
+    }
   }
 
   void _onToolSelected(String key) {
@@ -302,8 +311,6 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // final theme = Theme.of(context);
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final safeBottom = MediaQuery.of(context).padding.bottom;
 
     // ADR-019: escuta mudancas de clientes para pre-selecao Map-First
@@ -354,22 +361,19 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     final sheetBg = isIos ? Colors.transparent : v.sheetBackground;
     final sheetRadius = isIos ? 0.0 : v.sheetRadius;
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: Container(
-        decoration: BoxDecoration(
-          color: sheetBg,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(sheetRadius),
-          ),
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final hasBoundedHeight = constraints.maxHeight.isFinite;
-            final scrollArea = SingleChildScrollView(
+    return Container(
+      key: const Key('drawing_sheet_root'),
+      decoration: BoxDecoration(
+        color: sheetBg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final hasBoundedHeight = constraints.maxHeight.isFinite;
+          final scrollArea = SoloforteKeyboardDismiss(
+            child: SingleChildScrollView(
               controller: widget.scrollController,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               physics: const BouncingScrollPhysics(),
               child: ListenableBuilder(
                 listenable: widget.controller,
@@ -436,48 +440,45 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                   );
                 },
               ),
-            );
+            ),
+          );
 
-            return Column(
-              mainAxisSize: hasBoundedHeight
-                  ? MainAxisSize.max
-                  : MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 4. Cabeçalho Fixo (Fonte Única)
-                _SheetHeader(
-                  onBack: _isEditingMetadata
-                      ? () => setState(() => _isEditingMetadata = false)
-                      : null,
-                  onClose: _handleClosePressed,
-                ),
+          return Column(
+            mainAxisSize: hasBoundedHeight
+                ? MainAxisSize.max
+                : MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 4. Cabeçalho Fixo (Fonte Única)
+              _SheetHeader(
+                onBack: _isEditingMetadata
+                    ? () => setState(() => _isEditingMetadata = false)
+                    : null,
+                onClose: _handleClosePressed,
+              ),
 
-                // Conteúdo Dinâmico
-                if (hasBoundedHeight)
-                  Flexible(child: scrollArea)
-                else
-                  scrollArea,
-                ListenableBuilder(
-                  listenable: widget.controller,
-                  builder: (context, _) {
-                    if (!_showsSelectedStickyFooter) {
-                      return const SizedBox.shrink();
-                    }
-                    return _SelectedModeFooter(
-                      safeBottom: safeBottom,
-                      onExit: () =>
-                          _requestClose(DrawingCloseIntent.dismissSheet),
-                      onEdit: () {
-                        HapticFeedback.lightImpact();
-                        widget.controller.startEditMode();
-                      },
-                    );
-                  },
-                ),
-              ],
-            );
-          },
-        ),
+              // Conteúdo Dinâmico
+              if (hasBoundedHeight) Flexible(child: scrollArea) else scrollArea,
+              ListenableBuilder(
+                listenable: widget.controller,
+                builder: (context, _) {
+                  if (!_showsSelectedStickyFooter) {
+                    return const SizedBox.shrink();
+                  }
+                  return _SelectedModeFooter(
+                    safeBottom: safeBottom,
+                    onExit: () =>
+                        _requestClose(DrawingCloseIntent.dismissSheet),
+                    onEdit: () {
+                      HapticFeedback.lightImpact();
+                      widget.controller.startEditMode();
+                    },
+                  );
+                },
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -519,7 +520,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
         clienteId: _selectedClient!.id,
         fazendaId: _selectedFarm?.id,
         grupo: _selectedFarm?.name,
-        cor: _selectedColor.toARGB32(),
+        cor: TalhaoCondicao.bom.argb,
       );
     } finally {
       if (mounted) {

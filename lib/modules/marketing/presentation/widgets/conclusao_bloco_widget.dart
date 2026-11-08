@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
-import '../../../../core/ui/sheets/soloforte_sheet.dart';
 
 /// Bloco de Conclusão Técnica — fundo #0057FF
 /// Apenas 1 por case
@@ -20,26 +18,26 @@ class ConclusaoBlocoWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final accent =
-        isIos ? SoloForteSheetSkinIos.iconStroke : _blueConc;
+        isIos ? v.iconStroke : _blueConc;
     final shellBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
+        ? v.cardBackground
         : _blueConc.withValues(alpha: 0.06);
     final shellBorder = isIos
-        ? SoloForteSheetSkinIos.cardBorder
+        ? v.cardBorder
         : _blueConc.withValues(alpha: 0.35);
     final headerBg =
-        isIos ? SoloForteSheetSkinIos.ctaBackground : _blueConc;
+        isIos ? v.ctaBackground : _blueConc;
     final headerFg = v.ctaText;
     final headerFgMuted = v.ctaText.withValues(alpha: 0.7);
     final fill = isIos ? v.sheetBackground : v.inputFill;
     final textColor = v.inputText;
     final hintColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
+        ? v.subtitleColor
         : _blueConc.withValues(alpha: 0.5);
-    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
+    final radius = v.cardRadius;
 
     return Container(
       decoration: BoxDecoration(

@@ -1,52 +1,31 @@
-# Monetizacao iOS — App Review
+# Monetização — App Store e Play Store
 
-Data: 2026-06-07
-Escopo: Fase 3 de publicacao iOS App Store.
+Data: 2026-11-08
+Escopo: compra nativa nas lojas (ADR-012, Adendo 2).
 
-## Decisao para este release
+## Decisão
 
-O build iOS nao inicia compra de plano digital por Mercado Pago, nao exibe preco
-de plano no iOS e nao apresenta CTA/link para checkout externo.
+O app não inicia compra por Mercado Pago e não abre checkout externo. O meio de pagamento é o da loja: StoreKit no iOS e Play Billing no Android. A taxa é a da loja.
 
-Motivo: planos digitais que liberam funcionalidade dentro do app entram no risco
-da App Review Guideline 3.1.1 quando comprados por mecanismo externo dentro do
-app. Para este release, o fluxo Mercado Pago permanece apenas para canais nao
-iOS. No iOS, o app mostra somente o status do plano ja existente na conta.
+Prazos publicados: Bronze 3 meses, Prata 6 meses, Ouro 12 meses. A Apple não oferece 5 nem 8 meses em assinatura não renovável. O preço exibido é o que a loja devolver. Referência de cadastro: R$ 49,90, R$ 79,90 e R$ 119,90.
 
-## Comportamento esperado no iOS
+IDs iguais nas duas lojas: `soloforte_plano_bronze`, `soloforte_plano_prata`, `soloforte_plano_ouro`.
 
-- `/planos`: mostra status do plano e retorno ao mapa.
-- `/planos/pagamento`: tela de bloqueio funcional, sem metodo de pagamento.
-- `/planos/confirmacao`: tela de bloqueio funcional, sem abertura de checkout.
-- `MercadoPagoService`: aborta chamadas em iOS antes de invocar Edge Function.
+Bundle iOS: `com.soloforte.soloforteApp`. Pacote Android: `com.soloforte.app`.
 
-## Comportamento mantido fora do iOS
+## Comportamento
 
-- Cards de planos com preco continuam disponiveis.
-- Tela de pagamento continua criando preferencia Mercado Pago via Supabase.
-- Confirmacao continua abrindo checkout externo e aguardando webhook.
-- Edge Functions `mercadopago-*` permanecem ativas para canais nao iOS.
+- `/planos`: no iOS e no Android, lista só os produtos que a loja devolver, com o preço da loja, compra e restaurar compras. Se a loja não devolver produto, a tela não mostra preço nem botão.
+- `/planos/pagamento` e `/planos/confirmacao`: sem checkout externo.
+- `MercadoPagoService`: aborta no iOS e no Android antes da Edge.
+- A Edge `loja-verificar-compra` valida o recibo e só então grava `user_plans`. O cliente não concede plano. Sem segredo de verificação, a Edge não grava.
 
-## App Store Connect
+## Ordem de publicação
 
-Modelo deste release:
-
-- App iOS sem In-App Purchases configuradas.
-- Nao cadastrar preco de plano digital como IAP enquanto StoreKit nao for
-  implementado.
-- Preco do app: conforme estrategia comercial do app na loja, sem prometer
-  desbloqueio de plano por checkout externo no app.
-
-Se a compra de plano digital precisar ocorrer dentro do iOS no futuro:
-
-1. Implementar StoreKit / In-App Purchase.
-2. Cadastrar produtos ou assinaturas no App Store Connect.
-3. Migrar validacao de recibo e concessao de plano.
-4. Remover dependencia de Mercado Pago do fluxo iOS.
+1. App Store Connect: três assinaturas não renováveis, acordo de apps pagos, chave da App Store Server API no Supabase, usuário sandbox.
+2. Enviar o binário iOS com esses produtos na versão.
+3. Depois do iOS em revisão, cadastrar os mesmos IDs na Play como produto único consumível e enviar o Android.
 
 ## Nota sugerida ao revisor
 
-O aplicativo iOS nao oferece compra de planos digitais por checkout externo. O
-modulo de planos no iOS exibe apenas o status do plano associado a conta do
-usuario. Fluxos Mercado Pago existentes no codigo sao destinados a canais nao
-iOS e ficam bloqueados no runtime iOS.
+O aplicativo não oferece compra de planos digitais por checkout externo. A compra dentro do app usa o faturamento da própria loja. O plano só é concedido depois da validação do recibo no servidor.

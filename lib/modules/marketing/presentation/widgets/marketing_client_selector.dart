@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/contracts/i_client_lookup.dart';
 import '../../../../core/contracts/i_client_lookup_provider.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
-import '../../../../core/ui/sheets/soloforte_sheet.dart';
 
 /// Dropdown opcional de cliente para formulários de marketing.
 /// Depende apenas de core/contracts/ — zero import de consultoria/ ou agenda/.
@@ -24,14 +22,14 @@ class MarketingClientSelector extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final clientsAsync = ref.watch(_marketingClientsAtivosProvider);
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final surface = v.cardBackground;
     final border = v.cardBorder;
     final muted = v.subtitleColor;
     final title = v.titleColor;
     final iconColor = v.iconStroke;
-    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+    final radius = v.cardRadius;
     final dropdownBg = isIos ? v.sheetBackground : v.cardBackground;
 
     return Container(

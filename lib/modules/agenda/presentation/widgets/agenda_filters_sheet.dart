@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
-import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import '../../domain/enums/event_type.dart';
 import '../../domain/enums/event_status.dart';
 import '../providers/agenda_filters_provider.dart';
@@ -16,27 +14,21 @@ class AgendaFiltersSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final filters = ref.watch(agendaFiltersProvider);
     final bottomPad = MediaQuery.of(context).viewPadding.bottom;
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final sheetBg = v.sheetBackground;
-    final handleColor = isIos
-        ? SoloForteSheetSkinIos.handleColor
-        : SoloForteSheetTokens.divider;
-    final titleColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.titleColor;
+    final handleColor = v.handleColor;
+    final titleColor = v.titleColor;
     final clearColor = isIos
-        ? SoloForteSheetSkinIos.ghostText
-        : SoloForteSheetTokens.chipBorderActive;
+        ? v.ghostText
+        : v.chipBorderActive;
     final ctaBg = isIos
-        ? SoloForteSheetSkinIos.ctaBackground
-        : SoloForteSheetTokens.chipBorderActive;
-    final ctaFg = isIos ? SoloForteSheetSkinIos.ctaText : Colors.black;
-    final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 14.0;
-    final sheetRadius = isIos
-        ? SoloForteSheetSkinIos.sheetRadius
-        : SoloForteSheetTokens.borderRadius;
+        ? v.ctaBackground
+        : v.chipBorderActive;
+    final ctaFg = v.ctaText;
+    final ctaRadius = v.ctaRadius;
+    final sheetRadius = v.sheetRadius;
 
     return Container(
       padding: EdgeInsets.fromLTRB(20, 8, 20, 24 + bottomPad),
@@ -53,12 +45,8 @@ class AgendaFiltersSheet extends ConsumerWidget {
             children: [
               Center(
                 child: Container(
-                  width: isIos
-                      ? SoloForteSheetSkinIos.handleSize.width
-                      : 36,
-                  height: isIos
-                      ? SoloForteSheetSkinIos.handleSize.height
-                      : 4,
+                  width: v.handleSize.width,
+                  height: v.handleSize.height,
                   margin: const EdgeInsets.only(top: 8, bottom: 20),
                   decoration: BoxDecoration(
                     color: handleColor,
@@ -73,8 +61,8 @@ class AgendaFiltersSheet extends ConsumerWidget {
                     child: Text(
                       'Filtros',
                       style: TextStyle(
-                        fontSize: SoloForteSheetTokens.titleFontSize,
-                        fontWeight: SoloForteSheetTokens.titleWeight,
+                        fontSize: v.titleFontSize,
+                        fontWeight: v.titleWeight,
                         color: titleColor,
                       ),
                     ),
@@ -103,7 +91,7 @@ class AgendaFiltersSheet extends ConsumerWidget {
                     label: type.label,
                     isSelected: isSelected,
                     accentColor: isIos
-                        ? SoloForteSheetSkinIos.iconStroke
+                        ? v.iconStroke
                         : _typeAccentColor(type),
                     onTap: () {
                       ref.read(agendaFiltersProvider.notifier).toggleType(type);
@@ -122,7 +110,7 @@ class AgendaFiltersSheet extends ConsumerWidget {
                     label: status.label,
                     isSelected: isSelected,
                     accentColor: isIos
-                        ? SoloForteSheetSkinIos.iconStroke
+                        ? v.iconStroke
                         : _statusAccentColor(status),
                     onTap: () {
                       ref
@@ -204,7 +192,8 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     return Text(
       label,
       style: TextStyle(
@@ -212,8 +201,8 @@ class _SectionTitle extends StatelessWidget {
         fontWeight: FontWeight.w600,
         letterSpacing: 0.8,
         color: isIos
-            ? SoloForteSheetSkinIos.subtitleColor
-            : SoloForteSheetTokens.inputHint,
+            ? v.subtitleColor
+            : v.inputHint,
       ),
     );
   }
@@ -226,19 +215,20 @@ class _FilterGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isIos
-            ? SoloForteSheetSkinIos.cardBackground
-            : SoloForteSheetTokens.inputBackground,
+            ? v.cardBackground
+            : v.inputFill,
         borderRadius: BorderRadius.circular(
-          isIos ? SoloForteSheetSkinIos.cardRadius : 14,
+          v.cardRadius,
         ),
         border: isIos
-            ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+            ? Border.all(color: v.cardBorder)
             : null,
       ),
       child: Wrap(spacing: 10, runSpacing: 10, children: children),
@@ -261,15 +251,16 @@ class _AgendaFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
+    final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final unselectedFill = isIos
-        ? SoloForteSheetSkinIos.background
+        ? v.sheetBackground
         : context.premiumSurface;
     final unselectedBorder = isIos
-        ? SoloForteSheetSkinIos.cardBorder
+        ? v.cardBorder
         : context.premiumHairline;
     final unselectedText = isIos
-        ? SoloForteSheetSkinIos.titleColor
+        ? v.titleColor
         : context.premiumTextPrimary;
 
     return Material(

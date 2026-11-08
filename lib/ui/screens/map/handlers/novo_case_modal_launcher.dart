@@ -2,6 +2,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,7 +14,6 @@ import '../../../../core/contracts/i_active_visit_context_lookup_provider.dart';
 import '../../../../core/contracts/i_producer_property_gateway_provider.dart';
 import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/session/user_role.dart';
-import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../modules/marketing/domain/entities/marketing_case.dart';
@@ -39,6 +39,7 @@ class NovoCaseModalLauncher {
     required WidgetRef ref,
     CaseTipo? initialTipo,
   }) async {
+    final v = SoloForteSheetVisuals.of(context);
     if (!context.mounted) return;
     final activeVisitContext = await _loadActiveVisitContext(ref);
     if (!context.mounted) return;
@@ -104,11 +105,11 @@ class NovoCaseModalLauncher {
               Center(
                 child: Container(
                   margin: const EdgeInsets.symmetric(vertical: 8),
-                  width: isIos ? SoloForteSheetSkinIos.handleSize.width : 36,
-                  height: isIos ? SoloForteSheetSkinIos.handleSize.height : 4,
+                  width: v.handleSize.width,
+                  height: v.handleSize.height,
                   decoration: BoxDecoration(
                     color: isIos
-                        ? SoloForteSheetSkinIos.handleColor
+                        ? v.handleColor
                         : Theme.of(sheetContext)
                             .dividerColor
                             .withValues(alpha: 0.3),

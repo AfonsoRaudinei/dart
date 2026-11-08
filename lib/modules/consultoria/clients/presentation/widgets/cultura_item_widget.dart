@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:uuid/uuid.dart';
@@ -162,6 +162,7 @@ Future<ClientCultura?> showAddCulturaSheet({
   required InputDecoration Function(String label) inputDecoration,
   String safraLabel = 'Safra',
 }) async {
+  final v = SoloForteSheetVisuals.of(context);
   final formKey = GlobalKey<FormState>();
   CulturaTipo? culturaSel;
   final areaCtrl = TextEditingController();
@@ -179,12 +180,12 @@ Future<ClientCultura?> showAddCulturaSheet({
     useSafeArea: false,
     builder: (ctx) {
       final ios = soloForteSheetIsIos(ctx);
-      final titleColor = ios ? SoloForteSheetSkinIos.titleColor : null;
+      final titleColor = ios ? v.titleColor : null;
       final ctaBg = ios
-          ? SoloForteSheetSkinIos.ctaBackground
+          ? v.ctaBackground
           : context.themeAccent;
-      final ctaFg = ios ? SoloForteSheetSkinIos.ctaText : Colors.white;
-      final ctaRadius = ios ? SoloForteSheetSkinIos.ctaRadius : 8.0;
+      final ctaFg = ios ? v.ctaText : Colors.white;
+      final ctaRadius = ios ? v.ctaRadius : 8.0;
 
       void addVariedade(StateSetter setS) {
         flushVariedadesPendentes(

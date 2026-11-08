@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../ui/theme/premium/design_tokens.dart';
+import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import '../providers/settings_providers.dart';
 
 class ReportBrandingScreen extends ConsumerStatefulWidget {
@@ -27,6 +28,7 @@ class _ReportBrandingScreenState extends ConsumerState<ReportBrandingScreen> {
 
   @override
   void dispose() {
+    SoloforteKeyboardDismiss.dismiss();
     _brandNameController.dispose();
     super.dispose();
   }
@@ -52,89 +54,96 @@ class _ReportBrandingScreenState extends ConsumerState<ReportBrandingScreen> {
         surfaceTintColor: Colors.transparent,
         title: const Text('Marca dos Relatórios'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _PreviewCard(
-            displayName: displayName,
-            customLogoSource: hasCustomLogo ? customLogoPath : null,
-            customized: branding.isCustomized,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Nome exibido nos relatórios',
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _brandNameController,
-            textInputAction: TextInputAction.done,
-            decoration: InputDecoration(
-              hintText: 'Ex.: Agro Forte Consultoria',
-              filled: true,
-              fillColor: context.premiumSurface,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide.none,
+      body: SoloforteKeyboardDismiss(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _PreviewCard(
+              displayName: displayName,
+              customLogoSource: hasCustomLogo ? customLogoPath : null,
+              customized: branding.isCustomized,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Nome exibido nos relatórios',
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _brandNameController,
+              onTapOutside: (_) => SoloforteKeyboardDismiss.dismiss(),
+              textInputAction: TextInputAction.done,
+              decoration: InputDecoration(
+                hintText: 'Ex.: Agro Forte Consultoria',
+                filled: true,
+                fillColor: context.premiumSurface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (value) {
+                ref
+                    .read(reportBrandingProvider.notifier)
+                    .updateBrandName(value);
+              },
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Logo do emissor',
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Use o logo do consultor ou da empresa. O rodapé continua assinando a plataforma SoloForte.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: context.premiumTextSecondary,
               ),
             ),
-            onChanged: (value) {
-              ref.read(reportBrandingProvider.notifier).updateBrandName(value);
-            },
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Logo do emissor',
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Use o logo do consultor ou da empresa. O rodapé continua assinando a plataforma SoloForte.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: context.premiumTextSecondary,
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                FilledButton.icon(
+                  onPressed: () => _pickLogo(ImageSource.gallery),
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: const Text('Galeria'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _pickLogo(ImageSource.camera),
+                  icon: const Icon(Icons.photo_camera_outlined),
+                  label: const Text('Câmera'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: branding.isCustomized
+                      ? () async {
+                          _brandNameController.clear();
+                          await ref
+                              .read(reportBrandingProvider.notifier)
+                              .reset();
+                        }
+                      : null,
+                  icon: const Icon(Icons.restart_alt_outlined),
+                  label: const Text('Padrão SoloForte'),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              FilledButton.icon(
-                onPressed: () => _pickLogo(ImageSource.gallery),
-                icon: const Icon(Icons.photo_library_outlined),
-                label: const Text('Galeria'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => _pickLogo(ImageSource.camera),
-                icon: const Icon(Icons.photo_camera_outlined),
-                label: const Text('Câmera'),
-              ),
-              OutlinedButton.icon(
-                onPressed: branding.isCustomized
-                    ? () async {
-                        _brandNameController.clear();
-                        await ref.read(reportBrandingProvider.notifier).reset();
-                      }
-                    : null,
-                icon: const Icon(Icons.restart_alt_outlined),
-                label: const Text('Padrão SoloForte'),
+            if (hasCustomLogo) ...[
+              const SizedBox(height: 12),
+              TextButton.icon(
+                onPressed: () =>
+                    ref.read(reportBrandingProvider.notifier).clearLogo(),
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Remover logo personalizado'),
               ),
             ],
-          ),
-          if (hasCustomLogo) ...[
-            const SizedBox(height: 12),
-            TextButton.icon(
-              onPressed: () =>
-                  ref.read(reportBrandingProvider.notifier).clearLogo(),
-              icon: const Icon(Icons.delete_outline),
-              label: const Text('Remover logo personalizado'),
-            ),
           ],
-        ],
+        ),
       ),
     );
   }

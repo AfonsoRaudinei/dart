@@ -18,6 +18,9 @@ import '../../../../core/session/session_controller.dart';
 import '../../../../core/session/session_models.dart';
 import '../../data/repositories/i_plano_repository.dart';
 import '../../data/repositories/plano_repository_impl.dart';
+import '../../data/services/in_app_purchase_loja_gateway.dart';
+import '../../data/services/loja_compra_gateway.dart';
+import '../../data/services/mercadopago_service.dart';
 import '../../data/services/plano_local_cache.dart';
 import '../../data/services/referral_service.dart';
 import '../../domain/entities/user_plan.dart';
@@ -40,6 +43,18 @@ IPlanoRepository planoRepository(PlanoRepositoryRef ref) {
 @Riverpod(keepAlive: true)
 ReferralService referralService(ReferralServiceRef ref) {
   return ReferralService(Supabase.instance.client);
+}
+
+@Riverpod(keepAlive: true)
+MercadoPagoService mercadoPagoService(MercadoPagoServiceRef ref) {
+  return MercadoPagoService(Supabase.instance.client);
+}
+
+@Riverpod(keepAlive: true)
+LojaCompraGateway lojaCompraGateway(LojaCompraGatewayRef ref) {
+  final gateway = InAppPurchaseLojaGateway(Supabase.instance.client);
+  ref.onDispose(gateway.dispose);
+  return gateway;
 }
 
 /// Cache local do último plano verificado online (TTL 24h — ADR-012 Adendo 1).
@@ -118,6 +133,7 @@ final _planoLogoutInvalidationRegistration = () {
         }
       } catch (_) {}
       ref.invalidate(planoAtivoProvider);
+      ref.invalidate(lojaCompraGatewayProvider);
     },
   );
   return true;

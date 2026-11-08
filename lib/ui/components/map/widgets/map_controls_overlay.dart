@@ -13,6 +13,7 @@ import '../../../../modules/settings/presentation/providers/settings_providers.d
 import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/config/brazil_satellite_mosaic_overlay.dart';
 import '../../../../core/config/cerrado_satellite_overlay.dart';
+import '../../../../core/domain/map_basemap_labels.dart';
 import '../../../../core/domain/map_models.dart';
 import '../../../../core/services/inpe_stac_acquisition_label_service.dart';
 import '../../../../core/state/map_state.dart';
@@ -202,16 +203,16 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
 
         // 2. Basemap + botão de localização (canto superior direito)
         Positioned(
-          top: safeTop + 12, // Respeita safe area (Dynamic Island / notch)
-          right: 12,
+          top: safeTop + kMapTopControlsTopInset,
+          right: kMapTopControlsRightInset,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (widget.drawingState != DrawingState.editing) ...[
                 _BasemapToggleButton(activeColor: activeColor),
-                const SizedBox(width: 6),
+                const SizedBox(width: kMapTopControlsButtonSpacing),
                 _PinsToggleButton(activeColor: activeColor),
-                const SizedBox(width: 6),
+                const SizedBox(width: kMapTopControlsButtonSpacing),
               ],
               // Botão de Localização com 3 estados
               _LocationButton(
@@ -589,14 +590,12 @@ class _BasemapToggleButtonState extends ConsumerState<_BasemapToggleButton> {
   }
 
   String _shortLabelFor(LayerType layer) {
-    switch (layer) {
-      case LayerType.standard:
-        return 'Mapa';
-      case LayerType.satellite:
-        return 'Satélite';
-      case LayerType.satelliteUpdated:
-        return 'Satélite atualizado';
-    }
+    return shortBasemapLayerLabel(
+      layer,
+      inpeAcquisitionPeriod: layer == LayerType.satelliteUpdated
+          ? (_cerradoDateLabel ?? CerradoSatelliteOverlay.acquisitionLabel)
+          : null,
+    );
   }
 
   String _hintFor(LayerType layer) {
@@ -634,7 +633,7 @@ class _BasemapToggleButtonState extends ConsumerState<_BasemapToggleButton> {
       mainAxisSize: MainAxisSize.min,
       children: [
         _MapButtonLabel(text: _labelText, isVisible: _showLabel),
-        const SizedBox(width: 6),
+        const SizedBox(width: kMapTopControlsToggleLabelButtonGap),
         Semantics(
           button: true,
           label: semanticsLabel,
@@ -701,7 +700,7 @@ class _PinsToggleButtonState extends ConsumerState<_PinsToggleButton> {
       mainAxisSize: MainAxisSize.min,
       children: [
         _MapButtonLabel(text: _labelText, isVisible: _showLabel),
-        const SizedBox(width: 6),
+        const SizedBox(width: kMapTopControlsToggleLabelButtonGap),
         Semantics(
           button: true,
           label: 'Pinos no mapa',

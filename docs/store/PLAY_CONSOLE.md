@@ -4,7 +4,11 @@ Respostas para colar no Google Play Console. Fontes oficiais consultadas em 8 de
 
 Application ID: **`com.soloforte.app`**. Versão no `pubspec.yaml`: **1.34.0 (311)**.
 
-O AAB precisa ser o build em que `READ_MEDIA_IMAGES`, `FOREGROUND_SERVICE` e `FOREGROUND_SERVICE_LOCATION` saem do merge (`tools:node="remove"` na branch `cursor/store-phase1-binario-1136`). O `targetSdk` do Flutter 3.41.6 desta máquina é **36**. Assinar com a chave de release, nunca com a de debug. No App Bundle Explorer, conferir página de **16 KB**.
+**Compras no app (planos):** após o iOS em revisão, cadastrar os mesmos IDs como produto consumível — [`PRODUTOS_IAP_LOJAS.md`](PRODUTOS_IAP_LOJAS.md) e [`PUBLICACAO_COMPRA_LOJAS.md`](PUBLICACAO_COMPRA_LOJAS.md). Exigir secret `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` no Supabase antes de testar compra.
+
+O AAB desta linha remove `READ_MEDIA_IMAGES`, `FOREGROUND_SERVICE` e `FOREGROUND_SERVICE_LOCATION` no merge (`tools:node="remove"`). O `targetSdk` do Flutter 3.41.6 é **36**. Assinar com `android/key.properties` (fora do git).
+
+AAB conferido em 8 de novembro de 2026: `app-release.aab`, versão 1.34.0 (311), 58 MB. O manifesto do bundle não contém essas três permissões. As 9 bibliotecas nativas têm alinhamento de página de 16 KB. A assinatura é a de release (`CN=Raudinei Afonso Silva Pereira, O=SoloForte, C=BR`). Cópia: `~/.soloforte-release/store-1.34.0-311/app-release.aab`. No App Bundle Explorer, a Play repete a checagem de 16 KB depois do upload.
 
 As URLs só valem depois de publicar `docs/legal/github-pages/`.
 
@@ -19,7 +23,9 @@ As URLs só valem depois de publicar `docs/legal/github-pages/`.
 | App or game | App |
 | Free or paid | Free |
 | Category | Business |
+| Countries / regions | Brasil |
 | Email | privacidade@soloforte.app |
+| Advertising ID | No. O app não usa ID de publicidade. |
 
 **Short description** (73 caracteres, limite 80):
 
@@ -42,6 +48,7 @@ Gráficos que a Play pede e que não estão no repositório:
 | Ícone | 512 × 512 PNG |
 | Feature graphic | 1024 × 500 PNG ou JPG |
 | Screenshots de telefone | pelo menos 2, proporção 9:16; 1080 × 1920 serve |
+| Screenshots de tablet 7" e 10" | os mesmos enquadramentos, se a Play pedir. O app instala em tablet. |
 
 Telas, nesta ordem: mapa com talhão, visita, ocorrência, clientes ou agenda, Configurações com Excluir minha conta.
 
@@ -72,7 +79,8 @@ Questionário IARC, categoria de app de utilidade / negócios, não jogo.
 | Violência, sexo, linguagem, medo, humor grosseiro, substâncias | Não |
 | Usuários interagem ou trocam conteúdo entre si | Não |
 | O app compartilha a localização atual com outras pessoas | Não |
-| Compras digitais, loot box, aposta | Não |
+| Compras digitais (IAP de plano) | Sim — três produtos consumíveis; sem loot box nem aposta |
+| Loot box, aposta, jogos de azar | Não |
 
 Nota esperada: **Livre / Everyone**. Público-alvo: **18 anos ou mais**. Não é app para crianças e não entra no programa Families.
 
@@ -82,7 +90,7 @@ Faixa 18+. “Appeals to children”: No.
 
 ### News, government, health, financial features
 
-Não é app de notícias, governo nem saúde. Financial features: **My app doesn’t provide any financial features**. O checkout dentro do app está desligado.
+Não é app de notícias, governo nem saúde. Financial features: **My app doesn’t provide any financial features** (não é banco/carteira; cobrança é só via Google Play Billing). Não há checkout próprio/Mercado Pago no app.
 
 ### Data safety
 

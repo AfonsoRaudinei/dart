@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/occurrence.dart';
@@ -24,6 +24,7 @@ class OccurrenceDetailAmostraSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     if (!occurrenceIsAmostraSolo(occurrence)) return const SizedBox.shrink();
 
     final tramite = OccurrenceAmostraTramite.fromStorage(occurrence.amostraTramite);
@@ -40,13 +41,13 @@ class OccurrenceDetailAmostraSection extends StatelessWidget {
       fontSize: 12,
       fontWeight: FontWeight.w600,
       color: isIos
-          ? SoloForteSheetSkinIos.subtitleColor
+          ? v.subtitleColor
           : PremiumTokens.textSecondaryDark,
     );
     final valueStyle = TextStyle(
       fontSize: 14,
       color: isIos
-          ? SoloForteSheetSkinIos.titleColor
+          ? v.titleColor
           : (isDark
               ? PremiumTokens.textPrimaryDark
               : Theme.of(context).colorScheme.onSurface),
@@ -61,7 +62,7 @@ class OccurrenceDetailAmostraSection extends StatelessWidget {
           color: cardBg,
           borderRadius: BorderRadius.circular(cardRadius),
           border: isIos
-              ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+              ? Border.all(color: v.cardBorder)
               : null,
         ),
         child: Column(
