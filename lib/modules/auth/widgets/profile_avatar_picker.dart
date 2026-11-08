@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
@@ -47,15 +48,16 @@ class _ProfileAvatarPickerState extends State<ProfileAvatarPicker> {
   }
 
   void _showPickerOptions(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     showSoloForteSheet(
       context: context,
       showDragHandle: false,
       builder: (BuildContext bc) {
         final isIos = soloForteSheetIsIos(bc);
         final iconColor =
-            isIos ? SoloForteSheetSkinIos.iconStroke : null;
+            v.isIos ? v.iconStroke : null;
         final titleColor =
-            isIos ? SoloForteSheetSkinIos.titleColor : null;
+            v.isIos ? v.titleColor : null;
         return SafeArea(
           child: Wrap(
             children: <Widget>[
@@ -90,19 +92,20 @@ class _ProfileAvatarPickerState extends State<ProfileAvatarPicker> {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return Center(
       child: Stack(
         children: [
           CircleAvatar(
             radius: 50,
-            backgroundColor: SoloForteSheetTokens.inputBackground,
+            backgroundColor: v.inputFill,
             backgroundImage: _image != null
                 ? FileImage(_image!)
                 : (widget.placeholderUrl != null
                     ? NetworkImage(widget.placeholderUrl!)
                     : null),
             child: _image == null && widget.placeholderUrl == null
-                ? const Icon(Icons.person, size: 50, color: SoloForteSheetTokens.inputHint)
+                ? Icon(Icons.person, size: 50, color: v.inputHint)
                 : null,
           ),
           Positioned(

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -32,6 +33,7 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final v = SoloForteSheetVisuals.of(context);
     final userProfile = ref.watch(profileProvider);
     final userProfileAsync = ref.watch(currentUserProfileProvider);
     final currentThemeMode = ref.watch(themeProvider);
@@ -242,6 +244,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildSection(BuildContext context, List<Widget> children) {
+    final v = SoloForteSheetVisuals.of(context);
     final List<Widget> dividedChildren = [];
     for (int i = 0; i < children.length; i++) {
       dividedChildren.add(children[i]);
@@ -269,6 +272,7 @@ class SettingsScreen extends ConsumerWidget {
     ProfileState profile,
     AsyncValue<UserProfile?> userProfileAsync,
   ) {
+    final v = SoloForteSheetVisuals.of(context);
     File? imageFile;
     if (profile.imagePath != null && File(profile.imagePath!).existsSync()) {
       imageFile = File(profile.imagePath!);
@@ -352,17 +356,18 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _showImagePicker(BuildContext context, WidgetRef ref) async {
+    final v = SoloForteSheetVisuals.of(context);
     showSoloForteSheet(
       context: context,
       showDragHandle: false,
       builder: (sheetContext) {
         final isIos = soloForteSheetIsIos(sheetContext);
         final materialColor = isIos
-            ? SoloForteSheetSkinIos.background
+            ? v.sheetBackground
             : Theme.of(context).cardColor;
-        final iconColor = isIos ? SoloForteSheetSkinIos.iconStroke : null;
-        final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
-        final radius = isIos ? SoloForteSheetSkinIos.sheetRadius : 20.0;
+        final iconColor = v.isIos ? v.iconStroke : null;
+        final titleColor = v.isIos ? v.titleColor : null;
+        final radius = v.sheetRadius;
         return Material(
           color: materialColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
