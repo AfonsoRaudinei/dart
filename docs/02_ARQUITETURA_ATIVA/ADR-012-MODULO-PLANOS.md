@@ -455,28 +455,26 @@ Usuário com plano verificado online nas últimas 24h pode publicar pin de marke
 
 - Compra in-app, quando existir, é só compra nativa da loja. O app não escolhe PIX nem cartão.
 - Prazo fixo, sem renovação automática. A validade continua em `user_plans.expira_em`.
-- Catálogo de referência (o preço cobrado é o cadastrado na loja, não um número fixo no app):
+- Catálogo publicado (o preço cobrado é o cadastrado na loja, não um número fixo no app). Prazos 5 e 8 meses não existem em assinatura não renovável da Apple; a ficha usa 3, 6 e 12 meses:
 
 | Plano | Prazo | Referência | ID do produto |
 |---|---|---|---|
 | Bronze | 3 meses | R$ 49,90 | `soloforte_plano_bronze` |
-| Prata | 5 meses | R$ 79,90 | `soloforte_plano_prata` |
-| Ouro | 8 meses | R$ 119,90 | `soloforte_plano_ouro` |
+| Prata | 6 meses | R$ 79,90 | `soloforte_plano_prata` |
+| Ouro | 12 meses | R$ 119,90 | `soloforte_plano_ouro` |
 
-- Apple: assinatura não renovável. Google: produto único consumível, para permitir nova compra quando o prazo acabar.
-- `origem = pagamento` e o id da transação da loja só entram em `user_plans` depois que uma Edge validar o recibo. O cliente não concede plano.
-- Indicação só valida depois desse pagamento de loja concedido no servidor. O webhook Mercado Pago deixa de ser o gatilho do funil do app.
+- Apple: assinatura não renovável, no app `com.soloforte.soloforteApp`. Google: produto único consumível, no app `com.soloforte.app`, para permitir nova compra quando o prazo acabar.
+- `origem = pagamento` e o id da transação da loja só entram em `user_plans` depois que a Edge `loja-verificar-compra` validar o recibo com service role. O cliente não concede plano. A mesma transação não gera segundo insert.
+- Indicação só valida depois dessa gravação. Upgrade por indicação nesse fluxo usa 6 meses (Prata) e 12 meses (Ouro). O webhook Mercado Pago não é o funil do app.
 - Edge Functions `mercadopago-*` permanecem no repositório. `MercadoPagoService.criarPreferenciaPagamento` recusa iOS e Android antes de invocar a Edge.
-
-### O que este adendo não liga
-
-As telas `/planos`, `/planos/pagamento` e `/planos/confirmacao` seguem sem preço e sem chamada à ação de compra.
-
-A entrega da compra na loja não começa enquanto os três produtos não existirem na App Store Connect e na Play Console, com os IDs desta tabela, e enquanto os segredos de verificação (App Store Server API e Play Developer API) não estiverem no Supabase. Sem isso o botão de compra não entra no binário. Não adicionar `in_app_purchase` nem uma Edge que grave `user_plans` sem validar o recibo.
+- A tela `/planos` mostra preço e compra só com o produto devolvido pela loja. Sem produto, não há preço nem botão. Há restauração de compras quando a loja está disponível.
+- `/planos/pagamento` e `/planos/confirmacao` não abrem checkout externo.
+- Sem os segredos da App Store Server API ou da Play Developer API, a Edge responde erro e não grava plano.
+- Publicar o binário iOS primeiro. O Android usa o mesmo código e só deve ser enviado à Play depois do iOS em revisão.
 
 ### Consequência
 
-O app é leitor do plano já gravado na conta. A taxa de venda in-app fica com a Apple ou com a Google. Mercado Pago não é o meio de pagamento do aplicativo.
+A taxa de venda in-app fica com a Apple ou com a Google. Mercado Pago não é o meio de pagamento do aplicativo. O plano ativo continua sendo lido de `user_plans`; a concessão nova só ocorre na Edge, depois do recibo.
 
 ---
 
