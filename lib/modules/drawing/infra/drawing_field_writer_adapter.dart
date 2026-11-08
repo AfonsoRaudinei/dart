@@ -1,4 +1,5 @@
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer.dart';
+import 'package:soloforte_app/core/domain/talhao_condicao.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
 import 'package:soloforte_app/modules/drawing/domain/drawing_utils.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
@@ -153,6 +154,37 @@ class DrawingFieldWriterAdapter implements IDrawingFieldWriter {
         cicloDias: _resolveCicloDias(cicloDias, base.cicloDias),
         soilSamplingScheme: base.soilSamplingScheme,
         recByNutrient: base.recByNutrient,
+      ),
+    );
+
+    await _repository.saveFeature(updated);
+  }
+
+  @override
+  Future<void> updateFieldAvaliacao({
+    required String fieldId,
+    required TalhaoCondicao condicao,
+  }) async {
+    if (fieldId.isEmpty) {
+      throw ArgumentError('fieldId é obrigatório para marcar a condição.');
+    }
+
+    final existing = await _repository.getFeatureById(fieldId);
+    if (existing == null || !existing.properties.ativo) {
+      throw StateError('Talhão do mapa não encontrado: $fieldId');
+    }
+
+    final syncStatus = existing.properties.syncStatus == SyncStatus.synced
+        ? SyncStatus.local_only
+        : existing.properties.syncStatus;
+
+    final updated = DrawingFeature(
+      id: existing.id,
+      geometry: existing.geometry,
+      properties: existing.properties.copyWith(
+        cor: condicao.argb,
+        updatedAt: DateTime.now(),
+        syncStatus: syncStatus,
       ),
     );
 

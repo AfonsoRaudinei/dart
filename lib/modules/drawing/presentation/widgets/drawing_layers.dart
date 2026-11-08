@@ -166,7 +166,16 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
               : const <List<List<List<double>>>>[];
           final isSelected =
               feature.id == selectedId || selectedIds.contains(feature.id);
-          final style = isSelected ? FieldStyle.selected : feature.style;
+          final baseStyle = feature.style;
+          final style = isSelected
+              ? FieldStyle(
+                  fillColor: baseStyle.fillColor,
+                  borderColor: FieldStyle.selected.borderColor,
+                  borderWidth: FieldStyle.selected.borderWidth,
+                  isDashed: baseStyle.isDashed,
+                  fillOpacity: baseStyle.fillOpacity,
+                )
+              : baseStyle;
           final ndviActiveForField =
               ndviOverlayId != null && feature.id == ndviOverlayId;
           final hideNdviFill = ndviCover && ndviActiveForField;

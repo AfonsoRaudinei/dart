@@ -349,6 +349,7 @@ class DrawingLocalStore {
       'versao': f.properties.versao,
       'subtipo': f.properties.subtipo,
       'raio_metros': f.properties.raioMetros,
+      'cor': f.properties.cor,
       'created_at': f.properties.createdAt.toIso8601String(),
       'updated_at': f.properties.updatedAt.toIso8601String(),
       'versao_anterior_id': f.properties.versaoAnteriorId,
@@ -388,6 +389,7 @@ class DrawingLocalStore {
       syncStatus: SyncStatus.fromJson(row['sync_status']),
       subtipo: row['subtipo'],
       raioMetros: row['raio_metros'],
+      cor: _corFromRow(row['cor']),
       versaoAnteriorId: row['versao_anterior_id'],
       clienteId: row['cliente_id'] as String?,
       fazendaId: row['fazenda_id'] as String?,
@@ -417,6 +419,12 @@ class DrawingLocalStore {
 }
 
 int? _cicloDiasFromRow(Object? value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return null;
+}
+
+int? _corFromRow(Object? value) {
   if (value is int) return value;
   if (value is num) return value.toInt();
   return null;
