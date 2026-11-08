@@ -24,6 +24,7 @@ import '../widgets/theme_typography_preview.dart';
 import 'report_branding_screen.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/constants/external_links.dart';
+import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -113,9 +114,7 @@ class SettingsScreen extends ConsumerWidget {
 
               // Mapa — ajustes que se fazem uma vez
               _buildSectionHeader('MAPA'),
-              _buildSection(context, const [
-                MapLayerPreferencesSection(),
-              ]),
+              _buildSection(context, const [MapLayerPreferencesSection()]),
 
               // Dados Offline
               _buildSectionHeader('DADOS OFFLINE'),
@@ -167,11 +166,14 @@ class SettingsScreen extends ConsumerWidget {
                   context,
                   title: 'Relatórios & Exportação',
                   icon: SFIcons.openInNew,
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const ReportBrandingScreen(),
-                    ),
-                  ),
+                  onTap: () {
+                    SoloforteKeyboardDismiss.dismiss();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ReportBrandingScreen(),
+                      ),
+                    );
+                  },
                 ),
                 _buildTile(
                   context,
@@ -358,13 +360,9 @@ class SettingsScreen extends ConsumerWidget {
         final materialColor = isIos
             ? SoloForteSheetSkinIos.background
             : Theme.of(context).cardColor;
-        final iconColor =
-            isIos ? SoloForteSheetSkinIos.iconStroke : null;
-        final titleColor =
-            isIos ? SoloForteSheetSkinIos.titleColor : null;
-        final radius = isIos
-            ? SoloForteSheetSkinIos.sheetRadius
-            : 20.0;
+        final iconColor = isIos ? SoloForteSheetSkinIos.iconStroke : null;
+        final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
+        final radius = isIos ? SoloForteSheetSkinIos.sheetRadius : 20.0;
         return Material(
           color: materialColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
@@ -374,10 +372,7 @@ class SettingsScreen extends ConsumerWidget {
             children: [
               ListTile(
                 leading: Icon(Icons.camera_alt, color: iconColor),
-                title: Text(
-                  'Câmera',
-                  style: TextStyle(color: titleColor),
-                ),
+                title: Text('Câmera', style: TextStyle(color: titleColor)),
                 onTap: () {
                   Navigator.pop(context);
                   ref
@@ -387,10 +382,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
               ListTile(
                 leading: Icon(Icons.photo_library, color: iconColor),
-                title: Text(
-                  'Galeria',
-                  style: TextStyle(color: titleColor),
-                ),
+                title: Text('Galeria', style: TextStyle(color: titleColor)),
                 onTap: () {
                   Navigator.pop(context);
                   ref
@@ -699,10 +691,7 @@ class SettingsScreen extends ConsumerWidget {
         style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle())
             .copyWith(color: context.premiumTextPrimary),
       ),
-      trailing: Icon(
-        SFIcons.chevronRight,
-        color: context.premiumTextTertiary,
-      ),
+      trailing: Icon(SFIcons.chevronRight, color: context.premiumTextTertiary),
       onTap: () {
         HapticFeedback.lightImpact();
         onTap();
@@ -811,9 +800,7 @@ class SettingsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              userFacingError(e, action: 'Erro ao excluir conta'),
-            ),
+            content: Text(userFacingError(e, action: 'Erro ao excluir conta')),
             backgroundColor: Colors.red,
           ),
         );
