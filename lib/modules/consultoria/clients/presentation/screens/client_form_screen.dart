@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -80,11 +81,9 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
       showDragHandle: false,
       useSafeArea: false,
       builder: (ctx) {
-        final isIos = soloForteSheetIsIos(ctx);
-        final iconColor =
-            isIos ? SoloForteSheetSkinIos.iconStroke : null;
-        final titleColor =
-            isIos ? SoloForteSheetSkinIos.titleColor : null;
+        final v = SoloForteSheetVisuals.of(ctx);
+        final iconColor = v.isIos ? v.iconStroke : null;
+        final titleColor = v.isIos ? v.titleColor : null;
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -160,16 +159,13 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
       showDragHandle: false,
       useSafeArea: false,
       builder: (ctx) {
-        final isIos = soloForteSheetIsIos(ctx);
-        final titleColor =
-            isIos ? SoloForteSheetSkinIos.titleColor : null;
-        final ctaBg = isIos
-            ? SoloForteSheetSkinIos.ctaBackground
-            : context.themeAccent;
+        final v = SoloForteSheetVisuals.of(ctx);
+        final titleColor = v.isIos ? v.titleColor : null;
+        final ctaBg = v.isIos ? v.ctaBackground : context.themeAccent;
         final ctaFg =
-            isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+            v.ctaText;
         final ctaRadius =
-            isIos ? SoloForteSheetSkinIos.ctaRadius : 8.0;
+            v.ctaRadius;
         return StatefulBuilder(
           builder: (ctx, setModalState) => Theme(
             data: ThemeData.light().copyWith(

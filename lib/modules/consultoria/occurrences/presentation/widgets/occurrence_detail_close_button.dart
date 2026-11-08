@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../../core/ui/sheets/sheet_tokens.dart';
@@ -27,13 +28,14 @@ class _OccurrenceDetailCloseButtonState
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final bg = widget.isIos
-        ? SoloForteSheetSkinIos.cardBackground
+        ? v.cardBackground
         : (widget.isDark
             ? const Color(0xFF2C2C2E)
             : context.premiumBackground);
     final textColor = widget.isIos
-        ? SoloForteSheetSkinIos.titleColor
+        ? v.titleColor
         : (widget.isDark
             ? PremiumTokens.textPrimaryDark
             : context.premiumTextPrimary);
@@ -57,11 +59,11 @@ class _OccurrenceDetailCloseButtonState
               color: bg,
               borderRadius: BorderRadius.circular(
                 widget.isIos
-                    ? SoloForteSheetSkinIos.ctaRadius
+                    ? v.ctaRadius
                     : PremiumTokens.borderRadiusMd,
               ),
               border: widget.isIos
-                  ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+                  ? Border.all(color: v.cardBorder)
                   : null,
             ),
             alignment: Alignment.center,

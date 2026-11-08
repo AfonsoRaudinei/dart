@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
@@ -31,7 +30,7 @@ class OccurrenceAmostraSoloSection extends StatelessWidget {
     final isIos = occurrenceFormIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
     final accent = isIos
-        ? SoloForteSheetSkinIos.iconStroke
+        ? v.iconStroke
         : context.themeAccent;
     final selected = tramite ?? OccurrenceAmostraTramite.coletada;
 
@@ -40,7 +39,7 @@ class OccurrenceAmostraSoloSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(
-          isIos ? SoloForteSheetSkinIos.cardRadius : 14,
+          v.cardRadius,
         ),
         border: Border.all(color: accent.withValues(alpha: 0.55), width: 1.2),
       ),
@@ -72,7 +71,7 @@ class OccurrenceAmostraSoloSection extends StatelessWidget {
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: isIos
-                  ? SoloForteSheetSkinIos.subtitleColor
+                  ? v.subtitleColor
                   : PremiumTokens.textSecondaryDark,
             ),
           ),

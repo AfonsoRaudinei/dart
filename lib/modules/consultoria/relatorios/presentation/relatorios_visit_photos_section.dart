@@ -39,6 +39,7 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final photosAsync = ref.watch(quickPhotoListProvider);
 
     return photosAsync.when(
@@ -134,6 +135,7 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
     QuickPhotoRecord photo,
     String value,
   ) async {
+    final v = SoloForteSheetVisuals.of(context);
     switch (value) {
       case 'preview':
         await _openPreview(context, photo);
@@ -166,6 +168,7 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
     BuildContext context,
     QuickPhotoRecord photo,
   ) async {
+    final v = SoloForteSheetVisuals.of(context);
     final path = photo.imagePath;
     if (path == null || path.isEmpty || !await File(path).exists()) {
       if (!context.mounted) return;
@@ -199,6 +202,7 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
   }
 
   void _openOnMap(BuildContext context, QuickPhotoRecord photo) {
+    final v = SoloForteSheetVisuals.of(context);
     final lat = photo.latitude;
     final lng = photo.longitude;
     if (lat == null || lng == null) {
@@ -223,6 +227,7 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
     BuildContext context,
     QuickPhotoRecord photo,
   ) async {
+    final v = SoloForteSheetVisuals.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -259,6 +264,7 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
     BuildContext context,
     QuickPhotoRecord photo,
   ) async {
+    final v = SoloForteSheetVisuals.of(context);
     final path = photo.imagePath;
     final hasFile = await _fileExists(photo);
 
@@ -280,17 +286,17 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
       builder: (sheetContext) {
         final isIos = soloForteSheetIsIos(sheetContext);
         final sheetBg = isIos
-            ? SoloForteSheetSkinIos.background
-            : SoloForteSheetTokens.sheetBackground;
+            ? v.sheetBackground
+            : v.sheetBackground;
         final titleColor = isIos
             ? const Color(0xFF1D1D1F)
-            : SoloForteSheetTokens.titleColor;
+            : v.titleColor;
         final subtitleColor = isIos
             ? const Color(0xFF636366)
             : const Color(0xFFAEAEB2);
         final dividerColor = isIos
             ? const Color(0xFFE5E5EA)
-            : SoloForteSheetTokens.divider;
+            : v.dividerColor;
 
         return Material(
           color: sheetBg,
@@ -309,8 +315,8 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
                         Text(
                           QuickPhotoRepository.typeLabel(photo.type),
                           style: TextStyle(
-                            fontSize: SoloForteSheetTokens.titleFontSize,
-                            fontWeight: SoloForteSheetTokens.titleWeight,
+                            fontSize: v.titleFontSize,
+                            fontWeight: v.titleWeight,
                             color: titleColor,
                           ),
                         ),

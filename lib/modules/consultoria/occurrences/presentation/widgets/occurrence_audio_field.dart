@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/core/utils/local_media_path_resolver.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
@@ -369,9 +368,10 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField>
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final isIos = occurrenceFormIsIos(context);
     final accent = isIos
-        ? SoloForteSheetSkinIos.iconStroke
+        ? v.iconStroke
         : context.themeAccent;
     final hasAudio = _hasAudio;
     final canPlay = _resolvedPath != null;
@@ -395,7 +395,7 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField>
                   fontSize: 12,
                   height: 1.35,
                   color: isIos
-                      ? SoloForteSheetSkinIos.subtitleColor
+                      ? v.subtitleColor
                       : PremiumTokens.textSecondaryDark,
                 ),
               ),

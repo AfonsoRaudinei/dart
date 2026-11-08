@@ -101,8 +101,8 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
   }
 
   Widget _buildAguaSection(Color color) {
-    final current = _metricValue(OccurrenceCategory.agua, 'status');
     final v = SoloForteSheetVisuals.of(context);
+    final current = _metricValue(OccurrenceCategory.agua, 'status');
     final idleSurface = v.cardBackground;
     final idleBorder = v.cardBorder;
     final idleText = v.onSheetSecondary;
@@ -174,7 +174,7 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
     final isIos = occurrenceFormIsIos(context);
     final titleColor = v.onSheetPrimary;
     final muted = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
+        ? v.subtitleColor
         : const Color(0xFF8E8E93);
     final idleSurface = v.cardBackground;
     final idleBorder = v.cardBorder;
@@ -203,7 +203,7 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
               decoration: BoxDecoration(
                 color: v.inputFill,
                 borderRadius: BorderRadius.circular(
-                  isIos ? SoloForteSheetSkinIos.cardRadius : 12,
+                  v.cardRadius,
                 ),
                 border: Border.all(color: v.cardBorder),
               ),
@@ -392,20 +392,21 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
   }
 
   Widget _buildPhotoActionSection() {
+    final v = SoloForteSheetVisuals.of(context);
     final total = _totalFotosCount;
     final isIos = occurrenceFormIsIos(context);
     final accent = isIos
-        ? SoloForteSheetSkinIos.iconStroke
+        ? v.iconStroke
         : context.themeAccent;
     final hint = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
+        ? v.subtitleColor
         : const Color(0xFFAEAEB2);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(
-          isIos ? SoloForteSheetSkinIos.cardRadius : 14,
+          v.cardRadius,
         ),
         border: Border.all(color: accent.withValues(alpha: 0.55), width: 1.2),
       ),

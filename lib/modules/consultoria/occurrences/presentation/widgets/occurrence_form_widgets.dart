@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/core/design/sf_icons.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/widgets/photo/soloforte_photo_picker_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
@@ -88,7 +88,7 @@ class OccurrenceDarkField extends StatelessWidget {
     final fill = v.inputFill;
     final border = v.cardBorder;
     final focus = v.focusBorder;
-    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+    final radius = v.cardRadius;
 
     return TextField(
       controller: controller,
@@ -232,11 +232,11 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
     final muted = v.onSheetSecondary;
     final title = v.onSheetPrimary;
     final dropdownBg = isIos
-        ? SoloForteSheetSkinIos.background
+        ? v.sheetBackground
         : (v.isLight
-            ? SoloForteSheetSkinLight.cardBackground
+            ? v.cardBackground
             : const Color(0xFF2C2C2E));
-    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+    final radius = v.cardRadius;
     final accent =
         v.accent;
 
@@ -312,14 +312,14 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: isIos
-                        ? SoloForteSheetSkinIos.cardBackground
+                        ? v.cardBackground
                         : context.themeAccent.withValues(alpha: .07),
                     borderRadius: BorderRadius.circular(
-                      isIos ? SoloForteSheetSkinIos.cardRadius : 12,
+                      v.cardRadius,
                     ),
                     border: Border.all(
                       color: isIos
-                          ? SoloForteSheetSkinIos.cardBorder
+                          ? v.cardBorder
                           : context.themeAccent.withValues(alpha: .3),
                     ),
                   ),
@@ -335,7 +335,7 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: isIos
-                                  ? SoloForteSheetSkinIos.iconBackground
+                                  ? v.iconBackground
                                   : context.themeAccent.withValues(
                                       alpha: .2,
                                     ),
@@ -439,7 +439,7 @@ class OccurrenceRadioChip extends StatelessWidget {
     final idleSurface = v.cardBackground;
     final idleBorder = v.chipBorderInactive;
     final idleText = v.chipTextInactive;
-    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+    final radius = v.cardRadius;
 
     return GestureDetector(
       onTap: onTap,
@@ -488,6 +488,7 @@ class OccurrencePhotoOriginToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
@@ -529,9 +530,10 @@ class _OccurrencePhotoOriginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final isIos = occurrenceFormIsIos(context);
     final surface = isIos
-        ? SoloForteSheetSkinIos.iconBackground
+        ? v.iconBackground
         : accent.withValues(alpha: 0.12);
     return Tooltip(
       message: tooltip,
@@ -539,14 +541,14 @@ class _OccurrencePhotoOriginButton extends StatelessWidget {
         color: surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(
-            isIos ? SoloForteSheetSkinIos.ctaRadius : 14,
+            v.ctaRadius,
           ),
           side: BorderSide(color: accent.withValues(alpha: 0.55)),
         ),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(
-            isIos ? SoloForteSheetSkinIos.ctaRadius : 14,
+            v.ctaRadius,
           ),
           child: SizedBox(
             width: 72,
@@ -571,7 +573,7 @@ class OccurrenceCatPickerSheet extends StatelessWidget {
     final v = SoloForteSheetVisuals.of(context);
     final isIos = occurrenceFormIsIos(context);
     final bg = v.cardBackground;
-    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
+    final radius = v.cardRadius;
     final titleColor = v.onSheetPrimary;
     final tileColor = v.onSheetPrimary;
 
@@ -582,7 +584,7 @@ class OccurrenceCatPickerSheet extends StatelessWidget {
         color: bg,
         borderRadius: BorderRadius.circular(radius),
         border: isIos
-            ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+            ? Border.all(color: v.cardBorder)
             : null,
       ),
       child: Column(

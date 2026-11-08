@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
@@ -13,6 +14,8 @@ class ClientSheetVisuals {
 
   final BuildContext context;
 
+  SoloForteSheetVisuals get v => SoloForteSheetVisuals.of(context);
+
   bool get isIos => soloForteSheetIsIos(context);
 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
@@ -22,60 +25,60 @@ class ClientSheetVisuals {
     return _isDark ? const Color(0xFF1C1C1E) : Colors.white;
   }
 
-  double get sheetRadius => isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
+  double get sheetRadius => v.sheetRadius;
 
   Color? get titleColor =>
-      isIos ? SoloForteSheetSkinIos.titleColor : null;
+      v.isIos ? v.titleColor : null;
 
   Color get muted =>
-      isIos ? SoloForteSheetSkinIos.subtitleColor : SoloForteSheetTokens.inputHint;
+      isIos ? v.subtitleColor : v.inputHint;
 
   Color get accent => Theme.of(context).colorScheme.primary;
 
   Color get cardBg =>
-      isIos ? SoloForteSheetSkinIos.cardBackground : const Color(0xFFEFFAF2);
+      isIos ? v.cardBackground : const Color(0xFFEFFAF2);
 
   Color get cardBorder =>
-      isIos ? SoloForteSheetSkinIos.cardBorder : const Color(0xFFE2E2E8);
+      isIos ? v.cardBorder : const Color(0xFFE2E2E8);
 
-  double get cardRadius => isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
+  double get cardRadius => v.cardRadius;
 
   double get inputRadius =>
-      isIos ? SoloForteSheetTokens.inputRadius : visualsCardRadiusFallback;
+      isIos ? v.inputRadius : visualsCardRadiusFallback;
 
   static const double visualsCardRadiusFallback = 12.0;
 
   Color get arrowColor =>
-      isIos ? SoloForteSheetSkinIos.arrowColor : const Color(0xFFC7C7CC);
+      isIos ? v.arrowColor : const Color(0xFFC7C7CC);
 
   Color get dividerColor =>
-      isIos ? SoloForteSheetSkinIos.rowDivider : const Color(0xFFE5E5EA);
+      isIos ? v.rowDivider : const Color(0xFFE5E5EA);
 
   Color get ctaBg =>
-      isIos ? SoloForteSheetSkinIos.ctaBackground : accent;
+      isIos ? v.ctaBackground : accent;
 
-  Color get ctaFg => isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+  Color get ctaFg => v.ctaText;
 
-  double get ctaRadius => isIos ? SoloForteSheetSkinIos.ctaRadius : 13.0;
+  double get ctaRadius => v.ctaRadius;
 
   Color get ghostBorder =>
-      isIos ? SoloForteSheetSkinIos.ghostBorder : const Color(0xFFE2E2E8);
+      isIos ? v.ghostBorder : const Color(0xFFE2E2E8);
 
   Color get ghostText =>
-      isIos ? SoloForteSheetSkinIos.ghostText : accent;
+      isIos ? v.ghostText : accent;
 
-  double get ghostRadius => isIos ? SoloForteSheetSkinIos.ghostRadius : 13.0;
+  double get ghostRadius => isIos ? v.ghostRadius : 13.0;
 
   /// Sheets de cliente usam fundo claro — inputs seguem estilo iOS agrupado,
   /// não o painel escuro de [SoloForteSheetTokens] (mapa/ocorrências).
   Color get inputFill =>
-      isIos ? SoloForteSheetSkinIos.cardBackground : const Color(0xFFF2F2F7);
+      isIos ? v.cardBackground : const Color(0xFFF2F2F7);
 
   Color get inputText =>
-      isIos ? SoloForteSheetSkinIos.titleColor : const Color(0xFF1C1C1E);
+      isIos ? v.titleColor : const Color(0xFF1C1C1E);
 
   Color get inputHint =>
-      isIos ? SoloForteSheetSkinIos.subtitleColor : const Color(0xFF8E8E93);
+      isIos ? v.subtitleColor : const Color(0xFF8E8E93);
 }
 
 /// Scaffold padrão: handle, título, subtítulo opcional e corpo.
@@ -99,6 +102,7 @@ class ClientSheetScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final visuals = ClientSheetVisuals.of(context);
 
     return DecoratedBox(
@@ -117,16 +121,12 @@ class ClientSheetScaffold extends StatelessWidget {
             if (showHandle) ...[
               Center(
                 child: Container(
-                  width: visuals.isIos
-                      ? SoloForteSheetSkinIos.handleSize.width
-                      : 36,
-                  height: visuals.isIos
-                      ? SoloForteSheetSkinIos.handleSize.height
-                      : 5,
+                  width: visuals.v.handleSize.width,
+                  height: visuals.v.handleSize.height,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
                     color: visuals.isIos
-                        ? SoloForteSheetSkinIos.handleColor
+                        ? v.handleColor
                         : const Color(0xFFC5C5C7),
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -181,6 +181,7 @@ class ClientSheetInlineBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final visuals = ClientSheetVisuals.of(context);
 
     return Container(
@@ -218,6 +219,7 @@ class ClientSheetActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final visuals = ClientSheetVisuals.of(context);
 
     return DecoratedBox(
@@ -253,6 +255,7 @@ class ClientSheetActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final visuals = ClientSheetVisuals.of(context);
 
     return Column(
@@ -274,11 +277,11 @@ class ClientSheetActionRow extends StatelessWidget {
                     height: 44,
                     decoration: BoxDecoration(
                       color: visuals.isIos
-                          ? SoloForteSheetSkinIos.iconBackground
+                          ? v.iconBackground
                           : visuals.accent.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(
                         visuals.isIos
-                            ? SoloForteSheetSkinIos.iconRadius
+                            ? v.iconRadius
                             : 12,
                       ),
                     ),
@@ -333,6 +336,7 @@ class ClientSheetSectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final visuals = ClientSheetVisuals.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -370,6 +374,7 @@ class ClientSheetFormField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final visuals = ClientSheetVisuals.of(context);
 
     final field = TextFormField(
@@ -384,7 +389,7 @@ class ClientSheetFormField extends StatelessWidget {
         hintStyle: TextStyle(color: visuals.inputHint),
         filled: true,
         fillColor: visuals.inputFill,
-        contentPadding: SoloForteSheetTokens.inputPadding,
+        contentPadding: v.inputPadding,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(visuals.inputRadius),
           borderSide: BorderSide(color: visuals.cardBorder),
