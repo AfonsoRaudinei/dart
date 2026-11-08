@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design/sf_icons.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/solo_forte_sheet_visuals.dart';
+import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
@@ -17,13 +18,21 @@ import 'package:soloforte_app/core/utils/user_facing_error.dart';
 class ActiveVisitSheet extends ConsumerWidget {
   const ActiveVisitSheet({super.key});
 
-  bool _isIosBlue(BuildContext context) =>
-      Theme.of(context).extension<SoloForteThemeExtension>()?.themeId == 'blue';
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isIos = _isIosBlue(context);
+    // Host de check-in usa preserveMaterialDefaults (Scope forçado em light);
+    // re-propaga a variante real do tema para o conteúdo.
+    return SoloForteSheetSkinScope(
+      variant: soloForteSheetVariantFromThemeId(
+        Theme.of(context).extension<SoloForteThemeExtension>()?.themeId,
+      ),
+      child: Builder(builder: (context) => _buildContent(context, ref)),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, WidgetRef ref) {
     final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final titleColor = v.titleColor;
     final ghostFg = v.ghostText;
     final ghostBorder = v.ghostBorder;
