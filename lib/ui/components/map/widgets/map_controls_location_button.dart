@@ -47,7 +47,7 @@ class _LocationButtonState extends ConsumerState<_LocationButton> {
       mainAxisSize: MainAxisSize.min,
       children: [
         _MapButtonLabel(text: label, isVisible: _showLabel),
-        const SizedBox(width: 8),
+        const SizedBox(width: kMapTopControlsLocationLabelButtonGap),
         Semantics(
           button: true,
           label: label,
