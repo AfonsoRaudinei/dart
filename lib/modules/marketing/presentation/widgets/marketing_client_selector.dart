@@ -24,14 +24,14 @@ class MarketingClientSelector extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final clientsAsync = ref.watch(_marketingClientsAtivosProvider);
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final surface = v.cardBackground;
     final border = v.cardBorder;
     final muted = v.subtitleColor;
     final title = v.titleColor;
     final iconColor = v.iconStroke;
-    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+    final radius = v.cardRadius;
     final dropdownBg = isIos ? v.sheetBackground : v.cardBackground;
 
     return Container(

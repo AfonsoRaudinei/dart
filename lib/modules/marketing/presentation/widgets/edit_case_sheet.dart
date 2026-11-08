@@ -280,6 +280,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
       _tipo == CaseTipo.avaliacao ? 'Produção ideal' : 'Valor da produtividade';
 
   Widget? _buildFotoSection() {
+    final v = SoloForteSheetVisuals.of(context);
     switch (_tipo) {
       case CaseTipo.resultado:
         return Column(
@@ -309,12 +310,12 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text(
+                      Text(
                         'Antes',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
-                          color: SoloForteSheetTokens.inputHint,
+                          color: v.inputHint,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -335,12 +336,12 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text(
+                      Text(
                         'Depois',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
-                          color: SoloForteSheetTokens.inputHint,
+                          color: v.inputHint,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -367,21 +368,21 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final sheetBg = v.sheetBackground;
-    final sheetRadius = isIos ? SoloForteSheetSkinIos.sheetRadius : 28.0;
+    final sheetRadius = v.sheetRadius;
     final handleColor = v.handleColor;
     final titleColor = v.titleColor;
     final hintColor = v.subtitleColor;
     final lockAccent = isIos
-        ? SoloForteSheetSkinIos.iconStroke
+        ? v.iconStroke
         : context.themeAccent;
     final dropdownBg = v.cardBackground;
     final fieldText = v.titleColor;
     final ctaBg = isIos
-        ? SoloForteSheetSkinIos.ctaBackground
+        ? v.ctaBackground
         : context.themeAccent;
     final ghostBorder = v.ghostBorder;
     final ghostFg = v.ghostText;
@@ -396,8 +397,8 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
             color: sheetBg,
             borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
             border: isIos
-                ? const Border(
-                    top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+                ? Border(
+                    top: BorderSide(color: v.sheetBorder),
                   )
                 : null,
           ),
@@ -626,7 +627,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(
                                 isIos
-                                    ? SoloForteSheetSkinIos.ghostRadius
+                                    ? v.ghostRadius
                                     : 8,
                               ),
                             ),
@@ -644,9 +645,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(
-                                isIos
-                                    ? SoloForteSheetSkinIos.ctaRadius
-                                    : 8,
+                                v.ctaRadius,
                               ),
                             ),
                           ),

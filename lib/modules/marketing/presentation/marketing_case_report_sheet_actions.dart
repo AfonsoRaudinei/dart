@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -146,6 +147,7 @@ Future<void> openMarketingCaseReportHtml(
   bool closeParentSheetOnAction = false,
   BuildContext? parentSheetContext,
 }) async {
+    final v = SoloForteSheetVisuals.of(context);
   final container = ProviderScope.containerOf(context, listen: false);
   final bodyBuilder = ref.read(htmlReportViewerBodyBuilderProvider);
   try {
@@ -189,6 +191,7 @@ Future<void> exportMarketingCaseReportHtml(
   WidgetRef ref,
   MarketingCase marketingCase,
 ) async {
+    final v = SoloForteSheetVisuals.of(context);
   try {
     final shareOrigin = resolveSharePositionOrigin(context);
     final bundle = await _buildBundle(ref, marketingCase);
@@ -235,13 +238,14 @@ class MarketingCaseReportActionsRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final v = SoloForteSheetVisuals.of(context);
     final iosButtonStyle = isIos
         ? OutlinedButton.styleFrom(
-            foregroundColor: SoloForteSheetSkinIos.ghostText,
-            side: const BorderSide(color: SoloForteSheetSkinIos.ghostBorder),
+            foregroundColor: v.ghostText,
+            side: BorderSide(color: v.ghostBorder),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(
-                SoloForteSheetSkinIos.ghostRadius,
+                v.ghostRadius,
               ),
             ),
           )

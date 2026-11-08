@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 /// Bottom sheet exibido após salvar um rascunho ou atingir limite de publicações.
@@ -38,19 +37,19 @@ class DraftSavedSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final bg = v.sheetBackground;
-    final radius = isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
-    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final radius = v.sheetRadius;
+    final titleColor = v.isIos ? v.titleColor : null;
     final messageColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
+        ? v.subtitleColor
         : Theme.of(context).textTheme.bodySmall?.color;
     final secondaryColor = isIos
-        ? SoloForteSheetSkinIos.ghostText
+        ? v.ghostText
         : Theme.of(context).textTheme.bodyLarge?.color;
     final handleColor = isIos
-        ? SoloForteSheetSkinIos.handleColor
+        ? v.handleColor
         : Theme.of(context).dividerColor.withValues(alpha: 0.3);
 
     return Container(

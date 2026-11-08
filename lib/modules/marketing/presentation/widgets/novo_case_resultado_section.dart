@@ -39,6 +39,7 @@ class NovoCaseResultadoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -195,21 +196,22 @@ class _RoiPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     final input = _input;
     if (input == null || !input.isComplete) return const SizedBox.shrink();
     final roi = MarketingRoiCalculation(input);
-    final isIos = soloForteSheetIsIos(context);
+    final isIos = v.isIos;
     final cardBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
+        ? v.cardBackground
         : const Color(0xFF123D2A);
     final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+        v.onSheetPrimary;
     final lineLabelColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
+        ? v.subtitleColor
         : const Color(0xCCFFFFFF);
     final lineValueColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
-    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 18.0;
+        v.onSheetPrimary;
+    final radius = v.cardRadius;
 
     return Padding(
       padding: const EdgeInsets.only(top: 16),
@@ -219,7 +221,7 @@ class _RoiPreviewCard extends StatelessWidget {
           color: cardBg,
           borderRadius: BorderRadius.circular(radius),
           border: isIos
-              ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+              ? Border.all(color: v.cardBorder)
               : null,
           boxShadow: isIos
               ? null
