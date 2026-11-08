@@ -1,6 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/ui/components/map/widgets/map_offline_widgets.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 void main() {
   group('OfflineMapAreaConfig.mergeWithViewport', () {
@@ -150,6 +152,37 @@ void main() {
     });
   });
 
+  group('buildOfflineMapCoveragePolygon', () {
+    test('usa preenchimento totalmente transparente', () {
+      final polygon = buildOfflineMapCoveragePolygon(
+        area: _sampleOfflineArea,
+        viewportCovered: true,
+      );
+
+      expect(polygon.color, Colors.transparent);
+    });
+
+    test('mantem borda verde quando viewport esta coberto', () {
+      final polygon = buildOfflineMapCoveragePolygon(
+        area: _sampleOfflineArea,
+        viewportCovered: true,
+      );
+
+      expect(polygon.borderColor, PremiumTokens.brandGreen);
+      expect(polygon.borderStrokeWidth, 2.2);
+    });
+
+    test('mantem borda azul quando viewport nao esta coberto', () {
+      final polygon = buildOfflineMapCoveragePolygon(
+        area: _sampleOfflineArea,
+        viewportCovered: false,
+      );
+
+      expect(polygon.borderColor, const Color(0xFF0A84FF));
+      expect(polygon.color, Colors.transparent);
+    });
+  });
+
   group('buildMapOfflineStatusPresentation', () {
     test('sinaliza mapa offline ativo quando viewport ja esta coberto', () {
       final result = buildMapOfflineStatusPresentation(
@@ -235,3 +268,15 @@ void main() {
 
 final _fixedDate = DateTime(2020, 1, 1);
 final _refreshDate = DateTime(2026, 9, 19);
+
+final _sampleOfflineArea = OfflineMapAreaConfig(
+  id: 'area-coverage',
+  layerKey: 'layer-a',
+  south: -15,
+  west: -55,
+  north: -12,
+  east: -50,
+  minZoom: 10,
+  maxZoom: 18,
+  createdAt: _fixedDate,
+);
