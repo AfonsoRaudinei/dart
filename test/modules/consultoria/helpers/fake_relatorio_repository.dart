@@ -31,6 +31,9 @@ class FakeRelatorioRepository implements IRelatorioRepository {
   /// Contagem total, incluindo soft-deleted.
   int get count => _store.length;
 
+  /// IDs presentes na memória (inclui soft-deleted).
+  Iterable<String> get storedIds => _store.keys;
+
   /// Remove todos os registros (útil em tearDown se necessário).
   void clear() => _store.clear();
 

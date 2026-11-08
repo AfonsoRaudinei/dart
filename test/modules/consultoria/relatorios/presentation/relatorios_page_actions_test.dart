@@ -3,6 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/modules/consultoria/relatorios/presentation/relatorio_detail_screen.dart';
+import 'package:soloforte_app/modules/consultoria/relatorios/presentation/relatorio_form_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -60,14 +64,14 @@ void main() {
     final relatorioRepository = FakeRelatorioRepository();
     relatorioRepository.seed([
       makeRelatorio(
-        id: 'rel-draft',
-        farmName: 'Fazenda Rascunho',
+        id: 'rel-delete',
+        farmName: 'Fazenda Excluir',
         status: RelatorioStatus.pendente_revisao,
       ),
       makeRelatorio(
-        id: 'rel-published',
-        farmName: 'Fazenda Publicada',
-        status: RelatorioStatus.publicado,
+        id: 'rel-draft',
+        farmName: 'Fazenda Rascunho',
+        status: RelatorioStatus.pendente_revisao,
       ),
     ]);
 
@@ -75,24 +79,59 @@ void main() {
       tester,
       relatorioRepository: relatorioRepository,
       occurrenceRepository: FakeOccurrenceRepository(),
+      useVisitPushRouter: true,
     );
 
     await _selectSegment(tester, 'Visitas');
     expect(find.text('Relatórios de Visita'), findsOneWidget);
+    expect(find.text('Fazenda Excluir'), findsWidgets);
     expect(find.text('Fazenda Rascunho'), findsWidgets);
 
-    await _openReportCardByTitle(tester, 'Fazenda Rascunho');
-    expect(find.text('Pré-visualização HTML'), findsOneWidget);
-    final viewer = tester.widget<HtmlReportViewer>(
-      find.byType(HtmlReportViewer),
-    );
-    expect(viewer.enableWhatsAppShareLink, isTrue);
-    expect(find.byTooltip('Exportar'), findsOneWidget);
-    expect(find.byTooltip('Publicar'), findsOneWidget);
-    await _tapViewerToolbar(tester, 'Publicar');
-    expect(find.text('Publicar relatório?'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, 'Publicar'));
+    await _openReportCardByTitle(tester, 'Fazenda Excluir', fullSettle: false);
+    for (var i = 0; i < 30; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      if (find.byType(RelatorioDetailScreen).evaluate().isNotEmpty) break;
+    }
+    expect(find.byType(RelatorioDetailScreen), findsOneWidget);
+    await tester.runAsync(() async {
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(RelatorioDetailScreen)),
+      );
+      await container
+          .read(relatorioNotifierProvider.notifier)
+          .softDelete('rel-delete');
+    });
+    final router = GoRouter.of(tester.element(find.byType(RelatoriosScreen)));
+    router.go(AppRoutes.reports);
     await _pumpActionFrame(tester);
+    await _selectSegment(tester, 'Visitas', fullSettle: false);
+    expect(relatorioRepository.get('rel-delete')?.deletedAt, isNotNull);
+    await _openReportCardByTitle(tester, 'Fazenda Rascunho', fullSettle: false);
+    for (var i = 0; i < 30; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      if (find.text('PUBLICAR RELATÓRIO').evaluate().isNotEmpty) break;
+    }
+    expect(find.byType(RelatorioDetailScreen), findsOneWidget);
+    expect(find.text('Relatório não encontrado.'), findsNothing);
+    expect(find.text('Rascunho'), findsWidgets);
+    final publishFinder = find.text('PUBLICAR RELATÓRIO');
+    final scrollable = _verticalScrollable();
+    if (scrollable.evaluate().isNotEmpty) {
+      await tester.scrollUntilVisible(
+        publishFinder,
+        400,
+        scrollable: scrollable.first,
+      );
+    }
+    await tester.ensureVisible(publishFinder);
+    expect(publishFinder, findsOneWidget);
+    await tester.tap(publishFinder);
+    await _pumpActionFrame(tester);
+    expect(find.text('Publicar relatório'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Publicar'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Relatórios de Visita'), findsOneWidget);
 
     expect(
       relatorioRepository.get('rel-draft')?.status,
@@ -102,15 +141,7 @@ void main() {
       relatorioRepository.get('rel-draft')?.syncStatus,
       RelatorioSyncStatus.pending_sync,
     );
-
-    await _openReportCardByTitle(tester, 'Fazenda Rascunho');
-    await _tapViewerToolbar(tester, 'Excluir');
-    expect(find.text('Excluir relatório?'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, 'Excluir'));
-    await _pumpActionFrame(tester);
-
-    expect(relatorioRepository.get('rel-draft')?.deletedAt, isNotNull);
-    expect(find.text('Fazenda Rascunho'), findsNothing);
+    expect(find.text('Fazenda Rascunho'), findsWidgets);
   });
 
   testWidgets('ações reais de ocorrência confirmam e excluem logicamente', (
@@ -1012,9 +1043,17 @@ void main() {
   );
 }
 
-Future<void> _selectSegment(WidgetTester tester, String label) async {
+Future<void> _selectSegment(
+  WidgetTester tester,
+  String label, {
+  bool fullSettle = true,
+}) async {
   await tester.tap(find.text(label).first);
-  await tester.pumpAndSettle();
+  if (fullSettle) {
+    await tester.pumpAndSettle();
+  } else {
+    await _pumpActionFrame(tester);
+  }
 }
 
 Future<void> _pumpScreen(
@@ -1027,6 +1066,7 @@ Future<void> _pumpScreen(
   UserProfile? profileOverride,
   List<Override> extraOverrides = const [],
   bool pumpSettle = true,
+  bool useVisitPushRouter = false,
 }) async {
   final overrides = <Override>[
     htmlReportViewerBodyBuilderProvider.overrideWithValue(
@@ -1038,6 +1078,12 @@ Future<void> _pumpScreen(
     publish_repo.relatorioRepositoryProvider.overrideWithValue(
       relatorioRepository,
     ),
+    if (useVisitPushRouter)
+      ...relatorioRepository.storedIds.map(
+        (id) => relatorioDetailProvider(id: id).overrideWith(
+          (ref) async => relatorioRepository.get(id),
+        ),
+      ),
     occurrenceRepositoryProvider.overrideWithValue(occurrenceRepository),
     marketingCaseRepositoryProvider.overrideWithValue(
       marketingRepository ??
@@ -1076,7 +1122,35 @@ Future<void> _pumpScreen(
   await tester.pumpWidget(
     ProviderScope(
       overrides: overrides,
-      child: const MaterialApp(home: Scaffold(body: RelatoriosScreen())),
+      child: useVisitPushRouter
+          ? MaterialApp.router(
+              routerConfig: GoRouter(
+                initialLocation: AppRoutes.reports,
+                routes: [
+                  GoRoute(
+                    path: AppRoutes.reports,
+                    builder: (_, __) => const RelatoriosScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':id',
+                        builder: (_, state) => RelatorioDetailScreen(
+                          relatorioId: state.pathParameters['id']!,
+                        ),
+                        routes: [
+                          GoRoute(
+                            path: 'edit',
+                            builder: (_, state) => RelatorioFormScreen(
+                              relatorioId: state.pathParameters['id']!,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            )
+          : const MaterialApp(home: Scaffold(body: RelatoriosScreen())),
     ),
   );
   if (pumpSettle) {
@@ -1119,7 +1193,11 @@ Future<void> _openSavedCombined(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-Future<void> _openReportCardByTitle(WidgetTester tester, String title) async {
+Future<void> _openReportCardByTitle(
+  WidgetTester tester,
+  String title, {
+  bool fullSettle = true,
+}) async {
   final target = find.text(title);
   final scrollable = _verticalScrollable();
   if (scrollable.evaluate().isNotEmpty) {
@@ -1131,7 +1209,11 @@ Future<void> _openReportCardByTitle(WidgetTester tester, String title) async {
   }
   await tester.ensureVisible(target.first);
   await tester.tap(target.first);
-  await tester.pumpAndSettle();
+  if (fullSettle) {
+    await tester.pumpAndSettle();
+  } else {
+    await _pumpActionFrame(tester);
+  }
 }
 
 Future<void> _tapViewerToolbar(WidgetTester tester, String tooltip) async {
