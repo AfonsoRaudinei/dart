@@ -125,20 +125,8 @@ const double kMapTopControlsRowHeight = kMapActionColumnButtonSize;
 /// Gap entre a base dos toggles topo e o chip de município.
 const double kMapLocalityChipGapBelowTopControls = 10.0;
 
-/// Gap entre a fileira de toggles topo e o botão de reset norte (bússola).
-const double kMapNorthCompassGapBelowTopControls = 8.0;
-
-/// Rotação mínima (graus) para exibir o botão de reset norte.
+/// Rotação mínima (graus) para preservar ângulo do usuário ao sair do follow GPS.
 const double kMapNorthCompassVisibleRotationDeg = 0.5;
-
-/// Offset do botão bússola abaixo do safe area (abaixo da fileira de toggles).
-///
-/// Composição: [kMapTopControlsTopInset] + [kMapTopControlsRowHeight] +
-/// [kMapNorthCompassGapBelowTopControls].
-const double kMapNorthCompassTopBelowSafeArea =
-    kMapTopControlsTopInset +
-    kMapTopControlsRowHeight +
-    kMapNorthCompassGapBelowTopControls;
 
 /// Offset do chip de município abaixo do safe area (abaixo da fileira de toggles).
 ///

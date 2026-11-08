@@ -56,7 +56,6 @@ import '../../../components/map/map_talhao_selection_toolbar.dart';
 import '../../../components/map/widgets/map_state_boundaries_layer.dart';
 import '../../../components/map/widgets/map_cardinal_flash_overlay.dart';
 import '../../../components/map/widgets/map_locality_context_chip.dart';
-import '../../../components/map/widgets/map_north_reset_compass.dart';
 import '../../../components/map/map_layers_sheet.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../components/map/widgets/producer_map_context_card.dart';
@@ -544,7 +543,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
             onCenterOnUser: centerOnUser,
           ),
           const MapGpsOverlaysHost(),
-          MapNorthResetCompass(mapController: mapController),
           const MapLocalityContextChip(),
           const MapCardinalFlashOverlay(),
           const MapNdviLoadProgressOverlay(),
