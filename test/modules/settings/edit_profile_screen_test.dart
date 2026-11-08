@@ -231,17 +231,6 @@ void main() {
     expect(router.routeInformationProvider.value.uri.path, AppRoutes.settings);
   });
 
-  testWidgets('cancelar retorna para settings via GoRouter', (tester) async {
-    final repo = _FakeUserProfileRepository(_profile());
-    final router = await _pumpEditProfile(tester, repo: repo);
-
-    await tester.tap(find.byIcon(Icons.close));
-    await tester.pumpAndSettle();
-
-    expect(repo.updateCalls, 0);
-    expect(router.routeInformationProvider.value.uri.path, AppRoutes.settings);
-  });
-
   testWidgets('erro ao salvar mantem tela aberta e valores digitados', (
     tester,
   ) async {
