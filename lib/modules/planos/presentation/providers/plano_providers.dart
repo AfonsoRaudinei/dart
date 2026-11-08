@@ -18,6 +18,7 @@ import '../../../../core/session/session_controller.dart';
 import '../../../../core/session/session_models.dart';
 import '../../data/repositories/i_plano_repository.dart';
 import '../../data/repositories/plano_repository_impl.dart';
+import '../../data/services/mercadopago_service.dart';
 import '../../data/services/plano_local_cache.dart';
 import '../../data/services/referral_service.dart';
 import '../../domain/entities/user_plan.dart';
@@ -40,6 +41,11 @@ IPlanoRepository planoRepository(PlanoRepositoryRef ref) {
 @Riverpod(keepAlive: true)
 ReferralService referralService(ReferralServiceRef ref) {
   return ReferralService(Supabase.instance.client);
+}
+
+@Riverpod(keepAlive: true)
+MercadoPagoService mercadoPagoService(MercadoPagoServiceRef ref) {
+  return MercadoPagoService(Supabase.instance.client);
 }
 
 /// Cache local do último plano verificado online (TTL 24h — ADR-012 Adendo 1).
