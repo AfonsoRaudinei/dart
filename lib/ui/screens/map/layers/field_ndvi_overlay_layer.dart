@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -132,16 +133,23 @@ class _ClippedFieldNdviOverlay extends StatelessWidget {
       );
     }
 
-    return ClipPath(
-      clipper: _FieldNdviClipper(polygon),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Positioned.fromRect(
-            rect: Rect.fromPoints(northWest, southEast),
-            child: imageWidget,
-          ),
-        ],
+    // Mesmo espaço dos polígonos: offsets não rotacionados + MobileLayerTransformer.
+    // Sem o transformer a imagem fica na tela enquanto o mapa gira.
+    return MobileLayerTransformer(
+      child: ClipPath(
+        clipper: _FieldNdviClipper(polygon),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned(
+              left: math.min(northWest.dx, southEast.dx),
+              top: math.min(northWest.dy, southEast.dy),
+              width: (northWest.dx - southEast.dx).abs(),
+              height: (northWest.dy - southEast.dy).abs(),
+              child: imageWidget,
+            ),
+          ],
+        ),
       ),
     );
   }
