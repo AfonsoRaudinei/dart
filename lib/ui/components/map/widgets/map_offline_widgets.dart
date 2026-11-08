@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../core/config/map_config.dart';
+import '../../../../core/domain/map_basemap_labels.dart';
 import '../../../../core/domain/map_models.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../core/services/offline_tile_cache_service.dart';
@@ -146,14 +147,7 @@ MapOfflineStatusPresentation buildMapOfflineStatusPresentation({
 }
 
 String mapLayerLabel(LayerType layerType) {
-  switch (layerType) {
-    case LayerType.standard:
-      return 'Mapa';
-    case LayerType.satellite:
-      return 'Satélite';
-    case LayerType.satelliteUpdated:
-      return 'Satélite atualizado';
-  }
+  return shortBasemapLayerLabel(layerType);
 }
 
 class _OfflineStatusSnapshot {
