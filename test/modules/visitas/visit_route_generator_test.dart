@@ -72,7 +72,8 @@ void main() {
             -45.5 + 0.05 * math.cos(2 * math.pi * i / 40),
             -9.5 + 0.05 * math.sin(2 * math.pi * i / 40),
           ],
-      ]..add([-45.45, -9.5]);
+        [-45.45, -9.5],
+      ];
       final multi = jsonEncode({
         'type': 'MultiPolygon',
         'coordinates': [

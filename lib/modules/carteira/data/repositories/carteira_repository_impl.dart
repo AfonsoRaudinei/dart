@@ -459,6 +459,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     final regraErro = CarteiraLancamento.validarRegrasFechamento(
       closedPercent: lancamento.closedPercent,
       tipoFechamento: lancamento.tipoFechamento,
+      nomeConcorrente: lancamento.nomeConcorrente,
     );
     if (regraErro != null) {
       throw ArgumentError(regraErro);

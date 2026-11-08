@@ -213,6 +213,7 @@ Future<List<_CombinedReportEvent>> _combinedEventsForProducer({
       details[occurrence.id] = '';
     }
   }
+  if (!context.mounted) return const [];
   return _assembleCombinedEvents(
     visits: visits,
     occurrences: occurrences,

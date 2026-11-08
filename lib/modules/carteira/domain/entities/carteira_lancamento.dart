@@ -83,16 +83,24 @@ class CarteiraLancamento {
 
   /// Valida combinação percentual × tipo de fechamento.
   ///
-  /// - [tipoFechamento] null: negociação em aberto (percentual livre 0–100).
   /// - [vendido]: percentual livre 0–100 (venda parcial permitida).
-  /// - [perdido]: percentual deve ser 0 (nada vendido para nós).
+  /// - [perdido]: percentual deve ser 0 e [nomeConcorrente] preenchido.
   static String? validarRegrasFechamento({
     required double closedPercent,
     required TipoFechamento? tipoFechamento,
+    String? nomeConcorrente,
   }) {
     final pct = closedPercent.clamp(0.0, 100.0);
-    if (tipoFechamento == TipoFechamento.perdido && pct != 0) {
-      return 'Perdido para concorrência exige 0% (nada vendido).';
+    if (tipoFechamento == null) {
+      return 'Selecione se foi vendido ou perdido para a concorrência.';
+    }
+    if (tipoFechamento == TipoFechamento.perdido) {
+      if (pct != 0) {
+        return 'Perdido para concorrência exige 0% (nada vendido).';
+      }
+      if ((nomeConcorrente ?? '').trim().isEmpty) {
+        return 'Informe o nome do concorrente que levou o negócio.';
+      }
     }
     return null;
   }

@@ -3,8 +3,6 @@ import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import '../../../domain/drawing_feature_actions_mode.dart';
 import '../../../domain/models/drawing_models.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
-import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 /// Widget responsável por exibir ações contextuais para features de desenho.
 ///

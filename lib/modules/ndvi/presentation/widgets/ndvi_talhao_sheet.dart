@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,7 +29,6 @@ class NdviTalhaoSheet extends ConsumerWidget {
     ref.watch(ndviEnsureCurrentDateProvider(fieldId));
     final ndviAsync = ref.watch(ndviImagesProvider(fieldId));
     final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
     final scheme = Theme.of(context).colorScheme;
     final titleColor = isIos
         ? SoloForteSheetSkinIos.titleColor
@@ -427,7 +425,6 @@ class _ErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
     final textColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
     final accent = isIos ? SoloForteSheetSkinIos.iconStroke : null;
     return SizedBox(
@@ -459,7 +456,6 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
     return SizedBox(
       height: 220,
       child: Column(
@@ -492,7 +488,6 @@ class _MaskUnavailable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
     return Center(
       child: Icon(
         Icons.filter_b_and_w_outlined,
@@ -509,7 +504,6 @@ class _ImageUnavailable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
     return Center(
       child: Icon(
         Icons.satellite_alt_outlined,
@@ -529,7 +523,6 @@ class _InfoPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
     final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),

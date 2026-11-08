@@ -93,7 +93,6 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
     // 🆕 REFATORADO: Usar DrawingToolSelector component
     final pendingCount = widget.controller.pendingSyncCount;
     final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
