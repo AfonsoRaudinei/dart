@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/contracts/i_ndvi_field_presenter_provider.dart';
 import 'package:soloforte_app/core/contracts/i_visit_client_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/visit_client_hierarchy.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_controller.dart';
 import 'package:soloforte_app/core/state/map_ui_providers.dart';
@@ -210,6 +209,7 @@ class VisitActiveCard extends ConsumerWidget {
     VisitFarmDetailSummary? currentFarm,
     VisitFieldDetailSummary? currentTalhao,
   ) {
+    final v = SoloForteSheetVisuals.of(context);
     HapticFeedback.lightImpact();
     showSoloForteSheet(
       context: context,
@@ -242,6 +242,7 @@ class VisitActiveCard extends ConsumerWidget {
     VisitFarmDetailSummary farm,
     VisitFieldDetailSummary? currentTalhao,
   ) {
+    final v = SoloForteSheetVisuals.of(context);
     HapticFeedback.lightImpact();
     showSoloForteSheet(
       context: context,
@@ -271,6 +272,7 @@ class _GlassChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
       child: BackdropFilter(
@@ -308,6 +310,7 @@ class _EditableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -352,6 +355,7 @@ class _EditableRow extends StatelessWidget {
 class _LoadingRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -391,24 +395,24 @@ class _SelectionSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+        final v = SoloForteSheetVisuals.of(context);
+    final isIos = v.isIos;
     final bg = v.sheetBackground;
     final handle = v.handleColor;
     final titleColor = v.titleColor;
     final accent = isIos
-        ? SoloForteSheetSkinIos.iconStroke
+        ? v.iconStroke
         : context.themeAccent;
     final divider = v.dividerColor;
-    final radius = isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
+    final radius = v.sheetRadius;
 
     return Container(
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
         border: isIos
-            ? const Border(
-                top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+            ? Border(
+                top: BorderSide(color: v.sheetBorder),
               )
             : null,
       ),
@@ -420,8 +424,8 @@ class _SelectionSheet extends StatelessWidget {
             Center(
               child: Container(
                 margin: const EdgeInsets.only(top: 10, bottom: 8),
-                width: isIos ? SoloForteSheetSkinIos.handleSize.width : 36,
-                height: isIos ? SoloForteSheetSkinIos.handleSize.height : 4,
+                width: v.handleSize.width,
+                height: v.handleSize.height,
                 decoration: BoxDecoration(
                   color: handle,
                   borderRadius: BorderRadius.circular(10),
