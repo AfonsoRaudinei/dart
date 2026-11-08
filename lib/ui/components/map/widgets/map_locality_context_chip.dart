@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/design/sf_icons.dart';
 import '../../../../core/services/geocoding/reverse_geocoder.dart';
 import '../../../../core/state/map_state.dart';
@@ -12,7 +13,7 @@ import '../../../../core/state/map_ui_providers.dart';
 class MapLocalityContextChip extends ConsumerStatefulWidget {
   const MapLocalityContextChip({
     super.key,
-    this.extraTopBelowSafeArea = 52,
+    this.extraTopBelowSafeArea = kMapLocalityChipTopBelowSafeArea,
   });
 
   /// Distância abaixo do safe area — abaixo dos toggles topo-direita, sem colidir com cards.
@@ -93,7 +94,7 @@ class _MapLocalityContextChipState extends ConsumerState<MapLocalityContextChip>
     return Positioned(
       top: top,
       left: 48,
-      right: 48,
+      right: kMapTopControlsReservedRightWidth,
       child: IgnorePointer(
         child: Center(
           child: Semantics(
