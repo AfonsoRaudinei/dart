@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Excluir conta — SoloForte</title>
+  <meta name="description" content="Peça a exclusão da conta SoloForte e dos dados associados, no app ou por esta página.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="wrap brand">
+      <strong>SoloForte</strong>
+      <nav>
+        <a href="index.html">Privacidade</a>
+        <a href="exclusao-de-conta.html">Excluir conta</a>
+        <a href="suporte.html">Suporte</a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap">
+    <article>
+      <h1>Excluir conta SoloForte</h1>
+      <p class="updated">Pedido de exclusão da conta e dos dados associados · iPhone e Android</p>
+
+      <div class="note">
+        <p>O caminho mais direto é dentro do aplicativo: <strong>Configurações → Excluir minha conta</strong>. Confirme em <strong>Excluir Permanentemente</strong>. O app apaga a conta no servidor, remove os dados locais dessa conta e encerra a sessão.</p>
+      </div>
+
+      <h2>Pedir por esta página</h2>
+      <p>Use este formulário se você não consegue entrar no app. O pedido vai para <a href="mailto:privacidade@soloforte.app">privacidade@soloforte.app</a>. Envie o e-mail da conta. Não envie a senha.</p>
+      <p>A exclusão é permanente. Ela remove a conta de acesso e os dados associados: perfil, clientes, fazendas, talhões, visitas, ocorrências, relatórios, fotos, áudios e preferências ligadas a essa conta. Um registro só permanece se a lei exigir a guarda.</p>
+
+      <form id="pedido">
+        <div>
+          <label for="nome">Nome</label>
+          <input id="nome" name="nome" type="text" autocomplete="name" required>
+        </div>
+        <div>
+          <label for="email">E-mail da conta SoloForte</label>
+          <input id="email" name="email" type="email" autocomplete="email" required>
+        </div>
+        <label>
+          <input id="confirma" type="checkbox" required>
+          Quero excluir esta conta SoloForte e os dados associados.
+        </label>
+        <button type="submit">Enviar pedido de exclusão</button>
+      </form>
+      <p>Se o botão não abrir o aplicativo de e-mail, escreva para <a id="mailto-direto" href="mailto:privacidade@soloforte.app?subject=Exclus%C3%A3o%20de%20conta%20SoloForte&amp;body=Solicito%20a%20exclus%C3%A3o%20da%20minha%20conta%20SoloForte%20e%20dos%20dados%20associados.%0A%0AE-mail%20da%20conta%3A%20">privacidade@soloforte.app</a> com o assunto “Exclusão de conta SoloForte”.</p>
+
+      <h2>O que acontece depois</h2>
+      <p>O pedido identifica a conta pelo e-mail informado. Quando a exclusão termina, aquele login deixa de existir. Arquivos que permanecerem só no aparelho, num pedido feito por e-mail, saem ao apagar os dados do app ou ao desinstalar.</p>
+      <p>Detalhes do tratamento de dados estão na <a href="index.html#exclusao">Política de Privacidade</a>.</p>
+    </article>
+  </main>
+  <footer class="wrap">
+    <p>SoloForte · <a href="index.html">Privacidade</a> · <a href="exclusao-de-conta.html">Excluir conta</a> · <a href="suporte.html">Suporte</a></p>
+  </footer>
+  <script>
+    document.getElementById("pedido").addEventListener("submit", function (event) {
+      event.preventDefault();
+      var nome = document.getElementById("nome").value.trim();
+      var email = document.getElementById("email").value.trim();
+      var body = [
+        "Solicito a exclusão da minha conta SoloForte e dos dados associados.",
+        "",
+        "Nome: " + nome,
+        "E-mail da conta: " + email
+      ].join("\n");
+      window.location.href = "mailto:privacidade@soloforte.app?subject="
+        + encodeURIComponent("Exclusão de conta SoloForte")
+        + "&body=" + encodeURIComponent(body);
+    });
+  </script>
+</body>
+</html>
