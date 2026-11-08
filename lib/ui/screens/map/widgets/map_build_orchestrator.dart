@@ -53,6 +53,7 @@ import '../../map/providers/pin_position_correction_provider.dart';
 import '../../../components/map/widgets/map_long_press_hint.dart';
 import '../../../components/map/map_talhao_selection_toolbar.dart';
 import '../../../components/map/widgets/map_state_boundaries_layer.dart';
+import '../../../components/map/widgets/map_cardinal_flash_overlay.dart';
 import '../../../components/map/widgets/map_locality_context_chip.dart';
 import '../../../components/map/map_layers_sheet.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
@@ -533,6 +534,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
           ),
           const MapGpsOverlaysHost(),
           const MapLocalityContextChip(),
+          const MapCardinalFlashOverlay(),
           const MapNdviLoadProgressOverlay(),
           MapBottomSheetOverlayHost(
             setSheetState: setSheetState,
