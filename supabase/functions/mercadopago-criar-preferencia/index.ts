@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import {
+    paymentMethodsForMetodo,
+    resolveMetodoPagamento,
+} from './payment_methods_for_metodo.ts'
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -52,7 +56,7 @@ serve(async (req) => {
         }
 
         const body = await req.json()
-        const { plano } = body
+        const { plano, metodo: metodoRaw } = body
 
         if (!plano || !PLANOS[plano as keyof typeof PLANOS]) {
             return new Response(JSON.stringify({ error: 'Plano inválido ou ausente.' }), {
@@ -61,7 +65,22 @@ serve(async (req) => {
             })
         }
 
+        const metodoResult = resolveMetodoPagamento(metodoRaw)
+        if ('error' in metodoResult) {
+            return new Response(JSON.stringify({ error: metodoResult.error }), {
+                status: 400,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            })
+        }
+        const metodoAplicado = metodoResult.metodo
+        if (metodoAplicado === 'todos') {
+            console.info(
+                '[mercadopago-criar-preferencia] metodo ausente — preference sem restrição de meio de pagamento',
+            )
+        }
+
         const planoData = PLANOS[plano as keyof typeof PLANOS]
+        const payment_methods = paymentMethodsForMetodo(metodoAplicado)
         const mpAccessToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN')
 
         if (!mpAccessToken) {
@@ -76,6 +95,7 @@ serve(async (req) => {
                 currency_id: 'BRL',
                 unit_price: planoData.price
             }],
+            ...(payment_methods ? { payment_methods } : {}),
             external_reference: `${user.id}:${plano}`,
             notification_url: `${supabaseUrl}/functions/v1/mercadopago-webhook`,
             back_urls: {
@@ -103,7 +123,10 @@ serve(async (req) => {
 
         const mpData = await mpResponse.json()
 
-        return new Response(JSON.stringify({ init_point: mpData.init_point }), {
+        return new Response(JSON.stringify({
+            init_point: mpData.init_point,
+            metodo_aplicado: metodoAplicado,
+        }), {
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
