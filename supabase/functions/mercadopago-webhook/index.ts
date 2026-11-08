@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import {
+    buildPagamentoPlanInsertRow,
+    resolveMercadoPagoPaymentId,
+} from './build_user_plan_payment_insert.ts'
 
 const PLANOS_DURACAO_MESES = {
     bronze: 3,
@@ -106,14 +110,16 @@ serve(async (req) => {
             .eq('user_id', userId)
             .eq('ativo', true)
 
-        // Novo plano
-        const { error: planError } = await supabase.from('user_plans').insert({
-            user_id: userId,
-            plano: planoId,
-            origem: 'pagamento',
-            expira_em: dataExpiracao.toISOString(),
-            ativo: true
+        const mpPaymentId = resolveMercadoPagoPaymentId(paymentInfo.id, paymentId)
+        const planRow = buildPagamentoPlanInsertRow({
+            userId,
+            planoId,
+            expiraEmIso: dataExpiracao.toISOString(),
+            paymentId: mpPaymentId,
         })
+
+        // Novo plano
+        const { error: planError } = await supabase.from('user_plans').insert(planRow)
 
         if (planError) {
             console.error('Falha ao inserir novo plano no user_plans', planError)
