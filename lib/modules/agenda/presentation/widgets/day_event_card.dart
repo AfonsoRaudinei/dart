@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -30,6 +31,7 @@ class DayEventCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final v = SoloForteSheetVisuals.of(context);
     final theme = Theme.of(context);
 
     final card = Card(
@@ -229,21 +231,22 @@ class DayEventCard extends ConsumerWidget {
     WidgetRef ref,
     Event event,
   ) async {
+    final v = SoloForteSheetVisuals.of(context);
     await showSoloForteSheet<void>(
       context: context,
       showDragHandle: false,
       builder: (ctx) {
         final isIos = soloForteSheetIsIos(ctx);
         final bg = isIos
-            ? SoloForteSheetSkinIos.cardBackground
+            ? v.cardBackground
             : Theme.of(ctx).cardColor;
         final handle = isIos
-            ? SoloForteSheetSkinIos.handleColor
+            ? v.handleColor
             : Colors.grey.shade300;
         final titleColor =
-            isIos ? SoloForteSheetSkinIos.titleColor : null;
+            v.isIos ? v.titleColor : null;
         final radius =
-            isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
+            v.cardRadius;
 
         return Container(
           margin: const EdgeInsets.all(16),
@@ -251,7 +254,7 @@ class DayEventCard extends ConsumerWidget {
             color: bg,
             borderRadius: BorderRadius.circular(radius),
             border: isIos
-                ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+                ? Border.all(color: v.cardBorder)
                 : null,
           ),
           child: Column(
@@ -259,12 +262,8 @@ class DayEventCard extends ConsumerWidget {
             children: [
               Container(
                 margin: const EdgeInsets.only(top: 8),
-                width: isIos
-                    ? SoloForteSheetSkinIos.handleSize.width
-                    : 40,
-                height: isIos
-                    ? SoloForteSheetSkinIos.handleSize.height
-                    : 4,
+                width: v.handleSize.width,
+                height: v.handleSize.height,
                 decoration: BoxDecoration(
                   color: handle,
                   borderRadius: BorderRadius.circular(2),
@@ -282,14 +281,14 @@ class DayEventCard extends ConsumerWidget {
               ),
               Divider(
                 height: 1,
-                color: isIos ? SoloForteSheetSkinIos.rowDivider : null,
+                color: isIos ? v.rowDivider : null,
               ),
               if (onVisitHtml != null)
                 ListTile(
                   leading: Icon(
                     Icons.article_outlined,
                     color: isIos
-                        ? SoloForteSheetSkinIos.iconStroke
+                        ? v.iconStroke
                         : const Color(0xFF16A34A),
                   ),
                   title: Text(
@@ -305,7 +304,7 @@ class DayEventCard extends ConsumerWidget {
                 leading: Icon(
                   Icons.edit_outlined,
                   color: isIos
-                      ? SoloForteSheetSkinIos.iconStroke
+                      ? v.iconStroke
                       : const Color(0xFF3B82F6),
                 ),
                 title: Text(
