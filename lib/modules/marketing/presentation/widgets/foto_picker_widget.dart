@@ -49,8 +49,6 @@ class FotoPickerWidget extends StatefulWidget {
 }
 
 class _FotoPickerWidgetState extends State<FotoPickerWidget> {
-  static const Color _bgDark = Color(0xFF2C2C2E);
-  static const Color _borderDark = Color(0xFF3A3A3C);
   bool _loading = false;
 
   Future<void> _pick() async {
@@ -138,8 +136,8 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
     final v = SoloForteSheetVisuals.of(context);
     final hasPhoto = widget.url != null && widget.url!.isNotEmpty;
     final isEmpty = !hasPhoto && widget.required;
-    final bg = isIos ? SoloForteSheetSkinIos.cardBackground : _bgDark;
-    final border = isIos ? SoloForteSheetSkinIos.cardBorder : _borderDark;
+    final bg = v.cardBackground;
+    final border = v.cardBorder;
     final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 14.0;
 
     return GestureDetector(
@@ -172,8 +170,7 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
   }
 
   Widget _buildLoading(bool isIos) {
-    final muted =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.grey;
+    final muted = SoloForteSheetVisuals.of(context).subtitleColor;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -302,16 +299,14 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
   }
 
   Widget _buildPlaceholder(bool isError, bool isIos) {
+    final v = SoloForteSheetVisuals.of(context);
     final iconColor = isError
         ? Colors.red.shade400
-        : (isIos
-            ? SoloForteSheetSkinIos.subtitleColor
-            : Colors.white38);
+        : v.subtitleColor;
     final labelColor = isError
         ? Colors.red.shade400
-        : (isIos ? SoloForteSheetSkinIos.titleColor : Colors.white);
-    final hintColor =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white38;
+        : v.titleColor;
+    final hintColor = v.subtitleColor;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
