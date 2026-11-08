@@ -366,7 +366,7 @@ class _OportunidadesTab extends ConsumerWidget {
           const Center(child: Text('Erro ao carregar oportunidades.')),
       data: (overview) {
         if (overview.porCliente.isEmpty) {
-          return const Center(child: Text('Nenhuma oportunidade em aberto 🎯'));
+          return const Center(child: Text('Nenhum cliente na carteira.'));
         }
 
         final slices = overview.slicesFor(chartMode);
@@ -404,6 +404,11 @@ class _OportunidadesTab extends ConsumerWidget {
             ...overview.porCliente.map((resumo) {
               final cliente = resumo.cliente;
               final count = resumo.oportunidades.length;
+              final subtitle = count == 0
+                  ? 'Todas as categorias fechadas ou sem oportunidade em R\$'
+                  : '$count '
+                        '${count == 1 ? 'categoria em aberto' : 'categorias em aberto'}'
+                        '${resumo.totalValue > 0 ? ' · ${_currencyFormat.format(resumo.totalValue)}' : ''}';
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
@@ -411,11 +416,7 @@ class _OportunidadesTab extends ConsumerWidget {
                     cliente.name,
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
-                  subtitle: Text(
-                    '$count '
-                    '${count == 1 ? 'categoria em aberto' : 'categorias em aberto'}'
-                    '${resumo.totalValue > 0 ? ' · ${_currencyFormat.format(resumo.totalValue)}' : ''}',
-                  ),
+                  subtitle: Text(subtitle),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     ref.read(carteiraSegmentProvider.notifier).state =
