@@ -101,3 +101,38 @@ const double kMapActionColumnBottomInset =
 /// Composição: gap 16 + botão 48 = 64dp.
 const double kMapActionColumnDrawModeCompensation =
     kMapActionColumnSpacingAboveCheckIn + kMapActionColumnButtonSize;
+
+/// Inset superior da fileira de toggles (basemap, pinos, localização).
+///
+/// Alinhado a `map_controls_overlay.dart` (`top: safeTop + 12`).
+const double kMapTopControlsTopInset = 12.0;
+
+/// Margem direita da fileira de toggles no topo do mapa.
+const double kMapTopControlsRightInset = 12.0;
+
+/// Espaçamento horizontal entre toggles da fileira superior.
+const double kMapTopControlsButtonSpacing = 6.0;
+
+/// Altura da fileira de toggles superiores (botões 48dp).
+const double kMapTopControlsRowHeight = kMapActionColumnButtonSize;
+
+/// Gap entre a base dos toggles topo e o chip de município.
+const double kMapLocalityChipGapBelowTopControls = 10.0;
+
+/// Offset do chip de município abaixo do safe area (abaixo da fileira de toggles).
+///
+/// Composição: [kMapTopControlsTopInset] + [kMapTopControlsRowHeight] +
+/// [kMapLocalityChipGapBelowTopControls] → 12 + 48 + 10 = 70dp.
+const double kMapLocalityChipTopBelowSafeArea =
+    kMapTopControlsTopInset +
+    kMapTopControlsRowHeight +
+    kMapLocalityChipGapBelowTopControls;
+
+/// Largura reservada à direita para os três toggles topo (evita sobreposição do chip).
+///
+/// Composição: [kMapTopControlsRightInset] + 3×[kMapActionColumnButtonSize] +
+/// 2×[kMapTopControlsButtonSpacing] → 12 + 144 + 12 = 168dp.
+const double kMapTopControlsReservedRightWidth =
+    kMapTopControlsRightInset +
+    (3 * kMapActionColumnButtonSize) +
+    (2 * kMapTopControlsButtonSpacing);
