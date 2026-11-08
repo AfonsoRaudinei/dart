@@ -2,8 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
+import '../../domain/agronomic_models.dart';
 import '../../domain/client.dart';
 import 'farm_map_entry_sheet.dart';
 
@@ -64,11 +66,7 @@ class _ClientActionButtonState extends State<ClientActionButton> {
                     ),
                   ],
                 ),
-                child: Icon(
-                  widget.icon,
-                  color: context.themeAccent,
-                  size: 24,
-                ),
+                child: Icon(widget.icon, color: context.themeAccent, size: 24),
               ),
               const SizedBox(height: 8),
               Text(
@@ -191,24 +189,14 @@ class ClientModalOption extends StatelessWidget {
   Widget build(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
     final isIos = v.isIos;
-    final accent = isIos
-        ? v.iconStroke
-        : Theme.of(context).colorScheme.primary;
-    final surface = isIos
-        ? v.cardBackground
-        : context.premiumSurface;
-    final border = isIos
-        ? v.cardBorder
-        : context.premiumHairline;
-    final titleColor = isIos
-        ? v.titleColor
-        : context.premiumTextPrimary;
+    final accent = isIos ? v.iconStroke : Theme.of(context).colorScheme.primary;
+    final surface = isIos ? v.cardBackground : context.premiumSurface;
+    final border = isIos ? v.cardBorder : context.premiumHairline;
+    final titleColor = isIos ? v.titleColor : context.premiumTextPrimary;
     final subtitleColor = isIos
         ? v.subtitleColor
         : context.premiumTextSecondary;
-    final arrowColor = isIos
-        ? v.arrowColor
-        : const Color(0xFFC7C7CC);
+    final arrowColor = isIos ? v.arrowColor : const Color(0xFFC7C7CC);
     final radius = v.cardRadius;
 
     return Material(
@@ -232,9 +220,7 @@ class ClientModalOption extends StatelessWidget {
                   color: isIos
                       ? v.iconBackground
                       : accent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(
-                    v.iconRadius,
-                  ),
+                  borderRadius: BorderRadius.circular(v.iconRadius),
                 ),
                 child: Icon(icon, color: accent, size: 22),
               ),
@@ -254,19 +240,12 @@ class ClientModalOption extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: subtitleColor,
-                      ),
+                      style: TextStyle(fontSize: 13, color: subtitleColor),
                     ),
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right,
-                color: arrowColor,
-                size: 20,
-              ),
+              Icon(Icons.chevron_right, color: arrowColor, size: 20),
             ],
           ),
         ),
@@ -278,8 +257,12 @@ class ClientModalOption extends StatelessWidget {
 // ── Helper: modal de adicionar talhão (desenhar / importar) ─────────────
 // Função livre para evitar dependência do state — chamada com context+client.
 
-void showAdicionarTalhaoModal(BuildContext context, Client client) {
-    final v = SoloForteSheetVisuals.of(context);
+void showAdicionarTalhaoModal(
+  BuildContext context,
+  Client client, {
+  Farm? farm,
+}) {
+  final v = SoloForteSheetVisuals.of(context);
   HapticFeedback.lightImpact();
   showSoloForteSheet<void>(
     context: context,
@@ -291,18 +274,13 @@ void showAdicionarTalhaoModal(BuildContext context, Client client) {
     builder: (sheetCtx) {
       final isIos = soloForteSheetIsIos(sheetCtx);
       // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
-      final surface = isIos
-          ? Colors.transparent
-          : context.premiumSurface;
-      final handle = isIos
-          ? v.handleColor
-          : context.premiumHairline;
+      final surface = isIos ? Colors.transparent : context.premiumSurface;
+      final handle = isIos ? v.handleColor : context.premiumHairline;
       final titleColor = v.isIos ? v.titleColor : null;
       final subtitleColor = isIos
           ? v.subtitleColor
           : context.premiumTextSecondary;
-      final radius =
-          v.sheetRadius;
+      final radius = v.sheetRadius;
 
       return Container(
         decoration: BoxDecoration(
@@ -332,9 +310,9 @@ void showAdicionarTalhaoModal(BuildContext context, Client client) {
             const SizedBox(height: 8),
             Text(
               'Como deseja criar o novo talhão?',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: subtitleColor,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: subtitleColor),
             ),
             const SizedBox(height: 24),
             // Opção 1: Desenhar
@@ -344,11 +322,21 @@ void showAdicionarTalhaoModal(BuildContext context, Client client) {
               subtitle: 'Toque no mapa para definir os vértices',
               onTap: () {
                 HapticFeedback.selectionClick();
-                // Pós-frame: evita race Navigator.pop + showSheet (falha
+                // Pós-frame: evita race Navigator.pop + showSheet/go (falha
                 // intermitente quando o route ainda está "locked").
                 Navigator.of(context).pop();
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (!context.mounted) return;
+                  if (farm != null) {
+                    context.go(
+                      buildFarmMapUri(
+                        client: client,
+                        farm: farm,
+                        mode: FarmMapEntryMode.draw,
+                      ).toString(),
+                    );
+                    return;
+                  }
                   showFarmMapEntrySheet(
                     context,
                     client: client,
@@ -368,6 +356,16 @@ void showAdicionarTalhaoModal(BuildContext context, Client client) {
                 Navigator.of(context).pop();
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (!context.mounted) return;
+                  if (farm != null) {
+                    context.go(
+                      buildFarmMapUri(
+                        client: client,
+                        farm: farm,
+                        mode: FarmMapEntryMode.import,
+                      ).toString(),
+                    );
+                    return;
+                  }
                   showFarmMapEntrySheet(
                     context,
                     client: client,
