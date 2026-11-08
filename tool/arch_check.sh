@@ -18,6 +18,7 @@
 #   REGRA-OCCURRENCE-SHEET — blindagem criação ocorrência P0/P1 (BUG-006)
 #   REGRA-UI-MAP-CTA — anti-regressão CTA fantasma + sombra de atribuição
 #   REGRA-RESTORE-1 — push agronômico PT-only (BUG-011 restore pós-reinstall)
+#   REGRA-SHEET-CONTRAST-1 / REGRA-SHEET-VISUALS-1 — cores de sheet via Visuals (ratchet)
 # =============================================================================
 
 set -uo pipefail
@@ -797,6 +798,90 @@ elif ! grep -q "resolveSoloForteSheetBackgroundColor" "$SHEET_IMPL"; then
   fail "REGRA-SHEET-BLAST-1: soloforte_sheet.dart deve expor resolveSoloForteSheetBackgroundColor"
 else
   pass "contrato de sheet documentado e testável (REGRA-SHEET-BLAST-1)"
+fi
+
+echo ""
+
+# =============================================================================
+# REGRA-SHEET-CONTRAST-1 / REGRA-SHEET-VISUALS-1 — ratchet de cores de sheet
+#
+# Conteúdo de sheet resolve cor só por SoloForteSheetVisuals.of(context).
+#   CONTRAST-1: proibido `isIos ? … : Colors.white|Colors.black|
+#               SoloForteSheetTokens.titleColor` (quebra contraste Verde/Black).
+#   VISUALS-1:  proibido token cru (SoloForteSheetSkinIos./SkinLight./
+#               SoloForteSheetTokens.) fora de lib/core/ui/sheets/.
+# Legado congelado em allowlists versionadas que só encolhem.
+# Doc: design/sheets.md
+# =============================================================================
+echo -e "── ${CYAN}REGRA-SHEET-CONTRAST-1 / VISUALS-1${NC}: cores de sheet via SoloForteSheetVisuals ─────"
+echo ""
+
+SHEET_CONTRAST_ALLOWLIST="tool/sheet_contrast_legacy_allowlist.txt"
+SHEET_TOKENS_ALLOWLIST="tool/sheet_tokens_legacy_allowlist.txt"
+
+read_sheet_allowlist() {
+  grep -v -E '^[[:space:]]*(#|$)' "$1" | sed 's/[[:space:]]*$//' | sort -u
+}
+
+# Imprime linhas presentes em $1 e ausentes em $2 (listas newline-separated).
+sheet_list_minus() {
+  comm -23 <(printf '%s\n' "$1" | grep -v '^$' | sort -u) \
+           <(printf '%s\n' "$2" | grep -v '^$' | sort -u)
+}
+
+if [ ! -f "$SHEET_CONTRAST_ALLOWLIST" ]; then
+  fail "REGRA-SHEET-CONTRAST-1: $SHEET_CONTRAST_ALLOWLIST ausente"
+else
+  CONTRAST_HITS=$(find lib -name '*.dart' -not -path 'lib/core/ui/sheets/*' -print0 \
+    | xargs -0 perl -0777 -ne \
+      'print "$ARGV\n" if /isIos\s*\?[^;?:]*:\s*(?:Colors\.(?:white|black)|SoloForteSheetTokens\.titleColor)/' \
+    | sort -u)
+  CONTRAST_ALLOW=$(read_sheet_allowlist "$SHEET_CONTRAST_ALLOWLIST")
+  CONTRAST_NEW=$(sheet_list_minus "$CONTRAST_HITS" "$CONTRAST_ALLOW")
+  CONTRAST_STALE=$(sheet_list_minus "$CONTRAST_ALLOW" "$CONTRAST_HITS")
+
+  if [ -n "$CONTRAST_NEW" ]; then
+    fail "REGRA-SHEET-CONTRAST-1: ternário isIos com cor fixa (Colors.white/black/titleColor) fora da allowlist."
+    echo "   Use SoloForteSheetVisuals.of(context) (lib/core/ui/sheets/solo_forte_sheet_visuals.dart)"
+    printf '%s\n' "$CONTRAST_NEW" | while IFS= read -r f; do
+      echo -e "      ${RED}→${NC} $f"
+    done
+  else
+    pass "nenhum isIos ? … : Colors.white/black novo em sheets (REGRA-SHEET-CONTRAST-1)"
+  fi
+
+  if [ -n "$CONTRAST_STALE" ]; then
+    printf '%s\n' "$CONTRAST_STALE" | while IFS= read -r f; do
+      warn "REGRA-SHEET-CONTRAST-1: $f não tem mais o padrão — remova de $SHEET_CONTRAST_ALLOWLIST"
+    done
+  fi
+fi
+
+if [ ! -f "$SHEET_TOKENS_ALLOWLIST" ]; then
+  fail "REGRA-SHEET-VISUALS-1: $SHEET_TOKENS_ALLOWLIST ausente"
+else
+  TOKENS_HITS=$(grep -rlE 'SoloForteSheetSkin(Ios|Light)\.|SoloForteSheetTokens\.' lib \
+    --include='*.dart' \
+    | grep -v '^lib/core/ui/sheets/' \
+    | sort -u)
+  TOKENS_ALLOW=$(read_sheet_allowlist "$SHEET_TOKENS_ALLOWLIST")
+  TOKENS_NEW=$(sheet_list_minus "$TOKENS_HITS" "$TOKENS_ALLOW")
+  TOKENS_STALE=$(sheet_list_minus "$TOKENS_ALLOW" "$TOKENS_HITS")
+
+  if [ -n "$TOKENS_NEW" ]; then
+    fail "REGRA-SHEET-VISUALS-1: use SoloForteSheetVisuals.of(context) — feature nova não consome tokens crus (REGRA-SHEET-VISUALS-1)"
+    printf '%s\n' "$TOKENS_NEW" | while IFS= read -r f; do
+      echo -e "      ${RED}→${NC} $f"
+    done
+  else
+    pass "nenhum consumidor novo de tokens crus de sheet (REGRA-SHEET-VISUALS-1)"
+  fi
+
+  if [ -n "$TOKENS_STALE" ]; then
+    printf '%s\n' "$TOKENS_STALE" | while IFS= read -r f; do
+      warn "REGRA-SHEET-VISUALS-1: $f não usa mais tokens crus — remova de $SHEET_TOKENS_ALLOWLIST"
+    done
+  fi
 fi
 
 # =============================================================================
