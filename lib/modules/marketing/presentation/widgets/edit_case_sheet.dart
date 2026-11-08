@@ -372,33 +372,19 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
     // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final sheetBg = v.sheetBackground;
     final sheetRadius = isIos ? SoloForteSheetSkinIos.sheetRadius : 28.0;
-    final handleColor = isIos
-        ? SoloForteSheetSkinIos.handleColor
-        : PremiumTokens.hairlineLight;
-    final titleColor = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : Colors.white;
-    final hintColor = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
+    final handleColor = v.handleColor;
+    final titleColor = v.titleColor;
+    final hintColor = v.subtitleColor;
     final lockAccent = isIos
         ? SoloForteSheetSkinIos.iconStroke
         : context.themeAccent;
-    final dropdownBg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : SoloForteSheetTokens.inputBackground;
-    final fieldText = isIos
-        ? SoloForteSheetSkinIos.titleColor
-        : SoloForteSheetTokens.inputText;
+    final dropdownBg = v.cardBackground;
+    final fieldText = v.titleColor;
     final ctaBg = isIos
         ? SoloForteSheetSkinIos.ctaBackground
         : context.themeAccent;
-    final ghostBorder = isIos
-        ? SoloForteSheetSkinIos.ghostBorder
-        : PremiumTokens.hairlineLight;
-    final ghostFg = isIos
-        ? SoloForteSheetSkinIos.ghostText
-        : Colors.white;
+    final ghostBorder = v.ghostBorder;
+    final ghostFg = v.ghostText;
     final fotoSection = _buildFotoSection();
 
     return SafeArea(
@@ -654,9 +640,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                           onPressed: _isSaving ? null : _handleSalvar,
                           style: FilledButton.styleFrom(
                             backgroundColor: ctaBg,
-                            foregroundColor: isIos
-                                ? SoloForteSheetSkinIos.ctaText
-                                : null,
+                            foregroundColor: v.ctaText,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(
