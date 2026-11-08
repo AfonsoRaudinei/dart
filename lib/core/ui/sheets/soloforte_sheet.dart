@@ -1,6 +1,7 @@
 // lib/core/ui/sheets/soloforte_sheet.dart
 
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import 'sheet_tokens.dart';
 
 /// Resolve a cor de fundo do modal conforme tema e flags do caller.
@@ -123,14 +124,14 @@ Future<T?> showSoloForteSheet<T>({
   final resolvedShape = preserveMaterialDefaults
       ? shape
       : (shape ??
-          RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(resolvedRadius),
-            ),
-            side: isIos
-                ? const BorderSide(color: SoloForteSheetSkinIos.sheetBorder)
-                : BorderSide.none,
-          ));
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(resolvedRadius),
+              ),
+              side: isIos
+                  ? const BorderSide(color: SoloForteSheetSkinIos.sheetBorder)
+                  : BorderSide.none,
+            ));
 
   // Respeita o caller em todos os temas. Antes o Azul forçava `false` e
   // desenhava handle no Column-chrome — causa de drag quebrado + sheet duplo.
@@ -192,12 +193,9 @@ Future<T?> showSoloForteSheet<T>({
         data: sheetTheme,
         child: SoloForteSheetSkinScope(
           variant: variant,
-          child: Material(
-            color: Colors.transparent,
-            child: sheet,
-          ),
+          child: Material(color: Colors.transparent, child: sheet),
         ),
       );
     },
-  );
+  ).whenComplete(SoloforteKeyboardDismiss.dismiss);
 }
