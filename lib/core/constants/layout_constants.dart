@@ -113,6 +113,12 @@ const double kMapTopControlsRightInset = 12.0;
 /// Espaçamento horizontal entre toggles da fileira superior.
 const double kMapTopControlsButtonSpacing = 6.0;
 
+/// Gap entre rótulo oculto e botão (basemap / pinos) na fileira superior.
+const double kMapTopControlsToggleLabelButtonGap = 6.0;
+
+/// Gap entre rótulo oculto e botão de localização na fileira superior.
+const double kMapTopControlsLocationLabelButtonGap = 8.0;
+
 /// Altura da fileira de toggles superiores (botões 48dp).
 const double kMapTopControlsRowHeight = kMapActionColumnButtonSize;
 
@@ -130,9 +136,14 @@ const double kMapLocalityChipTopBelowSafeArea =
 
 /// Largura reservada à direita para os três toggles topo (evita sobreposição do chip).
 ///
-/// Composição: [kMapTopControlsRightInset] + 3×[kMapActionColumnButtonSize] +
-/// 2×[kMapTopControlsButtonSpacing] → 12 + 144 + 12 = 168dp.
+/// Inclui gaps fixos label→botão com rótulos ocultos (6 + 6 + 8).
+///
+/// Composição: [kMapTopControlsRightInset] + 2×(gap basemap/pinos + 48) +
+/// (gap localização + 48) + 2×[kMapTopControlsButtonSpacing]
+/// → 12 + 108 + 56 + 12 = 188dp.
 const double kMapTopControlsReservedRightWidth =
     kMapTopControlsRightInset +
-    (3 * kMapActionColumnButtonSize) +
+    (2 *
+        (kMapTopControlsToggleLabelButtonGap + kMapActionColumnButtonSize)) +
+    (kMapTopControlsLocationLabelButtonGap + kMapActionColumnButtonSize) +
     (2 * kMapTopControlsButtonSpacing);
