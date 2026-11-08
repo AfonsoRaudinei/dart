@@ -29,9 +29,7 @@ BoxDecoration novoCaseInnerCardDecoration(
   BuildContext context, {
   bool selected = false,
 }) {
-  final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
-  if (isIos) {
+  if (soloForteSheetIsIos(context)) {
     return BoxDecoration(
       color: SoloForteSheetSkinIos.cardBackground,
       borderRadius: BorderRadius.circular(SoloForteSheetSkinIos.cardRadius),
@@ -72,20 +70,15 @@ BoxDecoration novoCaseInnerCardDecoration(
 }
 
 ButtonStyle novoCaseGhostOutlinedButtonStyle(BuildContext context) {
-  final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+  final v = SoloForteSheetVisuals.of(context);
   return OutlinedButton.styleFrom(
-    foregroundColor: isIos
-        ? SoloForteSheetSkinIos.ghostText
-        : SoloForteSheetTokens.inputText,
+    foregroundColor: v.ghostText,
     side: BorderSide(
-      color: isIos
-          ? SoloForteSheetSkinIos.ghostBorder
-          : PremiumTokens.hairlineLight,
+      color: v.ghostBorder,
     ),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(
-        isIos ? SoloForteSheetSkinIos.ghostRadius : 16,
+        v.isIos ? SoloForteSheetSkinIos.ghostRadius : 16,
       ),
     ),
     minimumSize: const Size.fromHeight(48),
@@ -95,14 +88,11 @@ ButtonStyle novoCaseGhostOutlinedButtonStyle(BuildContext context) {
 Widget novoCaseSectionLabel(String label) {
   return Builder(
     builder: (context) {
-      final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+      final v = SoloForteSheetVisuals.of(context);
       return Text(
         label.toUpperCase(),
         style: TextStyle(
-          color: isIos
-              ? SoloForteSheetSkinIos.titleColor
-              : SoloForteSheetTokens.sectionLabel,
+          color: v.titleColor,
           fontWeight: SoloForteSheetTokens.sectionWeight,
           fontSize: SoloForteSheetTokens.sectionFontSize,
         ),
@@ -114,21 +104,16 @@ Widget novoCaseSectionLabel(String label) {
 Widget novoCaseFieldBox({required Widget child}) {
   return Builder(
     builder: (context) {
-      final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
+      final v = SoloForteSheetVisuals.of(context);
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: isIos
-              ? SoloForteSheetSkinIos.cardBackground
-              : SoloForteSheetTokens.inputBackground,
+          color: v.cardBackground,
           borderRadius: BorderRadius.circular(
-            isIos ? SoloForteSheetSkinIos.cardRadius : 14,
+            v.isIos ? SoloForteSheetSkinIos.cardRadius : 14,
           ),
           border: Border.all(
-            color: isIos
-                ? SoloForteSheetSkinIos.cardBorder
-                : PremiumTokens.hairlineLight,
+            color: v.cardBorder,
           ),
         ),
         child: child,
@@ -147,19 +132,12 @@ Widget novoCaseTextInput(
 }) {
   return Builder(
     builder: (context) {
-      final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
-      final textColor = isIos
-          ? SoloForteSheetSkinIos.titleColor
-          : SoloForteSheetTokens.inputText;
-      final hintColor = isIos
-          ? SoloForteSheetSkinIos.subtitleColor
-          : SoloForteSheetTokens.inputHint;
+      final v = SoloForteSheetVisuals.of(context);
+      final textColor = v.titleColor;
+      final hintColor = v.subtitleColor;
       // Um único card: o chrome vem de [novoCaseFieldBox]. Sem fill/borda
       // do InputDecorationTheme (OutlineInputBorder) — evita quadro-no-card.
-      final fill = isIos
-          ? Colors.transparent
-          : SoloForteSheetTokens.inputBackground;
+      final fill = v.isIos ? Colors.transparent : v.cardBackground;
 
       return TextFormField(
         controller: controller,
@@ -199,14 +177,11 @@ class NovoCaseFDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
     final v = SoloForteSheetVisuals.of(context);
     return Divider(
       height: 0.5,
       thickness: 0.5,
-      color: isIos
-          ? SoloForteSheetSkinIos.rowDivider
-          : PremiumTokens.hairlineLight,
+      color: v.dividerColor,
     );
   }
 }
