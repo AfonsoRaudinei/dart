@@ -1,36 +1,31 @@
 # Monetização — App Store e Play Store
 
 Data: 2026-11-08
-Escopo: decisão de pagamento nativo nas lojas (ADR-012, Adendo 2).
+Escopo: compra nativa nas lojas (ADR-012, Adendo 2).
 
 ## Decisão
 
-O binário iOS e o binário Android não iniciam compra de plano digital por Mercado Pago, não exibem preço de plano e não apresentam chamada à ação nem link para checkout externo.
+O app não inicia compra por Mercado Pago e não abre checkout externo. O meio de pagamento é o da loja: StoreKit no iOS e Play Billing no Android. A taxa é a da loja.
 
-O meio de pagamento aprovado para o app é o da própria loja: StoreKit no iOS e Play Billing no Android. A taxa é a da loja. O app não escolhe PIX nem cartão.
+Prazos publicados: Bronze 3 meses, Prata 6 meses, Ouro 12 meses. A Apple não oferece 5 nem 8 meses em assinatura não renovável. O preço exibido é o que a loja devolver. Referência de cadastro: R$ 49,90, R$ 79,90 e R$ 119,90.
 
-Essa compra ainda não está no binário. Não há produtos de plano cadastrados nas consoles e não há validação de recibo. Até essa entrega, o app só mostra o status do plano já existente na conta.
+IDs iguais nas duas lojas: `soloforte_plano_bronze`, `soloforte_plano_prata`, `soloforte_plano_ouro`.
 
-## Comportamento neste release
+Bundle iOS: `com.soloforte.soloforteApp`. Pacote Android: `com.soloforte.app`.
 
-- `/planos`: status do plano e retorno ao mapa. Sem preço e sem botão de assinar.
-- `/planos/pagamento`: tela de bloqueio, sem método de pagamento.
-- `/planos/confirmacao`: tela de bloqueio, sem abertura de checkout.
-- `MercadoPagoService`: aborta no iOS e no Android antes de invocar a Edge Function.
+## Comportamento
 
-## O que permanece no repositório
+- `/planos`: no iOS e no Android, lista só os produtos que a loja devolver, com o preço da loja, compra e restaurar compras. Se a loja não devolver produto, a tela não mostra preço nem botão.
+- `/planos/pagamento` e `/planos/confirmacao`: sem checkout externo.
+- `MercadoPagoService`: aborta no iOS e no Android antes da Edge.
+- A Edge `loja-verificar-compra` valida o recibo e só então grava `user_plans`. O cliente não concede plano. Sem segredo de verificação, a Edge não grava.
 
-As Edge Functions `mercadopago-*` continuam no código e não são o funil de compra do app. Nenhuma tela as chama.
+## Ordem de publicação
 
-## Quando a compra na loja entrar
-
-1. Cadastrar três produtos de prazo fixo, sem renovação automática, com os mesmos IDs nas duas lojas: `soloforte_plano_bronze` (3 meses), `soloforte_plano_prata` (5 meses), `soloforte_plano_ouro` (8 meses). Na Apple, assinatura não renovável. Na Google, produto único consumível.
-2. O preço em BRL é o cadastrado na loja. Referência atual do catálogo: R$ 49,90, R$ 79,90 e R$ 119,90.
-3. Validar o recibo no servidor e só então gravar `user_plans`. O cliente não concede plano.
-4. Aí as telas passam a mostrar o preço devolvido pela loja e a compra nativa.
-
-Sem os produtos e sem os segredos de verificação, o botão de compra não entra no binário.
+1. App Store Connect: três assinaturas não renováveis, acordo de apps pagos, chave da App Store Server API no Supabase, usuário sandbox.
+2. Enviar o binário iOS com esses produtos na versão.
+3. Depois do iOS em revisão, cadastrar os mesmos IDs na Play como produto único consumível e enviar o Android.
 
 ## Nota sugerida ao revisor
 
-O aplicativo não oferece compra de planos digitais por checkout externo. O módulo de planos exibe apenas o status do plano associado à conta. A compra dentro do app, quando for publicada, usará o faturamento da própria loja.
+O aplicativo não oferece compra de planos digitais por checkout externo. A compra dentro do app usa o faturamento da própria loja. O plano só é concedido depois da validação do recibo no servidor.
