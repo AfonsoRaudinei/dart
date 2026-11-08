@@ -133,7 +133,6 @@ class _CoverSection extends StatelessWidget {
     final cover = publicacao.coverMedia;
     final hasCover = cover.path.isNotEmpty;
     final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
     final surface = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : context.premiumSurface;
@@ -184,7 +183,6 @@ class _HeaderSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
     final titleColor =
         isIos ? SoloForteSheetSkinIos.titleColor : null;
 
@@ -272,7 +270,6 @@ class _InfoSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
     final subtitle = isIos
         ? SoloForteSheetSkinIos.subtitleColor
         : context.premiumTextSecondary;
@@ -380,7 +377,6 @@ class _CTASection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
     final ctaBg = isIos
         ? SoloForteSheetSkinIos.ctaBackground
         : PremiumTokens.brandGreen;

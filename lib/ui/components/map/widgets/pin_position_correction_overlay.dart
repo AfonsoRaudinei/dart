@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,7 +21,6 @@ class PinPositionCorrectionOverlay extends ConsumerWidget {
 
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final isIos = soloForteSheetIsIos(context);
-    final v = SoloForteSheetVisuals.of(context);
 
     return Positioned(
       left: 16,
