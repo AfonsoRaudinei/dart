@@ -31,6 +31,7 @@ import '../../../../ui/theme/premium/design_tokens.dart';
 import 'gps_walk_controls_overlay.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/solo_forte_sheet_visuals.dart';
+import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import '../../../../ui/components/sync/conflict_resolution_dialog.dart';
 
 part 'drawing_sheet_builders_a.dart';
@@ -201,6 +202,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     // 1A: X / dismiss durante edição só recolhe o sheet — não cancela vértices.
     if (intent == DrawingCloseIntent.dismissSheet &&
         widget.controller.currentState == DrawingState.editing) {
+      SoloforteKeyboardDismiss.dismiss();
       widget.onCollapseWhileEditing?.call();
       return;
     }
@@ -211,6 +213,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       intent: intent,
     );
     if (!mounted || !decision.shouldCloseSheet) return;
+    SoloforteKeyboardDismiss.dismiss();
     _emitCloseCallback(
       preferSavedCallback: preferSavedCallback,
       savedFeature: savedFeature,
@@ -234,6 +237,16 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
   Future<void> _handleClosePressed() async {
     await _requestClose(DrawingCloseIntent.dismissSheet);
+  }
+
+  void _popLocalDialog(BuildContext context, [Object? result]) {
+    SoloforteKeyboardDismiss.dismiss();
+    final navigator = Navigator.of(context, rootNavigator: false);
+    if (result != null) {
+      navigator.pop(result);
+    } else {
+      navigator.pop();
+    }
   }
 
   void _onToolSelected(String key) {
@@ -368,73 +381,75 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final hasBoundedHeight = constraints.maxHeight.isFinite;
-            final scrollArea = SingleChildScrollView(
-              controller: widget.scrollController,
-              physics: const BouncingScrollPhysics(),
-              child: ListenableBuilder(
-                listenable: widget.controller,
-                builder: (context, _) {
-                  // ── GPS Walk: sincronizar métricas a cada novo vértice GPS ────
-                  final gpsSession = ref.watch(gpsWalkProvider);
-                  if (gpsSession != null) {
-                    // Sincroniza pontos do DrawingController → GpsWalkNotifier
-                    final pts = widget.controller.gpsVertices;
-                    if (pts.length != gpsSession.points.length) {
-                      // Schedule post-frame para não chamar durante build
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        ref
-                            .read(gpsWalkProvider.notifier)
-                            .syncFromController(pts);
-                      });
+            final scrollArea = SoloforteKeyboardDismiss(
+              child: SingleChildScrollView(
+                controller: widget.scrollController,
+                physics: const BouncingScrollPhysics(),
+                child: ListenableBuilder(
+                  listenable: widget.controller,
+                  builder: (context, _) {
+                    // ── GPS Walk: sincronizar métricas a cada novo vértice GPS ────
+                    final gpsSession = ref.watch(gpsWalkProvider);
+                    if (gpsSession != null) {
+                      // Sincroniza pontos do DrawingController → GpsWalkNotifier
+                      final pts = widget.controller.gpsVertices;
+                      if (pts.length != gpsSession.points.length) {
+                        // Schedule post-frame para não chamar durante build
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          ref
+                              .read(gpsWalkProvider.notifier)
+                              .syncFromController(pts);
+                        });
+                      }
+                      return const GpsWalkControlsOverlay();
                     }
-                    return const GpsWalkControlsOverlay();
-                  }
 
-                  final content = Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Always calculate and show metrics if available
-                      _buildMetricsPanel(context),
+                    final content = Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Always calculate and show metrics if available
+                        _buildMetricsPanel(context),
 
-                      if (widget.controller.errorMessage != null)
-                        _buildErrorState(context)
-                      // 🆕 Modo de revisão: Formulário após desenhar
-                      else if (widget.controller.currentState ==
-                          DrawingState.reviewing)
-                        _buildReviewingMode(context)
-                      else if (widget.controller.interactionMode ==
-                          DrawingInteraction.importing)
-                        _buildImportingMode(context)
-                      else if (widget.controller.interactionMode ==
-                          DrawingInteraction.importPreview)
-                        _buildImportPreviewMode(context)
-                      else if (widget.controller.interactionMode ==
-                          DrawingInteraction.unionSelection)
-                        _buildUnionMode(context)
-                      else if (widget.controller.interactionMode ==
-                          DrawingInteraction.differenceSelection)
-                        _buildDifferenceMode(context) // Replaces cut
-                      else if (widget.controller.interactionMode ==
-                          DrawingInteraction.intersectionSelection)
-                        _buildIntersectionMode(context)
-                      else if (widget.controller.interactionMode ==
-                          DrawingInteraction.editing)
-                        _buildEditingMode(context)
-                      else if (widget.controller.selectedFeature != null)
-                        _buildSelectedMode(context)
-                      else
-                        _buildToolsGrid(context),
-                    ],
-                  );
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      bottom: _showsSelectedStickyFooter
-                          ? 24
-                          : kFabSafeArea + safeBottom + 40,
-                    ),
-                    child: content,
-                  );
-                },
+                        if (widget.controller.errorMessage != null)
+                          _buildErrorState(context)
+                        // 🆕 Modo de revisão: Formulário após desenhar
+                        else if (widget.controller.currentState ==
+                            DrawingState.reviewing)
+                          _buildReviewingMode(context)
+                        else if (widget.controller.interactionMode ==
+                            DrawingInteraction.importing)
+                          _buildImportingMode(context)
+                        else if (widget.controller.interactionMode ==
+                            DrawingInteraction.importPreview)
+                          _buildImportPreviewMode(context)
+                        else if (widget.controller.interactionMode ==
+                            DrawingInteraction.unionSelection)
+                          _buildUnionMode(context)
+                        else if (widget.controller.interactionMode ==
+                            DrawingInteraction.differenceSelection)
+                          _buildDifferenceMode(context) // Replaces cut
+                        else if (widget.controller.interactionMode ==
+                            DrawingInteraction.intersectionSelection)
+                          _buildIntersectionMode(context)
+                        else if (widget.controller.interactionMode ==
+                            DrawingInteraction.editing)
+                          _buildEditingMode(context)
+                        else if (widget.controller.selectedFeature != null)
+                          _buildSelectedMode(context)
+                        else
+                          _buildToolsGrid(context),
+                      ],
+                    );
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom: _showsSelectedStickyFooter
+                            ? 24
+                            : kFabSafeArea + safeBottom + 40,
+                      ),
+                      child: content,
+                    );
+                  },
+                ),
               ),
             );
 
