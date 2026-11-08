@@ -8,7 +8,6 @@ import '../providers/drawing_client_provider.dart';
 import '../../../../core/domain/cultura_tipo.dart';
 import '../../../../core/ui/cultura_material_fields.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
-import '../../../../core/ui/sheets/soloforte_sheet.dart';
 
 /// Bottom sheet para editar as informações básicas de um talhão:
 /// nome, cliente, fazenda, área (read-only), cultura e safra.
