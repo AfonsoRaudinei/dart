@@ -2,16 +2,3 @@
 # Arquivos que ainda usam `isIos ? … : Colors.white|Colors.black|SoloForteSheetTokens.titleColor`.
 # Migrar para SoloForteSheetVisuals.of(context) e remover a linha. Nunca adicionar.
 # Uma path por linha; linhas com # e vazias são ignoradas. Fonte: tool/arch_check.sh
-lib/modules/agenda/presentation/widgets/agenda_filters_sheet.dart
-lib/modules/agenda_ai/presentation/widgets/agenda_ai_sheet.dart
-lib/modules/consultoria/clients/presentation/screens/client_form_screen.dart
-lib/modules/consultoria/clients/presentation/widgets/client_edit_form_sheets.dart
-lib/modules/consultoria/clients/presentation/widgets/client_sheet_widgets.dart
-lib/modules/consultoria/clients/presentation/widgets/farm_map_entry_sheet.dart
-lib/modules/consultoria/clients/presentation/widgets/link_drawing_to_farm_sheet.dart
-lib/modules/consultoria/relatorios/presentation/relatorios_visit_photos_section.dart
-lib/modules/drawing/presentation/widgets/drawing_info_edit_sheet.dart
-lib/modules/marketing/presentation/widgets/novo_case_resultado_section.dart
-lib/modules/ndvi/presentation/widgets/ndvi_talhao_sheet.dart
-lib/ui/components/map/widgets/pin_position_correction_overlay.dart
-lib/ui/screens/widgets/plano_block_sheet.dart
