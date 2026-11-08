@@ -29,6 +29,8 @@ Android: `platform` = `android`, `verificationData` = purchase token; `transacti
 | 200 | `already_granted` | Mesmo `payment_id`, mesmo usuário |
 | 200 | `other_account` | Transação já pertence a outro `user_id` |
 | 400 | vários | Recibo inválido, produto errado, conta não bate |
+| 401 | — | JWT ausente ou inválido |
+| 502 | `apple_http_error` / `google_http_error` | Loja respondeu erro (ex.: transação inexistente) |
 | 503 | `apple_not_configured` / `google_not_configured` | Falta secret no projeto |
 
 ## Secrets (Supabase)

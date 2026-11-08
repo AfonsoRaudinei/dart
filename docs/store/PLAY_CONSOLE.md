@@ -79,7 +79,8 @@ Questionário IARC, categoria de app de utilidade / negócios, não jogo.
 | Violência, sexo, linguagem, medo, humor grosseiro, substâncias | Não |
 | Usuários interagem ou trocam conteúdo entre si | Não |
 | O app compartilha a localização atual com outras pessoas | Não |
-| Compras digitais, loot box, aposta | Não |
+| Compras digitais (IAP de plano) | Sim — três produtos consumíveis; sem loot box nem aposta |
+| Loot box, aposta, jogos de azar | Não |
 
 Nota esperada: **Livre / Everyone**. Público-alvo: **18 anos ou mais**. Não é app para crianças e não entra no programa Families.
 
@@ -89,7 +90,7 @@ Faixa 18+. “Appeals to children”: No.
 
 ### News, government, health, financial features
 
-Não é app de notícias, governo nem saúde. Financial features: **My app doesn’t provide any financial features**. O checkout dentro do app está desligado.
+Não é app de notícias, governo nem saúde. Financial features: **My app doesn’t provide any financial features** (não é banco/carteira; cobrança é só via Google Play Billing). Não há checkout próprio/Mercado Pago no app.
 
 ### Data safety
 

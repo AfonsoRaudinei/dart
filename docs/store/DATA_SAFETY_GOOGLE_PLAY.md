@@ -25,7 +25,9 @@ Finalidade de todos: funcionalidade do app. Nenhum é usado para publicidade.
 | Other user-generated content | Sim | Opcional | Clientes, fazendas, talhões, visitas, ocorrências e relatórios |
 | Customer support | Sim | Opcional | Mensagens de feedback |
 
-Não marcar: vídeos, arquivos em geral, contatos, saúde, dados financeiros, mensagens, calendário, crash logs, diagnósticos, interações do app, histórico de busca, ID de publicidade.
+**Compra in-app (planos):** se o formulário pedir histórico de compra / in-app purchases, marcar conforme a compra via Play Billing (o app não armazena cartão; grava plano e `payment_id` em `user_plans`).
+
+Não marcar: vídeos, arquivos em geral, contatos, saúde, **dados de cartão ou conta bancária**, mensagens, calendário, crash logs, diagnósticos, interações do app, histórico de busca, ID de publicidade.
 
 Os dados ficam na conta. Não marcar “processed ephemerally”.
 

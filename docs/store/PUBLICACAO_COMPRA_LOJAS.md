@@ -47,15 +47,16 @@ Sem isto, a loja pode cobrar e o plano **não** aparece na conta.
 ./tool/deploy_loja_verificar_compra.sh
 ```
 
-4. Smoke da Edge (com JWT de usuário de teste):
+4. Smoke da Edge (com JWT **válido** de usuário de teste no Supabase):
 
 ```bash
-# Deve retornar 503 apple_not_configured ou google_not_configured se faltar secret,
-# ou 400 com corpo incompleto — nunca 404 na rota.
+# Antes de configurar secrets Apple/Google: espere HTTP 503 (apple_not_configured / google_not_configured).
+# JWT inválido ou ausente: 401. Rota inexistente: 404 — não deve ocorrer nesta função.
+# Com secret Apple configurado, transactionId/verificationData falsos tendem a 502 — não use isso como smoke.
 curl -s -o /dev/null -w "%{http_code}" \
-  -H "Authorization: Bearer SEU_JWT" \
+  -H "Authorization: Bearer SEU_JWT_VALIDO" \
   -H "Content-Type: application/json" \
-  -d '{"platform":"ios","productId":"soloforte_plano_bronze","transactionId":"0","verificationData":""}' \
+  -d '{"platform":"ios","productId":"soloforte_plano_bronze","transactionId":"skip-smoke","verificationData":""}' \
   "$SUPABASE_URL/functions/v1/loja-verificar-compra"
 ```
 
@@ -110,7 +111,7 @@ curl -s -o /dev/null -w "%{http_code}" \
 
 ### D.3 Ficha Play
 
-- [ ] Data safety — marcar compras no app se o formulário pedir
+- [ ] Data safety — IAP: ver `DATA_SAFETY_GOOGLE_PLAY.md` (purchase history / compras in-app se o formulário pedir; não marcar cartão)
 - [ ] Demais itens de [`PLAY_CONSOLE.md`](PLAY_CONSOLE.md) e [`GUIA_SUBMISSAO.md`](GUIA_SUBMISSAO.md)
 
 ---

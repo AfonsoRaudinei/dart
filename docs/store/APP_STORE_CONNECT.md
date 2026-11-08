@@ -117,7 +117,9 @@ Dados coletados, ligados à identidade, sem tracking, finalidade **App Functiona
 | Other User Content | Clientes, fazendas, talhões, visitas, ocorrências e relatórios |
 | Customer Support | Mensagens de feedback |
 
-Não marcar: Contacts, Health, Financial Info, Browsing History, Search History, Advertising Data, Crash Data, Product Interaction, Coarse Location, Sensitive Info, Purchase History.
+Marcar **Purchase History**: compra de plano processada pela Apple; o app grava vigência em `user_plans` (sem dados de cartão no SoloForte).
+
+Não marcar: Contacts, Health, Financial Info (sem cartão no app), Browsing History, Search History, Advertising Data, Crash Data, Product Interaction, Coarse Location, Sensitive Info.
 
 Perguntas de cada tipo: collected, linked to the user, not used for tracking, purpose App Functionality.
 
