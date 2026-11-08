@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/core/utils/area_display_format.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
+import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/farm_map_download.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/client_detail_sub_widgets.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/client_map_display_settings.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/farm_linked_field_list.dart';
 import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_repository.dart';
@@ -153,21 +154,22 @@ class FarmDetailScreen extends ConsumerWidget {
                             const Spacer(),
                             TextButton.icon(
                               onPressed: () {
-                                context.go(
-                                  farmMapCreateUri(
-                                    clientId: clientId,
-                                    farmId: farmId,
-                                  ),
+                                final client = clientAsync.asData?.value;
+                                if (client == null || farm is! Farm) return;
+                                showAdicionarTalhaoModal(
+                                  context,
+                                  client,
+                                  farm: farm,
                                 );
                               },
-                              icon: Icon(
-                                Icons.add,
-                                color: context.themeAccent,
-                              ),
-                              label: Text('Novo', style: TextStyle(
+                              icon: Icon(Icons.add, color: context.themeAccent),
+                              label: Text(
+                                'Novo',
+                                style: TextStyle(
                                   color: context.themeAccent,
                                   fontWeight: FontWeight.bold,
-                                )),
+                                ),
+                              ),
                             ),
                           ],
                         ),
