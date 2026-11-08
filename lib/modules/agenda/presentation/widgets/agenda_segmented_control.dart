@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../domain/enums/agenda_view.dart';
 import '../providers/agenda_filters_provider.dart';
@@ -96,6 +97,7 @@ class AgendaSegmentedControl extends ConsumerWidget {
 
     // Se não tem alterações ou não precisa confirmação, troca direto
     if (!hasUnsavedChanges || !needsConfirmation) {
+      SoloforteKeyboardDismiss.dismiss();
       ref.read(agendaViewProvider.notifier).state = newView;
       return;
     }
@@ -114,6 +116,7 @@ class AgendaSegmentedControl extends ConsumerWidget {
     // Se confirmou, troca a view e limpa o flag
     if (canSwitch) {
       ref.read(agendaHasUnsavedChangesProvider.notifier).state = false;
+      SoloforteKeyboardDismiss.dismiss();
       ref.read(agendaViewProvider.notifier).state = newView;
     }
   }
