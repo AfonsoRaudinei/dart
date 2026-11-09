@@ -152,11 +152,14 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
             ? widget.controller.holeCutPreviewGeometry
             : null;
 
+        final editingThisFeature =
+            currentState == DrawingState.editing && liveGeo != null;
         for (final feature in features) {
-          final geometry =
-              holeCutActive &&
-                  feature.id == holeCutFeatureId &&
-                  holeCutPreview != null
+          final geometry = editingThisFeature && feature.id == selectedId
+              ? liveGeo
+              : holeCutActive &&
+                    feature.id == holeCutFeatureId &&
+                    holeCutPreview != null
               ? holeCutPreview
               : feature.geometry;
           final parts = geometry is DrawingPolygon
@@ -272,7 +275,8 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
         }
 
         if ((liveGeo is DrawingPolygon || liveGeo is DrawingMultiPolygon) &&
-            currentState != DrawingState.gpsTracking) {
+            currentState != DrawingState.gpsTracking &&
+            currentState != DrawingState.editing) {
           final isImportPreview =
               widget.controller.currentState == DrawingState.importPreview ||
               widget.controller.interactionMode ==
