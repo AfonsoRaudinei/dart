@@ -6,6 +6,7 @@ import '../controllers/drawing_controller.dart';
 
 enum DrawingCloseIntent {
   dismissSheet,
+
   /// Fecha o sheet preservando ferramenta armed (ex.: após selecionar Polígono/Livre/Pivô).
   dismissSheetPreserveArmed,
   switchPanel,
@@ -31,7 +32,7 @@ class DrawingCloseCoordinator {
   }) async {
     switch (intent) {
       case DrawingCloseIntent.saveEditAndClose:
-        final saved = controller.saveEdit();
+        final saved = await controller.saveEdit();
         if (!saved) {
           return const DrawingCloseDecision(shouldCloseSheet: false);
         }
@@ -63,11 +64,7 @@ class DrawingCloseCoordinator {
 
       case DrawingCloseIntent.dismissSheet:
       case DrawingCloseIntent.switchPanel:
-        return _handleDismissOrSwitchPanel(
-          context,
-          controller,
-          intent: intent,
-        );
+        return _handleDismissOrSwitchPanel(context, controller, intent: intent);
     }
   }
 
