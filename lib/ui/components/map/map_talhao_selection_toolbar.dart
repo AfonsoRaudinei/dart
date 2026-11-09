@@ -34,9 +34,12 @@ final mapTalhaoStatusPanelFieldIdProvider = StateProvider<String?>(
   (ref) => null,
 );
 
+/// Largura de cada chip. 5×58 + 4 divisores = 294, dentro dos 300 úteis em 375.
+const _talhaoToolbarChipWidth = 58.0;
+
 /// Toolbar contextual (ícone + label curto) ancorada na feature selecionada
 /// no fluxo compact — espírito Apple Maps.
-class MapTalhaoSelectionToolbar extends ConsumerWidget {
+class MapTalhaoSelectionToolbar extends ConsumerStatefulWidget {
   const MapTalhaoSelectionToolbar({
     super.key,
     required this.mapController,
@@ -53,7 +56,46 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
   static const double edgeMargin = 8;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MapTalhaoSelectionToolbar> createState() =>
+      _MapTalhaoSelectionToolbarState();
+}
+
+class _MapTalhaoSelectionToolbarState
+    extends ConsumerState<MapTalhaoSelectionToolbar> {
+  String? _condicaoOverrideFieldId;
+  TalhaoCondicao? _condicaoOverride;
+
+  TalhaoCondicao _condicaoFor(DrawingFeature feature) {
+    if (_condicaoOverrideFieldId != null &&
+        _condicaoOverrideFieldId != feature.id) {
+      _condicaoOverrideFieldId = null;
+      _condicaoOverride = null;
+    }
+    if (_condicaoOverrideFieldId == feature.id && _condicaoOverride != null) {
+      return _condicaoOverride!;
+    }
+    return TalhaoCondicao.resolve(feature.properties.cor);
+  }
+
+  Future<void> _persistCondicao(String fieldId, TalhaoCondicao condicao) async {
+    try {
+      await applyVisitTalhaoCondicao(ref, fieldId: fieldId, condicao: condicao);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível marcar a condição.')),
+      );
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _condicaoOverrideFieldId = fieldId;
+      _condicaoOverride = condicao;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final controller = ref.watch(drawingControllerProvider);
     final sheetIsDraw = ref.watch(
       mapSheetStateProvider.select((s) => s?.type == MapSheetType.draw),
@@ -69,13 +111,14 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
     final anchor = drawingFeatureAnchorLatLng(feature);
     if (anchor == null) return const SizedBox.shrink();
 
-    final screenPoint = mapController.camera.latLngToScreenPoint(anchor);
+    final screenPoint = widget.mapController.camera.latLngToScreenPoint(anchor);
     final size = MediaQuery.sizeOf(context);
     final topInset = MediaQuery.paddingOf(context).top;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     final toolbarWidth = _estimateToolbarWidth(feature);
     final showNdvi = feature.id.isNotEmpty;
+    final condicao = _condicaoFor(feature);
     final overlayFieldId = ref.watch(mapNdviOverlayFieldIdProvider);
     final dateChoices = ref.watch(mapNdviDateChoicesProvider);
     final dateSelection = ref.watch(mapNdviSelectedDateProvider);
@@ -100,7 +143,7 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
         dateSelection.fieldId == feature.id &&
         dateError.dateKey == dateSelection.dateKey;
     final resolvedToolbarHeight =
-        toolbarHeight +
+        MapTalhaoSelectionToolbar.toolbarHeight +
         (showDateRow ? _mapNdviDateRowHeight : 0) +
         (showDateError ? _mapNdviDateErrorHeight : 0) +
         (showStatusPanel ? _mapNdviDateRowHeight : 0);
@@ -116,7 +159,7 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
       toolbarHeight: resolvedToolbarHeight,
       topInset: topInset,
       bottomInset: bottomInset,
-      edgeMargin: edgeMargin,
+      edgeMargin: MapTalhaoSelectionToolbar.edgeMargin,
     );
 
     return Positioned(
@@ -142,7 +185,7 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                    height: toolbarHeight,
+                    height: MapTalhaoSelectionToolbar.toolbarHeight,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -167,7 +210,7 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
                             DrawingCompactSelectionActions.requestMetadataSheet(
                               ref,
                             );
-                            setSheetState(
+                            widget.setSheetState(
                               const MapSheetState(type: MapSheetType.draw),
                               'compact toolbar: edit metadata',
                             );
@@ -185,7 +228,8 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
                               DrawingCompactSelectionActions.showNdviMap(
                                 ref,
                                 feature,
-                                onCollapseWhileEditing: onCollapseDrawSheet,
+                                onCollapseWhileEditing:
+                                    widget.onCollapseDrawSheet,
                               );
                             },
                           ),
@@ -200,7 +244,8 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
                               DrawingCompactSelectionActions.showMonochromeMap(
                                 ref,
                                 feature,
-                                onCollapseWhileEditing: onCollapseDrawSheet,
+                                onCollapseWhileEditing:
+                                    widget.onCollapseDrawSheet,
                               );
                             },
                           ),
@@ -208,11 +253,7 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
                           _ToolbarChip(
                             key: const Key('map_talhao_toolbar_status'),
                             icon: Icons.circle,
-                            iconColor: Color(
-                              TalhaoCondicao.resolve(
-                                feature.properties.cor,
-                              ).argb,
-                            ),
+                            iconColor: Color(condicao.argb),
                             label: 'Status',
                             onTap: () {
                               HapticFeedback.lightImpact();
@@ -248,11 +289,10 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
                     alignment: Alignment.topCenter,
                     child: showStatusPanel
                         ? _TalhaoCondicaoPanel(
-                            fieldId: feature.id,
-                            current: TalhaoCondicao.resolve(
-                              feature.properties.cor,
-                            ),
+                            current: condicao,
                             barWidth: toolbarWidth,
+                            onSelect: (selected) =>
+                                _persistCondicao(feature.id, selected),
                           )
                         : const SizedBox(width: 0, height: 0),
                   ),
@@ -295,11 +335,10 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
 
 @visibleForTesting
 double estimateMapTalhaoToolbarWidth(DrawingFeature feature) {
-  const chipWidth = 68.0;
   final chips = talhaoSelectionToolbarChipCount(
     showNdvi: feature.id.isNotEmpty,
   );
-  return chips * chipWidth + (chips - 1);
+  return chips * _talhaoToolbarChipWidth + (chips - 1);
 }
 
 void _closeTalhaoStatusPanel(WidgetRef ref) {
@@ -322,26 +361,31 @@ class _ToolbarChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 20, color: iconColor),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1D1D1F),
+    return SizedBox(
+      width: _talhaoToolbarChipWidth,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 18, color: iconColor),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1D1D1F),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -416,19 +460,19 @@ Offset clampMapToolbarOffset({
 
 const _mapNdviDateRowHeight = 48.0;
 
-class _TalhaoCondicaoPanel extends ConsumerWidget {
+class _TalhaoCondicaoPanel extends StatelessWidget {
   const _TalhaoCondicaoPanel({
-    required this.fieldId,
     required this.current,
     required this.barWidth,
+    required this.onSelect,
   });
 
-  final String fieldId;
   final TalhaoCondicao current;
   final double barWidth;
+  final Future<void> Function(TalhaoCondicao condicao) onSelect;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return SizedBox(
       width: barWidth,
       height: _mapNdviDateRowHeight,
@@ -442,13 +486,9 @@ class _TalhaoCondicaoPanel extends ConsumerWidget {
                   key: Key('map_talhao_condicao_${condicao.name}'),
                   condicao: condicao,
                   selected: condicao == current,
-                  onTap: () {
+                  onTap: () async {
                     HapticFeedback.lightImpact();
-                    applyVisitTalhaoCondicao(
-                      ref,
-                      fieldId: fieldId,
-                      condicao: condicao,
-                    );
+                    await onSelect(condicao);
                   },
                 ),
               ),
@@ -472,7 +512,7 @@ class _CondicaoPill extends StatelessWidget {
 
   final TalhaoCondicao condicao;
   final bool selected;
-  final VoidCallback onTap;
+  final Future<void> Function() onTap;
 
   @override
   Widget build(BuildContext context) {
