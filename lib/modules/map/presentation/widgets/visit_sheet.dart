@@ -105,10 +105,13 @@ class VisitSheet extends ConsumerStatefulWidget {
   ConsumerState<VisitSheet> createState() => _VisitSheetState();
 }
 
+enum _VisitSheetStep { selecaoTalhao, condicaoEAtividade }
+
 class _VisitSheetState extends ConsumerState<VisitSheet> {
   VisitClientSummary? _selectedClient;
   VisitFarmSummary? _selectedFarm;
   VisitTalhaoOption? _selectedTalhao;
+  _VisitSheetStep _step = _VisitSheetStep.selecaoTalhao;
   String _selectedActivity = 'Monitoramento';
   String _talhaoQuery = '';
   final _talhaoSearchController = TextEditingController();
@@ -227,6 +230,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                         _selectedTalhao = null;
                         _talhaoQuery = '';
                         _talhoes = const [];
+                        _step = _VisitSheetStep.selecaoTalhao;
                       });
                       _talhaoSearchController.clear();
                       _loadTalhoes(null);
@@ -246,6 +250,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                         _selectedFarm = f;
                         _selectedTalhao = null;
                         _talhaoQuery = '';
+                        _step = _VisitSheetStep.selecaoTalhao;
                       });
                       _talhaoSearchController.clear();
                       _loadTalhoes(f?.id);
@@ -255,23 +260,41 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                     v: v,
                   ),
                   const SizedBox(height: 12),
-                  _buildTalhaoPicker(v),
-                  if (_selectedTalhao != null) ...[
-                    const SizedBox(height: 12),
-                    _buildCondicao(v),
-                  ],
-                  const SizedBox(height: 12),
-                  _buildDropdown<String>(
-                    label: 'Atividade',
-                    value: _selectedActivity,
-                    items: _activities,
-                    itemLabel: (value) => value,
-                    onChanged: (newValue) {
-                      setState(() {
-                        _selectedActivity = newValue!;
-                      });
-                    },
-                    v: v,
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: _step == _VisitSheetStep.selecaoTalhao
+                        ? KeyedSubtree(
+                            key: const ValueKey('visit_step_selecao_talhao'),
+                            child: _buildTalhaoPicker(v),
+                          )
+                        : KeyedSubtree(
+                            key: const ValueKey(
+                              'visit_step_condicao_atividade',
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _buildTalhaoResumo(v),
+                                const SizedBox(height: 12),
+                                _buildCondicao(v),
+                                const SizedBox(height: 12),
+                                _buildDropdown<String>(
+                                  label: 'Atividade',
+                                  value: _selectedActivity,
+                                  items: _activities,
+                                  itemLabel: (value) => value,
+                                  onChanged: (newValue) {
+                                    setState(() {
+                                      _selectedActivity = newValue!;
+                                    });
+                                  },
+                                  v: v,
+                                ),
+                              ],
+                            ),
+                          ),
                   ),
                   const SizedBox(height: kFabSafeArea),
                 ],
@@ -462,7 +485,6 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
   }
 
   Widget _buildTalhaoPicker(SoloForteSheetVisuals v) {
-    final v = SoloForteSheetVisuals.of(context);
     final enabled = _selectedFarm != null;
     final surface = v.cardBackground;
     final border = v.cardBorder;
@@ -529,20 +551,66 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
             style: TextStyle(color: v.subtitleColor, fontSize: 14),
           )
         else
+          // Com um único talhão o usuário ainda toca o tile (sem auto-pular o passo 1).
           for (final item in items)
             _TalhaoTile(
               item: item,
               subtitle: _talhaoSubtitle(item),
               selected: item.id == _selectedTalhao?.id,
               visuals: v,
-              onTap: () => setState(() => _selectedTalhao = item),
+              onTap: () {
+                setState(() {
+                  _selectedTalhao = item;
+                  _step = _VisitSheetStep.condicaoEAtividade;
+                });
+              },
             ),
       ],
     );
   }
 
+  Widget _buildTalhaoResumo(SoloForteSheetVisuals v) {
+    final selected = _selectedTalhao;
+    if (selected == null) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Área / Talhão',
+          style: TextStyle(color: v.subtitleColor, fontSize: 12),
+        ),
+        const SizedBox(height: 6),
+        _TalhaoTile(
+          item: selected,
+          subtitle: _talhaoSubtitle(selected),
+          selected: true,
+          visuals: v,
+          onTap: () {},
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            onPressed: () {
+              setState(() {
+                _step = _VisitSheetStep.selecaoTalhao;
+                _selectedTalhao = null;
+              });
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: v.titleColor,
+              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text('Trocar talhão'),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildCondicao(SoloForteSheetVisuals v) {
-    final v = SoloForteSheetVisuals.of(context);
     final selected = _selectedTalhao;
     if (selected == null) return const SizedBox.shrink();
     if (!selected.canRate) {
@@ -587,7 +655,6 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     bool isLoading = false,
     String emptyMessage = 'Vazio',
   }) {
-    final v = SoloForteSheetVisuals.of(context);
     final surface = v.cardBackground;
     final border = v.cardBorder;
     final focus = v.focusBorder;
