@@ -27,6 +27,7 @@ import 'selected_talhao_card.dart';
 
 part 'map_controls_location_button.dart';
 part 'map_controls_measurement.dart';
+part 'map_controls_selected_feature_indicator.dart';
 
 Color _themeColor(String theme) {
   switch (theme) {
@@ -220,6 +221,10 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                 onLocationModeChanged: widget.onLocationModeChanged,
                 activeColor: activeColor,
               ),
+              if (widget.drawingState == DrawingState.selected) ...[
+                const SizedBox(width: kMapTopControlsButtonSpacing),
+                _SelectedFeatureChromeIndicator(activeColor: activeColor),
+              ],
             ],
           ),
         ),

@@ -32,8 +32,10 @@ class DrawingStateIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Os próprios vértices já comunicam visualmente o desenho em andamento.
-    if (state == DrawingState.idle || state == DrawingState.drawing) {
+    // Desenho: vértices no mapa. Seleção: ícone na fileira superior (map chrome).
+    if (state == DrawingState.idle ||
+        state == DrawingState.drawing ||
+        state == DrawingState.selected) {
       return const SizedBox.shrink();
     }
 
