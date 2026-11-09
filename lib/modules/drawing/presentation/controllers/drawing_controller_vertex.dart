@@ -157,14 +157,11 @@ extension DrawingControllerVertexEditing on DrawingController {
           insertVertex(
             edgeHit.ring,
             edgeHit.segment,
-            _edgeInsertionPoint(
-              (
-                ring: edgeHit.ring,
-                segment: edgeHit.segment,
-                point: edgeHit.point,
-              ),
-              vertexToleranceMeters,
-            ),
+            _edgeInsertionPoint((
+              ring: edgeHit.ring,
+              segment: edgeHit.segment,
+              point: edgeHit.point,
+            ), vertexToleranceMeters),
           );
           return true;
         }
@@ -179,14 +176,11 @@ extension DrawingControllerVertexEditing on DrawingController {
         insertVertex(
           edgeHit.ring,
           edgeHit.segment,
-          _edgeInsertionPoint(
-            (
-              ring: edgeHit.ring,
-              segment: edgeHit.segment,
-              point: edgeHit.point,
-            ),
-            vertexToleranceMeters,
-          ),
+          _edgeInsertionPoint((
+            ring: edgeHit.ring,
+            segment: edgeHit.segment,
+            point: edgeHit.point,
+          ), vertexToleranceMeters),
         );
         return true;
       }
@@ -250,16 +244,8 @@ extension DrawingControllerVertexEditing on DrawingController {
     return (ring: bestRing, point: bestPoint, distancePx: closestPx);
   }
 
-  ({
-    int ring,
-    int segment,
-    LatLng point,
-    double distancePx,
-  })? _findEditEdgeNearestPixels(
-    MapCamera camera,
-    LatLng tap,
-    double maxPx,
-  ) {
+  ({int ring, int segment, LatLng point, double distancePx})?
+  _findEditEdgeNearestPixels(MapCamera camera, LatLng tap, double maxPx) {
     if (_editGeometry is! DrawingPolygon) return null;
     final poly = _editGeometry as DrawingPolygon;
     int? bestRing;
@@ -417,12 +403,9 @@ extension DrawingControllerVertexEditing on DrawingController {
     _notifyHost();
   }
 
-  /// Persiste a nova posição do vértice ao finalizar o arraste.
+  /// Aplica a posição final do vértice em [_editGeometry], sem nova versão.
   ///
-  /// Fluxo esperado:
-  /// - Durante o drag, a UI mantém estado local (sem persistir)
-  /// - Ao soltar, este método aplica o ponto final no _editGeometry
-  /// - Atualiza validações/interseções e persiste na feature selecionada
+  /// A gravação acontece uma vez em [saveEdit] (ou no recorte).
   void updateVertexPosition(int ringIndex, int pointIndex, LatLng newPos) {
     if (_editGeometry is! DrawingPolygon) return;
 
@@ -437,16 +420,6 @@ extension DrawingControllerVertexEditing on DrawingController {
     _editGeometry = updated;
     _updateRealTimeIntersection();
     validateGeometry(_editGeometry);
-
-    if (_selectedFeature != null) {
-      updateFeature(
-        _selectedFeature!.id,
-        newGeometry: _editGeometry,
-        editorId: "sistema",
-        editorType: AuthorType.sistema,
-      );
-    }
-
     _notify();
   }
 
@@ -470,23 +443,15 @@ extension DrawingControllerVertexEditing on DrawingController {
     _notify();
   }
 
-  /// Call this when ending a drag operation.
-  /// [persist] mantém compatibilidade com fluxo legado:
-  /// - true: persiste _editGeometry ao fim do arraste
-  /// - false: apenas encerra estado de drag (quando já persistido externamente)
+  /// Encerra o arraste. A geometria fica em [_editGeometry] até [saveEdit].
+  ///
+  /// [persist] permanece na assinatura por compatibilidade e não grava versão.
   void onDragEnd({bool persist = true}) {
     _isDraggingVertex = false;
     _draggedVertexIndex = null;
-
-    if (persist && _editGeometry != null && _selectedFeature != null) {
-      updateFeature(
-        _selectedFeature!.id,
-        newGeometry: _editGeometry,
-        editorId: "sistema",
-        editorType: AuthorType.sistema,
-      );
+    if (persist) {
+      // A versão do talhão é gravada em saveEdit, não a cada vértice.
     }
-
     _notify();
   }
 
@@ -535,10 +500,7 @@ extension DrawingControllerVertexEditing on DrawingController {
       return;
     }
 
-    _history.push(
-      _geomToVertices(poly),
-      fullPolygonSnapshot: poly,
-    );
+    _history.push(_geomToVertices(poly), fullPolygonSnapshot: poly);
     final updated = DrawingUtils.removeHoleRing(poly, ringIndex);
     if (updated == null) return;
 
