@@ -10,6 +10,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../core/constants/layout_constants.dart';
 import '../../../core/contracts/i_ndvi_field_presenter_provider.dart';
 import '../../../core/contracts/ndvi_latest_summary.dart';
+import '../../../core/domain/talhao_condicao.dart';
 import '../../../core/state/map_ndvi_overlay.dart';
 import '../../../core/state/map_ui_providers.dart';
 import '../../../modules/ndvi/domain/entities/ndvi_image.dart';
@@ -21,11 +22,17 @@ import '../../../modules/drawing/domain/drawing_state.dart';
 import '../../../modules/drawing/domain/models/drawing_models.dart';
 import '../../../modules/drawing/presentation/drawing_compact_selection_actions.dart';
 import '../../../modules/drawing/presentation/providers/drawing_provider.dart';
+import '../../screens/map/handlers/visit_check_in_talhoes.dart';
 import 'map_sheet_state.dart';
 
-/// Geometria, Dados e, quando há id, NDVI + P&B (recorte só no card de geometria).
+/// Geometria, Dados e, quando há id, NDVI + P&B + Status.
 int talhaoSelectionToolbarChipCount({required bool showNdvi}) =>
-    showNdvi ? 4 : 2;
+    showNdvi ? 5 : 2;
+
+/// Talhão cujo painel de condição está aberto neste card. null = fechado.
+final mapTalhaoStatusPanelFieldIdProvider = StateProvider<String?>(
+  (ref) => null,
+);
 
 /// Toolbar contextual (ícone + label curto) ancorada na feature selecionada
 /// no fluxo compact — espírito Apple Maps.
@@ -68,19 +75,24 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     final toolbarWidth = _estimateToolbarWidth(feature);
+    final showNdvi = feature.id.isNotEmpty;
     final overlayFieldId = ref.watch(mapNdviOverlayFieldIdProvider);
     final dateChoices = ref.watch(mapNdviDateChoicesProvider);
     final dateSelection = ref.watch(mapNdviSelectedDateProvider);
     final dateError = ref.watch(mapNdviOverlayDateErrorProvider);
+    final statusPanelFieldId = ref.watch(mapTalhaoStatusPanelFieldIdProvider);
+    final showStatusPanel = showNdvi && statusPanelFieldId == feature.id;
     final ndviOverlayHere =
         overlayFieldId != null && overlayFieldId == feature.id;
     final choiceImages = dateChoices.asData?.value ?? const <NdviImage>[];
     final showDateRow =
+        !showStatusPanel &&
         ndviOverlayHere &&
         (dateChoices.isLoading ||
             dateChoices.hasError ||
             choiceImages.isNotEmpty);
     final showDateError =
+        !showStatusPanel &&
         ndviOverlayHere &&
         dateError != null &&
         dateSelection != null &&
@@ -90,7 +102,8 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
     final resolvedToolbarHeight =
         toolbarHeight +
         (showDateRow ? _mapNdviDateRowHeight : 0) +
-        (showDateError ? _mapNdviDateErrorHeight : 0);
+        (showDateError ? _mapNdviDateErrorHeight : 0) +
+        (showStatusPanel ? _mapNdviDateRowHeight : 0);
 
     ref.listen(mapNdviOverlaySummaryProvider, (previous, next) {
       _refreshDateChoicesAfterRaster(ref, next.asData?.value);
@@ -106,25 +119,23 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
       edgeMargin: edgeMargin,
     );
 
-    final showNdvi = feature.id.isNotEmpty;
-
     return Positioned(
       left: offset.dx,
       top: offset.dy,
       child: Material(
-        elevation: 6,
-        shadowColor: Colors.black.withValues(alpha: 0.28),
-        borderRadius: BorderRadius.circular(14),
+        elevation: 3,
+        shadowColor: Colors.black.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(16),
         color: Colors.transparent,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: const Color(0xF2FFFFFF),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+                color: const Color(0xF7FFFFFF),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -170,6 +181,7 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
                             label: 'NDVI',
                             onTap: () {
                               HapticFeedback.lightImpact();
+                              _closeTalhaoStatusPanel(ref);
                               DrawingCompactSelectionActions.showNdviMap(
                                 ref,
                                 feature,
@@ -184,11 +196,37 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
                             label: 'P&B',
                             onTap: () {
                               HapticFeedback.lightImpact();
+                              _closeTalhaoStatusPanel(ref);
                               DrawingCompactSelectionActions.showMonochromeMap(
                                 ref,
                                 feature,
                                 onCollapseWhileEditing: onCollapseDrawSheet,
                               );
+                            },
+                          ),
+                          _divider,
+                          _ToolbarChip(
+                            key: const Key('map_talhao_toolbar_status'),
+                            icon: Icons.circle,
+                            iconColor: Color(
+                              TalhaoCondicao.resolve(
+                                feature.properties.cor,
+                              ).argb,
+                            ),
+                            label: 'Status',
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              final open = ref.read(
+                                mapTalhaoStatusPanelFieldIdProvider,
+                              );
+                              ref
+                                  .read(
+                                    mapTalhaoStatusPanelFieldIdProvider
+                                        .notifier,
+                                  )
+                                  .state = open == feature.id
+                                  ? null
+                                  : feature.id;
                             },
                           ),
                         ],
@@ -204,6 +242,20 @@ class MapTalhaoSelectionToolbar extends ConsumerWidget {
                       selection: dateSelection,
                       barWidth: toolbarWidth,
                     ),
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                    alignment: Alignment.topCenter,
+                    child: showStatusPanel
+                        ? _TalhaoCondicaoPanel(
+                            fieldId: feature.id,
+                            current: TalhaoCondicao.resolve(
+                              feature.properties.cor,
+                            ),
+                            barWidth: toolbarWidth,
+                          )
+                        : const SizedBox(width: 0, height: 0),
+                  ),
                   if (showDateError)
                     _NdviDateErrorLine(
                       width: toolbarWidth,
@@ -250,17 +302,23 @@ double estimateMapTalhaoToolbarWidth(DrawingFeature feature) {
   return chips * chipWidth + (chips - 1);
 }
 
+void _closeTalhaoStatusPanel(WidgetRef ref) {
+  ref.read(mapTalhaoStatusPanelFieldIdProvider.notifier).state = null;
+}
+
 class _ToolbarChip extends StatelessWidget {
   const _ToolbarChip({
     super.key,
     required this.icon,
     required this.label,
     required this.onTap,
+    this.iconColor = const Color(0xFF1D1D1F),
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final Color iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -273,7 +331,7 @@ class _ToolbarChip extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 20, color: const Color(0xFF1D1D1F)),
+              Icon(icon, size: 20, color: iconColor),
               const SizedBox(height: 2),
               Text(
                 label,
@@ -357,6 +415,107 @@ Offset clampMapToolbarOffset({
 }
 
 const _mapNdviDateRowHeight = 48.0;
+
+class _TalhaoCondicaoPanel extends ConsumerWidget {
+  const _TalhaoCondicaoPanel({
+    required this.fieldId,
+    required this.current,
+    required this.barWidth,
+  });
+
+  final String fieldId;
+  final TalhaoCondicao current;
+  final double barWidth;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return SizedBox(
+      width: barWidth,
+      height: _mapNdviDateRowHeight,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+        child: Row(
+          children: [
+            for (final condicao in TalhaoCondicao.values) ...[
+              Expanded(
+                child: _CondicaoPill(
+                  key: Key('map_talhao_condicao_${condicao.name}'),
+                  condicao: condicao,
+                  selected: condicao == current,
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    applyVisitTalhaoCondicao(
+                      ref,
+                      fieldId: fieldId,
+                      condicao: condicao,
+                    );
+                  },
+                ),
+              ),
+              if (condicao != TalhaoCondicao.values.last)
+                const SizedBox(width: 4),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CondicaoPill extends StatelessWidget {
+  const _CondicaoPill({
+    super.key,
+    required this.condicao,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final TalhaoCondicao condicao;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fill = Color(condicao.argb);
+    final onFill = fill.computeLuminance() > 0.6
+        ? const Color(0xFF1D1D1F)
+        : const Color(0xFFFFFFFF);
+    return Material(
+      color: fill,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected
+                  ? const Color(0xFF1D1D1F)
+                  : const Color(0x00000000),
+              width: selected ? 2 : 0,
+            ),
+          ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              condicao.label,
+              maxLines: 1,
+              style: TextStyle(
+                color: onFill,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 const _mapNdviDateErrorHeight = 36.0;
 const _mapNdviRecentDateCount = 4;
 
