@@ -368,7 +368,8 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 if (hasGesture) {
                   onMapUserInteraction?.call();
                 }
-                ref.read(mapCameraRotationProvider.notifier).state = pos.rotation;
+                ref.read(mapCameraRotationProvider.notifier).state =
+                    pos.rotation;
                 MapCameraSnapshotThrottle.publish(
                   ProviderScope.containerOf(context, listen: false),
                   MapCameraSnapshot(
@@ -387,7 +388,8 @@ class MapBuildOrchestrator extends ConsumerWidget {
                     stopFollowing();
                     // Preserva rotação do gesto — stopFollowing zera para
                     // north-up residual; em idle o usuário pode ter rotacionado.
-                    if (userRotation.abs() > kMapNorthCompassVisibleRotationDeg) {
+                    if (userRotation.abs() >
+                        kMapNorthCompassVisibleRotationDeg) {
                       mapController.rotate(userRotation);
                       ref.read(mapCameraRotationProvider.notifier).state =
                           userRotation;
@@ -675,11 +677,14 @@ class _MapControlsHost extends ConsumerWidget {
           ),
         );
       },
-      onSaveEdit: () => ref.read(drawingControllerProvider).saveEdit(),
+      onSaveEdit: () {
+        ref.read(drawingControllerProvider).saveEdit();
+      },
       onCancelEdit: () => ref.read(drawingControllerProvider).cancelEdit(),
       onUndoEdit: () => ref.read(drawingControllerProvider).undoEdit(),
-      onStartHoleCutFromEdit: () =>
-          ref.read(drawingControllerProvider).startHoleCutFromEdit(),
+      onStartHoleCutFromEdit: () {
+        ref.read(drawingControllerProvider).startHoleCutFromEdit();
+      },
       onStartHoleCutFromDrawing: () =>
           ref.read(drawingControllerProvider).startHoleCutFromDrawing(),
       drawingTool: drawingMetrics.tool,
