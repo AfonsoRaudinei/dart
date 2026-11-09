@@ -273,11 +273,12 @@ void main() {
       );
     });
 
-    test('5 chips (344px) em viewport largo não invadem a coluna direita', () {
-      const viewportWidth = 480.0;
-      const toolbarWidth = 344.0;
+    test('5 chips em viewport 375 não invadem a coluna direita', () {
+      const viewportWidth = 375.0;
+      final toolbarWidth = estimateMapTalhaoToolbarWidth(_squareFeature());
+      expect(toolbarWidth, lessThanOrEqualTo(300));
       final offset = clampMapToolbarOffset(
-        screenPoint: const Offset(470, 200),
+        screenPoint: const Offset(370, 200),
         viewportSize: const Size(viewportWidth, 800),
         toolbarWidth: toolbarWidth,
         toolbarHeight: 52,
@@ -297,12 +298,12 @@ void main() {
   group('estimateMapTalhaoToolbarWidth', () {
     test('retorna largura para 5 chips quando feature tem id', () {
       final feature = _squareFeature();
-      expect(estimateMapTalhaoToolbarWidth(feature), 344.0);
+      expect(estimateMapTalhaoToolbarWidth(feature), 294.0);
     });
 
     test('retorna largura para 2 chips quando feature tem id vazio', () {
       final feature = _squareFeature(id: '');
-      expect(estimateMapTalhaoToolbarWidth(feature), 137.0);
+      expect(estimateMapTalhaoToolbarWidth(feature), 117.0);
     });
   });
 
@@ -448,6 +449,25 @@ void main() {
       await tester.pump();
 
       expect(writer.calls, [(fieldId: 'f1', condicao: TalhaoCondicao.alerta)]);
+
+      final alertaDepois =
+          tester
+                  .widget<Container>(
+                    find.descendant(
+                      of: find.byKey(const Key('map_talhao_condicao_alerta')),
+                      matching: find.byType(Container),
+                    ),
+                  )
+                  .decoration!
+              as BoxDecoration;
+      expect(alertaDepois.border!.top.width, 2);
+      final statusIcon = tester.widget<Icon>(
+        find.descendant(
+          of: find.byKey(const Key('map_talhao_toolbar_status')),
+          matching: find.byType(Icon),
+        ),
+      );
+      expect(statusIcon.color, Color(TalhaoCondicao.alerta.argb));
 
       pumped.container
               .read(mapTalhaoStatusPanelFieldIdProvider.notifier)
