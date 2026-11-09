@@ -8,6 +8,8 @@ import '../../../../core/design/sf_icons.dart';
 import '../../../../core/services/geocoding/reverse_geocoder.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/state/map_ui_providers.dart';
+import '../../../../modules/drawing/domain/drawing_state.dart';
+import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
 
 /// Chip discreto com o município próximo ao centro do mapa (divisas UF ativas).
 class MapLocalityContextChip extends ConsumerStatefulWidget {
@@ -90,11 +92,18 @@ class _MapLocalityContextChipState extends ConsumerState<MapLocalityContextChip>
     final top =
         MediaQuery.paddingOf(context).top + widget.extraTopBelowSafeArea;
     final semanticsLabel = 'Município próximo: $_label';
+    final featureSelected = ref.watch(
+      drawingControllerProvider.select(
+        (c) => c.currentState == DrawingState.selected,
+      ),
+    );
+    final rightReserve = kMapTopControlsReservedRightWidth +
+        (featureSelected ? kMapTopControlsSelectedFeatureChromeWidth : 0);
 
     return Positioned(
       top: top,
       left: 48,
-      right: kMapTopControlsReservedRightWidth,
+      right: rightReserve,
       child: IgnorePointer(
         child: Center(
           child: Semantics(

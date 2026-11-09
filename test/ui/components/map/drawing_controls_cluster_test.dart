@@ -329,6 +329,21 @@ void main() {
     await tester.pump();
     expect(cancelled, isTrue);
   });
+
+  testWidgets(
+    'MapControlsOverlay exibe ícone de feature selecionada na fileira superior',
+    (tester) async {
+      await _pumpMapControlsOverlay(
+        tester,
+        drawingState: DrawingState.selected,
+      );
+
+      expect(
+        find.byKey(const Key('map_control_selected_feature_indicator')),
+        findsOneWidget,
+      );
+    },
+  );
 }
 
 void _noop() {}

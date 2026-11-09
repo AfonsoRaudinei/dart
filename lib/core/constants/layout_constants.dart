@@ -150,3 +150,7 @@ const double kMapTopControlsReservedRightWidth =
         (kMapTopControlsToggleLabelButtonGap + kMapActionColumnButtonSize)) +
     (kMapTopControlsLocationLabelButtonGap + kMapActionColumnButtonSize) +
     (2 * kMapTopControlsButtonSpacing);
+
+/// Fileira superior com indicador de feature selecionada (4.º botão circular).
+const double kMapTopControlsSelectedFeatureChromeWidth =
+    kMapTopControlsButtonSpacing + kMapActionColumnButtonSize;

@@ -21,4 +21,22 @@ void main() {
     expect(find.textContaining('Desenhando'), findsNothing);
     expect(find.byType(AnimatedContainer), findsNothing);
   });
+
+  testWidgets('não exibe banner no centro para feature selecionada', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: DrawingStateIndicator(
+            state: DrawingState.selected,
+            tool: DrawingTool.none,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Feature selecionada'), findsNothing);
+    expect(find.byType(AnimatedContainer), findsNothing);
+  });
 }
