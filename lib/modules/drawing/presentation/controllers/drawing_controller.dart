@@ -200,10 +200,25 @@ class DrawingController extends ChangeNotifier {
   }
 
   Future<void> loadFeatures() async {
-    _features = await _repository.getAllFeatures();
-    if (!_isDisposed) {
-      notifyListeners();
+    while (_geometryWriteBusy || _geometryWriteQueue.isNotEmpty) {
+      final idle = _geometryWriteIdle ??= Completer<void>();
+      await idle.future;
+      if (_isDisposed) return;
     }
+    if (_isDisposed) return;
+
+    final loaded = await _repository.getAllFeatures();
+    if (_isDisposed) return;
+
+    final collapsed = _collapseActiveVersions(loaded);
+    for (final stale in collapsed.stale) {
+      await _repository.saveFeature(stale);
+    }
+    if (_isDisposed) return;
+
+    _features = collapsed.kept;
+    _retargetSelectionAfterCollapse(loaded);
+    notifyListeners();
   }
 
   /// Sincroniza features locais com o servidor remoto.
@@ -273,6 +288,12 @@ class DrawingController extends ChangeNotifier {
 
   // Persistence state
   List<DrawingFeature> _features = [];
+
+  /// Serializa gravações de geometria: desativa a versão anterior e só então
+  /// grava a nova. Evita duas versões ativas do mesmo talhão.
+  bool _geometryWriteBusy = false;
+  final List<void Function()> _geometryWriteQueue = [];
+  Completer<void>? _geometryWriteIdle;
 
   // Interaction state
   DrawingFeature? _selectedFeature;
@@ -1062,7 +1083,10 @@ class DrawingController extends ChangeNotifier {
   /// Updates an existing feature (Attributes or Geometry).
   /// Delega para [DrawingFeatureCrudService.buildUpdate].
   /// TRIGGERS VERSIONING if geometry changed.
-  void updateFeature(
+  ///
+  /// A troca de geometria espera a versão anterior ficar inativa antes de
+  /// gravar a nova, e uma fila impede duas versões ao mesmo tempo.
+  Future<void> updateFeature(
     String id, {
     String? nome,
     DrawingStatus? status,
@@ -1070,11 +1094,60 @@ class DrawingController extends ChangeNotifier {
     String? editorId,
     AuthorType? editorType,
   }) {
+    final result = Completer<void>();
+    void job() {
+      final future = _applyFeatureUpdate(
+        id,
+        nome: nome,
+        status: status,
+        newGeometry: newGeometry,
+        editorId: editorId,
+        editorType: editorType,
+      );
+      future
+          .then((_) {
+            if (!result.isCompleted) result.complete();
+          })
+          .catchError((Object error, StackTrace stackTrace) {
+            if (!result.isCompleted) result.completeError(error, stackTrace);
+          })
+          .whenComplete(_finishGeometryWrite);
+    }
+
+    if (_geometryWriteBusy) {
+      _geometryWriteQueue.add(job);
+    } else {
+      _geometryWriteBusy = true;
+      job();
+    }
+    return result.future;
+  }
+
+  void _finishGeometryWrite() {
+    if (_geometryWriteQueue.isNotEmpty) {
+      final next = _geometryWriteQueue.removeAt(0);
+      _geometryWriteBusy = true;
+      next();
+      return;
+    }
+    _geometryWriteBusy = false;
+    final idle = _geometryWriteIdle;
+    _geometryWriteIdle = null;
+    if (idle != null && !idle.isCompleted) idle.complete();
+  }
+
+  Future<void> _applyFeatureUpdate(
+    String id, {
+    String? nome,
+    DrawingStatus? status,
+    DrawingGeometry? newGeometry,
+    String? editorId,
+    AuthorType? editorType,
+  }) async {
     final index = _features.indexWhere((f) => f.id == id);
-    if (index == -1) return;
+    if (index == -1 || _isDisposed) return;
 
     final oldFeature = _features[index];
-
     final (:updated, :deactivated) = _crudService.buildUpdate(
       oldFeature,
       nome: nome,
@@ -1084,15 +1157,76 @@ class DrawingController extends ChangeNotifier {
       editorType: editorType,
     );
 
+    _features[index] = updated;
+    if (_selectedFeature?.id == id) {
+      _selectedFeature = updated;
+    }
+    _isDirty = true;
+    if (!_isDisposed) notifyListeners();
+
     if (deactivated != null) {
-      _repository.saveFeature(deactivated);
+      await _repository.saveFeature(deactivated);
+    }
+    await _repository.saveFeature(updated);
+  }
+
+  _VersionCollapse _collapseActiveVersions(List<DrawingFeature> active) {
+    final byId = {for (final feature in active) feature.id: feature};
+    final superseded = <String>{};
+    for (final feature in active) {
+      var previous = feature.properties.versaoAnteriorId;
+      final seen = <String>{};
+      while (previous != null && previous.isNotEmpty && seen.add(previous)) {
+        if (byId.containsKey(previous)) superseded.add(previous);
+        previous = byId[previous]?.properties.versaoAnteriorId;
+      }
     }
 
-    _features[index] = updated;
-    _repository.saveFeature(updated);
-    _selectedFeature = updated;
-    _isDirty = true;
-    notifyListeners();
+    final kept = <DrawingFeature>[];
+    final stale = <DrawingFeature>[];
+    for (final feature in active) {
+      if (!superseded.contains(feature.id)) {
+        kept.add(feature);
+        continue;
+      }
+      stale.add(
+        DrawingFeature(
+          id: feature.id,
+          geometry: feature.geometry,
+          properties: feature.properties.copyWith(ativo: false),
+        ),
+      );
+    }
+    return _VersionCollapse(kept: kept, stale: stale);
+  }
+
+  void _retargetSelectionAfterCollapse(List<DrawingFeature> loaded) {
+    final selectedId = _selectedFeature?.id;
+    if (selectedId == null) return;
+    if (_features.any((feature) => feature.id == selectedId)) return;
+
+    final byId = {for (final feature in loaded) feature.id: feature};
+    for (final feature in _features) {
+      if (_versionChainContains(feature, selectedId, byId)) {
+        _selectedFeature = feature;
+        return;
+      }
+    }
+    _selectedFeature = null;
+  }
+
+  bool _versionChainContains(
+    DrawingFeature feature,
+    String ancestorId,
+    Map<String, DrawingFeature> byId,
+  ) {
+    var previous = feature.properties.versaoAnteriorId;
+    final seen = <String>{};
+    while (previous != null && previous.isNotEmpty && seen.add(previous)) {
+      if (previous == ancestorId) return true;
+      previous = byId[previous]?.properties.versaoAnteriorId;
+    }
+    return false;
   }
 
   // ---------------------------------------------------------------------------
@@ -1796,7 +1930,7 @@ class DrawingController extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool saveEdit() {
+  Future<bool> saveEdit() async {
     // Force FULL validation on save
     if (_editGeometry != null) {
       validateGeometry(_editGeometry, forceFull: true);
@@ -1821,13 +1955,15 @@ class DrawingController extends ChangeNotifier {
           geometryToSave,
         );
       }
-      updateFeature(
-        _selectedFeature!.id,
+      final featureId = _selectedFeature!.id;
+      await updateFeature(
+        featureId,
         newGeometry: geometryToSave,
         editorId: "sistema", // Placeholder, usually would be current user
         editorType: AuthorType.sistema,
       );
     }
+    if (_isDisposed) return true;
     cancelEdit();
     return true;
   }
@@ -2004,13 +2140,14 @@ class DrawingController extends ChangeNotifier {
 
   /// Durante edição de vértices: persiste [_editGeometry] no talhão em memória,
   /// encerra edição em [DrawingState.selected] e abre [startHoleCut].
-  void startHoleCutFromEdit() {
+  Future<void> startHoleCutFromEdit() async {
     if (_isDisposed) return;
     if (_stateMachine.currentState != DrawingState.editing) {
       startHoleCut();
       return;
     }
-    if (!saveEdit()) return;
+    if (!await saveEdit()) return;
+    if (_isDisposed) return;
     startHoleCut();
   }
 
@@ -2120,7 +2257,7 @@ class DrawingController extends ChangeNotifier {
   /// No recorte, grava o furo no mesmo talhão e volta para selected.
   void completeDrawing() {
     if (isCuttingHole) {
-      _confirmHoleCut();
+      unawaited(_confirmHoleCut());
       return;
     }
     final geometrySnapshot = liveGeometry;
@@ -2149,7 +2286,7 @@ class DrawingController extends ChangeNotifier {
     }
   }
 
-  void _confirmHoleCut() {
+  Future<void> _confirmHoleCut() async {
     if (_stateMachine.currentState != DrawingState.drawing) return;
 
     final target = _holeCutFeature;
@@ -2198,7 +2335,7 @@ class DrawingController extends ChangeNotifier {
       return;
     }
 
-    updateFeature(
+    final pending = updateFeature(
       target.id,
       newGeometry: result,
       editorId: 'sistema',
@@ -2214,6 +2351,7 @@ class DrawingController extends ChangeNotifier {
       _stateMachine.startSelected();
     }
     notifyListeners();
+    await pending;
   }
 
   /// Atualiza propriedades específicas de uma feature
@@ -2313,4 +2451,11 @@ class DrawingController extends ChangeNotifier {
     );
     return jsonEncode(normalized.toJson());
   }
+}
+
+class _VersionCollapse {
+  const _VersionCollapse({required this.kept, required this.stale});
+
+  final List<DrawingFeature> kept;
+  final List<DrawingFeature> stale;
 }
