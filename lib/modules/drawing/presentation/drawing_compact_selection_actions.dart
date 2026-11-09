@@ -45,8 +45,8 @@ class DrawingCompactSelectionActions {
     controller.startHoleCut();
   }
 
-  static void startHoleCutFromEdit(DrawingController controller) {
-    controller.startHoleCutFromEdit();
+  static Future<void> startHoleCutFromEdit(DrawingController controller) {
+    return controller.startHoleCutFromEdit();
   }
 
   static void startHoleCutFromDrawing(DrawingController controller) {
