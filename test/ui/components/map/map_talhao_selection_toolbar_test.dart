@@ -1,10 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/contracts/i_drawing_field_writer.dart';
+import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
+import 'package:soloforte_app/core/contracts/i_ndvi_latest_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_ndvi_latest_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/ndvi_latest_summary.dart';
+import 'package:soloforte_app/core/domain/talhao_condicao.dart';
 import 'package:soloforte_app/core/state/map_ndvi_overlay.dart';
+import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/presentation/drawing_compact_selection_actions.dart';
+import 'package:soloforte_app/modules/drawing/presentation/providers/drawing_provider.dart';
+import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
+import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_providers.dart';
 import 'package:soloforte_app/ui/components/map/map_talhao_selection_toolbar.dart';
 
 DrawingFeature _squareFeature({String id = 'f1'}) {
@@ -39,10 +53,100 @@ DrawingFeature _squareFeature({String id = 'f1'}) {
   );
 }
 
+class _DrawingRepo extends DrawingRepository {
+  @override
+  Future<List<DrawingFeature>> getAllFeatures() async => [];
+}
+
+class _NdviLookup implements INdviLatestLookup {
+  @override
+  Future<NdviLatestSummary?> getLatest(
+    String fieldId, {
+    String? imageDate,
+  }) async => null;
+}
+
+class _Writer implements IDrawingFieldWriter {
+  final calls = <({String fieldId, TalhaoCondicao condicao})>[];
+
+  @override
+  Future<void> updateFieldAvaliacao({
+    required String fieldId,
+    required TalhaoCondicao condicao,
+  }) async {
+    calls.add((fieldId: fieldId, condicao: condicao));
+  }
+
+  @override
+  Future<void> deleteFieldAndRecalculateClientArea({
+    required String fieldId,
+    required String clientId,
+  }) => Future<void>.error(UnimplementedError());
+
+  @override
+  Future<void> linkFieldToFarm({
+    required String fieldId,
+    required String clientId,
+    required String farmId,
+  }) => Future<void>.error(UnimplementedError());
+
+  @override
+  Future<void> updateFieldName({
+    required String fieldId,
+    required String name,
+  }) => Future<void>.error(UnimplementedError());
+
+  @override
+  Future<void> updateFieldMetadata({
+    required String fieldId,
+    String? cultura,
+    String? material,
+    String? safra,
+    String? dataPlantio,
+    String? dataEmergencia,
+    String? cicloDias,
+  }) => Future<void>.error(UnimplementedError());
+
+  @override
+  Future<void> unionDrawingFields({
+    required String primaryFieldId,
+    required String secondaryFieldId,
+    required String clientId,
+  }) => Future<void>.error(UnimplementedError());
+}
+
+NdviImage _ndviImage(DateTime date) {
+  return NdviImage(
+    id: 'f1-$date',
+    fieldId: 'f1',
+    imageDate: date,
+    ndviMin: 0,
+    ndviMax: 0,
+    ndviMean: 0,
+    source: 'sentinel',
+    fetchedAt: DateTime(2026, 10, 1),
+    syncStatus: 0,
+    localPath: '/tmp/ndvi.png',
+  );
+}
+
 void main() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
+    try {
+      Supabase.instance;
+    } catch (_) {
+      await Supabase.initialize(
+        url: 'https://mock-supabase-for-tests.co',
+        anonKey: 'mock-anon-key-1234567890abcdef',
+      );
+    }
+  });
+
   group('talhaoSelectionToolbarChipCount', () {
-    test('4 chips com NDVI e 2 sem', () {
-      expect(talhaoSelectionToolbarChipCount(showNdvi: true), 4);
+    test('5 chips com NDVI e 2 sem', () {
+      expect(talhaoSelectionToolbarChipCount(showNdvi: true), 5);
       expect(talhaoSelectionToolbarChipCount(showNdvi: false), 2);
     });
   });
@@ -125,8 +229,7 @@ void main() {
         bottomInset: bottomInset,
       );
 
-      final maxTop =
-          800 - bottomInset - kFabSafeArea - toolbarHeight - 8;
+      final maxTop = 800 - bottomInset - kFabSafeArea - toolbarHeight - 8;
       expect(offset.dy, maxTop);
     });
 
@@ -154,7 +257,7 @@ void main() {
       expect(offset.dy, greaterThanOrEqualTo(8));
     });
 
-    test('viewport 360dp com 4 chips (275px) não invade coluna direita', () {
+    test('caso geométrico 275px não invade coluna direita', () {
       final offset = clampMapToolbarOffset(
         screenPoint: const Offset(350, 200),
         viewportSize: const Size(360, 800),
@@ -169,12 +272,32 @@ void main() {
         ),
       );
     });
+
+    test('5 chips (344px) em viewport largo não invadem a coluna direita', () {
+      const viewportWidth = 480.0;
+      const toolbarWidth = 344.0;
+      final offset = clampMapToolbarOffset(
+        screenPoint: const Offset(470, 200),
+        viewportSize: const Size(viewportWidth, 800),
+        toolbarWidth: toolbarWidth,
+        toolbarHeight: 52,
+      );
+
+      expect(
+        offset.dx + toolbarWidth,
+        lessThanOrEqualTo(
+          viewportWidth -
+              kMapActionColumnRightInset -
+              kMapActionColumnButtonSize,
+        ),
+      );
+    });
   });
 
   group('estimateMapTalhaoToolbarWidth', () {
-    test('retorna largura para 4 chips quando feature tem id', () {
+    test('retorna largura para 5 chips quando feature tem id', () {
       final feature = _squareFeature();
-      expect(estimateMapTalhaoToolbarWidth(feature), 275.0);
+      expect(estimateMapTalhaoToolbarWidth(feature), 344.0);
     });
 
     test('retorna largura para 2 chips quando feature tem id vazio', () {
@@ -184,40 +307,205 @@ void main() {
   });
 
   group('DrawingCompactSelectionActions P&B e NDVI', () {
-    testWidgets('showMonochromeMap alterna modo P&B e showNdviMap desativa P&B', (
-      tester,
-    ) async {
-      final feature = _squareFeature();
-      late WidgetRef capturedRef;
+    testWidgets(
+      'showMonochromeMap alterna modo P&B e showNdviMap desativa P&B',
+      (tester) async {
+        final feature = _squareFeature();
+        late WidgetRef capturedRef;
 
+        await tester.pumpWidget(
+          ProviderScope(
+            child: Consumer(
+              builder: (context, ref, _) {
+                capturedRef = ref;
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+
+        expect(capturedRef.read(mapNdviOverlayFieldIdProvider), isNull);
+        expect(capturedRef.read(mapNdviMonochromeEnabledProvider), isFalse);
+
+        DrawingCompactSelectionActions.showMonochromeMap(capturedRef, feature);
+        expect(capturedRef.read(mapNdviOverlayFieldIdProvider), 'f1');
+        expect(capturedRef.read(mapNdviMonochromeEnabledProvider), isTrue);
+
+        DrawingCompactSelectionActions.showMonochromeMap(capturedRef, feature);
+        expect(capturedRef.read(mapNdviOverlayFieldIdProvider), 'f1');
+        expect(capturedRef.read(mapNdviMonochromeEnabledProvider), isFalse);
+
+        DrawingCompactSelectionActions.showMonochromeMap(capturedRef, feature);
+        expect(capturedRef.read(mapNdviMonochromeEnabledProvider), isTrue);
+
+        DrawingCompactSelectionActions.showNdviMap(capturedRef, feature);
+        expect(capturedRef.read(mapNdviOverlayFieldIdProvider), 'f1');
+        expect(capturedRef.read(mapNdviMonochromeEnabledProvider), isFalse);
+      },
+    );
+  });
+
+  group('painel Status', () {
+    Future<({ProviderContainer container, _Writer writer})> pumpToolbar(
+      WidgetTester tester, {
+      required DrawingFeature feature,
+      required _Writer writer,
+    }) async {
+      final controller = DrawingController(repository: _DrawingRepo());
+      addTearDown(controller.dispose);
+      controller.selectFeature(feature);
+      final mapController = MapController();
+      addTearDown(mapController.dispose);
+      late ProviderContainer container;
+      await tester.binding.setSurfaceSize(const Size(800, 600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(
         ProviderScope(
-          child: Consumer(
-            builder: (context, ref, _) {
-              capturedRef = ref;
-              return const SizedBox.shrink();
-            },
+          overrides: [
+            drawingControllerProvider.overrideWith((ref) => controller),
+            iDrawingFieldWriterProvider.overrideWithValue(writer),
+            ndviLatestLookupProvider.overrideWithValue(_NdviLookup()),
+            ndviImagesProvider.overrideWith(
+              (ref, fieldId) async => [_ndviImage(DateTime(2026, 10, 28))],
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Consumer(
+                builder: (context, ref, _) {
+                  container = ProviderScope.containerOf(context);
+                  return FlutterMap(
+                    mapController: mapController,
+                    options: const MapOptions(
+                      initialCenter: LatLng(0.8, 0.8),
+                      initialZoom: 16,
+                    ),
+                    children: [
+                      MapTalhaoSelectionToolbar(
+                        mapController: mapController,
+                        setSheetState: (_, __) {},
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
           ),
         ),
       );
+      await tester.pump();
+      return (container: container, writer: writer);
+    }
 
-      expect(capturedRef.read(mapNdviOverlayFieldIdProvider), isNull);
-      expect(capturedRef.read(mapNdviMonochromeEnabledProvider), isFalse);
+    testWidgets('chip Status abre o painel e grava a condição', (tester) async {
+      final writer = _Writer();
+      final pumped = await pumpToolbar(
+        tester,
+        feature: _squareFeature(),
+        writer: writer,
+      );
 
-      DrawingCompactSelectionActions.showMonochromeMap(capturedRef, feature);
-      expect(capturedRef.read(mapNdviOverlayFieldIdProvider), 'f1');
-      expect(capturedRef.read(mapNdviMonochromeEnabledProvider), isTrue);
+      expect(
+        find.byKey(const Key('map_talhao_toolbar_status')),
+        findsOneWidget,
+      );
+      expect(find.text('Bom'), findsNothing);
 
-      DrawingCompactSelectionActions.showMonochromeMap(capturedRef, feature);
-      expect(capturedRef.read(mapNdviOverlayFieldIdProvider), 'f1');
-      expect(capturedRef.read(mapNdviMonochromeEnabledProvider), isFalse);
+      await tester.tap(find.byKey(const Key('map_talhao_toolbar_status')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
 
-      DrawingCompactSelectionActions.showMonochromeMap(capturedRef, feature);
-      expect(capturedRef.read(mapNdviMonochromeEnabledProvider), isTrue);
+      expect(find.text('Bom'), findsOneWidget);
+      expect(find.text('Atenção'), findsOneWidget);
+      expect(find.text('Alerta'), findsOneWidget);
+      expect(find.text('Ruim'), findsOneWidget);
 
-      DrawingCompactSelectionActions.showNdviMap(capturedRef, feature);
-      expect(capturedRef.read(mapNdviOverlayFieldIdProvider), 'f1');
-      expect(capturedRef.read(mapNdviMonochromeEnabledProvider), isFalse);
+      final bomBorder =
+          tester
+                  .widget<Container>(
+                    find.descendant(
+                      of: find.byKey(const Key('map_talhao_condicao_bom')),
+                      matching: find.byType(Container),
+                    ),
+                  )
+                  .decoration!
+              as BoxDecoration;
+      final alertaBorder =
+          tester
+                  .widget<Container>(
+                    find.descendant(
+                      of: find.byKey(const Key('map_talhao_condicao_alerta')),
+                      matching: find.byType(Container),
+                    ),
+                  )
+                  .decoration!
+              as BoxDecoration;
+      expect(bomBorder.border!.top.width, 2);
+      expect(alertaBorder.border!.top.width, 0);
+
+      await tester.tap(find.byKey(const Key('map_talhao_condicao_alerta')));
+      await tester.pump();
+      await tester.pump();
+
+      expect(writer.calls, [(fieldId: 'f1', condicao: TalhaoCondicao.alerta)]);
+
+      pumped.container
+              .read(mapTalhaoStatusPanelFieldIdProvider.notifier)
+              .state =
+          'outro';
+      await tester.pump();
+      expect(find.text('Bom'), findsNothing);
+
+      pumped.container
+              .read(mapTalhaoStatusPanelFieldIdProvider.notifier)
+              .state =
+          'f1';
+      await tester.pump();
+      expect(find.text('Bom'), findsOneWidget);
+    });
+
+    testWidgets('painel Status esconde as datas e NDVI fecha o painel', (
+      tester,
+    ) async {
+      final pumped = await pumpToolbar(
+        tester,
+        feature: _squareFeature(),
+        writer: _Writer(),
+      );
+
+      await tester.tap(find.byKey(const Key('map_talhao_toolbar_ndvi')));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('28/10'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('map_talhao_toolbar_status')));
+      await tester.pump();
+      expect(find.text('28/10'), findsNothing);
+      expect(find.text('Bom'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('map_talhao_toolbar_ndvi')));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Bom'), findsNothing);
+      expect(find.text('28/10'), findsOneWidget);
+      expect(
+        pumped.container.read(mapTalhaoStatusPanelFieldIdProvider),
+        isNull,
+      );
+    });
+
+    testWidgets('talhão sem id não mostra Status', (tester) async {
+      await pumpToolbar(
+        tester,
+        feature: _squareFeature(id: ''),
+        writer: _Writer(),
+      );
+
+      expect(
+        find.byKey(const Key('map_talhao_toolbar_edit_geometry')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('map_talhao_toolbar_status')), findsNothing);
     });
   });
 }
