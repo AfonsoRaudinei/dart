@@ -164,7 +164,7 @@ void main() {
 
     const moved = LatLng(-15.781, -47.931);
     controller.moveVertex(0, 0, moved);
-    controller.startHoleCutFromEdit();
+    await controller.startHoleCutFromEdit();
 
     expect(controller.currentState, DrawingState.armed);
     expect(controller.isCuttingHole, isTrue);

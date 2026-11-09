@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
 import 'package:soloforte_app/core/domain/talhao_condicao.dart';
+import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_visual_style.dart';
 import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
@@ -255,6 +256,37 @@ void main() {
     );
     expect(polygon.borderColor, isNot(customColor));
     expect(polygon.borderStrokeWidth, 3.0);
+  });
+
+  testWidgets('edição desenha o talhão uma vez, sem preview por cima', (
+    tester,
+  ) async {
+    final repository = _Repository([
+      _feature(DrawingPolygon(coordinates: [_square(0)])),
+    ]);
+    final controller = DrawingController(repository: repository);
+    await controller.loadFeatures();
+    addTearDown(controller.dispose);
+    controller.selectFeature(controller.features.single);
+    controller.startEditMode();
+    expect(controller.currentState, DrawingState.editing);
+
+    await _pumpWithProviders(
+      tester,
+      MaterialApp(
+        home: Scaffold(
+          body: FlutterMap(
+            options: const MapOptions(initialCenter: LatLng(0.5, 0.5)),
+            children: [DrawingLayerWidget(controller: controller)],
+          ),
+        ),
+      ),
+    );
+
+    final polygonLayer = tester.widget<PolygonLayer>(find.byType(PolygonLayer));
+    expect(polygonLayer.polygons, hasLength(1));
+    final polylines = tester.widget<PolylineLayer>(find.byType(PolylineLayer));
+    expect(polylines.polylines, isEmpty);
   });
 }
 

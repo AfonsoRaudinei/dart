@@ -641,10 +641,12 @@ void main() {
       controller.moveVertex(0, 0, const LatLng(2.0, 2.0));
       controller.onDragEnd();
 
-      // Deve ter resetado estado de drag
+      // Deve ter resetado estado de drag sem gravar outra versão.
       expect(controller.isDraggingVertex, isFalse);
+      expect(repository.saveCount, initialSaveCount);
+      expect(controller.features.single.id, 'feat1');
 
-      // Deve ter chamado saveFeature no repositório
+      await controller.saveEdit();
       expect(repository.saveCount, greaterThan(initialSaveCount));
       expect(repository.lastSavedFeature?.geometry, isA<DrawingPolygon>());
     });

@@ -71,10 +71,7 @@ void main() {
     controller.selectEditVertex(0, 0);
     await tester.pumpAndSettle();
     final gotaStart = _vertexGotaDragStart(tester, handle);
-    await tester.dragFrom(
-      gotaStart,
-      const Offset(36, 24),
-    );
+    await tester.dragFrom(gotaStart, const Offset(36, 24));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('drawing_vertex_drag_0_0')), findsOneWidget);
@@ -83,7 +80,7 @@ void main() {
         (controller.liveGeometry! as DrawingPolygon).coordinates.first.first;
     expect(afterDrag, isNot(equals(before)));
 
-    controller.saveEdit();
+    await controller.saveEdit();
     await tester.pumpAndSettle();
 
     final persisted =
@@ -237,8 +234,11 @@ void main() {
     final tip0 = tester.getRect(hit0).topCenter;
     final tip1 = tester.getRect(hit1).topCenter;
     final screenSeparation = (tip0 - tip1).distance;
-    expect(screenSeparation, inInclusiveRange(8, 12),
-        reason: 'distância em px prova métrica nearest, não z-order');
+    expect(
+      screenSeparation,
+      inInclusiveRange(8, 12),
+      reason: 'distância em px prova métrica nearest, não z-order',
+    );
 
     await tester.tapAt(_vertexIdleTapCenter(tester.getRect(hit0)));
     await tester.pumpAndSettle();
@@ -655,10 +655,7 @@ void main() {
         15,
         bearing + 90,
       );
-      expect(
-        distance.as(LengthUnit.Meter, onLine, start),
-        greaterThan(24),
-      );
+      expect(distance.as(LengthUnit.Meter, onLine, start), greaterThan(24));
 
       expect(
         controller.applyEditMapTap(
@@ -669,9 +666,8 @@ void main() {
         isTrue,
       );
 
-      final after = (controller.liveGeometry! as DrawingPolygon)
-          .coordinates
-          .first;
+      final after =
+          (controller.liveGeometry! as DrawingPolygon).coordinates.first;
       expect(after.length, before + 1);
       expect(controller.selectedEditPointIndex, 1);
       final inserted = LatLng(after[1][1], after[1][0]);
@@ -849,10 +845,8 @@ void main() {
         rotation: 0,
         nonRotatedSize: const Point(800, 800),
       );
-      final before = (controller.liveGeometry! as DrawingPolygon)
-          .coordinates
-          .first
-          .length;
+      final before =
+          (controller.liveGeometry! as DrawingPolygon).coordinates.first.length;
 
       expect(
         controller.applyEditMapTap(
@@ -1051,8 +1045,7 @@ void main() {
       editCtrl.selectFeature(editCtrl.features.single);
       editCtrl.startEditMode();
 
-      final ring =
-          (editCtrl.liveGeometry! as DrawingPolygon).coordinates.first;
+      final ring = (editCtrl.liveGeometry! as DrawingPolygon).coordinates.first;
       final beforeCount = ring.length;
       final v0 = LatLng(ring[0][1], ring[0][0]);
       final v1 = LatLng(ring[1][1], ring[1][0]);

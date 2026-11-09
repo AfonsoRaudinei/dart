@@ -131,7 +131,7 @@ void main() {
     controller.moveVertex(0, 0, const LatLng(-9.995, -47.995));
     await tester.pumpAndSettle();
 
-    expect(controller.saveEdit(), isTrue);
+    expect(await controller.saveEdit(), isTrue);
     await tester.pumpAndSettle();
 
     expect(find.byType(MapBottomSheet), findsNothing);
@@ -238,7 +238,8 @@ void main() {
     expect(controller.currentTool, DrawingTool.polygon);
   });
 
-  testWidgets('nao exibe fallback indisponivel quando flag drawing_v1 esta desabilitada',
+  testWidgets(
+    'nao exibe fallback indisponivel quando flag drawing_v1 esta desabilitada',
     (tester) async {
       final controller = await _createController();
       addTearDown(controller.dispose);
@@ -266,9 +267,9 @@ void main() {
 
     for (var i = 0; i < 3; i++) {
       controller.selectFeature(
-      controller.features.single,
-      actionsMode: DrawingFeatureActionsMode.full,
-    );
+        controller.features.single,
+        actionsMode: DrawingFeatureActionsMode.full,
+      );
       hostKey.currentState!.show();
       await tester.pumpAndSettle();
 
@@ -332,9 +333,7 @@ Future<void> _pumpHost(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
-        drawingFlagProvider.overrideWith((ref) async => flag),
-      ],
+      overrides: [drawingFlagProvider.overrideWith((ref) async => flag)],
       child: MaterialApp(
         home: _MapBottomSheetHost(key: hostKey, controller: controller),
       ),
