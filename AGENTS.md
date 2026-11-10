@@ -17,7 +17,7 @@
 | Arquitetura | Map-First + Clean Architecture + Bounded Contexts |
 | Estado | Riverpod `@riverpod` / `AsyncNotifier` (ADR-008) |
 | Navegação | `context.go()` / `context.push()` — **nunca** `pop()` |
-| Persistência | SQLite offline-first — schema **v51** (`database_helper.dart`) |
+| Persistência | SQLite offline-first — schema **v52** (`database_helper.dart`) |
 | Mapa | `flutter_map` — nunca `google_maps_flutter` |
 | CI gate | `./tool/arch_check.sh` → Exit 0 |
 | Coverage mínimo CI | 36.46% |
@@ -332,6 +332,7 @@ lib/
 | 056 | Ordem de aplicação em três campos (SQLite v49, espelho em `recomendacoes`) |
 | 057 | Rota sugerida da visita (paradas locais, sem sync) |
 | 058 | Término do plantio e ciclo na ocorrência (SQLite v51 + sync tier dos campos de plantio) |
+| 059 | Dados do plantio por safra nas ocorrências do talhão (SQLite v52, Plantio mais recente substitui o talhão) |
 
 Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 
