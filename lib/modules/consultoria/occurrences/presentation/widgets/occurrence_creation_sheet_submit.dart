@@ -73,6 +73,15 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
     );
   }
 
+  /// Sem adapter registrado (ex.: testes) o write-back é ignorado.
+  IDrawingFieldWriter? _readFieldWriter() {
+    try {
+      return ref.read(iDrawingFieldWriterProvider);
+    } on UnimplementedError {
+      return null;
+    }
+  }
+
   Future<void> _submit() async {
     if (_isSaving) return;
 
@@ -99,21 +108,13 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
       return;
     }
 
-    final talhaoPrefill = widget.initialOccurrence == null
-        ? widget.talhaoPrefill
-        : null;
-    final talhaoWriter = talhaoPrefill == null
-        ? null
-        : ref.read(iDrawingFieldWriterProvider);
-    final talhaoDataPlantio = _isoDate(_dataPlantio);
-    final talhaoDataEmergencia = _isoDate(_dataEmergencia);
-    final talhaoCicloDias = _cicloDiasCtrl.text;
     final fieldId = widget.initialOccurrence == null
-        ? talhaoPrefill?.fieldId
+        ? widget.talhaoPrefill?.fieldId
         : ref
               .read(occurrenceLocationProvider(_locationQuery))
               .valueOrNull
               ?.fieldId;
+    final plantio = _plantioValuesForSubmit();
 
     _notifyStateChanged(() {
       _submitError = null;
@@ -122,6 +123,18 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
     HapticFeedback.mediumImpact();
 
     final primaryCat = _cats.isNotEmpty ? _cats.first.name : null;
+    final category = _selectedCategoryValue ?? primaryCat;
+    final plantios = _loadedPlantiosForWriteBack(fieldId);
+    final writeBackFieldId =
+        fieldId != null &&
+            _shouldWriteBackPlantio(
+              fieldId: fieldId,
+              values: plantio,
+              plantios: plantios,
+            )
+        ? fieldId
+        : null;
+    final talhaoWriter = writeBackFieldId == null ? null : _readFieldWriter();
     final firstPhoto = _fotos.values.firstOrNull?.firstOrNull;
     final isAmostra = _isAmostraSolo;
     final tramite = _amostraTramite ?? OccurrenceAmostraTramite.coletada;
@@ -138,14 +151,14 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
               ? null
               : _selectedClient?.id,
           photoPath: firstPhoto,
-          category: _selectedCategoryValue ?? primaryCat,
-          cultivar: _cultivarCtrl.text.trim().isEmpty
-              ? null
-              : _cultivarCtrl.text.trim(),
-          dataPlantio: _isoDate(_dataPlantio),
-          dataEmergencia: _isoDate(_dataEmergencia),
-          dataFimPlantio: _isoDate(_dataFimPlantio),
-          cicloDias: parseOccurrenceCicloDias(_cicloDiasCtrl.text),
+          category: category,
+          cultivar: plantio.cultivar,
+          cultura: plantio.cultura,
+          safra: plantio.safra,
+          dataPlantio: plantio.dataPlantio,
+          dataEmergencia: plantio.dataEmergencia,
+          dataFimPlantio: plantio.dataFimPlantio,
+          cicloDias: plantio.cicloDias,
           sementesPorMetro: double.tryParse(
             _sementesPorMetroCtrl.text.trim().replaceAll(',', '.'),
           ),
@@ -183,13 +196,17 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
           audioDurationSec: _audioDurationSec,
         ),
       );
-      if (talhaoWriter != null && talhaoPrefill != null) {
-        await writeBackTalhaoPlantioIfEmpty(
+      if (talhaoWriter != null && writeBackFieldId != null) {
+        await writeBackTalhaoPlantio(
           writer: talhaoWriter,
-          prefill: talhaoPrefill,
-          formDataPlantio: talhaoDataPlantio,
-          formDataEmergencia: talhaoDataEmergencia,
-          formCicloDias: talhaoCicloDias,
+          fieldId: writeBackFieldId,
+          category: category,
+          cultura: plantio.cultura,
+          cultivar: plantio.cultivar,
+          safra: plantio.safra,
+          dataPlantio: plantio.dataPlantio,
+          dataEmergencia: plantio.dataEmergencia,
+          cicloDias: plantio.cicloDias,
         );
       }
     } catch (error) {
