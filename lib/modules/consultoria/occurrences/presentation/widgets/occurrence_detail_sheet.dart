@@ -420,6 +420,18 @@ class OccurrenceDetailSheet extends ConsumerWidget {
           label: 'Cultivar',
           value: live.cultivar!,
         ),
+      if (live.cultura?.trim().isNotEmpty == true)
+        _DetailRowData(
+          icon: SFIcons.agriculture,
+          label: 'Cultura',
+          value: live.cultura!.trim(),
+        ),
+      if (live.safra?.trim().isNotEmpty == true)
+        _DetailRowData(
+          icon: SFIcons.calendar,
+          label: 'Safra',
+          value: live.safra!.trim(),
+        ),
       if (live.dataPlantio != null &&
           live.dataPlantio!.isNotEmpty)
         _DetailRowData(
