@@ -49,19 +49,28 @@ class _LoginInputFieldState extends State<LoginInputField> {
     });
   }
 
+  void _scheduleErrorStateUpdate(bool hasErrorNow) {
+    if (_hasError == hasErrorNow) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_hasError != hasErrorNow) {
+        setState(() => _hasError = hasErrorNow);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Coleta do tema atual
     final theme = Theme.of(context);
     final errorColor = theme.colorScheme.error;
     final primaryColor = context.themeAccent; // Verde
     final secondaryColor = context.premiumTextSecondary;
     final tertiaryColor = context.premiumTextTertiary;
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Label externa (Design System: Label discreta 12-13px)
         Text(
           widget.label,
           style: theme.textTheme.labelSmall?.copyWith(
@@ -69,62 +78,53 @@ class _LoginInputFieldState extends State<LoginInputField> {
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 8), // Spacing: 8px (8.0)
+        const SizedBox(height: 8),
         Semantics(
           label: widget.label,
           textField: true,
           child: TextFormField(
-          controller: widget.controller,
-          focusNode: widget.focusNode,
-          obscureText: widget.isPassword && _obscureText,
-          keyboardType: widget.keyboardType,
-          textInputAction: widget.textInputAction,
-          style: theme.textTheme.bodyLarge, // Texto do input
-          // Decoração (Herda a maior parte do InputDecorationTheme)
-          decoration: InputDecoration(
-            hintText: widget.hintText,
-            hintStyle: theme.textTheme.bodyMedium?.copyWith(
-              color: tertiaryColor, // Placeholder cinza
+            controller: widget.controller,
+            focusNode: widget.focusNode,
+            obscureText: widget.isPassword && _obscureText,
+            keyboardType: widget.keyboardType,
+            textInputAction: widget.textInputAction,
+            scrollPadding: EdgeInsets.only(bottom: keyboardInset + 120),
+            style: theme.textTheme.bodyLarge,
+            decoration: InputDecoration(
+              hintText: widget.hintText,
+              hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                color: tertiaryColor,
+              ),
+              prefixIcon: Icon(
+                widget.icon,
+                color: _hasError ? errorColor : primaryColor,
+                size: 20,
+              ),
+              suffixIcon: widget.isPassword
+                  ? IconButton(
+                      icon: Icon(
+                        _obscureText ? Icons.visibility_off : Icons.visibility,
+                        color: secondaryColor,
+                        size: 20,
+                      ),
+                      onPressed: _togglePasswordVisibility,
+                    )
+                  : null,
             ),
-
-            // Ícone Prefix (Integrado)
-            prefixIcon: Icon(
-              widget.icon,
-              color: _hasError
-                  ? errorColor
-                  : primaryColor, // Ícone Verde ou Vermelho
-              size: 20, // Solo Icon Size Standard (20px em inputs)
-            ),
-
-            // Ícone Suffix (Senha)
-            suffixIcon: widget.isPassword
-                ? IconButton(
-                    icon: Icon(
-                      _obscureText ? Icons.visibility_off : Icons.visibility,
-                      color: secondaryColor,
-                      size: 20,
-                    ),
-                    onPressed: _togglePasswordVisibility,
-                  )
-                : null,
-
-            // Bordas e Fill são gerenciados pelo Theme, apenas ajustamos cores de erro/foco específicas aqui se necessário
-            // O Theme define Radius 16 e Padding 16.
+            validator: (value) {
+              final error = widget.validator?.call(value);
+              _scheduleErrorStateUpdate(error != null);
+              return error;
+            },
+            onChanged: (value) {
+              if (_hasError) {
+                final error = widget.validator?.call(value);
+                _scheduleErrorStateUpdate(error != null);
+              }
+              widget.onChanged?.call(value);
+            },
+            onFieldSubmitted: widget.onSubmitted,
           ),
-
-          validator: (value) {
-            final error = widget.validator?.call(value);
-            final hasErrorNow = error != null;
-            if (_hasError != hasErrorNow) {
-              setState(() {
-                _hasError = hasErrorNow;
-              });
-            }
-            return error;
-          },
-          onChanged: widget.onChanged,
-          onFieldSubmitted: widget.onSubmitted,
-        ),
         ),
       ],
     );
