@@ -91,6 +91,8 @@ class OccurrenceFormData {
   final String? objetivoPlantio;
   final String? dataFimPlantio; // "yyyy-MM-dd"
   final int? cicloDias;
+  final String? cultura;
+  final String? safra; // "AAAA/AAAA+1"
   final String? audioPath;
   final int? audioDurationSec;
   final String? amostraCodigo;
@@ -131,6 +133,8 @@ class OccurrenceFormData {
     this.objetivoPlantio,
     this.dataFimPlantio,
     this.cicloDias,
+    this.cultura,
+    this.safra,
     this.audioPath,
     this.audioDurationSec,
     this.amostraCodigo,
