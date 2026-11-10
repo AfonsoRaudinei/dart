@@ -166,6 +166,33 @@ class OccurrenceRepository {
     return List.generate(maps.length, (i) => Occurrence.fromMap(maps[i]));
   }
 
+  /// Ocorrências de Plantio do talhão, não excluídas (ADR-059).
+  Future<List<Occurrence>> getPlantioOccurrencesByFieldId(
+    String fieldId,
+  ) async {
+    final normalized = fieldId.trim();
+    if (normalized.isEmpty) return const [];
+
+    final db = await _databaseHelper.database;
+    final currentUserId = _scopedUserId();
+    final maps = await db.query(
+      'occurrences',
+      where:
+          "field_id = ? AND LOWER(TRIM(category)) = 'plantio' AND "
+          '(${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause()} '
+          'OR cached_by_user_id = ?) '
+          "AND sync_status NOT IN ('deleted', 'deleted_local') "
+          'AND deleted_at IS NULL',
+      whereArgs: [
+        normalized,
+        ...OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereArgs(currentUserId),
+        currentUserId,
+      ],
+      orderBy: 'created_at DESC',
+    );
+    return maps.map(Occurrence.fromMap).toList();
+  }
+
   /// Ocorrências com pin útil para enquadrar o mapa no produtor (check-in / card).
   ///
   /// Inclui `client_id` direto e pins de sessão de visita sem cliente vinculado.
