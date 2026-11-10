@@ -12,4 +12,9 @@ class OccurrenceAccessReaderAdapter implements IOccurrenceAccessReader {
     final ids = await _repository.loadAuthorizedClientIds();
     return ids.toSet();
   }
+
+  @override
+  Future<Map<String, String>> loadLinkedClientNames() {
+    return _repository.loadLinkedClientNames();
+  }
 }

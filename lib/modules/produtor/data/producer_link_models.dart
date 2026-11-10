@@ -143,6 +143,7 @@ class ProducerLinkedClient {
   final String? state;
   final List<ProducerLinkedFarm> farms;
   final List<ProducerLinkedReport> reports;
+  final List<ProducerLinkedOccurrence> occurrences;
 
   const ProducerLinkedClient({
     required this.link,
@@ -153,7 +154,32 @@ class ProducerLinkedClient {
     required this.state,
     required this.farms,
     required this.reports,
+    this.occurrences = const [],
   });
+}
+
+class ProducerLinkedOccurrence {
+  final String id;
+  final String title;
+  final DateTime createdAt;
+  final double? latitude;
+  final double? longitude;
+
+  const ProducerLinkedOccurrence({
+    required this.id,
+    required this.title,
+    required this.createdAt,
+    this.latitude,
+    this.longitude,
+  });
+
+  bool get hasLocation {
+    final lat = latitude;
+    final lng = longitude;
+    if (lat == null || lng == null) return false;
+    if (!lat.isFinite || !lng.isFinite) return false;
+    return lat != 0 || lng != 0;
+  }
 }
 
 class ProducerLinkedFarm {

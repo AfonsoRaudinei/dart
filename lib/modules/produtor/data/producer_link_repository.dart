@@ -173,6 +173,28 @@ class ProducerLinkRepository implements ProducerLinkReader {
     }
   }
 
+  /// Nome da ficha do consultor para cada `client_id` ativo.
+  Future<Map<String, String>> loadLinkedClientNames() async {
+    final links = await _loadActiveLinks();
+    final names = <String, String>{};
+    for (final link in links) {
+      try {
+        final rows = await _client
+            .from('clients')
+            .select('nome, name')
+            .eq('id', link.clientId)
+            .limit(1);
+        if ((rows as List).isEmpty) continue;
+        final row = Map<String, dynamic>.from(rows.first as Map);
+        final name = ((row['nome'] ?? row['name']) as String?)?.trim() ?? '';
+        if (name.isNotEmpty) names[link.clientId] = name;
+      } catch (_) {
+        continue;
+      }
+    }
+    return names;
+  }
+
   Future<List<ProducerClientLink>> _loadActiveLinks() async {
     final userId = _currentUserId();
     try {
@@ -218,6 +240,7 @@ class ProducerLinkRepository implements ProducerLinkReader {
     final client = Map<String, dynamic>.from(clientRows.first as Map);
     final farms = await _loadFarms(link.clientId);
     final reports = await _loadReports(link.clientId);
+    final occurrences = await _loadOccurrences(link.clientId);
 
     return ProducerLinkedClient(
       link: link,
@@ -228,7 +251,65 @@ class ProducerLinkRepository implements ProducerLinkReader {
       state: (client['uf'] ?? client['state']) as String?,
       farms: farms,
       reports: reports,
+      occurrences: occurrences,
     );
+  }
+
+  Future<List<ProducerLinkedOccurrence>> _loadOccurrences(
+    String clientId,
+  ) async {
+    try {
+      final rows = await _client
+          .from('occurrences')
+          .select(
+            'id, category, type, description, created_at, latitude, longitude, lat, long, deleted_at',
+          )
+          .eq('client_id', clientId)
+          .isFilter('deleted_at', null)
+          .order('created_at', ascending: false)
+          .limit(50);
+      return (rows as List)
+          .map(
+            (row) =>
+                occurrenceFromRemote(Map<String, dynamic>.from(row as Map)),
+          )
+          .whereType<ProducerLinkedOccurrence>()
+          .toList(growable: false);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Título legível da ocorrência do consultor, no nome do cliente vinculado.
+  @visibleForTesting
+  static ProducerLinkedOccurrence? occurrenceFromRemote(
+    Map<String, dynamic> row,
+  ) {
+    final id = (row['id'] as String?)?.trim() ?? '';
+    if (id.isEmpty || row['deleted_at'] != null) return null;
+    final createdRaw = row['created_at'] as String?;
+    final createdAt = createdRaw == null
+        ? DateTime.now()
+        : DateTime.tryParse(createdRaw)?.toLocal() ?? DateTime.now();
+    return ProducerLinkedOccurrence(
+      id: id,
+      title: occurrenceTitle(row),
+      createdAt: createdAt,
+      latitude: _asDoubleOrNull(row['latitude'] ?? row['lat']),
+      longitude: _asDoubleOrNull(row['longitude'] ?? row['long']),
+    );
+  }
+
+  @visibleForTesting
+  static String occurrenceTitle(Map<String, dynamic> row) {
+    final description = (row['description'] as String?)?.trim() ?? '';
+    if (description.isNotEmpty) {
+      return description.length > 80
+          ? '${description.substring(0, 79)}…'
+          : description;
+    }
+    final category = (row['category'] as String?)?.trim().toLowerCase() ?? '';
+    return _occurrenceCategoryLabel[category] ?? 'Ocorrência';
   }
 
   Future<List<ProducerLinkedFarm>> _loadFarms(String clientId) async {
@@ -464,6 +545,29 @@ class ProducerLinkRepository implements ProducerLinkReader {
       farmName: 'Criado em ${_formatDate(createdAt)}',
       createdAt: createdAt,
     );
+  }
+
+  static const _occurrenceCategoryLabel = <String, String>{
+    'doenca': 'Doença',
+    'doença': 'Doença',
+    'insetos': 'Insetos',
+    'pragas': 'Insetos',
+    'daninhas': 'Ervas daninhas',
+    'ervas_daninhas': 'Ervas daninhas',
+    'nutricional': 'Nutrientes',
+    'nutrientes': 'Nutrientes',
+    'agua': 'Água',
+    'água': 'Água',
+    'amostra_solo': 'Amostra de solo',
+    'plantio': 'Plantio',
+    'area_visitada': 'Área visitada',
+    'área visitada': 'Área visitada',
+  };
+
+  static double? _asDoubleOrNull(Object? value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
   }
 
   static double _asDouble(Object? value) {

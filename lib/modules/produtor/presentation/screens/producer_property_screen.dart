@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/layout_constants.dart';
+import '../../../../core/services/sync_orchestrator.dart';
 import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
@@ -43,6 +46,12 @@ class _ProducerPropertyScreenState
       await ref.read(producerLinkRepositoryProvider).acceptToken(token);
       ref.invalidate(producerPropertyDashboardProvider);
       _tokenController.clear();
+      final orchestrator = ref.read(syncOrchestratorProvider);
+      unawaited(() async {
+        try {
+          await orchestrator.triggerSync(SyncPriority.immediate);
+        } catch (_) {}
+      }());
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Propriedade vinculada com sucesso.')),
@@ -679,6 +688,14 @@ class _ClientCard extends StatelessWidget {
           else
             ...client.farms.map((farm) => _FarmTile(farm: farm)),
           const SizedBox(height: 16),
+          const _SectionTitle('Ocorrências'),
+          if (client.occurrences.isEmpty)
+            const _MutedText('Nenhuma ocorrência liberada.')
+          else
+            ...client.occurrences.map(
+              (occurrence) => _OccurrenceTile(occurrence: occurrence),
+            ),
+          const SizedBox(height: 16),
           const _SectionTitle('Relatórios'),
           if (client.reports.isEmpty)
             const _MutedText('Nenhum relatório liberado.')
@@ -729,6 +746,38 @@ class _FarmTile extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _OccurrenceTile extends StatelessWidget {
+  const _OccurrenceTile({required this.occurrence});
+
+  final ProducerLinkedOccurrence occurrence;
+
+  @override
+  Widget build(BuildContext context) {
+    final day = occurrence.createdAt.day.toString().padLeft(2, '0');
+    final month = occurrence.createdAt.month.toString().padLeft(2, '0');
+    final when = '$day/$month/${occurrence.createdAt.year}';
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(Icons.place_outlined),
+      title: Text(occurrence.title),
+      subtitle: Text(when),
+      trailing: occurrence.hasLocation
+          ? const Icon(Icons.center_focus_strong_rounded, size: 18)
+          : null,
+      dense: true,
+      onTap: occurrence.hasLocation
+          ? () {
+              context.go(
+                '${AppRoutes.map}?modo=foco'
+                '&lat=${occurrence.latitude!.toStringAsFixed(6)}'
+                '&lng=${occurrence.longitude!.toStringAsFixed(6)}',
+              );
+            }
+          : null,
     );
   }
 }
