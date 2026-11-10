@@ -191,6 +191,10 @@ class Occurrence {
   final String? dataFimPlantio; // ISO "yyyy-MM-dd"
   final int? cicloDias;
 
+  // ── Cultura e safra (Schema v52 — ADR-059) ──────────────────────────
+  final String? cultura;
+  final String? safra; // "AAAA/AAAA+1"
+
   final String? andamento;
   final String? responsavelNome;
   /// Path local (`media/audio_….m4a`) — gravação de até 30 s.
@@ -253,6 +257,8 @@ class Occurrence {
     this.objetivoPlantio,
     this.dataFimPlantio,
     this.cicloDias,
+    this.cultura,
+    this.safra,
     this.andamento = 'aberta',
     this.responsavelNome,
     this.audioPath,
@@ -331,6 +337,8 @@ class Occurrence {
       objetivoPlantio: map['objetivo_plantio'] as String?,
       dataFimPlantio: map['data_fim_plantio'] as String?,
       cicloDias: (map['ciclo_dias'] as num?)?.toInt(),
+      cultura: map['cultura'] as String?,
+      safra: map['safra'] as String?,
       andamento: OccurrenceAndamento.normalizeStorage(
             map['andamento'] as String?,
           ) ??
@@ -404,6 +412,8 @@ class Occurrence {
       'objetivo_plantio': objetivoPlantio,
       'data_fim_plantio': dataFimPlantio,
       'ciclo_dias': cicloDias,
+      'cultura': cultura,
+      'safra': safra,
       'andamento': andamento ?? OccurrenceAndamento.aberta.storageValue,
       'responsavel_nome': responsavelNome,
       'audio_path': audioPath,
@@ -472,6 +482,10 @@ class Occurrence {
     bool clearDataFimPlantio = false,
     int? cicloDias,
     bool clearCicloDias = false,
+    String? cultura,
+    bool clearCultura = false,
+    String? safra,
+    bool clearSafra = false,
     String? andamento,
     String? responsavelNome,
     bool clearResponsavelNome = false,
@@ -555,6 +569,8 @@ class Occurrence {
           ? null
           : (dataFimPlantio ?? this.dataFimPlantio),
       cicloDias: clearCicloDias ? null : (cicloDias ?? this.cicloDias),
+      cultura: clearCultura ? null : (cultura ?? this.cultura),
+      safra: clearSafra ? null : (safra ?? this.safra),
       andamento: andamento ?? this.andamento,
       responsavelNome: clearResponsavelNome
           ? null
