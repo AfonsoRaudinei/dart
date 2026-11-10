@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -130,6 +131,8 @@ void main() {
           'fazenda_id': 'farm-1',
           'nome': 'Talhão A',
           'area_produtiva': 40,
+          'bordadura_geo':
+              '{"type":"Polygon","coordinates":[[[-48.0,-10.0],[-48.0,-10.1],[-47.9,-10.1],[-48.0,-10.0]]]}',
         },
       ],
     );
@@ -140,5 +143,39 @@ void main() {
     expect(client.farms.single.name, 'Fazenda Norte');
     expect(client.farms.single.fields.single.name, 'Talhão A');
     expect(client.farms.single.fields.single.areaHa, 40);
+    expect(client.farms.single.fields.single.hasGeometry, isTrue);
+  });
+
+  test('leitura de vínculo ativo não corta pelo vencimento do token', () {
+    final source = File(
+      'lib/modules/produtor/data/producer_link_repository.dart',
+    ).readAsStringSync();
+
+    expect(source, isNot(contains(".gt('expires_at'")));
+    expect(source, isNot(contains('expiresAt.toUtc().isAfter')));
+    expect(source, contains("eq('status', 'active')"));
+  });
+
+  test('vínculo ativo antigo continua na leitura mesmo com token vencido', () {
+    final expired = DateTime.utc(2020, 1, 1);
+    final link = ProducerClientLink(
+      id: 'link-old',
+      consultorUserId: 'consultor-1',
+      clientId: 'client-1',
+      producerUserId: 'produtor-1',
+      status: 'active',
+      expiresAt: expired,
+      usedAt: expired,
+      createdAt: expired,
+      updatedAt: expired,
+    );
+
+    final client = ProducerLinkRepository.linkedClientFromLocalRows(
+      link: link,
+      clientRow: {'nome': 'Jonathan'},
+    );
+
+    expect(client.link.status, 'active');
+    expect(client.link.expiresAt.isBefore(DateTime.utc(2026, 1, 1)), isTrue);
   });
 }
