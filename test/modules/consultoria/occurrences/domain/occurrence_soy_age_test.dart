@@ -8,18 +8,18 @@ void main() {
   test('DAP usa dias de calendário e o texto existente', () {
     expect(
       occurrenceDapLabel(DateTime(2026, 11, 1), today: today),
-      '4 dias desde o plantio (DAP real)',
+      '4 dias após o plantio (DAP)',
     );
     expect(
       occurrenceDapLabel(DateTime(2026, 11, 5, 23), today: today),
-      '0 dias desde o plantio (DAP real)',
+      '0 dias após o plantio (DAP)',
     );
   });
 
-  test('emergência vira Soja com N dias', () {
+  test('emergência vira N dias após a emergência (DAE)', () {
     expect(
       occurrenceSoyAgeLabel(DateTime(2026, 10, 21), today: today),
-      'Soja com 15 dias',
+      '15 dias após a emergência (DAE)',
     );
   });
 
