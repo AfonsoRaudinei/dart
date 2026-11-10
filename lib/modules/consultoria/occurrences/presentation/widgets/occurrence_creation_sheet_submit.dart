@@ -1,5 +1,12 @@
 part of 'occurrence_creation_sheet.dart';
 
+/// Compara só o dia — hora do picker não conta.
+bool _terminoAntesDoInicio(DateTime? inicio, DateTime? termino) {
+  if (inicio == null || termino == null) return false;
+  return DateTime(termino.year, termino.month, termino.day)
+      .isBefore(DateTime(inicio.year, inicio.month, inicio.day));
+}
+
 extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
   bool _hasValidPin() {
     if (!_pinLatitude.isFinite || !_pinLongitude.isFinite) return false;
@@ -87,6 +94,10 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
       );
       return;
     }
+    if (_terminoAntesDoInicio(_dataPlantio, _dataFimPlantio)) {
+      _showSubmitError('O término do plantio não pode ser antes do início.');
+      return;
+    }
 
     final talhaoPrefill = widget.initialOccurrence == null
         ? widget.talhaoPrefill
@@ -133,6 +144,8 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
               : _cultivarCtrl.text.trim(),
           dataPlantio: _isoDate(_dataPlantio),
           dataEmergencia: _isoDate(_dataEmergencia),
+          dataFimPlantio: _isoDate(_dataFimPlantio),
+          cicloDias: parseOccurrenceCicloDias(_cicloDiasCtrl.text),
           sementesPorMetro: double.tryParse(
             _sementesPorMetroCtrl.text.trim().replaceAll(',', '.'),
           ),
