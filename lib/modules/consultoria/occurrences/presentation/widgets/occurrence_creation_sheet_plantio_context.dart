@@ -39,22 +39,23 @@ extension _OccurrenceCreationSheetPlantioContext
   DateTime? get _plantioReferenceDate => widget.initialOccurrence?.createdAt;
 
   /// Criação: talhão do prefill. Edição: talhão salvo ou o do pin.
-  String? _watchPlantioFieldId() {
+  /// Build observa ([watch]); o submit lê o mesmo talhão sem observar.
+  String? _plantioFieldId({required bool watch}) {
     final occurrence = widget.initialOccurrence;
     final own = occurrence == null
         ? widget.talhaoPrefill?.fieldId
         : occurrence.fieldId;
     if (own != null && own.trim().isNotEmpty) return own.trim();
     if (occurrence == null) return null;
-    return ref
-        .watch(occurrenceLocationProvider(_locationQuery))
+    final location = occurrenceLocationProvider(_locationQuery);
+    return (watch ? ref.watch(location) : ref.read(location))
         .valueOrNull
         ?.fieldId;
   }
 
   /// Chamado no build: resolve o contexto e guarda o card somente leitura.
   void _watchPlantioContext() {
-    final fieldId = _watchPlantioFieldId();
+    final fieldId = _plantioFieldId(watch: true);
     final context = fieldId == null
         ? null
         : ref
