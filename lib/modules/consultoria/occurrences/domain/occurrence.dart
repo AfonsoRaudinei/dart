@@ -187,6 +187,10 @@ class Occurrence {
   final String? avaliacaoPlantio; // "boa" | "ruim"
   final String? objetivoPlantio;
 
+  // ── Término do plantio e ciclo (Schema v51 — ADR-058) ───────────────
+  final String? dataFimPlantio; // ISO "yyyy-MM-dd"
+  final int? cicloDias;
+
   final String? andamento;
   final String? responsavelNome;
   /// Path local (`media/audio_….m4a`) — gravação de até 30 s.
@@ -247,6 +251,8 @@ class Occurrence {
     this.estandePlantas,
     this.avaliacaoPlantio,
     this.objetivoPlantio,
+    this.dataFimPlantio,
+    this.cicloDias,
     this.andamento = 'aberta',
     this.responsavelNome,
     this.audioPath,
@@ -323,6 +329,8 @@ class Occurrence {
         map['avaliacao_plantio'] as String?,
       ),
       objetivoPlantio: map['objetivo_plantio'] as String?,
+      dataFimPlantio: map['data_fim_plantio'] as String?,
+      cicloDias: (map['ciclo_dias'] as num?)?.toInt(),
       andamento: OccurrenceAndamento.normalizeStorage(
             map['andamento'] as String?,
           ) ??
@@ -394,6 +402,8 @@ class Occurrence {
       'estande_plantas': estandePlantas,
       'avaliacao_plantio': avaliacaoPlantio,
       'objetivo_plantio': objetivoPlantio,
+      'data_fim_plantio': dataFimPlantio,
+      'ciclo_dias': cicloDias,
       'andamento': andamento ?? OccurrenceAndamento.aberta.storageValue,
       'responsavel_nome': responsavelNome,
       'audio_path': audioPath,
@@ -458,6 +468,10 @@ class Occurrence {
     bool clearAvaliacaoPlantio = false,
     String? objetivoPlantio,
     bool clearObjetivoPlantio = false,
+    String? dataFimPlantio,
+    bool clearDataFimPlantio = false,
+    int? cicloDias,
+    bool clearCicloDias = false,
     String? andamento,
     String? responsavelNome,
     bool clearResponsavelNome = false,
@@ -537,6 +551,10 @@ class Occurrence {
       objetivoPlantio: clearObjetivoPlantio
           ? null
           : (objetivoPlantio ?? this.objetivoPlantio),
+      dataFimPlantio: clearDataFimPlantio
+          ? null
+          : (dataFimPlantio ?? this.dataFimPlantio),
+      cicloDias: clearCicloDias ? null : (cicloDias ?? this.cicloDias),
       andamento: andamento ?? this.andamento,
       responsavelNome: clearResponsavelNome
           ? null
