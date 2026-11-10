@@ -192,7 +192,7 @@ Se precisar cruzar fronteira → contrato em `core/contracts/` + ADR novo.
 lib/
 ├── core/
 │   ├── contracts/         ← contratos inter-módulos
-│   ├── database/          ← database_helper.dart (schema v43)
+│   ├── database/          ← database_helper.dart (schema v52)
 │   ├── domain/            ← FieldMapEntity (canônico — Etapa 3)
 │   ├── router/            ← app_router.dart (única exceção core→modules)
 │   └── state/
