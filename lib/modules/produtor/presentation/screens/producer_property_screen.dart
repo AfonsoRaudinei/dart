@@ -583,7 +583,7 @@ class _TokenPanel extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Insira o token enviado pelo consultor para visualizar fazendas, talhões e relatórios liberados.',
+            'Insira o token enviado pelo consultor para ver fazendas, talhões, relatórios e o contorno das áreas no mapa.',
             style: TextStyle(color: Color(0xFF5F6B5A), height: 1.35),
           ),
           const SizedBox(height: 14),

@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/database/database_helper.dart';
 import '../../../core/session/local_session_identity.dart';
+import 'linked_consultant_geometry.dart';
 import 'producer_link_models.dart';
 
 final producerLinkRepositoryProvider = Provider<ProducerLinkRepository>((ref) {
@@ -147,7 +148,8 @@ class ProducerLinkRepository implements ProducerLinkReader {
     return links.map((link) => link.clientId).toList(growable: false);
   }
 
-  /// Resolucao de autorizacao para dados compartilhados: falha fechada.
+  /// Vínculo `active` libera leitura enquanto não for revogado.
+  /// `expires_at` vale só para aceitar o token pendente.
   Future<List<String>> loadAuthorizedClientIds() async {
     final userId = _currentUserId();
     try {
@@ -156,7 +158,6 @@ class ProducerLinkRepository implements ProducerLinkReader {
           .select()
           .eq('producer_user_id', userId)
           .eq('status', 'active')
-          .gt('expires_at', DateTime.now().toUtc().toIso8601String())
           .order('updated_at', ascending: false);
       final links = (rows as List)
           .map((row) => ProducerClientLink.fromRemote(row))
@@ -316,6 +317,7 @@ class ProducerLinkRepository implements ProducerLinkReader {
                   ? (field['nome'] as String).trim()
                   : 'Talhão',
               areaHa: _asDouble(field['area_produtiva']),
+              geometryJson: linkedFieldGeometryJson(field['bordadura_geo']),
             ),
           )
           .toList(growable: false);
@@ -359,6 +361,9 @@ class ProducerLinkRepository implements ProducerLinkReader {
         id: field['id'] as String,
         name: (field['nome'] ?? field['name'] ?? 'Talhão') as String,
         areaHa: _asDouble(field['area_produtiva'] ?? field['area_ha']),
+        geometryJson: linkedFieldGeometryJson(
+          field['bordadura_geo'] ?? field['geometry'],
+        ),
       );
     }).toList();
   }
@@ -400,11 +405,7 @@ class ProducerLinkRepository implements ProducerLinkReader {
       whereArgs: [userId, 'active'],
       orderBy: 'updated_at DESC',
     );
-    final now = DateTime.now().toUtc();
-    return rows
-        .map(ProducerClientLink.fromCache)
-        .where((link) => link.expiresAt.toUtc().isAfter(now))
-        .toList();
+    return rows.map(ProducerClientLink.fromCache).toList();
   }
 
   Future<void> _removeStaleCachedProducerLinks(

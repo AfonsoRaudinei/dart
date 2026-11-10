@@ -179,11 +179,21 @@ class ProducerLinkedField {
   final String name;
   final double areaHa;
 
+  /// GeoJSON do contorno (`fields.bordadura_geo`). Leitura. O produtor
+  /// não grava de volta na conta do consultor.
+  final String? geometryJson;
+
   const ProducerLinkedField({
     required this.id,
     required this.name,
     required this.areaHa,
+    this.geometryJson,
   });
+
+  bool get hasGeometry {
+    final raw = geometryJson?.trim() ?? '';
+    return raw.isNotEmpty;
+  }
 }
 
 class ProducerLinkedReport {
