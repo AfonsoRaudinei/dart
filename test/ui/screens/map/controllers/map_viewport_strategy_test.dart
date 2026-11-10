@@ -70,6 +70,20 @@ void main() {
     );
   });
 
+  test('sem polígono próprio a câmera usa o talhão do consultor', () {
+    const own = <LatLng>[];
+    const linked = [LatLng(-10.0, -48.0)];
+
+    expect(producerCameraPoints(ownPoints: own, linkedPoints: linked), linked);
+  });
+
+  test('polígono próprio tem prioridade sobre o do consultor', () {
+    const own = [LatLng(-15.0, -48.0)];
+    const linked = [LatLng(-10.0, -48.0)];
+
+    expect(producerCameraPoints(ownPoints: own, linkedPoints: linked), own);
+  });
+
   test('polígono local vira pontos da câmera', () {
     final fields = [
       Talhao(
@@ -131,10 +145,7 @@ void main() {
 
     final points = polygonPointsFromFields(fields);
     expect(points.length, greaterThan(4));
-    expect(
-      points.any((p) => p.longitude <= -47.9),
-      isTrue,
-    );
+    expect(points.any((p) => p.longitude <= -47.9), isTrue);
   });
 
   test('GPS tardio não move se o talhão já enquadrou', () {

@@ -12,6 +12,8 @@ import '../../../../core/state/map_ui_providers.dart';
 import '../../../../modules/consultoria/clients/domain/agronomic_models.dart';
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
+import '../../../../modules/produtor/data/linked_consultant_geometry.dart';
+import '../../../../modules/produtor/data/producer_property_repository.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/dashboard/services/location_service.dart';
@@ -22,6 +24,17 @@ import '../../../../modules/drawing/domain/models/drawing_models.dart';
 @visibleForTesting
 bool viewportUsesProducerStrategy(User? user) {
   return user?.userMetadata?['role'] == 'produtor';
+}
+
+/// A fazenda própria do produtor manda na câmera. Sem polígono local,
+/// o mapa abre nos talhões que o consultor liberou.
+@visibleForTesting
+List<LatLng> producerCameraPoints({
+  required List<LatLng> ownPoints,
+  required List<LatLng> linkedPoints,
+}) {
+  if (ownPoints.isNotEmpty) return ownPoints;
+  return linkedPoints;
 }
 
 /// Pontos do polígono já persistido em `fields.bordadura_geo`.
@@ -103,7 +116,21 @@ class MapViewportController {
     final user = Supabase.instance.client.auth.currentUser;
     final isProducer = viewportUsesProducerStrategy(user);
     final fieldsState = ref.read(mapFieldsProvider);
-    final farmPoints = polygonPointsFromFields(fieldsState.valueOrNull);
+    var farmPoints = polygonPointsFromFields(fieldsState.valueOrNull);
+    if (isProducer && farmPoints.isEmpty && !fieldsState.isLoading) {
+      farmPoints = await _linkedConsultantCameraPoints(
+        ref: ref,
+        isMounted: isMounted,
+        ownPoints: farmPoints,
+      );
+      if (!isMounted) return;
+      final vpAfterLink = ref.read(viewportStateProvider);
+      if (vpAfterLink == InitialViewportState.applied ||
+          vpAfterLink == InitialViewportState.aborted) {
+        return;
+      }
+      if (ref.read(explicitMapCameraIntentProvider)) return;
+    }
     final choice = resolveOfflineCamera(
       isProducer: isProducer,
       hasStoredFarmPoints: farmPoints.isNotEmpty,
@@ -135,6 +162,25 @@ class MapViewportController {
       farmPoints: farmPoints,
       fieldsLoading: fieldsState.isLoading,
     );
+  }
+
+  static Future<List<LatLng>> _linkedConsultantCameraPoints({
+    required WidgetRef ref,
+    required bool isMounted,
+    required List<LatLng> ownPoints,
+  }) async {
+    try {
+      final dashboard = await ref.read(
+        producerPropertyDashboardProvider.future,
+      );
+      if (!isMounted) return ownPoints;
+      return producerCameraPoints(
+        ownPoints: ownPoints,
+        linkedPoints: focusPointsForLinkedClients(dashboard.linkedClients),
+      );
+    } catch (_) {
+      return ownPoints;
+    }
   }
 
   static bool _fitFarmPoints({
