@@ -483,6 +483,8 @@ class OccurrenceRemoteMapper {
       'estande_plantas': occurrence.estandePlantas,
       'avaliacao_plantio': occurrence.avaliacaoPlantio,
       'objetivo_plantio': occurrence.objetivoPlantio,
+      'data_fim_plantio': occurrence.dataFimPlantio,
+      'ciclo_dias': occurrence.cicloDias,
       'andamento':
           occurrence.andamento ?? OccurrenceAndamento.aberta.storageValue,
       'responsavel_nome': occurrence.responsavelNome,
@@ -548,6 +550,8 @@ class OccurrenceRemoteMapper {
       'estande_plantas': (remote['estande_plantas'] as num?)?.toInt(),
       'avaliacao_plantio': remote['avaliacao_plantio'] as String?,
       'objetivo_plantio': remote['objetivo_plantio'] as String?,
+      'data_fim_plantio': remote['data_fim_plantio'] as String?,
+      'ciclo_dias': (remote['ciclo_dias'] as num?)?.toInt(),
       'andamento':
           remote['andamento'] as String? ??
           OccurrenceAndamento.aberta.storageValue,
