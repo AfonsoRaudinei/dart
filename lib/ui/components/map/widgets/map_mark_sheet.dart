@@ -244,6 +244,8 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
               objetivoPlantio: data.objetivoPlantio,
               dataFimPlantio: data.dataFimPlantio,
               cicloDias: data.cicloDias,
+              cultura: data.cultura,
+              safra: data.safra,
               audioPath: data.audioPath,
               audioDurationSec: data.audioDurationSec,
               amostraCodigo: data.amostraCodigo,
