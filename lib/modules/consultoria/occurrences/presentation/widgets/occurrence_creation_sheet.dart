@@ -522,7 +522,6 @@ class _OccurrenceCreationSheetState
 
                 if (!_isAreaVisitada) ...[
                   const OccurrenceSectionHeader(
-                    icon: '🏷',
                     title: 'Categorias da Ocorrência',
                   ),
                   const SizedBox(height: 8),
@@ -537,7 +536,6 @@ class _OccurrenceCreationSheetState
                   ],
 
                   const OccurrenceSectionHeader(
-                    icon: '📊',
                     title: 'Estádio Fenológico',
                   ),
                   const SizedBox(height: 10),
@@ -556,14 +554,13 @@ class _OccurrenceCreationSheetState
                       .where((cat) => cat != OccurrenceCategory.areaVisitada)
                       .map((cat) => _buildCategorySection(cat)),
 
-                  const OccurrenceSectionHeader(icon: '⚡', title: 'Urgência'),
+                  const OccurrenceSectionHeader(title: 'Urgência'),
                   const SizedBox(height: 8),
                   _buildUrgencySelector(),
                   const SizedBox(height: 20),
                 ],
 
                 OccurrenceSectionHeader(
-                  icon: '📝',
                   title: _isAreaVisitada
                       ? 'Observações (opcional)'
                       : 'Observações Gerais',
