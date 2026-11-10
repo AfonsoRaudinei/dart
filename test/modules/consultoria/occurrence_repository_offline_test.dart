@@ -175,4 +175,35 @@ void main() {
       expect(found?.deletedAt, isNotNull);
     });
   });
+
+  test('Plantios do talhão: só categoria plantio, do talhão, não excluídos',
+      () async {
+    LocalSessionIdentity.remember('user-a');
+    final repository = OccurrenceRepository();
+    Occurrence build(String id, {String category = 'plantio', String? field}) {
+      return Occurrence(
+        id: id,
+        type: 'Baixa',
+        description: '',
+        category: category,
+        createdAt: DateTime.utc(2026, 10, 27),
+        fieldId: field ?? 'field-1',
+        cultura: 'Soja',
+        safra: '2026/2027',
+      );
+    }
+
+    await repository.saveOccurrence(build('p-1'));
+    await repository.saveOccurrence(build('p-outro', field: 'field-2'));
+    await repository.saveOccurrence(build('d-1', category: 'ervas_daninhas'));
+    await repository.saveOccurrence(build('p-excluido'));
+    await repository.softDeleteOccurrence('p-excluido');
+
+    final found = await repository.getPlantioOccurrencesByFieldId(' field-1 ');
+
+    expect(found.map((o) => o.id), ['p-1']);
+    expect(found.single.cultura, 'Soja');
+    expect(found.single.safra, '2026/2027');
+    expect(await repository.getPlantioOccurrencesByFieldId(''), isEmpty);
+  });
 }
