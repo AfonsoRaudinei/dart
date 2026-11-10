@@ -24,12 +24,10 @@ bool occurrenceFormIsIos(BuildContext context) =>
 // ── Cabeçalho de seção ────────────────────────────────────────────────────
 
 class OccurrenceSectionHeader extends StatelessWidget {
-  final String icon;
   final String title;
 
   const OccurrenceSectionHeader({
     super.key,
-    required this.icon,
     required this.title,
   });
 
@@ -38,8 +36,6 @@ class OccurrenceSectionHeader extends StatelessWidget {
     final v = SoloForteSheetVisuals.of(context);
     return Row(
       children: [
-        Text(icon, style: const TextStyle(fontSize: 16)),
-        const SizedBox(width: 6),
         Text(
           title,
           style: TextStyle(
@@ -628,7 +624,6 @@ class OccurrenceOrdemAplicacaoFields extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const OccurrenceSectionHeader(
-          icon: '•',
           title: OccurrenceRecomendacaoOrdem.sectionTitle,
         ),
         const SizedBox(height: 8),
