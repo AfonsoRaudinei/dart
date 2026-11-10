@@ -97,6 +97,12 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
     final talhaoDataPlantio = _isoDate(_dataPlantio);
     final talhaoDataEmergencia = _isoDate(_dataEmergencia);
     final talhaoCicloDias = _cicloDiasCtrl.text;
+    final fieldId = widget.initialOccurrence == null
+        ? talhaoPrefill?.fieldId
+        : ref
+              .read(occurrenceLocationProvider(_locationQuery))
+              .valueOrNull
+              ?.fieldId;
 
     _notifyStateChanged(() {
       _submitError = null;
@@ -135,7 +141,7 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
           objetivoPlantio: _objetivoPlantioCtrl.text.trim().isEmpty
               ? null
               : _objetivoPlantioCtrl.text.trim(),
-          fieldId: talhaoPrefill?.fieldId,
+          fieldId: fieldId,
           estadioFenologico: _estadio?.code,
           tipoOcorrencia: null,
           amostraSolo: isAmostra,
