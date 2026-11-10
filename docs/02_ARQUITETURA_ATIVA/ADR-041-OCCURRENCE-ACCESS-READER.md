@@ -13,8 +13,9 @@ usuario.
 
 ## Decisao
 
-`IOccurrenceAccessReader`, em `core/contracts`, expoe somente os UUIDs de
-`public.clients` concedidos ao usuario autenticado por vinculos ativos. O
+`IOccurrenceAccessReader`, em `core/contracts`, expoe os UUIDs de
+`public.clients` concedidos ao usuario autenticado por vinculos ativos e o
+nome dessa ficha, para a ocorrência aparecer no nome do produtor. O
 adapter vive em `produtor/infra` e a composicao ocorre em `lib/app`.
 
 O contrato nao transfere ownership: `occurrences.user_id` permanece sendo o
