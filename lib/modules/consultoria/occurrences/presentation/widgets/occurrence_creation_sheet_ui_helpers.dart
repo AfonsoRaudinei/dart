@@ -3,6 +3,8 @@ part of 'occurrence_creation_sheet.dart';
 extension _OccurrenceCreationSheetLifecycle on _OccurrenceCreationSheetState {
   bool _hasUnsavedChanges() {
     if (_cultivarCtrl.text.trim().isNotEmpty) return true;
+    if (_culturaCtrl.text.trim().isNotEmpty) return true;
+    if (_safraCtrl.text.trim().isNotEmpty) return true;
     if (_dataPlantio != null) return true;
     if (_dataEmergencia != null) return true;
     if (_dataFimPlantio != null) return true;
@@ -18,7 +20,7 @@ extension _OccurrenceCreationSheetLifecycle on _OccurrenceCreationSheetState {
         _amostraTramite != OccurrenceAmostraTramite.coletada) {
       return true;
     }
-    if (_estadio != null) return true;
+    if (_estadio != null && !_estadioSugerido) return true;
     if (_selectedCategoryValue != null) return true;
     if (_descCtrl.text.trim().isNotEmpty) return true;
     if (_ordem.hasText) return true;
@@ -36,6 +38,9 @@ extension _OccurrenceCreationSheetLifecycle on _OccurrenceCreationSheetState {
   void _setDataPlantio(DateTime? inicio) => _patchForm(() {
     _dataPlantio = inicio;
     if (_terminoAntesDoInicio(inicio, _dataFimPlantio)) _dataFimPlantio = null;
+    if (_isPlantio && inicio != null && _safraCtrl.text.trim().isEmpty) {
+      _safraCtrl.text = safraFromPlantio(inicio) ?? '';
+    }
   });
 
   Future<void> _handleCancel() async {
@@ -192,6 +197,7 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
             label: 'Cultivar',
             hint: 'ex.: Intacta 2 IPRO, M6410 IPRO…',
           ),
+          ..._buildCulturaSafraFields(),
           const SizedBox(height: 10),
           OccurrenceDateField(
             key: const Key('occurrence_plantio_inicio_field'),
