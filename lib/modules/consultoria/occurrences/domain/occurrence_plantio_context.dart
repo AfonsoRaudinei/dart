@@ -135,12 +135,13 @@ OccurrencePlantioContext? resolvePlantioContext({
   if (id.isEmpty) return null;
   final reference = referenceDate ?? DateTime.now();
 
-  final inSafra = _plantioCandidates(id, plantioOccurrences)
-      .where(
-        (o) => occurrenceDateInSafra(reference, plantioOccurrenceSafra(o)),
-      )
-      .toList()
-    ..sort(_compareRecency);
+  final inSafra =
+      _plantioCandidates(id, plantioOccurrences)
+          .where(
+            (o) => occurrenceDateInSafra(reference, plantioOccurrenceSafra(o)),
+          )
+          .toList()
+        ..sort(_compareRecency);
   if (inSafra.isNotEmpty) {
     final latest = inSafra.first;
     return OccurrencePlantioContext(
