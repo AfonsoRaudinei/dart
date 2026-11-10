@@ -62,24 +62,40 @@ void main() {
     expect(patch.applyClient, isFalse);
   });
 
-  test('sem fazendaId o talhão não é elegível', () {
-    expect(
-      occurrenceTalhaoPrefillIfEligible(
-        ativo: true,
-        fieldId: 'field-1',
-        nome: 'Talhão Norte',
-        clienteId: 'client-1',
-        fazendaId: '',
-        material: 'Olimpo RR',
-      ),
-      isNull,
+  test('sem fazendaId o talhão ainda vira prefill, sem fazenda', () {
+    final built = occurrenceTalhaoPrefillIfEligible(
+      ativo: true,
+      fieldId: 'field-1',
+      nome: 'Talhão Norte',
+      clienteId: 'client-1',
+      fazendaId: '',
+      material: 'Olimpo RR',
     );
+
+    expect(built, isNotNull);
+    expect(built!.fieldId, 'field-1');
+    expect(built.clientId, 'client-1');
+    expect(built.fazendaId, isNull);
+    expect(built.cultivar, 'Olimpo RR');
+  });
+
+  test('sem cliente ou inativo o talhão não é elegível', () {
     expect(
       occurrenceTalhaoPrefillIfEligible(
         ativo: true,
         fieldId: 'field-1',
         nome: 'Talhão Norte',
         clienteId: '  ',
+        fazendaId: 'farm-1',
+      ),
+      isNull,
+    );
+    expect(
+      occurrenceTalhaoPrefillIfEligible(
+        ativo: false,
+        fieldId: 'field-1',
+        nome: 'Talhão Norte',
+        clienteId: 'client-1',
         fazendaId: 'farm-1',
       ),
       isNull,
@@ -100,6 +116,7 @@ void main() {
 
     expect(built, isNotNull);
     expect(built!.clientId, 'client-1');
+    expect(built.fazendaId, 'farm-1');
     expect(built.cultivar, 'Olimpo RR');
     expect(built.dataEmergencia, isNull);
     expect(built.cicloDias, 115);
