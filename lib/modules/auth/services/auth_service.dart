@@ -4,6 +4,8 @@ import '../../../core/config/app_config.dart';
 import '../../../core/infra/preferences_service.dart';
 import '../../../core/session/pending_signup_role_store.dart';
 import '../../../core/session/profile_role_resolver.dart';
+import '../../../core/session/session_controller.dart'
+    show kAuthEmailRedirectUrl, traduzirAuthException;
 import '../../../core/session/user_role.dart';
 import '../../../core/network/network_policy.dart';
 import '../models/register_dto.dart';
@@ -87,6 +89,7 @@ class AuthService extends _$AuthService {
           email: dto.email,
           password: dto.password,
           data: {'full_name': dto.name, 'role': dto.role},
+          emailRedirectTo: kAuthEmailRedirectUrl,
         ),
       );
 
@@ -109,6 +112,28 @@ class AuthService extends _$AuthService {
       }
 
       return result;
+    } on AuthException catch (e) {
+      throw Exception(_traduzirAuthException(e));
+    } on StateError {
+      throw Exception(
+        'Configuração inválida do aplicativo. Reinstale a versão mais recente ou contate o suporte.',
+      );
+    } catch (e) {
+      throw Exception(_traduzirErroDesconhecido(e));
+    }
+  }
+
+  /// Reenvia o e-mail de confirmação de cadastro (link expirado/consumido).
+  Future<void> resendSignupConfirmation(String email) async {
+    try {
+      AppConfig.validate();
+      await NetworkPolicy.withTimeout(
+        () => _client.auth.resend(
+          type: OtpType.signup,
+          email: email.trim(),
+          emailRedirectTo: kAuthEmailRedirectUrl,
+        ),
+      );
     } on AuthException catch (e) {
       throw Exception(_traduzirAuthException(e));
     } on StateError {
@@ -346,41 +371,8 @@ class AuthService extends _$AuthService {
 
   // --- auxiliar ---
 
-  String _traduzirAuthException(AuthException error) {
-    if (error is AuthRetryableFetchException) {
-      return 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';
-    }
-
-    if (error is AuthUnknownException) {
-      return 'Não foi possível concluir a autenticação agora. Tente novamente em instantes.';
-    }
-
-    final lower = error.message.toLowerCase();
-    if (lower.contains('invalid login credentials') ||
-        lower.contains('invalid email or password')) {
-      return 'Email ou senha incorretos.';
-    }
-    if (lower.contains('user already registered') ||
-        lower.contains('already been registered')) {
-      return 'Este email já está cadastrado.';
-    }
-    if (lower.contains('email not confirmed')) {
-      return 'Email não confirmado. Verifique sua caixa de entrada.';
-    }
-    if (lower.contains('password should be at least')) {
-      return 'A senha deve ter pelo menos 8 caracteres.';
-    }
-    if (lower.contains('rate limit')) {
-      return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
-    }
-    if (lower.contains('network') ||
-        lower.contains('socket') ||
-        lower.contains('host lookup') ||
-        lower.contains('connection')) {
-      return 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';
-    }
-    return 'Erro de autenticação. Tente novamente.';
-  }
+  String _traduzirAuthException(AuthException error) =>
+      traduzirAuthException(error);
 
   String _traduzirErroDesconhecido(Object error) {
     final lower = error.toString().toLowerCase();
