@@ -28,9 +28,11 @@ import '../../domain/occurrence_photo_paths.dart';
 import '../../../relatorio_visita/data/image_storage_service.dart';
 import '../coordinators/occurrence_form_guard.dart';
 import '../providers/occurrence_draft_provider.dart';
+import '../providers/occurrence_location_provider.dart';
 import '../models/occurrence_form_draft.dart';
 import 'occurrence_amostra_solo_section.dart';
 import 'occurrence_client_selector.dart';
+import 'occurrence_date_field.dart';
 import 'occurrence_fenologia_data.dart';
 import 'occurrence_form_widgets.dart';
 import 'occurrence_ordem_aplicacao_controllers.dart';
@@ -300,6 +302,8 @@ class _OccurrenceCreationSheetState
 
   bool get _isAmostraSolo => _selectedCategoryValue == 'amostra_solo';
 
+  bool get _isPlantio => _selectedCategoryValue == 'plantio';
+
   Color _catColor(OccurrenceCategory cat) {
     switch (cat) {
       case OccurrenceCategory.doenca:
@@ -334,9 +338,6 @@ class _OccurrenceCreationSheetState
   void _toggleNutriente(String sym, bool selected) {
     _patchForm(() => selected ? _nutrientes.remove(sym) : _nutrientes.add(sym));
   }
-
-  String _formatDate(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
   String? _isoDate(DateTime? d) => d == null
       ? null
@@ -447,9 +448,7 @@ class _OccurrenceCreationSheetState
     );
     final isIos = occurrenceFormIsIos(context);
     final sheetBg = v.sheetBackground;
-    final accent = isIos
-        ? v.iconStroke
-        : context.themeAccent;
+    final accent = isIos ? v.iconStroke : context.themeAccent;
     final titleColor = v.onSheetPrimary;
     final muted = v.subtitleColor;
     return Material(
@@ -463,62 +462,12 @@ class _OccurrenceCreationSheetState
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: [
                 if (_buildSubmitErrorBanner() case final banner?) banner,
-                if (widget.compactHeader && widget.initialOccurrence == null)
-                  _compactMapHeader(muted: muted, titleColor: titleColor)
-                else
-                  Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: accent.withValues(alpha: .15),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: accent, width: .6),
-                        ),
-                        child: Icon(
-                          Icons.location_on_rounded,
-                          color: accent,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.initialOccurrence == null
-                                  ? (_isAreaVisitada
-                                        ? 'Área Visitada'
-                                        : 'Nova Ocorrência')
-                                  : 'Editar Ocorrência',
-                              style: TextStyle(
-                                color: titleColor,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            if (_talhaoNomeReadonly case final talhaoNome?)
-                              Text(
-                                talhaoNome,
-                                style: TextStyle(color: muted, fontSize: 12),
-                              ),
-                            Text(
-                              'Ponto definido no mapa',
-                              style: TextStyle(color: muted, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (widget.onCancel != null)
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: _handleCancel,
-                          color: muted,
-                        ),
-                    ],
-                  ),
+                _buildFormHeader(
+                  accent: accent,
+                  muted: muted,
+                  titleColor: titleColor,
+                ),
+                _buildLocationLine(muted),
                 const SizedBox(height: 20),
 
                 SheetSectionHeader(
@@ -550,146 +499,15 @@ class _OccurrenceCreationSheetState
                     title: 'Categorias da Ocorrência',
                   ),
                   const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    alignment: WrapAlignment.center,
-                    children: _categories.map((cat) {
-                      final isSelected = _selectedCategoryValue == cat.value;
-                      final selectedColor =
-                          cat.enumValue?.markerColor ?? const Color(0xFF795548);
-                      return GestureDetector(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          _patchForm(() {
-                            _selectedCategoryValue = cat.value;
-                            _cats.clear();
-                            if (cat.enumValue != null) {
-                              _cats.add(cat.enumValue!);
-                            }
-                            if (cat.value == kOccurrenceAreaVisitadaCategory) {
-                              _selectedClient = null;
-                            }
-                          });
-                        },
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isSelected
-                                    ? selectedColor.withValues(alpha: 0.2)
-                                    : v.cardBackground,
-                                border: isSelected
-                                    ? Border.all(color: selectedColor, width: 2)
-                                    : (v.isDark
-                                          ? null
-                                          : Border.all(color: v.cardBorder)),
-                              ),
-                              child: Icon(
-                                cat.icon,
-                                size: 22,
-                                color: isSelected
-                                    ? selectedColor
-                                    : v.subtitleColor,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            SizedBox(
-                              width: 64,
-                              child: Text(
-                                cat.label,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: isSelected
-                                      ? selectedColor
-                                      : v.subtitleColor,
-                                ),
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
+                  _buildCategoryPicker(),
                   const SizedBox(height: 16),
                 ],
 
                 if (!_isAreaVisitada) ...[
-                  const OccurrenceSectionHeader(
-                    icon: '🌱',
-                    title: 'Cultivar & Plantio',
-                  ),
-                  const SizedBox(height: 10),
-                  OccurrenceDarkField(
-                    controller: _cultivarCtrl,
-                    label: 'Cultivar (opcional)',
-                    hint: 'ex.: Intacta 2 IPRO, M6410 IPRO…',
-                  ),
-                  const SizedBox(height: 10),
-                  GestureDetector(
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: _dataPlantio ?? DateTime.now(),
-                        firstDate: DateTime(2010),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
-                        helpText: 'Data de Plantio',
-                      );
-                      if (picked != null) {
-                        _patchForm(() => _dataPlantio = picked);
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: v.inputFill,
-                        borderRadius: BorderRadius.circular(
-                          v.cardRadius,
-                        ),
-                        border: Border.all(color: v.cardBorder),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.calendar_today_outlined,
-                            size: 18,
-                            color: v.inputHint,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              _dataPlantio != null
-                                  ? _formatDate(_dataPlantio!)
-                                  : 'Data de Plantio (opcional)',
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: _dataPlantio != null
-                                    ? titleColor
-                                    : muted,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          if (_dataPlantio != null) ...[
-                            GestureDetector(
-                              onTap: () =>
-                                  _patchForm(() => _dataPlantio = null),
-                              child: Icon(Icons.clear, size: 16, color: muted),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                  _buildCultivarAgeLines(muted),
-                  const SizedBox(height: 20),
+                  if (!_isPlantio) ...[
+                    _buildCultivarPlantioBlock(),
+                    const SizedBox(height: 20),
+                  ],
 
                   const OccurrenceSectionHeader(
                     icon: '📊',
@@ -712,50 +530,7 @@ class _OccurrenceCreationSheetState
 
                   const OccurrenceSectionHeader(icon: '⚡', title: 'Urgência'),
                   const SizedBox(height: 8),
-                  Row(
-                    children: ['Baixa', 'Média', 'Alta'].map((u) {
-                      final sel = _urgency == u;
-                      final color = u == 'Baixa'
-                          ? const Color(0xFFFFCC00)
-                          : u == 'Média'
-                          ? const Color(0xFFFF9500)
-                          : const Color(0xFFFF3B30);
-                      return Expanded(
-                        child: GestureDetector(
-                          onTap: () => _patchForm(() => _urgency = u),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            margin: const EdgeInsets.only(right: 6),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            decoration: BoxDecoration(
-                              color: sel
-                                  ? color.withValues(alpha: .18)
-                                  : v.cardBackground,
-                              borderRadius: BorderRadius.circular(
-                                v.cardRadius,
-                              ),
-                              border: Border.all(
-                                color: sel ? color : v.chipBorderInactive,
-                                width: sel ? 1.5 : 1,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                u,
-                                style: TextStyle(
-                                  color: sel ? color : v.chipTextInactive,
-                                  fontWeight: sel
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
+                  _buildUrgencySelector(),
                   const SizedBox(height: 20),
                 ],
 
@@ -831,9 +606,7 @@ class _OccurrenceCreationSheetState
                         minimumSize: const Size(48, 44),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            v.ctaRadius,
-                          ),
+                          borderRadius: BorderRadius.circular(v.ctaRadius),
                         ),
                       ),
                       child: _isSaving
