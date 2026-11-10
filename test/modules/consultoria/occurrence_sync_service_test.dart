@@ -169,6 +169,51 @@ void main() {
       expect(mapped.estandePlantas, isNull);
       expect(mapped.avaliacaoPlantio, isNull);
       expect(mapped.objetivoPlantio, isNull);
+      expect(remote['data_fim_plantio'], isNull);
+      expect(remote['ciclo_dias'], isNull);
+      expect(mapped.dataFimPlantio, isNull);
+      expect(mapped.cicloDias, isNull);
+    });
+
+    test('toRemote envia término do plantio e ciclo', () {
+      final occurrence = Occurrence(
+        id: 'local-plantio-fim',
+        type: 'Média',
+        description: '',
+        category: 'plantio',
+        createdAt: DateTime.utc(2026, 11, 9),
+        dataPlantio: '2026-10-27',
+        dataFimPlantio: '2026-10-30',
+        cicloDias: 115,
+      );
+
+      final remote = OccurrenceRemoteMapper.toRemote(occurrence, 'owner-1');
+
+      expect(remote['data_fim_plantio'], '2026-10-30');
+      expect(remote['ciclo_dias'], 115);
+    });
+
+    test('fromRemote lê término do plantio e ciclo', () {
+      final local = OccurrenceRemoteMapper.fromRemote(
+        {
+          'id': 'remote-plantio-fim',
+          'type': 'Média',
+          'description': '',
+          'category': 'plantio',
+          'created_at': '2026-11-09T00:00:00.000Z',
+          'updated_at': '2026-11-09T00:00:00.000Z',
+          'data_fim_plantio': '2026-10-30',
+          'ciclo_dias': 115,
+        },
+        localId: 'local-plantio-fim',
+        cachedByUserId: null,
+      );
+
+      expect(local['data_fim_plantio'], '2026-10-30');
+      expect(local['ciclo_dias'], 115);
+      final mapped = Occurrence.fromMap(local);
+      expect(mapped.dataFimPlantio, '2026-10-30');
+      expect(mapped.cicloDias, 115);
     });
 
     test('toRemote envia andamento e responsavel_nome', () {
