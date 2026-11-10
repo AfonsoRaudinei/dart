@@ -17,8 +17,8 @@ import '../../domain/enums/plano_marketing.dart';
 import '../../domain/enums/produtividade_unidade.dart';
 import '../providers/marketing_providers.dart';
 import '../widgets/case_selectors_widget.dart';
+import '../models/novo_case_comparacao.dart';
 import '../widgets/novo_case_antes_depois_section.dart';
-import '../widgets/novo_case_avaliacao_section.dart';
 import '../widgets/novo_case_form_helpers.dart';
 import '../widgets/marketing_client_selector.dart';
 import '../widgets/novo_case_header.dart';
@@ -78,17 +78,13 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
   final _custoProdutoPorHaCtrl = TextEditingController();
   final _valorGraoCtrl = TextEditingController();
 
-  // ── Antes/Depois ──────────────────────────────────────────────
-  final List<ParametroComparativo> _parametrosComparativos = [];
-  String? _parametroSelecionadoId;
+  // ── Antes/Depois unificado (N comparações) ─────────────────────
+  late final List<NovoCaseComparacao> _comparacoes;
 
-  // ── Avaliação/Campo — Talhão ───────────────────────────────────
+  // ── Talhão / cultura (opcional na identificação) ───────────────
   final _nomeTalhaoCtrl = TextEditingController();
   final _tamanhoHaCtrl = TextEditingController();
-
-  // ── Avaliação — Ensaios comparativos livres ───────────────────
-  final List<AvaliacaoItem> _avaliacoes = [];
-  String? _avaliacaoAbertaId;
+  final _culturaCtrl = TextEditingController();
 
   // ── Conclusão (1 por case) ────────────────────────────────────
   bool _hasConclusao = false;
@@ -96,15 +92,18 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
 
   // ── URLs de Foto ───────────────────────────────────────────────
   String? _fotoPrincipalUrl; // Resultado
-  String? _fotoAntesUrl; // Antes/Depois
-  String? _fotoDepoisUrl; // Antes/Depois
 
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _tipo = widget.tipo;
+    _tipo = widget.tipo == CaseTipo.avaliacao
+        ? CaseTipo.antesDepois
+        : widget.tipo;
+    _comparacoes = [
+      NovoCaseComparacao(id: _uuid.v4()),
+    ];
     _dataCase = DateTime.now();
     final initialContext = widget.initialVisitContext;
     if (initialContext == null) return;
@@ -132,63 +131,27 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
     _valorGraoCtrl.dispose();
     _nomeTalhaoCtrl.dispose();
     _tamanhoHaCtrl.dispose();
+    _culturaCtrl.dispose();
     _conclusaoCtrl.dispose();
     super.dispose();
   }
 
-  void _addAvaliacao() {
-    final avaliacao = AvaliacaoItem(
-      id: _uuid.v4(),
-      titulo: 'Avaliação ${_avaliacoes.length + 1}',
-      nomeLadoA: 'Lado A',
-      nomeLadoB: 'Lado B',
-    );
+  void _addComparacao() {
     setState(() {
-      _avaliacoes.add(avaliacao);
-      _avaliacaoAbertaId = avaliacao.id;
+      _comparacoes.add(NovoCaseComparacao(id: _uuid.v4()));
     });
     HapticFeedback.lightImpact();
   }
 
-  void _removeAvaliacao(String id) {
-    setState(() {
-      _avaliacoes.removeWhere((item) => item.id == id);
-      if (_avaliacaoAbertaId == id) {
-        _avaliacaoAbertaId = _avaliacoes.isEmpty ? null : _avaliacoes.last.id;
-      }
-    });
+  void _removeComparacao(int index) {
+    if (index <= 0 || index >= _comparacoes.length) return;
+    setState(() => _comparacoes.removeAt(index));
     HapticFeedback.selectionClick();
   }
 
-  void _updateAvaliacao(AvaliacaoItem avaliacao) {
-    final index = _avaliacoes.indexWhere((item) => item.id == avaliacao.id);
-    if (index < 0) return;
-    setState(() => _avaliacoes[index] = avaliacao);
-  }
-
-  void _duplicateAvaliacao(String id) {
-    final index = _avaliacoes.indexWhere((item) => item.id == id);
-    if (index < 0) return;
-    final original = _avaliacoes[index];
-    final duplicated = original.copyWith(
-      id: _uuid.v4(),
-      titulo:
-          '${original.titulo.trim().isEmpty ? 'Avaliação' : original.titulo} (cópia)',
-      parametros: original.parametros
-          .map((parametro) => parametro.copyWith(id: _uuid.v4()))
-          .toList(),
-    );
-    setState(() {
-      _avaliacoes.insert(index + 1, duplicated);
-      _avaliacaoAbertaId = duplicated.id;
-    });
-    HapticFeedback.lightImpact();
-  }
-
-  void _toggleAvaliacao(String id) {
-    setState(() {
-      _avaliacaoAbertaId = _avaliacaoAbertaId == id ? null : id;
-    });
+  void _updateComparacao(int index, NovoCaseComparacao comparacao) {
+    if (index < 0 || index >= _comparacoes.length) return;
+    setState(() => _comparacoes[index] = comparacao);
   }
 
   void _handlePublicar() {
@@ -242,30 +205,43 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
       _showError('Foto principal obrigatória para o tipo Resultado.');
       return null;
     }
-    if (_tipo == CaseTipo.antesDepois &&
-        (_fotoAntesUrl == null || _fotoDepoisUrl == null)) {
-      _showError('Adicione as fotos Antes e Depois.');
-      return null;
+    if (_tipo == CaseTipo.antesDepois) {
+      final primeira = _comparacoes.first;
+      if (primeira.fotoAntesUrl == null || primeira.fotoDepoisUrl == null) {
+        _showError('Adicione as fotos Antes e Depois na Comparação 1.');
+        return null;
+      }
+      if (!_validateComparacoesParametros()) return null;
     }
 
     if (_tipo == CaseTipo.resultado && !_hasResultadoRoiInputs) {
       _showError('Preencha os dados de ROI do resultado.');
       return null;
     }
-    if (_tipo == CaseTipo.antesDepois && !_validateParametrosComparativos()) {
-      return null;
-    }
     if (_dataCase == null) {
       _showError('Selecione a data do case.');
-      return null;
-    }
-    if (_tipo == CaseTipo.avaliacao && _nomeTalhaoCtrl.text.trim().isEmpty) {
-      _showError('Preencha o nome do talhão.');
       return null;
     }
 
     final caseId = _uuid.v4();
     final now = DateTime.now();
+    final primeira = _comparacoes.first;
+  final cultura = _culturaCtrl.text.trim();
+  final produtoLabel = _produtoCtrl.text.trim();
+  final extras = _comparacoes.length > 1 ? _comparacoes.sublist(1) : [];
+  final avaliacoesExtras = <AvaliacaoItem>[
+    for (var i = 0; i < extras.length; i++)
+      AvaliacaoItem(
+        id: extras[i].id,
+        titulo: 'Comparação ${i + 2}',
+        nomeLadoA: 'Testemunha',
+        nomeLadoB: produtoLabel.isEmpty ? 'Produto' : produtoLabel,
+        fotoLadoAPath: extras[i].fotoAntesUrl,
+        fotoLadoBPath: extras[i].fotoDepoisUrl,
+        cultura: cultura.isEmpty ? null : cultura,
+        parametros: extras[i].parametros,
+      ),
+  ];
 
     return MarketingCase(
       id: caseId,
@@ -277,12 +253,11 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
       produtorFazenda: _produtorCtrl.text.trim(),
       produtoUtilizado: _produtoCtrl.text.trim(),
       dataCase: _dataCase,
-      produtividadeValor: _tipo != CaseTipo.avaliacao
+      produtividadeValor: _tipo == CaseTipo.antesDepois
           ? _parseDouble(_produtividadeCtrl.text)
           : null,
-      produtividadeUnidade: _tipo != CaseTipo.avaliacao
-          ? _produtividadeUnidade
-          : null,
+      produtividadeUnidade:
+          _tipo == CaseTipo.antesDepois ? _produtividadeUnidade : null,
       nomeVendedor: _nomeVendedorCtrl.text.trim().isEmpty
           ? null
           : _nomeVendedorCtrl.text.trim(),
@@ -310,21 +285,24 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
           ? _parseDouble(_valorGraoCtrl.text)
           : null,
       clientId: _clientId,
-      fotoAntesUrl: _tipo == CaseTipo.antesDepois ? _fotoAntesUrl : null,
-      fotoDepoisUrl: _tipo == CaseTipo.antesDepois ? _fotoDepoisUrl : null,
+      fotoAntesUrl: _tipo == CaseTipo.antesDepois ? primeira.fotoAntesUrl : null,
+      fotoDepoisUrl:
+          _tipo == CaseTipo.antesDepois ? primeira.fotoDepoisUrl : null,
       economiaGerada: null,
       ganhoProdutividade: null,
-      parametrosJson:
-          _tipo == CaseTipo.antesDepois && _parametrosComparativos.isNotEmpty
-          ? jsonEncode(_parametrosComparativos.map((p) => p.toJson()).toList())
+      parametrosJson: _tipo == CaseTipo.antesDepois &&
+              primeira.parametros.isNotEmpty
+          ? jsonEncode(primeira.parametros.map((p) => p.toJson()).toList())
           : null,
-      nomeTalhao: _tipo == CaseTipo.avaliacao
-          ? _nomeTalhaoCtrl.text.trim()
+      nomeTalhao: _tipo == CaseTipo.antesDepois
+          ? _optionalText(_nomeTalhaoCtrl.text)
           : null,
-      tamanhoHa: _parseDouble(_tamanhoHaCtrl.text),
+      tamanhoHa: _tipo == CaseTipo.antesDepois
+          ? _parseDouble(_tamanhoHaCtrl.text)
+          : null,
       avaliacoes: const [],
-      avaliacoesJson: _tipo == CaseTipo.avaliacao && _avaliacoes.isNotEmpty
-          ? jsonEncode(_avaliacoes.map((item) => item.toJson()).toList())
+      avaliacoesJson: _tipo == CaseTipo.antesDepois && avaliacoesExtras.isNotEmpty
+          ? jsonEncode(avaliacoesExtras.map((item) => item.toJson()).toList())
           : null,
       roi: null,
       conclusao: null,
@@ -357,8 +335,13 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
       case CaseTipo.antesDepois:
         return 'Antes/Depois';
       case CaseTipo.avaliacao:
-        return 'Avaliação';
+        return 'Antes/Depois';
     }
+  }
+
+  String? _optionalText(String value) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   double? _parseDouble(String value) {
@@ -380,44 +363,77 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
         valor > 0;
   }
 
-  bool _validateParametrosComparativos() {
-    for (final parametro in _parametrosComparativos) {
-      if (parametro.titulo.trim().isEmpty) {
-        _showError('Preencha o título do parâmetro comparativo.');
-        return false;
+  bool _validateComparacoesParametros() {
+    for (final comparacao in _comparacoes) {
+      for (final parametro in comparacao.parametros) {
+        if (parametro.titulo.trim().isEmpty) {
+          _showError('Preencha o título do parâmetro comparativo.');
+          return false;
+        }
       }
     }
     return true;
   }
 
-  void _addParametroComparativo() {
+  void _addParametroComparativo(int comparacaoIndex) {
+    if (comparacaoIndex < 0 || comparacaoIndex >= _comparacoes.length) return;
+    final parametro = ParametroComparativo(
+      id: _uuid.v4(),
+      titulo: '',
+      testemunha: 0,
+      teste: 0,
+    );
     setState(() {
-      final parametro = ParametroComparativo(
-        id: _uuid.v4(),
-        titulo: '',
-        testemunha: 0,
-        teste: 0,
+      final comparacao = _comparacoes[comparacaoIndex];
+      final updated = List<ParametroComparativo>.from(comparacao.parametros)
+        ..add(parametro);
+      _comparacoes[comparacaoIndex] = comparacao.copyWith(
+        parametros: updated,
+        parametroSelecionadoId: parametro.id,
       );
-      _parametrosComparativos.add(parametro);
-      _parametroSelecionadoId = parametro.id;
     });
     HapticFeedback.lightImpact();
   }
 
-  void _updateParametroComparativo(ParametroComparativo parametro) {
-    final index = _parametrosComparativos.indexWhere(
-      (p) => p.id == parametro.id,
-    );
+  void _updateParametroComparativo(
+    int comparacaoIndex,
+    ParametroComparativo parametro,
+  ) {
+    if (comparacaoIndex < 0 || comparacaoIndex >= _comparacoes.length) return;
+    final comparacao = _comparacoes[comparacaoIndex];
+    final index = comparacao.parametros.indexWhere((p) => p.id == parametro.id);
     if (index < 0) return;
-    setState(() => _parametrosComparativos[index] = parametro);
+    final updated = List<ParametroComparativo>.from(comparacao.parametros);
+    updated[index] = parametro;
+    setState(() {
+      _comparacoes[comparacaoIndex] = comparacao.copyWith(parametros: updated);
+    });
   }
 
-  void _deleteParametroComparativo(String id) {
+  void _deleteParametroComparativo(int comparacaoIndex, String id) {
+    if (comparacaoIndex < 0 || comparacaoIndex >= _comparacoes.length) return;
+    final comparacao = _comparacoes[comparacaoIndex];
+    final updated = comparacao.parametros.where((p) => p.id != id).toList();
     setState(() {
-      _parametrosComparativos.removeWhere((p) => p.id == id);
-      if (_parametroSelecionadoId == id) _parametroSelecionadoId = null;
+      _comparacoes[comparacaoIndex] = comparacao.copyWith(
+        parametros: updated,
+        parametroSelecionadoId:
+            comparacao.parametroSelecionadoId == id ? null : comparacao.parametroSelecionadoId,
+        clearParametroSelecionado: comparacao.parametroSelecionadoId == id,
+      );
     });
     HapticFeedback.selectionClick();
+  }
+
+  void _selectParametroComparativo(int comparacaoIndex, String? id) {
+    if (comparacaoIndex < 0 || comparacaoIndex >= _comparacoes.length) return;
+    setState(() {
+      final comparacao = _comparacoes[comparacaoIndex];
+      _comparacoes[comparacaoIndex] = comparacao.copyWith(
+        parametroSelecionadoId: id,
+        clearParametroSelecionado: id == null,
+      );
+    });
   }
 
   void _onProdutorTextChanged(String value) {
@@ -514,6 +530,24 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                     'Localização (ex: Jataizinho - PR) *',
                     required: true,
                   ),
+                  if (_tipo == CaseTipo.antesDepois) ...[
+                    const NovoCaseFDivider(),
+                    novoCaseTextInput(
+                      _nomeTalhaoCtrl,
+                      'Nome do Talhão (opcional)',
+                    ),
+                    const NovoCaseFDivider(),
+                    novoCaseTextInput(
+                      _tamanhoHaCtrl,
+                      'Tamanho (ha) (opcional)',
+                      keyboardType: TextInputType.number,
+                    ),
+                    const NovoCaseFDivider(),
+                    novoCaseTextInput(
+                      _culturaCtrl,
+                      'Cultura (opcional)',
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -560,33 +594,17 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
               ),
             if (_tipo == CaseTipo.antesDepois)
               NovoCaseAntesDepoisSection(
-                fotoAntesUrl: _fotoAntesUrl,
-                fotoDepoisUrl: _fotoDepoisUrl,
-                onFotoAntesChanged: (url) =>
-                    setState(() => _fotoAntesUrl = url),
-                onFotoDepoisChanged: (url) =>
-                    setState(() => _fotoDepoisUrl = url),
-                parametros: _parametrosComparativos,
-                parametroSelecionadoId: _parametroSelecionadoId,
-                onAddParametro: _addParametroComparativo,
-                onSelectParametro: (id) =>
-                    setState(() => _parametroSelecionadoId = id),
-                onParametroChanged: _updateParametroComparativo,
-                onDeleteParametro: _deleteParametroComparativo,
-              ),
-            if (_tipo == CaseTipo.avaliacao)
-              NovoCaseAvaliacaoSection(
-                avaliacoes: _avaliacoes,
-                avaliacaoAbertaId: _avaliacaoAbertaId,
-                nomeTalhaoCtrl: _nomeTalhaoCtrl,
-                tamanhoHaCtrl: _tamanhoHaCtrl,
+                comparacoes: _comparacoes,
+                produtoUtilizado: _produtoCtrl.text,
                 hasConclusao: _hasConclusao,
                 conclusaoCtrl: _conclusaoCtrl,
-                onAddAvaliacao: _addAvaliacao,
-                onToggleAvaliacao: _toggleAvaliacao,
-                onAvaliacaoChanged: _updateAvaliacao,
-                onRemoveAvaliacao: _removeAvaliacao,
-                onDuplicateAvaliacao: _duplicateAvaliacao,
+                onAddComparacao: _addComparacao,
+                onRemoveComparacao: _removeComparacao,
+                onComparacaoChanged: _updateComparacao,
+                onAddParametro: _addParametroComparativo,
+                onParametroChanged: _updateParametroComparativo,
+                onDeleteParametro: _deleteParametroComparativo,
+                onSelectParametro: _selectParametroComparativo,
                 onAddConclusao: () => setState(() => _hasConclusao = true),
                 onRemoveConclusao: () => setState(() {
                   _hasConclusao = false;
