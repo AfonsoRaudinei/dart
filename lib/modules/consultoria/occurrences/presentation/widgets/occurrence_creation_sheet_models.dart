@@ -96,7 +96,8 @@ class OccurrenceFormData {
   final String? amostraTramite;
   final String? amostraLaudoTexto;
 
-  /// Talhão sob o ponto na criação. Edição não regrava.
+  /// Criação: talhão do prefill. Edição: talhão resolvido pelo pin — o
+  /// apply só usa se a ocorrência ainda não tinha `fieldId`.
   final String? fieldId;
 
   const OccurrenceFormData({
