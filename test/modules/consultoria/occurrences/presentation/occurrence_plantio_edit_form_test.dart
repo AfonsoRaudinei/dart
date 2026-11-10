@@ -95,12 +95,15 @@ final _plantio = Occurrence(
   cultivar: 'Neo 790',
   dataPlantio: '2026-10-27',
   dataEmergencia: '2026-11-05',
+  dataFimPlantio: '2026-10-30',
+  cicloDias: 115,
 );
 
 Future<void> _pumpEditSheet(
   WidgetTester tester, {
   List<FieldSummary> fields = const [],
   OccurrenceConfirmCallback? onConfirm,
+  Occurrence? occurrence,
 }) async {
   tester.view.physicalSize = const Size(430, 3200);
   tester.view.devicePixelRatio = 1.0;
@@ -121,7 +124,7 @@ Future<void> _pumpEditSheet(
           body: OccurrenceCreationSheet(
             latitude: -10.72,
             longitude: -48.38,
-            initialOccurrence: _plantio,
+            initialOccurrence: occurrence ?? _plantio,
             onConfirm: onConfirm ?? (_) async {},
           ),
         ),
@@ -201,5 +204,106 @@ void main() {
     expect(submitted!.dataEmergencia, isNull);
     expect(submitted!.dataPlantio, '2026-10-27');
     expect(submitted!.fieldId, isNull);
+  });
+
+  testWidgets('edição hidrata término do plantio e ciclo salvos', (
+    tester,
+  ) async {
+    await _pumpEditSheet(tester);
+
+    final termino = find.byKey(const Key('occurrence_plantio_termino_field'));
+    expect(termino, findsOneWidget);
+    expect(
+      find.descendant(of: termino, matching: find.text('Término do plantio')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: termino, matching: find.text('30/10/2026')),
+      findsOneWidget,
+    );
+
+    final ciclo = find.widgetWithText(TextField, 'Ciclo (dias)');
+    expect(ciclo, findsOneWidget);
+    expect(tester.widget<TextField>(ciclo).controller!.text, '115');
+  });
+
+  testWidgets('salvar envia término do plantio e ciclo', (tester) async {
+    OccurrenceFormData? submitted;
+    await _pumpEditSheet(tester, onConfirm: (data) async => submitted = data);
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Ciclo (dias)'),
+      '120',
+    );
+    await tester.pump();
+    await tester.tap(find.text('Salvar Alterações'));
+    await tester.pump();
+
+    expect(submitted, isNotNull);
+    expect(submitted!.dataPlantio, '2026-10-27');
+    expect(submitted!.dataFimPlantio, '2026-10-30');
+    expect(submitted!.cicloDias, 120);
+  });
+
+  testWidgets('limpar término e ciclo na edição envia null', (tester) async {
+    OccurrenceFormData? submitted;
+    await _pumpEditSheet(tester, onConfirm: (data) async => submitted = data);
+
+    await tester.tap(find.byTooltip('Limpar Término do plantio'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'Ciclo (dias)'), '');
+    await tester.pump();
+    await tester.tap(find.text('Salvar Alterações'));
+    await tester.pump();
+
+    expect(submitted, isNotNull);
+    expect(submitted!.dataFimPlantio, isNull);
+    expect(submitted!.cicloDias, isNull);
+  });
+
+  testWidgets('término antes do início bloqueia o salvamento', (tester) async {
+    OccurrenceFormData? submitted;
+    await _pumpEditSheet(
+      tester,
+      occurrence: _plantio.copyWith(dataFimPlantio: '2026-10-20'),
+      onConfirm: (data) async => submitted = data,
+    );
+
+    await tester.tap(find.text('Salvar Alterações'));
+    await tester.pump();
+
+    expect(submitted, isNull);
+    expect(
+      find.text('O término do plantio não pode ser antes do início.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('início depois do término limpa o término', (tester) async {
+    await _pumpEditSheet(tester);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('occurrence_plantio_inicio_field')),
+        matching: find.text('27/10/2026'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('31'));
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    final termino = find.byKey(const Key('occurrence_plantio_termino_field'));
+    expect(
+      find.descendant(of: termino, matching: find.text('30/10/2026')),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('occurrence_plantio_inicio_field')),
+        matching: find.text('31/10/2026'),
+      ),
+      findsOneWidget,
+    );
   });
 }
