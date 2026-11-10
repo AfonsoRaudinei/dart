@@ -303,6 +303,7 @@ void main() {
 
     expect(find.text('Dados do plantio'), findsNothing);
     expect(find.text('Cultivar & Plantio'), findsOneWidget);
+    expect(find.text('🌱'), findsNothing);
   });
 
   testWidgets(
