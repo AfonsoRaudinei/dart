@@ -424,8 +424,22 @@ class OccurrenceDetailSheet extends ConsumerWidget {
           live.dataPlantio!.isNotEmpty)
         _DetailRowData(
           icon: SFIcons.calendar,
-          label: 'Data de plantio',
+          label: live.dataFimPlantio?.isNotEmpty == true
+              ? 'Início do plantio'
+              : 'Data de plantio',
           value: live.dataPlantio!,
+        ),
+      if (live.dataFimPlantio?.isNotEmpty == true)
+        _DetailRowData(
+          icon: SFIcons.calendar,
+          label: 'Término do plantio',
+          value: live.dataFimPlantio!,
+        ),
+      if (occurrenceCicloLabel(live.cicloDias) case final cicloLabel?)
+        _DetailRowData(
+          icon: SFIcons.calendar,
+          label: 'Ciclo',
+          value: cicloLabel,
         ),
       if (live.dataEmergencia?.isNotEmpty == true)
         _DetailRowData(
