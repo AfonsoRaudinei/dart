@@ -61,8 +61,14 @@ void main() {
 
     test('aceita AAAA/AA e rejeita texto ilegível', () {
       expect(occurrenceDateInSafra(DateTime(2026, 12, 1), '2026/27'), isTrue);
-      expect(occurrenceDateInSafra(DateTime(2026, 12, 1), 'safra boa'), isFalse);
-      expect(occurrenceDateInSafra(DateTime(2026, 12, 1), '2026/2028'), isFalse);
+      expect(
+        occurrenceDateInSafra(DateTime(2026, 12, 1), 'safra boa'),
+        isFalse,
+      );
+      expect(
+        occurrenceDateInSafra(DateTime(2026, 12, 1), '2026/2028'),
+        isFalse,
+      );
     });
   });
 
@@ -208,62 +214,70 @@ void main() {
       expect(context, isNull);
     });
 
-    test('Plantio excluído, de outro talhão ou de outra categoria é ignorado',
-        () {
-      final reference = DateTime(2026, 11, 1);
-      final excluido = _plantio(
-        'p-excluido',
-        createdAt: DateTime(2026, 10, 25),
-        dataPlantio: '2026-10-24',
-        cultivar: 'Excluído',
-        deletedAt: '2026-10-26T00:00:00Z',
-      );
-      final tombstone = _plantio(
-        'p-tombstone',
-        createdAt: DateTime(2026, 10, 26),
-        dataPlantio: '2026-10-25',
-        cultivar: 'Tombstone',
-        syncStatus: 'deleted_local',
-      );
-      final outroTalhao = _plantio(
-        'p-outro',
-        fieldId: 'field-2',
-        createdAt: DateTime(2026, 10, 27),
-        dataPlantio: '2026-10-26',
-        cultivar: 'Outro talhão',
-      );
-      final daninha = _plantio(
-        'd-1',
-        category: 'ervas_daninhas',
-        createdAt: DateTime(2026, 10, 28),
-        dataPlantio: '2026-10-27',
-        cultivar: 'Daninha',
-      );
-      final valido = _plantio(
-        'p-valido',
-        createdAt: DateTime(2026, 10, 1),
-        dataPlantio: '2026-09-30',
-        cultivar: 'Válido',
-      );
+    test(
+      'Plantio excluído, de outro talhão ou de outra categoria é ignorado',
+      () {
+        final reference = DateTime(2026, 11, 1);
+        final excluido = _plantio(
+          'p-excluido',
+          createdAt: DateTime(2026, 10, 25),
+          dataPlantio: '2026-10-24',
+          cultivar: 'Excluído',
+          deletedAt: '2026-10-26T00:00:00Z',
+        );
+        final tombstone = _plantio(
+          'p-tombstone',
+          createdAt: DateTime(2026, 10, 26),
+          dataPlantio: '2026-10-25',
+          cultivar: 'Tombstone',
+          syncStatus: 'deleted_local',
+        );
+        final outroTalhao = _plantio(
+          'p-outro',
+          fieldId: 'field-2',
+          createdAt: DateTime(2026, 10, 27),
+          dataPlantio: '2026-10-26',
+          cultivar: 'Outro talhão',
+        );
+        final daninha = _plantio(
+          'd-1',
+          category: 'ervas_daninhas',
+          createdAt: DateTime(2026, 10, 28),
+          dataPlantio: '2026-10-27',
+          cultivar: 'Daninha',
+        );
+        final valido = _plantio(
+          'p-valido',
+          createdAt: DateTime(2026, 10, 1),
+          dataPlantio: '2026-09-30',
+          cultivar: 'Válido',
+        );
 
-      final context = resolvePlantioContext(
-        fieldId: 'field-1',
-        plantioOccurrences: [excluido, tombstone, outroTalhao, daninha, valido],
-        talhao: null,
-        referenceDate: reference,
-      );
-      expect(context!.sourceOccurrenceId, 'p-valido');
-
-      expect(
-        resolvePlantioContext(
+        final context = resolvePlantioContext(
           fieldId: 'field-1',
-          plantioOccurrences: [excluido, tombstone],
+          plantioOccurrences: [
+            excluido,
+            tombstone,
+            outroTalhao,
+            daninha,
+            valido,
+          ],
           talhao: null,
           referenceDate: reference,
-        ),
-        isNull,
-      );
-    });
+        );
+        expect(context!.sourceOccurrenceId, 'p-valido');
+
+        expect(
+          resolvePlantioContext(
+            fieldId: 'field-1',
+            plantioOccurrences: [excluido, tombstone],
+            talhao: null,
+            referenceDate: reference,
+          ),
+          isNull,
+        );
+      },
+    );
 
     test('fieldId vazio → null', () {
       expect(
