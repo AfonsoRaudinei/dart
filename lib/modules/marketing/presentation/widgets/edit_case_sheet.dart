@@ -46,6 +46,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
   ProdutividadeUnidade? _produtividadeUnidade;
   String? _clientId;
   String? _lastAutoFilledClientName;
+  bool _produtorEditedByUser = false;
   String? _fotoPrincipalUrl;
   String? _fotoAntesUrl;
   String? _fotoDepoisUrl;
@@ -71,6 +72,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
     _fotoPrincipalUrl = caso.fotoPrincipalUrl;
     _fotoAntesUrl = caso.fotoAntesUrl;
     _fotoDepoisUrl = caso.fotoDepoisUrl;
+    _produtorEditedByUser = _produtorCtrl.text.trim().isNotEmpty;
   }
 
   @override
@@ -245,6 +247,19 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  void _onProdutorTextChanged(String value) {
+    if (value.trim().isEmpty) {
+      setState(() => _produtorEditedByUser = false);
+      return;
+    }
+    final trimmed = value.trim();
+    if (_lastAutoFilledClientName != null &&
+        trimmed == _lastAutoFilledClientName!.trim()) {
+      return;
+    }
+    setState(() => _produtorEditedByUser = true);
+  }
+
   void _handleClientChanged(ClientSummary? client) {
     setState(() {
       if (client == null) {
@@ -253,13 +268,18 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
       }
 
       _clientId = client.id;
-      final current = _produtorCtrl.text.trim();
-      if (current.isEmpty ||
-          (_lastAutoFilledClientName != null &&
-              current == _lastAutoFilledClientName)) {
-        _produtorCtrl.text = client.name;
-        _lastAutoFilledClientName = client.name;
+      if (!marketingProdutorShouldAutofillFromClient(
+        currentProdutor: _produtorCtrl.text,
+        lastAutoFilledClientName: _lastAutoFilledClientName,
+        produtorEditedByUser: _produtorEditedByUser,
+      )) {
+        return;
       }
+      final name = marketingClientProdutorAutofillValue(client);
+      if (name.isEmpty) return;
+      _produtorCtrl.text = name;
+      _lastAutoFilledClientName = name;
+      _produtorEditedByUser = false;
     });
   }
 
@@ -502,6 +522,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                           _produtorCtrl,
                           'Produtor / Fazenda',
                           required: true,
+                          onChanged: _onProdutorTextChanged,
                         ),
                         const NovoCaseFDivider(),
                         novoCaseTextInput(
