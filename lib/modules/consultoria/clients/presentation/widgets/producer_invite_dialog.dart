@@ -49,6 +49,17 @@ class ProducerInviteDialog extends ConsumerStatefulWidget {
     );
   }
 
+  /// Frase pronta para colar no WhatsApp. O token em claro continua no diálogo.
+  static String shareMessage({
+    required String clientName,
+    required String token,
+  }) {
+    final name = clientName.trim();
+    final who = name.isEmpty ? 'produtor' : name;
+    return 'Olá, $who. No SoloForte, abra Minha propriedade e cole este token '
+        'para ver as áreas da sua conta: $token';
+  }
+
   @override
   ConsumerState<ProducerInviteDialog> createState() =>
       _ProducerInviteDialogState();
@@ -69,9 +80,9 @@ class _ProducerInviteDialogState extends ConsumerState<ProducerInviteDialog> {
       // RLS de producer_client_links exige o client em public.clients.
       final ensure =
           widget.ensureClientRemote ??
-          (clientId) =>
-              AgronomicSyncService(Supabase.instance.client)
-                  .ensureClientRemote(clientId);
+          (clientId) => AgronomicSyncService(
+            Supabase.instance.client,
+          ).ensureClientRemote(clientId);
       await ensure(widget.clientId);
 
       final injectedWriter = widget.inviteWriter;
@@ -127,10 +138,29 @@ class _ProducerInviteDialogState extends ConsumerState<ProducerInviteDialog> {
             if (_expiresAt != null) ...[
               const SizedBox(height: 8),
               Text(
-                'Válido até ${_formatDate(_expiresAt!)}',
+                'Válido até ${_formatDate(_expiresAt!)} para aceitar',
                 style: const TextStyle(color: Color(0xFF6B7280)),
               ),
             ],
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: () {
+                  final message = ProducerInviteDialog.shareMessage(
+                    clientName: widget.clientName,
+                    token: _token!,
+                  );
+                  Clipboard.setData(ClipboardData(text: message));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Mensagem copiada. Cole no WhatsApp.'),
+                    ),
+                  );
+                },
+                child: const Text('Copiar mensagem'),
+              ),
+            ),
           ],
           if (_error != null) ...[
             const SizedBox(height: 8),
@@ -153,9 +183,9 @@ class _ProducerInviteDialogState extends ConsumerState<ProducerInviteDialog> {
           TextButton(
             onPressed: () {
               Clipboard.setData(ClipboardData(text: _token!));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Token copiado.')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Token copiado.')));
             },
             child: const Text('Copiar'),
           ),
