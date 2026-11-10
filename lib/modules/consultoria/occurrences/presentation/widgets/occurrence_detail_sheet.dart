@@ -20,6 +20,7 @@ import '../../domain/occurrence_soy_age.dart';
 import '../controllers/occurrence_controller.dart';
 import '../occurrence_detail_report_actions.dart';
 import '../occurrence_form_apply.dart';
+import '../providers/occurrence_location_provider.dart';
 import 'occurrence_andamento_section.dart';
 import 'occurrence_detail_close_button.dart';
 import 'occurrence_creation_sheet.dart';
@@ -33,12 +34,14 @@ part 'occurrence_detail_sheet_rows.dart';
 
 /// Aplica os campos do formulário de edição sobre [current], preservando
 /// campos que o formulário não edita (status, andamento, responsável).
+/// `fieldId` só entra se [current] ainda não tinha talhão.
 Occurrence applyOccurrenceFormEdit(
   Occurrence current,
   OccurrenceFormData data,
 ) {
   return occurrenceWithFormData(current, data).copyWith(
     status: current.status,
+    fieldId: current.fieldId ?? data.fieldId,
     lat: data.latitude,
     long: data.longitude,
     geometry: jsonEncode({
@@ -306,9 +309,22 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     final urgencyColor = _colorForUrgency(live.type);
     final categoryLabel = _labelForCategory(live.category);
     final urgencyLabel = _labelForUrgency(live.type);
-    final category = OccurrenceCategory.fromString(live.category);
     final metricLabel = _firstMetricLabel(live);
-    final hasMapPin = live.getCoordinates() != null;
+    final coords = live.getCoordinates();
+    final hasMapPin = coords != null;
+    final location = coords == null && (live.fieldId?.isEmpty ?? true)
+        ? null
+        : ref
+            .watch(
+              occurrenceLocationProvider((
+                fieldId: live.fieldId,
+                fazendaId: null,
+                talhaoNome: null,
+                lat: coords?['lat'] ?? 0,
+                lng: coords?['long'] ?? 0,
+              )),
+            )
+            .valueOrNull;
 
     final sheetBg = isIos
         ? v.sheetBackground
@@ -359,6 +375,18 @@ class OccurrenceDetailSheet extends ConsumerWidget {
               style: _DetailRow.valueStyle(context, isDark, isIos: isIos),
             ),
           ),
+        ),
+      if (location?.farmName case final farmName?)
+        _DetailRowData(
+          icon: SFIcons.agriculture,
+          label: 'Fazenda',
+          value: farmName,
+        ),
+      if (location != null)
+        _DetailRowData(
+          icon: SFIcons.agriculture,
+          label: 'Talhão',
+          value: location.fieldName,
         ),
       _DetailRowData(
         icon: SFIcons.description,
@@ -505,23 +533,6 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                       ),
                       const SizedBox(width: 4),
                     ],
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: isIos
-                            ? v.iconBackground
-                            : categoryColor.withValues(alpha: 0.16),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          category.emoji,
-                          style: const TextStyle(fontSize: 20),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
