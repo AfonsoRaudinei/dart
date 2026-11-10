@@ -4,6 +4,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/contracts/i_occurrence_access_reader_provider.dart';
+import '../../../../core/services/sync_orchestrator.dart';
+import '../../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../../../core/session/local_session_identity.dart';
 import '../../../../core/session/user_role.dart';
 import '../../../../core/state/map_state.dart';
@@ -62,6 +64,12 @@ class IsolatedOccurrenceMarkersLayer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(syncOrchestratorProvider, (previous, next) {
+      if (previous?.isSyncing == true && !next.isSyncing) {
+        ref.invalidate(authorizedClientIdsProvider);
+        ref.invalidate(occurrencesListProvider);
+      }
+    });
     // 🎯 OBSERVA SOMENTE markers finais
     final markers = ref.watch(occurrenceMarkersProvider(onOccurrenceTap));
     final filtered = excludedMarkerId == null
@@ -146,35 +154,34 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
     final snapshotZoom = ref.watch(
       mapCameraSnapshotProvider.select((s) => s?.zoom),
     );
-    final currentZoom =
-        snapshotZoom ?? MapCamera.maybeOf(context)?.zoom ?? 0.0;
+    final currentZoom = snapshotZoom ?? MapCamera.maybeOf(context)?.zoom ?? 0.0;
     final role = ref.watch(currentUserRoleProvider);
     final isProdutor = role.isProdutor;
     final currentUserId = LocalSessionIdentity.resolveUserId();
-    final authorized =
-        isProdutor
-            ? (ref.watch(authorizedClientIdsProvider).valueOrNull ??
-                  const <String>{})
-            : const <String>{};
+    final authorized = isProdutor
+        ? (ref.watch(authorizedClientIdsProvider).valueOrNull ??
+              const <String>{})
+        : const <String>{};
 
     final publishedCases = ref
         .watch(publishedCasesProvider)
-        .where(
-          (c) => excludedMarkerId == null || c.id != excludedMarkerId,
-        )
+        .where((c) => excludedMarkerId == null || c.id != excludedMarkerId)
         .toList(growable: false);
 
-    final cases = (isProdutor
-            ? publishedCases.where(
-                (c) => MarketingCaseVisibility.isVisibleOnMapForProducer(
-                  marketingCase: c,
-                  currentUserId: currentUserId,
-                  authorizedClientIds: authorized,
-                ),
-              )
-            : publishedCases)
-        .toList()
-      ..sort((a, b) => b.visibilidade.index.compareTo(a.visibilidade.index));
+    final cases =
+        (isProdutor
+                ? publishedCases.where(
+                    (c) => MarketingCaseVisibility.isVisibleOnMapForProducer(
+                      marketingCase: c,
+                      currentUserId: currentUserId,
+                      authorizedClientIds: authorized,
+                    ),
+                  )
+                : publishedCases)
+            .toList()
+          ..sort(
+            (a, b) => b.visibilidade.index.compareTo(a.visibilidade.index),
+          );
 
     if (cases.isEmpty) return const SizedBox.shrink();
 
