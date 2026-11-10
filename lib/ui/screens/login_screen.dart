@@ -12,6 +12,7 @@ import '../../modules/marketing/presentation/widgets/ouro_map_background.dart';
 import '../components/login/login_input_field.dart';
 import '../components/login/gradient_button.dart';
 import '../components/login/demo_mode_checkbox.dart';
+import '../components/login/login_sheet_keyboard_layout.dart';
 import '../components/login/social_auth_button.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -33,8 +34,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   final _passFocusNode = FocusNode();
 
   bool _loading = false;
-  bool _socialLoading = false;
   bool _isDemoMode = false;
+
+  final _formScrollController = ScrollController();
 
   // ── Rate limiting ──────────────────────────────────────────
   static const int _kMaxAttempts = 3;
@@ -57,11 +59,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
     _animationController.forward();
+    _emailFocusNode.addListener(_ensureFocusedFieldVisible);
+    _passFocusNode.addListener(_ensureFocusedFieldVisible);
+  }
+
+  void _ensureFocusedFieldVisible() {
+    if (!_emailFocusNode.hasFocus && !_passFocusNode.hasFocus) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final focus = _passFocusNode.hasFocus
+          ? _passFocusNode
+          : _emailFocusNode.hasFocus
+              ? _emailFocusNode
+              : null;
+      final context = focus?.context;
+      if (context == null || !context.mounted) return;
+      Scrollable.ensureVisible(
+        context,
+        alignment: 0.15,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   @override
   void dispose() {
     _cooldownTimer?.cancel();
+    _emailFocusNode.removeListener(_ensureFocusedFieldVisible);
+    _passFocusNode.removeListener(_ensureFocusedFieldVisible);
+    _formScrollController.dispose();
     _emailCtrl.dispose();
     _passCtrl.dispose();
     _emailFocusNode.dispose();
@@ -132,41 +159,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     }
   }
 
-  Future<void> _handleGoogleLogin() async {
-    if (_loading || _socialLoading) return;
-    setState(() => _socialLoading = true);
-    try {
-      await ref.read(sessionControllerProvider.notifier).loginWithGoogle();
-    } catch (e) {
-      if (mounted) {
-        _showErrorMessage(e.toString().replaceAll('Exception: ', ''));
-      }
-    } finally {
-      if (mounted) setState(() => _socialLoading = false);
-    }
-  }
-
-  Future<void> _handleAppleLogin() async {
-    if (_loading || _socialLoading) return;
-    setState(() => _socialLoading = true);
-    try {
-      await ref.read(sessionControllerProvider.notifier).loginWithApple();
-    } catch (e) {
-      if (mounted) {
-        _showErrorMessage(e.toString().replaceAll('Exception: ', ''));
-      }
-    } finally {
-      if (mounted) setState(() => _socialLoading = false);
-    }
-  }
-
   void _showErrorMessage(String message) {
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: const Color(0xFFFF3B30),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
+        margin: EdgeInsets.fromLTRB(16, 0, 16, keyboardInset + 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
@@ -178,12 +179,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
+    final media = MediaQuery.of(context);
+    final screenHeight = media.size.height;
+    final keyboardInset = media.viewInsets.bottom;
+    final sheetMaxHeight = LoginSheetKeyboardLayout.sheetMaxHeight(
+      viewportHeight: screenHeight,
+      keyboardInset: keyboardInset,
+      topSafePadding: media.padding.top,
+    );
     final theme = Theme.of(context);
     final accent = theme.colorScheme.primary;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -249,7 +258,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
           // ── Layer 4: Formulário em caixa glass ─────────────
           Positioned(
-            bottom: 0,
+            bottom: LoginSheetKeyboardLayout.sheetBottomOffset(keyboardInset),
             left: 0,
             right: 0,
             child: FadeTransition(
@@ -261,7 +270,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
                   child: Container(
-                    constraints: BoxConstraints(maxHeight: screenHeight * 0.80),
+                    constraints: BoxConstraints(maxHeight: sheetMaxHeight),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.92),
                       borderRadius: const BorderRadius.vertical(
@@ -273,11 +282,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       ),
                     ),
                     child: SingleChildScrollView(
-                      padding: EdgeInsets.only(
+                      controller: _formScrollController,
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: const EdgeInsets.only(
                         left: 24,
                         right: 24,
                         top: 20,
-                        bottom: MediaQuery.of(context).viewInsets.bottom + 28,
+                        bottom: 28,
                       ),
                       child: Form(
                         key: _formKey,
@@ -436,20 +448,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             ),
                             const SizedBox(height: 12),
 
-                            SocialAuthButton(
+                            const SocialAuthButton(
                               text: 'Continuar com Google',
+                              subtitle: 'Disponível em breve',
                               icon: Icons.account_circle_outlined,
-                              onPressed: _loading || _socialLoading
-                                  ? () {}
-                                  : _handleGoogleLogin,
                             ),
                             const SizedBox(height: 10),
-                            SocialAuthButton(
+                            const SocialAuthButton(
                               text: 'Continuar com Apple',
+                              subtitle: 'Disponível em breve',
                               icon: Icons.apple,
-                              onPressed: _loading || _socialLoading
-                                  ? () {}
-                                  : _handleAppleLogin,
                             ),
                             const SizedBox(height: 12),
 
