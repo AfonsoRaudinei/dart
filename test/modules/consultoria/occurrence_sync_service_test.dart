@@ -216,6 +216,60 @@ void main() {
       expect(mapped.cicloDias, 115);
     });
 
+    test('toRemote envia cultura e safra', () {
+      final occurrence = Occurrence(
+        id: 'local-plantio-safra',
+        type: 'Média',
+        description: '',
+        category: 'plantio',
+        createdAt: DateTime.utc(2026, 11, 9),
+        cultura: 'Soja',
+        safra: '2026/2027',
+      );
+
+      final remote = OccurrenceRemoteMapper.toRemote(occurrence, 'owner-1');
+
+      expect(remote['cultura'], 'Soja');
+      expect(remote['safra'], '2026/2027');
+    });
+
+    test('fromRemote lê cultura e safra; ausentes ficam null', () {
+      final local = OccurrenceRemoteMapper.fromRemote(
+        {
+          'id': 'remote-plantio-safra',
+          'type': 'Média',
+          'description': '',
+          'category': 'ervas_daninhas',
+          'created_at': '2026-11-09T00:00:00.000Z',
+          'updated_at': '2026-11-09T00:00:00.000Z',
+          'cultura': 'Soja',
+          'safra': '2026/2027',
+        },
+        localId: 'local-plantio-safra',
+        cachedByUserId: null,
+      );
+
+      expect(local['cultura'], 'Soja');
+      expect(local['safra'], '2026/2027');
+      final mapped = Occurrence.fromMap(local);
+      expect(mapped.cultura, 'Soja');
+      expect(mapped.safra, '2026/2027');
+
+      final legado = OccurrenceRemoteMapper.fromRemote(
+        {
+          'id': 'remote-legado',
+          'type': 'Média',
+          'description': '',
+          'created_at': '2026-11-09T00:00:00.000Z',
+          'updated_at': '2026-11-09T00:00:00.000Z',
+        },
+        localId: 'local-legado',
+        cachedByUserId: null,
+      );
+      expect(legado['cultura'], isNull);
+      expect(legado['safra'], isNull);
+    });
+
     test('toRemote envia andamento e responsavel_nome', () {
       final occurrence = Occurrence(
         id: 'local-andamento',
