@@ -23,6 +23,12 @@ import '../map_occurrence_post_create.dart';
 /// O que marcar no ponto do mapa. A escolha fica no topo da mesma ficha.
 enum MapMarkKind { resultado, antesDepois, avaliacao, ocorrencia }
 
+const _visibleMarkKinds = <MapMarkKind>[
+  MapMarkKind.resultado,
+  MapMarkKind.antesDepois,
+  MapMarkKind.ocorrencia,
+];
+
 /// Uma ficha: quatro opções no topo, campos da opção escolhida embaixo.
 class MapMarkSheet extends ConsumerStatefulWidget {
   final LatLng position;
@@ -72,11 +78,13 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
   OccurrenceFormGuard? _occurrenceGuard = OccurrenceFormGuard();
 
   void _select(MapMarkKind kind) {
-    if (kind == _kind) return;
+    final resolved =
+        kind == MapMarkKind.avaliacao ? MapMarkKind.antesDepois : kind;
+    if (resolved == _kind) return;
     HapticFeedback.selectionClick();
     setState(() {
-      _kind = kind;
-      _occurrenceGuard = kind == MapMarkKind.ocorrencia
+      _kind = resolved;
+      _occurrenceGuard = resolved == MapMarkKind.ocorrencia
           ? OccurrenceFormGuard()
           : null;
     });
@@ -146,7 +154,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
     final tipo = switch (kind) {
       MapMarkKind.resultado => CaseTipo.resultado,
       MapMarkKind.antesDepois => CaseTipo.antesDepois,
-      MapMarkKind.avaliacao => CaseTipo.avaliacao,
+      MapMarkKind.avaliacao => CaseTipo.antesDepois,
       MapMarkKind.ocorrencia => CaseTipo.resultado,
     };
     Future<void> publicar(MarketingCase newCase) async {
@@ -174,7 +182,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
         onPublicar: publicar,
         compactHeader: true,
       ),
-      CaseTipo.avaliacao => NovaAvaliacaoCaseSheet(
+      CaseTipo.avaliacao => NovoAntesDepoisCaseSheet(
         lat: lat,
         lng: lng,
         initialVisitContext: widget.visitContext,
@@ -358,10 +366,10 @@ class _MarkKindToggleBarState extends State<_MarkKindToggleBar> {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.only(right: 12),
                 clipBehavior: Clip.hardEdge,
-                itemCount: MapMarkKind.values.length,
+                itemCount: _visibleMarkKinds.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
-                  final kind = MapMarkKind.values[index];
+                  final kind = _visibleMarkKinds[index];
                   return _MarkToggleSegment(
                     label: widget.labelFor(kind),
                     icon: widget.iconFor(kind),
