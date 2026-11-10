@@ -108,12 +108,7 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
       return;
     }
 
-    final fieldId = widget.initialOccurrence == null
-        ? widget.talhaoPrefill?.fieldId
-        : ref
-              .read(occurrenceLocationProvider(_locationQuery))
-              .valueOrNull
-              ?.fieldId;
+    final fieldId = _plantioFieldId(watch: false);
     final plantio = _plantioValuesForSubmit();
 
     _notifyStateChanged(() {
