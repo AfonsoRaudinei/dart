@@ -18,6 +18,8 @@ void main() {
     estandePlantas: 12,
     avaliacaoPlantio: 'boa',
     objetivoPlantio: 'Produção',
+    dataFimPlantio: '2026-10-30',
+    cicloDias: 115,
   );
 
   const fullForm = OccurrenceFormData(
@@ -33,6 +35,8 @@ void main() {
     estandePlantas: 12,
     avaliacaoPlantio: 'boa',
     objetivoPlantio: 'Produção',
+    dataFimPlantio: '2026-10-31',
+    cicloDias: 120,
   );
 
   test('campos de plantio fazem ida e volta na edição', () {
@@ -45,6 +49,18 @@ void main() {
     expect(edited.estandePlantas, 12);
     expect(edited.avaliacaoPlantio, 'boa');
     expect(edited.objetivoPlantio, 'Produção');
+    expect(edited.dataFimPlantio, '2026-10-31');
+    expect(edited.cicloDias, 120);
+  });
+
+  test('término do plantio e ciclo fazem ida e volta no SQLite map', () {
+    final map = plantio.toMap();
+    expect(map['data_fim_plantio'], '2026-10-30');
+    expect(map['ciclo_dias'], 115);
+
+    final restored = Occurrence.fromMap(map);
+    expect(restored.dataFimPlantio, '2026-10-30');
+    expect(restored.cicloDias, 115);
   });
 
   test('limpar a data de emergência na edição persiste null', () {
@@ -83,6 +99,8 @@ void main() {
     expect(edited.estandePlantas, isNull);
     expect(edited.avaliacaoPlantio, isNull);
     expect(edited.objetivoPlantio, isNull);
+    expect(edited.dataFimPlantio, isNull);
+    expect(edited.cicloDias, isNull);
   });
 
   test('fieldId ausente recebe o talhão resolvido', () {
