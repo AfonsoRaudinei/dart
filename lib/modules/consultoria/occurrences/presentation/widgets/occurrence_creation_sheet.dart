@@ -10,6 +10,7 @@ import 'package:soloforte_app/core/widgets/photo/soloforte_photo_picker_sheet.da
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_keyboard_inset.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_drawing_field_writer.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/i_active_visit_context_lookup_provider.dart';
@@ -22,6 +23,7 @@ import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/occurrence.dart';
 import '../../domain/occurrence_amostra_solo.dart';
+import '../../domain/occurrence_plantio_context.dart';
 import '../../domain/occurrence_soy_age.dart';
 import '../models/occurrence_talhao_prefill.dart';
 import '../../domain/occurrence_photo_paths.dart';
@@ -29,6 +31,7 @@ import '../../../relatorio_visita/data/image_storage_service.dart';
 import '../coordinators/occurrence_form_guard.dart';
 import '../providers/occurrence_draft_provider.dart';
 import '../providers/occurrence_location_provider.dart';
+import '../providers/occurrence_plantio_context_provider.dart';
 import '../models/occurrence_form_draft.dart';
 import 'occurrence_amostra_solo_section.dart';
 import 'occurrence_client_selector.dart';
@@ -38,11 +41,13 @@ import 'occurrence_form_widgets.dart';
 import 'occurrence_ordem_aplicacao_controllers.dart';
 import 'occurrence_audio_field.dart';
 import 'occurrence_photo_gallery.dart';
+import 'occurrence_plantio_summary_card.dart';
 
 part 'occurrence_creation_sheet_models.dart';
 part 'occurrence_creation_sheet_ui_helpers.dart';
 part 'occurrence_creation_sheet_draft.dart';
 part 'occurrence_creation_sheet_submit.dart';
+part 'occurrence_creation_sheet_plantio_context.dart';
 
 class OccurrenceCreationSheet extends ConsumerStatefulWidget {
   final double latitude;
@@ -87,6 +92,8 @@ class OccurrenceCreationSheet extends ConsumerStatefulWidget {
 class _OccurrenceCreationSheetState
     extends ConsumerState<OccurrenceCreationSheet> {
   final _cultivarCtrl = TextEditingController();
+  final _culturaCtrl = TextEditingController();
+  final _safraCtrl = TextEditingController();
   DateTime? _dataPlantio;
   DateTime? _dataEmergencia;
   DateTime? _dataFimPlantio;
@@ -100,6 +107,12 @@ class _OccurrenceCreationSheetState
   OccurrenceAmostraTramite? _amostraTramite;
   final _cicloDiasCtrl = TextEditingController();
   EstadioData? _estadio;
+  bool _estadioSugerido = false;
+  bool _estadioSuggestionDone = false;
+  bool _plantioContextApplied = false;
+
+  /// Card "Dados do plantio" do último build; null = bloco editável.
+  OccurrencePlantioContext? _plantioSummary;
   bool _estadioCardExpanded = false;
   final Set<OccurrenceCategory> _cats = {};
   final Map<String, Map<String, int>> _metrics = {};
@@ -134,6 +147,8 @@ class _OccurrenceCreationSheetState
     _restoreDraftIfAny();
     _applyTalhaoPrefillFields();
     _cultivarCtrl.addListener(_persistDraft);
+    _culturaCtrl.addListener(_persistDraft);
+    _safraCtrl.addListener(_persistDraft);
     _descCtrl.addListener(_persistDraft);
     _ordem.addListener(_persistDraft);
     _sementesPorMetroCtrl.addListener(_persistDraft);
@@ -198,6 +213,8 @@ class _OccurrenceCreationSheetState
     if (occurrence == null) return;
 
     _cultivarCtrl.text = occurrence.cultivar ?? '';
+    _culturaCtrl.text = occurrence.cultura ?? '';
+    _safraCtrl.text = occurrence.safra ?? '';
     _descCtrl.text = occurrence.description;
     _ordem.load(occurrence);
     _urgency = occurrence.type;
@@ -271,6 +288,8 @@ class _OccurrenceCreationSheetState
     // é proibido pelo Riverpod. Toda mutação do formulário já persiste na hora
     // (via _patchForm e listeners dos controllers).
     _cultivarCtrl.removeListener(_persistDraft);
+    _culturaCtrl.removeListener(_persistDraft);
+    _safraCtrl.removeListener(_persistDraft);
     _descCtrl.removeListener(_persistDraft);
     _ordem.removeListener(_persistDraft);
     _sementesPorMetroCtrl.removeListener(_persistDraft);
@@ -284,6 +303,8 @@ class _OccurrenceCreationSheetState
       widget.formGuard?.readIsDirty = null;
     }
     _cultivarCtrl.dispose();
+    _culturaCtrl.dispose();
+    _safraCtrl.dispose();
     _descCtrl.dispose();
     _ordem.dispose();
     _sementesPorMetroCtrl.dispose();
@@ -456,6 +477,7 @@ class _OccurrenceCreationSheetState
     final accent = isIos ? v.iconStroke : context.themeAccent;
     final titleColor = v.onSheetPrimary;
     final muted = v.subtitleColor;
+    _watchPlantioContext();
     return Material(
       color: sheetBg,
       child: Column(
@@ -510,7 +532,7 @@ class _OccurrenceCreationSheetState
 
                 if (!_isAreaVisitada) ...[
                   if (!_isPlantio) ...[
-                    _buildCultivarPlantioBlock(),
+                    _buildPlantioDataBlock(),
                     const SizedBox(height: 20),
                   ],
 
@@ -522,11 +544,12 @@ class _OccurrenceCreationSheetState
                   OccurrenceEstadioDropdown(
                     selected: _estadio,
                     expanded: _estadioCardExpanded,
-                    onChanged: (e) => _patchForm(() => _estadio = e),
+                    onChanged: _selectEstadio,
                     onToggleCard: () => _patchForm(
                       () => _estadioCardExpanded = !_estadioCardExpanded,
                     ),
                   ),
+                  if (_buildEstadioSugeridoHint(muted) case final hint?) hint,
                   const SizedBox(height: 20),
 
                   ..._cats
