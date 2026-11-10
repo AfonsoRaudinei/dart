@@ -51,6 +51,19 @@ void main() {
     expect(find.text('SF-ABCD-1234-EF56'), findsOneWidget);
     expect(find.text('Gerar novo'), findsOneWidget);
     expect(find.text('Copiar'), findsOneWidget);
+    expect(find.text('Copiar mensagem'), findsOneWidget);
+    expect(find.textContaining('para aceitar'), findsOneWidget);
+  });
+
+  test('mensagem do convite leva o nome e o token', () {
+    final message = ProducerInviteDialog.shareMessage(
+      clientName: ' Jonathan ',
+      token: 'SF-ABCD-1234-EF56',
+    );
+
+    expect(message, contains('Olá, Jonathan.'));
+    expect(message, contains('Minha propriedade'));
+    expect(message, contains('SF-ABCD-1234-EF56'));
   });
 
   testWidgets('mostra erro acionável quando ensureClientRemote falha', (
