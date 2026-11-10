@@ -146,6 +146,7 @@ Future<void> _showOccurrenceEditSheet(
             occurrence,
             (live) => occurrenceWithFormData(live, data).copyWith(
               status: live.status,
+              fieldId: live.fieldId ?? data.fieldId,
             ),
           );
           container.invalidate(occurrencesListProvider);
