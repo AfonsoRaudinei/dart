@@ -7,6 +7,7 @@ import '../../../../core/state/map_state.dart';
 import '../../../../core/domain/publicacao.dart';
 import '../../../../modules/consultoria/occurrences/domain/occurrence.dart';
 import '../../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
+import '../../../screens/map/layers/linked_consultant_field_layer.dart';
 import '../occurrence_pins.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -31,10 +32,20 @@ final occurrenceAreaVisitadaClientLabelsProvider =
       if (clientIds.isEmpty) return const {};
 
       final lookup = ref.read(clientLookupProvider);
+      final linkedNames = <String, String>{
+        for (final client
+            in ref.watch(linkedConsultantMapClientsProvider).valueOrNull ??
+                const [])
+          client.link.clientId: client.name.trim(),
+      };
       final labels = <String, String>{};
       for (final id in clientIds) {
         final client = await lookup.findById(id);
-        final name = client?.name.trim();
+        final localName = client?.name.trim();
+        final linkedName = linkedNames[id];
+        final name = (localName != null && localName.isNotEmpty)
+            ? localName
+            : linkedName;
         if (name != null && name.isNotEmpty) {
           labels[id] = name;
         }
