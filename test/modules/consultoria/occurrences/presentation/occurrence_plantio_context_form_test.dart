@@ -17,6 +17,7 @@ import 'package:soloforte_app/core/session/user_role.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/domain/occurrence.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/domain/occurrence_plantio_context.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/models/occurrence_talhao_prefill.dart';
+import 'package:soloforte_app/modules/consultoria/occurrences/presentation/providers/occurrence_location_provider.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/providers/occurrence_plantio_context_provider.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
@@ -162,6 +163,7 @@ Future<void> _pumpSheet(
   OccurrenceTalhaoPrefill? prefill,
   IDrawingFieldWriter? writer,
   TalhaoPlantioSnapshot? talhao,
+  bool locationUnresolved = false,
 }) async {
   tester.view.physicalSize = const Size(430, 3600);
   tester.view.devicePixelRatio = 1.0;
@@ -185,6 +187,8 @@ Future<void> _pumpSheet(
         occurrenceTalhaoPlantioSnapshotProvider.overrideWith(
           (ref, fieldId) async => talhao,
         ),
+        if (locationUnresolved)
+          occurrenceLocationProvider.overrideWith((ref, query) async => null),
       ],
       child: MaterialApp(
         home: Scaffold(
@@ -524,4 +528,36 @@ void main() {
     expect(writer.calls.single['material'], 'Atual');
     expect(writer.calls.single['safra'], '2026/2027');
   });
+
+  testWidgets(
+    'edição do Plantio mais recente usa o talhão salvo sem lookup do pin',
+    (tester) async {
+      final writer = _RecordingWriter();
+      OccurrenceFormData? submitted;
+      final atual = _plantio(
+        'p-atual',
+        createdAt: DateTime(2026, 10, 20),
+        safra: '2026/2027',
+        cultivar: 'Atual',
+      );
+      await _pumpSheet(
+        tester,
+        plantios: [atual],
+        initialOccurrence: atual,
+        writer: writer,
+        locationUnresolved: true,
+        onConfirm: (data) async => submitted = data,
+      );
+
+      expect(find.byKey(const Key('occurrence_location_line')), findsNothing);
+
+      await tester.tap(find.text('Salvar Alterações'));
+      await tester.pump();
+
+      expect(submitted!.fieldId, 'field-3');
+      expect(writer.calls, hasLength(1));
+      expect(writer.calls.single['fieldId'], 'field-3');
+      expect(writer.calls.single['material'], 'Atual');
+    },
+  );
 }
