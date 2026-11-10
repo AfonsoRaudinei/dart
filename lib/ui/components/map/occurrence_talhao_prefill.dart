@@ -12,7 +12,7 @@ import 'package:soloforte_app/ui/screens/map/providers/occurrence_form_guard_pro
 
 import 'map_occurrence_post_create.dart';
 
-/// Talhão ativo sob o ponto, com cliente e fazenda. Fora disso, null.
+/// Talhão ativo sob o ponto, com cliente (fazenda opcional). Fora disso, null.
 OccurrenceTalhaoPrefill? occurrenceTalhaoPrefillFor(
   DrawingController controller,
   LatLng point,
