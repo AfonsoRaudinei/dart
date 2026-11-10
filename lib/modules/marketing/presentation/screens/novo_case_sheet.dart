@@ -66,6 +66,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
   DateTime? _dataCase;
   String? _clientId;
   String? _lastAutoFilledClientName;
+  bool _produtorEditedByUser = false;
 
   // ── Produtividade ──────────────────────────────────────────────
   final _produtividadeCtrl = TextEditingController();
@@ -419,6 +420,19 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
     HapticFeedback.selectionClick();
   }
 
+  void _onProdutorTextChanged(String value) {
+    if (value.trim().isEmpty) {
+      _produtorEditedByUser = false;
+      return;
+    }
+    final trimmed = value.trim();
+    if (_lastAutoFilledClientName != null &&
+        trimmed == _lastAutoFilledClientName!.trim()) {
+      return;
+    }
+    _produtorEditedByUser = true;
+  }
+
   void _handleClientChanged(ClientSummary? client) {
     setState(() {
       if (client == null) {
@@ -427,13 +441,18 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
       }
 
       _clientId = client.id;
-      final current = _produtorCtrl.text.trim();
-      if (current.isEmpty ||
-          (_lastAutoFilledClientName != null &&
-              current == _lastAutoFilledClientName)) {
-        _produtorCtrl.text = client.name;
-        _lastAutoFilledClientName = client.name;
+      if (!marketingProdutorShouldAutofillFromClient(
+        currentProdutor: _produtorCtrl.text,
+        lastAutoFilledClientName: _lastAutoFilledClientName,
+        produtorEditedByUser: _produtorEditedByUser,
+      )) {
+        return;
       }
+      final name = marketingClientProdutorAutofillValue(client);
+      if (name.isEmpty) return;
+      _produtorCtrl.text = name;
+      _lastAutoFilledClientName = name;
+      _produtorEditedByUser = false;
     });
   }
 
@@ -481,6 +500,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                     _produtorCtrl,
                     'Produtor / Fazenda *',
                     required: true,
+                    onChanged: _onProdutorTextChanged,
                   ),
                   const NovoCaseFDivider(),
                   novoCaseTextInput(
