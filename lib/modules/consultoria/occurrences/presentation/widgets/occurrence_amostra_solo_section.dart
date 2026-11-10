@@ -47,7 +47,6 @@ class OccurrenceAmostraSoloSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const OccurrenceSectionHeader(
-            icon: '🧪',
             title: 'Amostra de solo',
           ),
           const SizedBox(height: 8),
