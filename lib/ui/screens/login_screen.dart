@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/router/app_routes.dart';
+import '../../modules/auth/services/auth_service.dart';
 import '../../modules/auth/utils/auth_validators.dart';
 import '../../modules/marketing/presentation/widgets/ouro_map_background.dart';
 import '../components/login/login_input_field.dart';
@@ -152,21 +153,58 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         _startCooldown();
       }
       if (mounted) {
-        _showErrorMessage(e.toString().replaceAll('Exception: ', ''));
+        final message = e.toString().replaceAll('Exception: ', '');
+        final emailNaoConfirmado = message.startsWith('Email não confirmado');
+        _showErrorMessage(
+          message,
+          resendEmail: emailNaoConfirmado
+              ? _emailCtrl.text.trim().toLowerCase()
+              : null,
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  void _showErrorMessage(String message) {
+  Future<void> _resendConfirmation(String email) async {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    try {
+      await ref
+          .read(authServiceProvider.notifier)
+          .resendSignupConfirmation(email);
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'E-mail de confirmação reenviado. Verifique sua caixa de entrada.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        _showErrorMessage(e.toString().replaceAll('Exception: ', ''));
+      }
+    }
+  }
+
+  void _showErrorMessage(String message, {String? resendEmail}) {
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: const Color(0xFFFF3B30),
         behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
+        duration: Duration(seconds: resendEmail != null ? 8 : 3),
+        action: (resendEmail != null && resendEmail.isNotEmpty)
+            ? SnackBarAction(
+                label: 'Reenviar',
+                textColor: Colors.white,
+                onPressed: () => _resendConfirmation(resendEmail),
+              )
+            : null,
         margin: EdgeInsets.fromLTRB(16, 0, 16, keyboardInset + 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
