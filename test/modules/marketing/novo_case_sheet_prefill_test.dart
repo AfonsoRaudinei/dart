@@ -271,6 +271,87 @@ void main() {
     expect(published!.clientId, 'client-2');
     expect(published!.produtorFazenda, 'Cliente Selecionável');
   });
+
+  testWidgets('Antes/Depois: selecionar cliente preenche Produtor/Fazenda', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          clientLookupProvider.overrideWithValue(_FakeClientLookup()),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: NovoCaseSheet(
+              lat: -10.0,
+              lng: -48.0,
+              tipo: CaseTipo.antesDepois,
+              onClose: () {},
+              onPublicar: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButton<String?>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cliente Selecionável').last);
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<TextFormField>(
+            find.widgetWithText(TextFormField, 'Produtor / Fazenda *'),
+          )
+          .controller!
+          .text,
+      'Cliente Selecionável',
+    );
+  });
+
+  testWidgets(
+    'edição manual em Produtor/Fazenda não é sobrescrita ao trocar cliente',
+    (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clientLookupProvider.overrideWithValue(_FakeClientLookup()),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: NovoCaseSheet(
+                lat: -10.0,
+                lng: -48.0,
+                tipo: CaseTipo.avaliacao,
+                onClose: () {},
+                onPublicar: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final produtorField = find.widgetWithText(
+        TextFormField,
+        'Produtor / Fazenda *',
+      );
+      await tester.enterText(produtorField, 'Nome manual do produtor');
+      await tester.pump();
+
+      await tester.tap(find.byType(DropdownButton<String?>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cliente Selecionável').last);
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<TextFormField>(produtorField).controller!.text,
+        'Nome manual do produtor',
+      );
+    },
+  );
 }
 
 class _FakeClientLookup implements IClientLookup {
