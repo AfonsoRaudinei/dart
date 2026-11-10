@@ -5,6 +5,7 @@ extension _OccurrenceCreationSheetLifecycle on _OccurrenceCreationSheetState {
     if (_cultivarCtrl.text.trim().isNotEmpty) return true;
     if (_dataPlantio != null) return true;
     if (_dataEmergencia != null) return true;
+    if (_dataFimPlantio != null) return true;
     if (_cicloDiasCtrl.text.trim().isNotEmpty) return true;
     if (_sementesPorMetroCtrl.text.trim().isNotEmpty) return true;
     if (_estandePlantasCtrl.text.trim().isNotEmpty) return true;
@@ -31,6 +32,11 @@ extension _OccurrenceCreationSheetLifecycle on _OccurrenceCreationSheetState {
     }
     return false;
   }
+
+  void _setDataPlantio(DateTime? inicio) => _patchForm(() {
+    _dataPlantio = inicio;
+    if (_terminoAntesDoInicio(inicio, _dataFimPlantio)) _dataFimPlantio = null;
+  });
 
   Future<void> _handleCancel() async {
     HapticFeedback.lightImpact();
@@ -192,7 +198,15 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
             label: 'Início do plantio',
             value: _dataPlantio,
             helperText: occurrenceDapLabel(_dataPlantio),
-            onChanged: (d) => _patchForm(() => _dataPlantio = d),
+            onChanged: _setDataPlantio,
+          ),
+          const SizedBox(height: 10),
+          OccurrenceDateField(
+            key: const Key('occurrence_plantio_termino_field'),
+            label: 'Término do plantio',
+            value: _dataFimPlantio,
+            firstDate: _dataPlantio,
+            onChanged: (d) => _patchForm(() => _dataFimPlantio = d),
           ),
           const SizedBox(height: 10),
           OccurrenceDateField(
@@ -665,7 +679,7 @@ extension _OccurrenceCreationSheetFormSections
           label: 'Data de plantio',
           value: _dataPlantio,
           helperText: occurrenceDapLabel(_dataPlantio),
-          onChanged: (d) => _patchForm(() => _dataPlantio = d),
+          onChanged: _setDataPlantio,
         ),
       ],
     );
