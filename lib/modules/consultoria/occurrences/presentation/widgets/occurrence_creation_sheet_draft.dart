@@ -11,6 +11,8 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
     if (draft == null || draft.isEffectivelyEmpty) return;
 
     _cultivarCtrl.text = draft.cultivar;
+    _culturaCtrl.text = draft.cultura;
+    _safraCtrl.text = draft.safra;
     _descCtrl.text = draft.description;
     _ordem.acao.text = draft.recomendacaoAcao;
     _ordem.dose.text = draft.recomendacaoDose;
@@ -107,6 +109,8 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
     final draft = OccurrenceFormDraft(
       clientId: _selectedClient?.id,
       cultivar: _cultivarCtrl.text,
+      cultura: _culturaCtrl.text,
+      safra: _safraCtrl.text,
       dataPlantioIso: _isoDate(_dataPlantio),
       dataEmergenciaIso: _isoDate(_dataEmergencia),
       dataFimPlantioIso: _isoDate(_dataFimPlantio),
@@ -166,7 +170,9 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
       currentDataEmergencia: _isoDate(_dataEmergencia),
       currentCicloDias: _cicloDiasCtrl.text,
       draftHasClient: draft?.clientId?.trim().isNotEmpty == true,
+      currentCultura: _culturaCtrl.text,
     );
+    if (patch.cultura != null) _culturaCtrl.text = patch.cultura!;
     if (patch.cultivar != null) _cultivarCtrl.text = patch.cultivar!;
     if (patch.dataPlantio != null) {
       _dataPlantio = DateTime.tryParse(patch.dataPlantio!);
