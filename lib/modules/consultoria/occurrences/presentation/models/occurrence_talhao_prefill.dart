@@ -8,6 +8,7 @@ class OccurrenceTalhaoPrefill {
   final String fieldId;
   final String talhaoNome;
   final String clientId;
+  final String? fazendaId;
   final String? cultivar;
   final String? dataPlantio;
   final String? dataEmergencia;
@@ -17,6 +18,7 @@ class OccurrenceTalhaoPrefill {
     required this.fieldId,
     required this.talhaoNome,
     required this.clientId,
+    this.fazendaId,
     this.cultivar,
     this.dataPlantio,
     this.dataEmergencia,
@@ -24,7 +26,7 @@ class OccurrenceTalhaoPrefill {
   });
 }
 
-/// Só quando o desenho está ativo e tem cliente e fazenda.
+/// Só quando o desenho está ativo e tem cliente. Fazenda é opcional.
 OccurrenceTalhaoPrefill? occurrenceTalhaoPrefillIfEligible({
   required bool ativo,
   required String fieldId,
@@ -38,12 +40,12 @@ OccurrenceTalhaoPrefill? occurrenceTalhaoPrefillIfEligible({
 }) {
   if (!ativo) return null;
   final client = clienteId?.trim() ?? '';
-  final farm = fazendaId?.trim() ?? '';
-  if (client.isEmpty || farm.isEmpty) return null;
+  if (client.isEmpty) return null;
   return OccurrenceTalhaoPrefill(
     fieldId: fieldId,
     talhaoNome: nome,
     clientId: client,
+    fazendaId: _blankToNull(fazendaId),
     cultivar: _blankToNull(material),
     dataPlantio: _blankToNull(dataPlantio),
     dataEmergencia: _blankToNull(dataEmergencia),
