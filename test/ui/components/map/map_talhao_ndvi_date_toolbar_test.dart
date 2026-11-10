@@ -20,9 +20,15 @@ import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_date_nav_
 import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_providers.dart';
 import 'package:soloforte_app/ui/components/map/map_talhao_selection_toolbar.dart';
 
+/// `loadFeatures` limpa a seleção que não está na lista carregada, então o
+/// repositório precisa devolver o talhão selecionado.
 class _DrawingRepo extends DrawingRepository {
+  _DrawingRepo(this.features);
+
+  final List<DrawingFeature> features;
+
   @override
-  Future<List<DrawingFeature>> getAllFeatures() async => [];
+  Future<List<DrawingFeature>> getAllFeatures() async => features;
 }
 
 class _Lookup implements INdviLatestLookup {
@@ -184,9 +190,10 @@ void main() {
   testWidgets('NDVI ativo mostra 4 datas recentes e troca o chip', (
     tester,
   ) async {
-    final controller = DrawingController(repository: _DrawingRepo());
+    final feature = _feature();
+    final controller = DrawingController(repository: _DrawingRepo([feature]));
     addTearDown(controller.dispose);
-    controller.selectFeature(_feature());
+    controller.selectFeature(feature);
     final mapController = MapController();
     addTearDown(mapController.dispose);
     final presenter = _Presenter(null);
@@ -223,9 +230,10 @@ void main() {
   });
 
   testWidgets('talhão sem imagem não mostra chips de data', (tester) async {
-    final controller = DrawingController(repository: _DrawingRepo());
+    final feature = _feature();
+    final controller = DrawingController(repository: _DrawingRepo([feature]));
     addTearDown(controller.dispose);
-    controller.selectFeature(_feature());
+    controller.selectFeature(feature);
     final mapController = MapController();
     addTearDown(mapController.dispose);
 
@@ -252,9 +260,10 @@ void main() {
   testWidgets('falha da data mostra o erro do sheet e mantém a toolbar', (
     tester,
   ) async {
-    final controller = DrawingController(repository: _DrawingRepo());
+    final feature = _feature();
+    final controller = DrawingController(repository: _DrawingRepo([feature]));
     addTearDown(controller.dispose);
-    controller.selectFeature(_feature());
+    controller.selectFeature(feature);
     final mapController = MapController();
     addTearDown(mapController.dispose);
     final lookup = _Lookup();
@@ -288,9 +297,10 @@ void main() {
   testWidgets('ver mais sem troca no sheet mantém a data do mapa', (
     tester,
   ) async {
-    final controller = DrawingController(repository: _DrawingRepo());
+    final feature = _feature();
+    final controller = DrawingController(repository: _DrawingRepo([feature]));
     addTearDown(controller.dispose);
-    controller.selectFeature(_feature());
+    controller.selectFeature(feature);
     final mapController = MapController();
     addTearDown(mapController.dispose);
     final presenter = _Presenter(null);
@@ -324,9 +334,10 @@ void main() {
   });
 
   testWidgets('ver mais aplica a data trocada no sheet', (tester) async {
-    final controller = DrawingController(repository: _DrawingRepo());
+    final feature = _feature();
+    final controller = DrawingController(repository: _DrawingRepo([feature]));
     addTearDown(controller.dispose);
-    controller.selectFeature(_feature());
+    controller.selectFeature(feature);
     final mapController = MapController();
     addTearDown(mapController.dispose);
     late ProviderContainer container;
