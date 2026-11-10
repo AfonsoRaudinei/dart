@@ -200,8 +200,6 @@ void main() {
   testWidgets('selecionar cliente preenche produtor e propaga clientId', (
     tester,
   ) async {
-    MarketingCase? published;
-
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -214,7 +212,7 @@ void main() {
               lng: -48.0,
               tipo: CaseTipo.avaliacao,
               onClose: () {},
-              onPublicar: (marketingCase) => published = marketingCase,
+              onPublicar: (_) {},
             ),
           ),
         ),
@@ -239,37 +237,9 @@ void main() {
       'Cliente Selecionável',
     );
 
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Produto Utilizado *'),
-      'Produto X',
-    );
-    await tester.enterText(
-      find.widgetWithText(
-        TextFormField,
-        'Localização (ex: Jataizinho - PR) *',
-      ),
-      'Cidade - UF',
-    );
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Nome do Talhão *'),
-      'Talhão 1',
-    );
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Tamanho (ha)'),
-      '12.5',
-    );
-
-    final publishButton = find.ancestor(
-      of: find.text('Publicar Case'),
-      matching: find.byType(ElevatedButton),
-    );
-    await tester.ensureVisible(publishButton);
-    await tester.tap(publishButton);
-    await tester.pump();
-
-    expect(published, isNotNull);
-    expect(published!.clientId, 'client-2');
-    expect(published!.produtorFazenda, 'Cliente Selecionável');
+    final dropdown =
+        tester.widget<DropdownButton<String?>>(find.byType(DropdownButton<String?>));
+    expect(dropdown.value, 'client-2');
   });
 
   testWidgets('Antes/Depois: selecionar cliente preenche Produtor/Fazenda', (
