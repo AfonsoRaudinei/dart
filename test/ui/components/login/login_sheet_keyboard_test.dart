@@ -34,13 +34,12 @@ void main() {
   testWidgets('SocialAuthButton desabilitado nao dispara callback', (tester) async {
     var tapped = false;
     await tester.pumpWidget(
-      MaterialApp(
+      const MaterialApp(
         home: Scaffold(
           body: SocialAuthButton(
             text: 'Continuar com Google',
             subtitle: 'Disponível em breve',
             icon: Icons.account_circle_outlined,
-            onPressed: null,
           ),
         ),
       ),
