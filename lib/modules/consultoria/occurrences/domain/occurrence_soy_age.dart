@@ -10,18 +10,18 @@ int? occurrenceCalendarAgeDays(DateTime? from, DateTime today) {
   return days;
 }
 
-/// DAP real a partir da data de plantio. Nunca negativo.
+/// DAP a partir da data de plantio. Nunca negativo.
 String? occurrenceDapLabel(DateTime? plantio, {DateTime? today}) {
   final days = occurrenceCalendarAgeDays(plantio, today ?? DateTime.now());
   if (days == null) return null;
-  return '$days dias desde o plantio (DAP real)';
+  return '$days dias após o plantio (DAP)';
 }
 
-/// Idade a partir da emergência. Ausente ou futura → null.
+/// DAE a partir da emergência. Ausente ou futura → null.
 String? occurrenceSoyAgeLabel(DateTime? emergencia, {DateTime? today}) {
   final days = occurrenceCalendarAgeDays(emergencia, today ?? DateTime.now());
   if (days == null) return null;
-  return 'Soja com $days dias';
+  return '$days dias após a emergência (DAE)';
 }
 
 /// Linha do ciclo. null → sem linha.
