@@ -89,6 +89,7 @@ class _OccurrenceCreationSheetState
   final _cultivarCtrl = TextEditingController();
   DateTime? _dataPlantio;
   DateTime? _dataEmergencia;
+  DateTime? _dataFimPlantio;
   final _sementesPorMetroCtrl = TextEditingController();
   final _estandePlantasCtrl = TextEditingController();
   String? _avaliacaoPlantio;
@@ -207,6 +208,10 @@ class _OccurrenceCreationSheetState
     _dataEmergencia = occurrence.dataEmergencia != null
         ? DateTime.tryParse(occurrence.dataEmergencia!)
         : null;
+    _dataFimPlantio = occurrence.dataFimPlantio != null
+        ? DateTime.tryParse(occurrence.dataFimPlantio!)
+        : null;
+    _cicloDiasCtrl.text = occurrence.cicloDias?.toString() ?? '';
     _sementesPorMetroCtrl.text = occurrence.sementesPorMetro?.toString() ?? '';
     _estandePlantasCtrl.text = occurrence.estandePlantas?.toString() ?? '';
     _avaliacaoPlantio = occurrence.avaliacaoPlantio;
