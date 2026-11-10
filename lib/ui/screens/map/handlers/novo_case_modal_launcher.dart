@@ -71,7 +71,7 @@ class NovoCaseModalLauncher {
             onPublicar: handlePublicar,
           );
         case CaseTipo.avaliacao:
-          return NovaAvaliacaoCaseSheet(
+          return NovoAntesDepoisCaseSheet(
             lat: lat,
             lng: lng,
             initialVisitContext: activeVisitContext,
