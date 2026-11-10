@@ -21,6 +21,87 @@ part 'session_controller.g.dart';
 
 typedef SessionLogoutInvalidation = void Function(Ref ref);
 
+/// Deep link para o qual o Supabase redireciona após confirmação de e-mail.
+/// Precisa estar na lista de Redirect URLs do projeto Supabase.
+const String kAuthEmailRedirectUrl = 'soloforte://login';
+
+const String _kMsgConexao =
+    'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';
+
+/// Traduz [AuthException] em mensagem pt-BR curta e sanitizada.
+///
+/// Nunca repassa `error.message` cru (pode conter e-mail, token ou detalhe
+/// interno). Usa `code`/`statusCode` quando existirem e cai para o texto.
+String traduzirAuthException(AuthException error) {
+  if (error is AuthRetryableFetchException) return _kMsgConexao;
+
+  if (error is AuthUnknownException) {
+    return 'Não foi possível concluir a autenticação agora. Tente novamente em instantes.';
+  }
+
+  final code = (error.code ?? '').toLowerCase();
+  final lower = error.message.toLowerCase();
+
+  if (code == 'otp_expired' ||
+      lower.contains('otp_expired') ||
+      lower.contains('link is invalid') ||
+      lower.contains('token has expired')) {
+    return 'O link expirou ou já foi utilizado. Solicite um novo e-mail de confirmação.';
+  }
+  if (code == 'invalid_credentials' ||
+      lower.contains('invalid login credentials') ||
+      lower.contains('invalid email or password')) {
+    return 'Email ou senha incorretos.';
+  }
+  if (code == 'user_already_exists' ||
+      code == 'email_exists' ||
+      lower.contains('user already registered') ||
+      lower.contains('already been registered')) {
+    return 'Este email já está cadastrado.';
+  }
+  if (code == 'email_not_confirmed' || lower.contains('email not confirmed')) {
+    return 'Email não confirmado. Verifique sua caixa de entrada.';
+  }
+  if (lower.contains('password should be at least')) {
+    return 'A senha deve ter pelo menos 8 caracteres.';
+  }
+  if (code == 'weak_password' ||
+      lower.contains('weak password') ||
+      lower.contains('easy to guess')) {
+    return 'Senha muito fraca. Use pelo menos 8 caracteres, com letras e números.';
+  }
+  if (code == 'signup_disabled' ||
+      code == 'email_provider_disabled' ||
+      lower.contains('signup is disabled') ||
+      lower.contains('signups not allowed') ||
+      lower.contains('signup is not allowed')) {
+    return 'O cadastro por e-mail está indisponível no momento. Tente novamente mais tarde.';
+  }
+  if (code == 'email_address_invalid' ||
+      (lower.contains('email address') && lower.contains('invalid'))) {
+    return 'Este endereço de e-mail não é válido. Verifique e tente novamente.';
+  }
+  if (code.contains('rate_limit') ||
+      error.statusCode == '429' ||
+      lower.contains('rate limit')) {
+    return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+  }
+  if (lower.contains('error sending confirmation email') ||
+      (lower.contains('error sending') && lower.contains('email'))) {
+    return 'Não foi possível enviar o e-mail de confirmação agora. Tente novamente em alguns minutos.';
+  }
+  if (lower.contains('database error saving new user')) {
+    return 'Não foi possível criar a conta agora. Tente novamente em instantes ou contate o suporte.';
+  }
+  if (lower.contains('network') ||
+      lower.contains('socket') ||
+      lower.contains('host lookup') ||
+      lower.contains('connection')) {
+    return _kMsgConexao;
+  }
+  return 'Erro de autenticação. Tente novamente.';
+}
+
 @Riverpod(keepAlive: true)
 class SessionController extends _$SessionController {
   static final Map<String, SessionLogoutInvalidation> _logoutInvalidations =
@@ -397,6 +478,7 @@ class SessionController extends _$SessionController {
         email: email,
         password: password,
         data: {'full_name': name},
+        emailRedirectTo: kAuthEmailRedirectUrl,
       );
     } on AuthException catch (e) {
       throw Exception(_traduzirAuthException(e));
@@ -548,41 +630,8 @@ class SessionController extends _$SessionController {
     await DatabaseHelper.instance.clearUserLocalData(userId);
   }
 
-  String _traduzirAuthException(AuthException error) {
-    if (error is AuthRetryableFetchException) {
-      return 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';
-    }
-
-    if (error is AuthUnknownException) {
-      return 'Não foi possível concluir a autenticação agora. Tente novamente em instantes.';
-    }
-
-    final lower = error.message.toLowerCase();
-    if (lower.contains('invalid login credentials') ||
-        lower.contains('invalid email or password')) {
-      return 'Email ou senha incorretos.';
-    }
-    if (lower.contains('user already registered') ||
-        lower.contains('already been registered')) {
-      return 'Este email já está cadastrado.';
-    }
-    if (lower.contains('email not confirmed')) {
-      return 'Email não confirmado. Verifique sua caixa de entrada.';
-    }
-    if (lower.contains('password should be at least')) {
-      return 'A senha deve ter pelo menos 8 caracteres.';
-    }
-    if (lower.contains('rate limit')) {
-      return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
-    }
-    if (lower.contains('network') ||
-        lower.contains('socket') ||
-        lower.contains('host lookup') ||
-        lower.contains('connection')) {
-      return 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';
-    }
-    return 'Erro de autenticação. Tente novamente.';
-  }
+  String _traduzirAuthException(AuthException error) =>
+      traduzirAuthException(error);
 
   String _traduzirErroDesconhecido(Object error) {
     final lower = error.toString().toLowerCase();
