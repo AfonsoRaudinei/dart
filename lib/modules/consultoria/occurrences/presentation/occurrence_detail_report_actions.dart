@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/contracts/i_client_lookup_provider.dart';
 import '../../../../core/contracts/i_farm_lookup_provider.dart';
 import '../../../../core/contracts/i_field_lookup_provider.dart';
+import '../../../../core/contracts/i_occurrence_access_reader_provider.dart';
 import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 import '../../../../core/html_templates/html_report_viewer.dart';
 import '../../../../core/html_templates/relatorio_html_renderer.dart';
@@ -32,7 +33,8 @@ HtmlReportViewerActions occurrenceReportHtmlViewerActions(
   final repository = container.read(occurrenceRepositoryProvider);
   final lat = occurrence.lat;
   final lng = occurrence.long;
-  final hasLocation = lat != null &&
+  final hasLocation =
+      lat != null &&
       lng != null &&
       lat.isFinite &&
       lng.isFinite &&
@@ -94,8 +96,8 @@ HtmlReportViewerActions occurrenceReportHtmlViewerActions(
               occurrence,
               (live) => live.copyWith(
                 status: 'confirmed',
-                andamento: live.andamento ??
-                    OccurrenceAndamento.aberta.storageValue,
+                andamento:
+                    live.andamento ?? OccurrenceAndamento.aberta.storageValue,
               ),
             );
             if (!saved) {
@@ -164,9 +166,11 @@ Future<void> _showOccurrenceEditSheet(
 }
 
 Future<({String clientName, OccurrenceLocationNames location})>
-    _occurrenceExportContext(WidgetRef ref, Occurrence occurrence) async {
-  final clientName =
-      await _occurrenceClienteNomeForExport(ref, occurrence.clientId);
+_occurrenceExportContext(WidgetRef ref, Occurrence occurrence) async {
+  final clientName = await _occurrenceClienteNomeForExport(
+    ref,
+    occurrence.clientId,
+  );
   final location = await resolveOccurrenceLocationNames(
     clientId: occurrence.clientId,
     lat: occurrence.lat,
@@ -212,13 +216,19 @@ Future<String> _occurrenceClienteNomeForExport(
   final id = clientId?.trim() ?? '';
   if (id.isEmpty) return '';
   final lookup = _tryReadContract(() => ref.read(clientLookupProvider));
-  if (lookup == null) return '';
+  if (lookup != null) {
+    try {
+      final client = await lookup.findById(id);
+      final name = client?.name.trim();
+      if (name != null && name.isNotEmpty) return name;
+    } catch (_) {}
+  }
   try {
-    final client = await lookup.findById(id);
-    final name = client?.name.trim();
-    if (name != null && name.isNotEmpty) return name;
-  } catch (_) {}
-  return '';
+    final linked = await ref.read(linkedClientNamesProvider.future);
+    return linked[id]?.trim() ?? '';
+  } catch (_) {
+    return '';
+  }
 }
 
 Future<void> openOccurrenceReportHtml(
@@ -239,8 +249,10 @@ Future<void> openOccurrenceReportHtml(
       farmName: ctx.location.fazenda,
     );
     if (!context.mounted) return;
-    final whatsAppPhoneDigits =
-        await _clientPhoneDigitsForWhatsApp(ref, occurrence.clientId);
+    final whatsAppPhoneDigits = await _clientPhoneDigitsForWhatsApp(
+      ref,
+      occurrence.clientId,
+    );
     if (!context.mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -257,8 +269,7 @@ Future<void> openOccurrenceReportHtml(
             container,
             occurrence,
             closeParentSheetOnAction: closeParentSheetOnAction,
-            parentSheetContext:
-                closeParentSheetOnAction ? context : null,
+            parentSheetContext: closeParentSheetOnAction ? context : null,
           ),
         ),
       ),
@@ -267,9 +278,7 @@ Future<void> openOccurrenceReportHtml(
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            userFacingError(e, action: 'Erro ao abrir relatório'),
-          ),
+          content: Text(userFacingError(e, action: 'Erro ao abrir relatório')),
         ),
       );
     }
@@ -302,16 +311,14 @@ Future<void> exportOccurrenceReportHtml(
       sharePositionOrigin: shareOrigin,
     );
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Exportação iniciada.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Exportação iniciada.')));
     }
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(userFacingError(e, action: 'Erro ao exportar')),
-        ),
+        SnackBar(content: Text(userFacingError(e, action: 'Erro ao exportar'))),
       );
     }
   }
@@ -324,7 +331,7 @@ class OccurrenceDetailExportLocationButton extends StatelessWidget {
   final bool isIos;
   final Color accentColor;
   final Future<void> Function(BuildContext context, Occurrence occurrence)
-      onExportLocation;
+  onExportLocation;
 
   const OccurrenceDetailExportLocationButton({
     super.key,
@@ -356,12 +363,9 @@ class OccurrenceDetailExportLocationButton extends StatelessWidget {
           style: isIos
               ? OutlinedButton.styleFrom(
                   foregroundColor: v.ghostText,
-                  side: BorderSide(color: v.ghostBorder,
-                  ),
+                  side: BorderSide(color: v.ghostBorder),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      v.ghostRadius,
-                    ),
+                    borderRadius: BorderRadius.circular(v.ghostRadius),
                   ),
                 )
               : null,
@@ -398,9 +402,7 @@ class OccurrenceDetailReportActionsRow extends ConsumerWidget {
             foregroundColor: v.ghostText,
             side: BorderSide(color: v.ghostBorder),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(
-                v.ghostRadius,
-              ),
+              borderRadius: BorderRadius.circular(v.ghostRadius),
             ),
           )
         : null;

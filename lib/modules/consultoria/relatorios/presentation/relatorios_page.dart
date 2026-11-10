@@ -67,10 +67,7 @@ part 'relatorios_visit_photos_section.dart';
 part 'relatorios_report_visuals.dart';
 
 String? _relatoriosRouteClienteId(BuildContext context) {
-  return GoRouter.maybeOf(context)
-      ?.state
-      .uri
-      .queryParameters['clienteId'];
+  return GoRouter.maybeOf(context)?.state.uri.queryParameters['clienteId'];
 }
 
 final _relatoriosTecnicosListProvider =
@@ -257,8 +254,9 @@ class _RelatoriosSection extends ConsumerWidget {
 
     return relatoriosAsync.when(
       data: (list) {
-        final producerCounts =
-            _producerCountsFromIds(list.map((r) => r.clientId));
+        final producerCounts = _producerCountsFromIds(
+          list.map((r) => r.clientId),
+        );
         final producerIds = producerCounts.keys.toList()..sort();
         final effectiveClientId = resolveRelatoriosProducerClientId(
           selectedClientId: selectedProducerClientId,
@@ -270,10 +268,8 @@ class _RelatoriosSection extends ConsumerWidget {
             : effectiveClientId == null && producerIds.length > 1
             ? const <RelatorioTecnico>[]
             : list
-                .where(
-                  (relatorio) => relatorio.clientId == effectiveClientId,
-                )
-                .toList();
+                  .where((relatorio) => relatorio.clientId == effectiveClientId)
+                  .toList();
         if (list.isEmpty) {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -305,9 +301,7 @@ class _RelatoriosSection extends ConsumerWidget {
               onSelected: onProducerSelected,
             ),
             if (needsProducerPick)
-              const _PremiumEmptyState(
-                message: 'Escolha o produtor.',
-              )
+              const _PremiumEmptyState(message: 'Escolha o produtor.')
             else if (visible.isEmpty)
               _PremiumEmptyState(
                 message: 'Nenhuma visita para este produtor.',
@@ -426,8 +420,9 @@ class _OccurrenciasSection extends ConsumerWidget {
     return occAsync.when(
       data: (list) {
         final nowLabel = dateFormat.format(DateTime.now());
-        final producerCounts =
-            _producerCountsFromIds(list.map((o) => o.clientId));
+        final producerCounts = _producerCountsFromIds(
+          list.map((o) => o.clientId),
+        );
         final producerIds = producerCounts.keys.toList()..sort();
         final effectiveClientId = resolveRelatoriosProducerClientId(
           selectedClientId: selectedProducerClientId,
@@ -439,8 +434,10 @@ class _OccurrenciasSection extends ConsumerWidget {
             : effectiveClientId == null
             ? const <Occurrence>[]
             : list
-                .where((occurrence) => occurrence.clientId == effectiveClientId)
-                .toList();
+                  .where(
+                    (occurrence) => occurrence.clientId == effectiveClientId,
+                  )
+                  .toList();
         final exportEnabled = effectiveClientId != null && scoped.isNotEmpty;
         final needsProducerPick =
             producerIds.length > 1 && effectiveClientId == null;
@@ -490,9 +487,7 @@ class _OccurrenciasSection extends ConsumerWidget {
                 onCta: () => context.go(AppRoutes.map),
               )
             else if (needsProducerPick)
-              const _PremiumEmptyState(
-                message: 'Escolha o produtor.',
-              )
+              const _PremiumEmptyState(message: 'Escolha o produtor.')
             else if (displayList.isEmpty)
               _PremiumEmptyState(
                 message: 'Nenhuma ocorrência para este produtor.',
@@ -544,12 +539,15 @@ class _OccurrenciaCard extends ConsumerStatefulWidget {
 }
 
 class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
-  HtmlReportViewerActions _occurrenceViewerActions(ProviderContainer container) {
+  HtmlReportViewerActions _occurrenceViewerActions(
+    ProviderContainer container,
+  ) {
     final occurrence = widget.occurrence;
     final repository = container.read(occurrenceRepositoryProvider);
     final lat = occurrence.lat;
     final lng = occurrence.long;
-    final hasLocation = lat != null &&
+    final hasLocation =
+        lat != null &&
         lng != null &&
         lat.isFinite &&
         lng.isFinite &&
@@ -625,8 +623,10 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
         farmName: location.fazenda,
       );
       if (!context.mounted) return;
-      final whatsAppPhoneDigits =
-          await _clientPhoneDigitsForWhatsApp(ref, occurrence.clientId);
+      final whatsAppPhoneDigits = await _clientPhoneDigitsForWhatsApp(
+        ref,
+        occurrence.clientId,
+      );
       if (!context.mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
@@ -678,11 +678,14 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
   @override
   Widget build(BuildContext context) {
     final occurrence = widget.occurrence;
+    final clientName = ref
+        .watch(linkedClientNamesProvider)
+        .valueOrNull?[occurrence.clientId];
     return _AsyncDataCard(
       leading: _occurrenceCardLeading(occurrence),
       eyebrow: 'Ocorrência',
       title: _occurrenceCardTitle(occurrence),
-      subtitle: _occurrenceCardSubtitle(occurrence),
+      subtitle: _occurrenceCardSubtitle(occurrence, clientName: clientName),
       date: widget.dateFormat.format(occurrence.createdAt.toLocal()),
       statusLabel: _occStatusLabel(occurrence.status),
       statusColor: _occStatusColor(occurrence.status),
@@ -781,7 +784,10 @@ Future<String> _occurrenceClienteNome(WidgetRef ref, String? clientId) async {
   final id = clientId?.trim() ?? '';
   if (id.isEmpty) return '';
   final lookup = _tryReadContract(() => ref.read(clientLookupProvider));
-  if (lookup == null) return '';
-  final name = await _resolveClienteNome(lookup, id);
-  return name == id ? '' : name;
+  if (lookup != null) {
+    final name = await _resolveClienteNome(lookup, id);
+    if (name.isNotEmpty && name != id) return name;
+  }
+  final linked = await ref.read(linkedClientNamesProvider.future);
+  return linked[id]?.trim() ?? '';
 }

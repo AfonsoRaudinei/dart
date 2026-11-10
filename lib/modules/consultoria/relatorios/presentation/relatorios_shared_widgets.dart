@@ -39,13 +39,19 @@ String _occurrenceCardTitle(Occurrence occurrence) {
   return _occurrenceUrgencyLabel(occurrence.type);
 }
 
-String? _occurrenceCardSubtitle(Occurrence occurrence) {
+String? _occurrenceCardSubtitle(Occurrence occurrence, {String? clientName}) {
+  final name = clientName?.trim() ?? '';
   final urgency = _occurrenceUrgencyLabel(occurrence.type);
   final category = occurrence.category;
-  if (category != null && category.trim().isNotEmpty) {
-    return 'Urgência: $urgency';
-  }
-  return null;
+  final urgencyLine = category != null && category.trim().isNotEmpty
+      ? 'Urgência: $urgency'
+      : null;
+  final parts = [
+    if (name.isNotEmpty) name,
+    if (urgencyLine != null) urgencyLine,
+  ];
+  if (parts.isEmpty) return null;
+  return parts.join(' · ');
 }
 
 // ── Menu assíncrono ──────────────────────────────────────────────────────────
@@ -107,13 +113,7 @@ class _AsyncActionMenuState extends State<_AsyncActionMenu> {
 
 // ── Segmented header ─────────────────────────────────────────────────────────
 
-enum _RelatoriosSegment {
-  visitas,
-  ocorrencias,
-  gerados,
-  consolidados,
-  midia,
-}
+enum _RelatoriosSegment { visitas, ocorrencias, gerados, consolidados, midia }
 
 class _RelatoriosSegmentBar extends StatelessWidget {
   final _RelatoriosSegment selected;

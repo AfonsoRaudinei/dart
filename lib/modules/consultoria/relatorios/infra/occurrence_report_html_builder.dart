@@ -4,6 +4,7 @@ import '../../../../core/contracts/i_client_lookup.dart';
 import '../../../../core/contracts/i_client_lookup_provider.dart';
 import '../../../../core/contracts/i_farm_lookup_provider.dart';
 import '../../../../core/contracts/i_field_lookup_provider.dart';
+import '../../../../core/contracts/i_occurrence_access_reader_provider.dart';
 import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 import '../../../../core/html_templates/ocorrencia_html_renderer.dart';
 import '../../../../core/html_templates/relatorio_html_renderer.dart';
@@ -46,9 +47,12 @@ Future<String> _occurrenceClienteNome(WidgetRef ref, String? clientId) async {
   final id = clientId?.trim() ?? '';
   if (id.isEmpty) return '';
   final lookup = _tryReadContract(() => ref.read(clientLookupProvider));
-  if (lookup == null) return '';
-  final name = await _resolveClienteNome(lookup, id);
-  return name == id ? '' : name;
+  if (lookup != null) {
+    final name = await _resolveClienteNome(lookup, id);
+    if (name.isNotEmpty && name != id) return name;
+  }
+  final linked = await ref.read(linkedClientNamesProvider.future);
+  return linked[id]?.trim() ?? '';
 }
 
 Future<String> _historicoTalhaoLinha(
