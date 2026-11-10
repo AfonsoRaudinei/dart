@@ -4,6 +4,8 @@
 class OccurrenceFormDraft {
   final String? clientId;
   final String cultivar;
+  final String cultura;
+  final String safra;
   final String? dataPlantioIso;
   final String? dataEmergenciaIso;
   final String? dataFimPlantioIso;
@@ -35,6 +37,8 @@ class OccurrenceFormDraft {
   const OccurrenceFormDraft({
     this.clientId,
     this.cultivar = '',
+    this.cultura = '',
+    this.safra = '',
     this.dataPlantioIso,
     this.dataEmergenciaIso,
     this.dataFimPlantioIso,
@@ -77,6 +81,8 @@ class OccurrenceFormDraft {
       return false;
     }
     if (cicloDias.trim().isNotEmpty) return false;
+    if (cultura.trim().isNotEmpty) return false;
+    if (safra.trim().isNotEmpty) return false;
     if (sementesPorMetro.trim().isNotEmpty) return false;
     if (estandePlantas.trim().isNotEmpty) return false;
     if (avaliacaoPlantio != null && avaliacaoPlantio!.isNotEmpty) return false;
@@ -106,6 +112,8 @@ class OccurrenceFormDraft {
   OccurrenceFormDraft copyWith({
     String? clientId,
     String? cultivar,
+    String? cultura,
+    String? safra,
     String? dataPlantioIso,
     String? dataEmergenciaIso,
     String? dataFimPlantioIso,
@@ -139,6 +147,8 @@ class OccurrenceFormDraft {
     return OccurrenceFormDraft(
       clientId: clientId ?? this.clientId,
       cultivar: cultivar ?? this.cultivar,
+      cultura: cultura ?? this.cultura,
+      safra: safra ?? this.safra,
       dataPlantioIso: dataPlantioIso ?? this.dataPlantioIso,
       dataEmergenciaIso: dataEmergenciaIso ?? this.dataEmergenciaIso,
       dataFimPlantioIso: dataFimPlantioIso ?? this.dataFimPlantioIso,
