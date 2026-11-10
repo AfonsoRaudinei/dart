@@ -68,7 +68,7 @@ class OccurrenceDetailAmostraSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('🧪 Amostra de solo', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            const Text('Amostra de solo', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             if (codigo.isNotEmpty) ...[
               const SizedBox(height: 10),
               Text('Código', style: labelStyle),
