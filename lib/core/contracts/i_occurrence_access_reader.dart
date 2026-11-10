@@ -4,4 +4,8 @@
 /// contem apenas `clients.id` concedidos por vinculos ativos.
 abstract interface class IOccurrenceAccessReader {
   Future<Set<String>> loadActiveClientIds();
+
+  /// Nome do cadastro do consultor (`clients.id` → nome), para a ocorrência
+  /// compartilhada aparecer no nome do produtor.
+  Future<Map<String, String>> loadLinkedClientNames();
 }
