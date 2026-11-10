@@ -89,6 +89,8 @@ class OccurrenceFormData {
   final int? estandePlantas;
   final String? avaliacaoPlantio;
   final String? objetivoPlantio;
+  final String? dataFimPlantio; // "yyyy-MM-dd"
+  final int? cicloDias;
   final String? audioPath;
   final int? audioDurationSec;
   final String? amostraCodigo;
@@ -127,6 +129,8 @@ class OccurrenceFormData {
     this.estandePlantas,
     this.avaliacaoPlantio,
     this.objetivoPlantio,
+    this.dataFimPlantio,
+    this.cicloDias,
     this.audioPath,
     this.audioDurationSec,
     this.amostraCodigo,
