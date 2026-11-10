@@ -13,6 +13,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/html_templates/html_report_viewer.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/i_farm_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_farm_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/i_field_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_field_lookup_provider.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
 import 'package:soloforte_app/core/contracts/i_marketing_case_reports_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/marketing_case_reports_list_provider.dart';
@@ -191,6 +195,49 @@ void main() {
       find.textContaining('Nenhuma ocorrência ainda.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('editar ocorrência pelo viewer faz backfill do talhão do pin', (
+    tester,
+  ) async {
+    final occurrenceRepository = FakeOccurrenceRepository()
+      ..seed([
+        Occurrence(
+          id: 'occ-field',
+          type: 'Média',
+          description: 'Insetos no baixeiro',
+          category: 'insetos',
+          status: 'draft',
+          lat: -10.72,
+          long: -48.38,
+          createdAt: DateTime.utc(2026, 6, 3, 12),
+        ),
+      ]);
+
+    await _pumpScreen(
+      tester,
+      relatorioRepository: FakeRelatorioRepository(),
+      occurrenceRepository: occurrenceRepository,
+      extraOverrides: [
+        iFieldLookupProvider.overrideWithValue(_PinFieldLookup()),
+        iFarmLookupProvider.overrideWithValue(_NoFarmLookup()),
+      ],
+    );
+
+    await _selectSegment(tester, 'Ocorrências');
+    await _openReportCardByTitle(tester, 'Insetos');
+    await _tapViewerToolbar(tester, 'Editar');
+    await _pumpActionFrame(tester);
+
+    expect(find.text('Talhão 3'), findsOneWidget);
+    await tester.tap(find.text('Salvar Alterações'));
+    await _pumpActionFrame(tester);
+
+    final saved = occurrenceRepository.get('occ-field')!;
+    expect(saved.fieldId, 'field-3');
+    expect(saved.status, 'draft');
+    expect(saved.lat, -10.72);
+    expect(saved.long, -48.38);
   });
 
   testWidgets('exibe UI dedicada: Marketing=Publicações, Consolidados e Ocorrências', (
@@ -1388,4 +1435,44 @@ MarketingCase _marketingCase({
     'atualizado_em': '2026-06-04T12:00:00.000Z',
     'sync_status': 'synced',
   });
+}
+
+
+class _PinFieldLookup implements IFieldLookup {
+  static const _field = FieldSummary(
+    id: 'field-3',
+    name: 'Talhão 3',
+    farmId: '',
+    geometry: '{"type":"Polygon","coordinates":[[[-48.40,-10.80],'
+        '[-48.30,-10.80],[-48.30,-10.70],[-48.40,-10.70],[-48.40,-10.80]]]}',
+  );
+
+  @override
+  Future<FieldSummary?> findById(String fieldId) async =>
+      fieldId == _field.id ? _field : null;
+
+  @override
+  Future<List<FieldSummary>> listAll() async => const [_field];
+
+  @override
+  Future<List<FieldSummary>> listByFarmId(String farmId) async => const [];
+}
+
+class _NoFarmLookup implements IFarmLookup {
+  @override
+  Future<FarmSummary?> findById(String farmId) async => null;
+
+  @override
+  Future<List<FarmSummary>> getFarmsByClient(String clientId) async =>
+      const [];
+
+  @override
+  Future<void> saveFarm({
+    required String clientId,
+    required String farmId,
+    required String name,
+    required String city,
+    required String state,
+    required double areaHa,
+  }) async {}
 }
