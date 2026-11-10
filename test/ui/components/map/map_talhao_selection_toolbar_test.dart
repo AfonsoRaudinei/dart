@@ -53,9 +53,15 @@ DrawingFeature _squareFeature({String id = 'f1'}) {
   );
 }
 
+/// `loadFeatures` limpa a seleção que não está na lista carregada, então o
+/// repositório precisa devolver o talhão selecionado.
 class _DrawingRepo extends DrawingRepository {
+  _DrawingRepo(this.features);
+
+  final List<DrawingFeature> features;
+
   @override
-  Future<List<DrawingFeature>> getAllFeatures() async => [];
+  Future<List<DrawingFeature>> getAllFeatures() async => features;
 }
 
 class _NdviLookup implements INdviLatestLookup {
@@ -352,7 +358,7 @@ void main() {
       required DrawingFeature feature,
       required _Writer writer,
     }) async {
-      final controller = DrawingController(repository: _DrawingRepo());
+      final controller = DrawingController(repository: _DrawingRepo([feature]));
       addTearDown(controller.dispose);
       controller.selectFeature(feature);
       final mapController = MapController();
