@@ -67,6 +67,7 @@ import '../providers/field_hit_index_provider.dart';
 import '../utils/map_camera_snapshot_throttle.dart';
 import 'armed_mode_banner.dart';
 import '../layers/field_ndvi_overlay_layer.dart';
+import '../layers/linked_consultant_field_layer.dart';
 import '../layers/talhao_polygon_layer.dart';
 import 'drawing_map_behavior_listener.dart';
 import 'map_performance_hosts.dart';
@@ -418,6 +419,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 // Polígonos de talhões
                 // ADR-030 F3: extraído para TalhaoPolygonLayer
                 const TalhaoPolygonLayer(),
+                const LinkedConsultantFieldLayer(),
 
                 const FieldNdviOverlayLayer(),
 
