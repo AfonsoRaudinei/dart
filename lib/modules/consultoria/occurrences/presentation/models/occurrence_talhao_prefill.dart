@@ -1,14 +1,13 @@
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 
-import '../../domain/occurrence_soy_age.dart';
-
 /// Dados do talhão ativo sob o ponto, usados só na criação da ocorrência.
 class OccurrenceTalhaoPrefill {
   final String fieldId;
   final String talhaoNome;
   final String clientId;
   final String? fazendaId;
+  final String? cultura;
   final String? cultivar;
   final String? dataPlantio;
   final String? dataEmergencia;
@@ -19,6 +18,7 @@ class OccurrenceTalhaoPrefill {
     required this.talhaoNome,
     required this.clientId,
     this.fazendaId,
+    this.cultura,
     this.cultivar,
     this.dataPlantio,
     this.dataEmergencia,
@@ -33,6 +33,7 @@ OccurrenceTalhaoPrefill? occurrenceTalhaoPrefillIfEligible({
   required String nome,
   required String? clienteId,
   required String? fazendaId,
+  String? cultura,
   String? material,
   String? dataPlantio,
   String? dataEmergencia,
@@ -46,6 +47,7 @@ OccurrenceTalhaoPrefill? occurrenceTalhaoPrefillIfEligible({
     talhaoNome: nome,
     clientId: client,
     fazendaId: _blankToNull(fazendaId),
+    cultura: _blankToNull(cultura),
     cultivar: _blankToNull(material),
     dataPlantio: _blankToNull(dataPlantio),
     dataEmergencia: _blankToNull(dataEmergencia),
@@ -57,6 +59,7 @@ OccurrenceTalhaoPrefill? occurrenceTalhaoPrefillIfEligible({
 ///
 /// Null num campo = não alterar o que o rascunho ou a edição já têm.
 class TalhaoPrefillPatch {
+  final String? cultura;
   final String? cultivar;
   final String? dataPlantio;
   final String? dataEmergencia;
@@ -64,6 +67,7 @@ class TalhaoPrefillPatch {
   final bool applyClient;
 
   const TalhaoPrefillPatch({
+    this.cultura,
     this.cultivar,
     this.dataPlantio,
     this.dataEmergencia,
@@ -83,9 +87,11 @@ TalhaoPrefillPatch applyTalhaoPrefill({
   required String? currentDataEmergencia,
   required String currentCicloDias,
   required bool draftHasClient,
+  String currentCultura = '',
 }) {
   if (isEditing || prefill == null) return TalhaoPrefillPatch.none;
   return TalhaoPrefillPatch(
+    cultura: _fillIfEmpty(currentCultura, prefill.cultura),
     cultivar: _fillIfEmpty(currentCultivar, prefill.cultivar),
     dataPlantio: _fillIfEmpty(currentDataPlantio ?? '', prefill.dataPlantio),
     dataEmergencia: _fillIfEmpty(
@@ -97,33 +103,51 @@ TalhaoPrefillPatch applyTalhaoPrefill({
   );
 }
 
-/// Grava no talhão só o que estava vazio e agora tem valor no formulário.
+/// Plantio salvo vira o plantio atual do talhão (replantio/correção).
 ///
-/// Cultura, material, safra e campos que o talhão já tinha vão null
-/// (o contrato mantém o atual). Falha não desfaz a ocorrência.
-Future<void> writeBackTalhaoPlantioIfEmpty({
+/// Só a categoria Plantio grava. Campo vazio vai null (o contrato mantém o
+/// atual); término do plantio não vai para o talhão. Falha não desfaz a
+/// ocorrência.
+Future<void> writeBackTalhaoPlantio({
   required IDrawingFieldWriter writer,
-  required OccurrenceTalhaoPrefill prefill,
-  required String? formDataPlantio,
-  required String? formDataEmergencia,
-  required String formCicloDias,
+  required String fieldId,
+  required String? category,
+  String? cultura,
+  String? cultivar,
+  String? safra,
+  String? dataPlantio,
+  String? dataEmergencia,
+  int? cicloDias,
 }) async {
-  final dataPlantio = _valueToWrite(prefill.dataPlantio, formDataPlantio);
-  final dataEmergencia = _valueToWrite(
-    prefill.dataEmergencia,
-    formDataEmergencia,
+  if (category?.trim().toLowerCase() != 'plantio') return;
+  final id = fieldId.trim();
+  if (id.isEmpty) return;
+  final values = (
+    cultura: _blankToNull(cultura),
+    material: _blankToNull(cultivar),
+    safra: _blankToNull(safra),
+    dataPlantio: _blankToNull(dataPlantio),
+    dataEmergencia: _blankToNull(dataEmergencia),
+    cicloDias: cicloDias?.toString(),
   );
-  final ciclo = prefill.cicloDias != null
-      ? null
-      : parseOccurrenceCicloDias(formCicloDias)?.toString();
-  if (dataPlantio == null && dataEmergencia == null && ciclo == null) return;
+  if (values.cultura == null &&
+      values.material == null &&
+      values.safra == null &&
+      values.dataPlantio == null &&
+      values.dataEmergencia == null &&
+      values.cicloDias == null) {
+    return;
+  }
 
   try {
     await writer.updateFieldMetadata(
-      fieldId: prefill.fieldId,
-      dataPlantio: dataPlantio,
-      dataEmergencia: dataEmergencia,
-      cicloDias: ciclo,
+      fieldId: id,
+      cultura: values.cultura,
+      material: values.material,
+      safra: values.safra,
+      dataPlantio: values.dataPlantio,
+      dataEmergencia: values.dataEmergencia,
+      cicloDias: values.cicloDias,
     );
   } catch (error, stackTrace) {
     AppLogger.error(
@@ -146,7 +170,3 @@ String? _fillIfEmpty(String current, String? incoming) {
   return _blankToNull(incoming);
 }
 
-String? _valueToWrite(String? stored, String? formValue) {
-  if (stored != null && stored.trim().isNotEmpty) return null;
-  return _blankToNull(formValue);
-}
