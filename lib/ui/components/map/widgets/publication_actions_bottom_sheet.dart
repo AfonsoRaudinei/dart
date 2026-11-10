@@ -90,13 +90,6 @@ class PublicationActionsBottomSheet extends StatelessWidget {
                   onTap: () => _select(context, onAntesDepois),
                 ),
                 _ActionRow(
-                  icon: SFIcons.science,
-                  title: 'Avaliação',
-                  color: v.iconStroke,
-                  isIos: true,
-                  onTap: () => _select(context, onAvaliacao),
-                ),
-                _ActionRow(
                   icon: SFIcons.pinFill,
                   title: 'Área Visitada',
                   color: v.iconStroke,
@@ -160,12 +153,6 @@ class PublicationActionsBottomSheet extends StatelessWidget {
                   title: 'Antes/Depois',
                   color: const Color(0xFFF59E0B),
                   onTap: () => _select(context, onAntesDepois),
-                ),
-                _ActionRow(
-                  icon: SFIcons.science,
-                  title: 'Avaliação',
-                  color: const Color(0xFF3B82F6),
-                  onTap: () => _select(context, onAvaliacao),
                 ),
                 _ActionRow(
                   icon: SFIcons.pinFill,

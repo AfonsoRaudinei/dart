@@ -138,13 +138,6 @@ class _MapActionFabMenuState extends State<MapActionFabMenu>
         ),
         const SizedBox(height: 10),
         _MenuActionButton(
-          icon: SFIcons.science,
-          label: 'Avaliação',
-          color: const Color(0xFF3B82F6),
-          onTap: () => _runAction(widget.onAvaliacao),
-        ),
-        const SizedBox(height: 10),
-        _MenuActionButton(
           icon: SFIcons.pinFill,
           label: 'Área Visitada',
           color: const Color(0xFF607D8B),
