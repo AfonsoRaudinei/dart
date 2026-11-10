@@ -163,8 +163,7 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
         coletorController: _amostraColetorCtrl,
         laudoController: _amostraLaudoCtrl,
         tramite: _amostraTramite,
-        onTramiteChanged: (step) =>
-            _patchForm(() => _amostraTramite = step),
+        onTramiteChanged: (step) => _patchForm(() => _amostraTramite = step),
       ),
     );
   }
@@ -172,10 +171,7 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
   Widget _buildPlantioSection(Color color) {
     final v = SoloForteSheetVisuals.of(context);
     final isIos = occurrenceFormIsIos(context);
-    final titleColor = v.onSheetPrimary;
-    final muted = isIos
-        ? v.subtitleColor
-        : const Color(0xFF8E8E93);
+    final muted = isIos ? v.subtitleColor : const Color(0xFF8E8E93);
     final idleSurface = v.cardBackground;
     final idleBorder = v.cardBorder;
     final idleText = v.onSheetSecondary;
@@ -185,57 +181,26 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          GestureDetector(
-            onTap: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: _dataEmergencia ?? DateTime.now(),
-                firstDate: DateTime(2010),
-                lastDate: DateTime.now().add(const Duration(days: 365)),
-                helpText: 'Data de emergência',
-              );
-              if (picked != null) {
-                _patchForm(() => _dataEmergencia = picked);
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: v.inputFill,
-                borderRadius: BorderRadius.circular(
-                  v.cardRadius,
-                ),
-                border: Border.all(color: v.cardBorder),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today_outlined,
-                    size: 18,
-                    color: v.inputHint,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      _dataEmergencia != null
-                          ? _formatDate(_dataEmergencia!)
-                          : 'Data de emergência (opcional)',
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: _dataEmergencia != null ? titleColor : muted,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                  if (_dataEmergencia != null) ...[
-                    GestureDetector(
-                      onTap: () => _patchForm(() => _dataEmergencia = null),
-                      child: Icon(Icons.clear, size: 16, color: muted),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+          OccurrenceDarkField(
+            controller: _cultivarCtrl,
+            label: 'Cultivar',
+            hint: 'ex.: Intacta 2 IPRO, M6410 IPRO…',
+          ),
+          const SizedBox(height: 10),
+          OccurrenceDateField(
+            key: const Key('occurrence_plantio_inicio_field'),
+            label: 'Início do plantio',
+            value: _dataPlantio,
+            helperText: occurrenceDapLabel(_dataPlantio),
+            onChanged: (d) => _patchForm(() => _dataPlantio = d),
+          ),
+          const SizedBox(height: 10),
+          OccurrenceDateField(
+            key: const Key('occurrence_plantio_emergencia_field'),
+            label: 'Data de emergência',
+            value: _dataEmergencia,
+            helperText: occurrenceSoyAgeLabel(_dataEmergencia),
+            onChanged: (d) => _patchForm(() => _dataEmergencia = d),
           ),
           const SizedBox(height: 10),
           OccurrenceDarkField(
@@ -266,7 +231,14 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
             label: 'Estande de plantas',
             hint: 'ex.: 12',
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 6),
+            child: Text(
+              'Avaliação do plantio',
+              style: TextStyle(color: muted, fontSize: 12),
+            ),
+          ),
           Row(
             children: List.generate(avaliacoes.length, (i) {
               final label = avaliacoes[i].$1;
@@ -395,19 +367,13 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
     final v = SoloForteSheetVisuals.of(context);
     final total = _totalFotosCount;
     final isIos = occurrenceFormIsIos(context);
-    final accent = isIos
-        ? v.iconStroke
-        : context.themeAccent;
-    final hint = isIos
-        ? v.subtitleColor
-        : const Color(0xFFAEAEB2);
+    final accent = isIos ? v.iconStroke : context.themeAccent;
+    final hint = isIos ? v.subtitleColor : const Color(0xFFAEAEB2);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(
-          v.cardRadius,
-        ),
+        borderRadius: BorderRadius.circular(v.cardRadius),
         border: Border.all(color: accent.withValues(alpha: 0.55), width: 1.2),
       ),
       child: Column(
@@ -471,8 +437,6 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
               padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
-                  Text(cat.emoji, style: const TextStyle(fontSize: 20)),
-                  const SizedBox(width: 8),
                   Text(
                     cat.label,
                     style: TextStyle(
@@ -542,45 +506,6 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
 
 extension _OccurrenceCreationSheetAreaVisitadaUi
     on _OccurrenceCreationSheetState {
-  String? get _talhaoNomeReadonly {
-    if (widget.initialOccurrence != null) return null;
-    final nome = widget.talhaoPrefill?.talhaoNome.trim();
-    if (nome == null || nome.isEmpty) return null;
-    return nome;
-  }
-
-  Widget _buildCultivarAgeLines(Color muted) {
-    final dap = occurrenceDapLabel(_dataPlantio);
-    final soja = occurrenceSoyAgeLabel(_dataEmergencia);
-    if (dap == null && soja == null) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (dap != null)
-            Row(
-              children: [
-                Icon(Icons.grass, size: 14, color: muted),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    dap,
-                    style: TextStyle(color: muted, fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-          if (soja != null)
-            Padding(
-              padding: EdgeInsets.only(top: dap != null ? 4 : 0),
-              child: Text(soja, style: TextStyle(color: muted, fontSize: 12)),
-            ),
-        ],
-      ),
-    );
-  }
-
   String get _primarySaveButtonLabel {
     if (widget.initialOccurrence != null) return 'Salvar Alterações';
     if (_isAreaVisitada) return 'Salvar localização';
@@ -588,7 +513,6 @@ extension _OccurrenceCreationSheetAreaVisitadaUi
   }
 
   Widget _compactMapHeader({required Color muted, required Color titleColor}) {
-    final nome = _talhaoNomeReadonly;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -618,10 +542,6 @@ extension _OccurrenceCreationSheetAreaVisitadaUi
                   style: TextStyle(color: muted, fontSize: 13),
                 ),
               ],
-              if (nome != null) ...[
-                const SizedBox(height: 2),
-                Text(nome, style: TextStyle(color: muted, fontSize: 13)),
-              ],
             ],
           ),
         ),
@@ -633,6 +553,229 @@ extension _OccurrenceCreationSheetAreaVisitadaUi
             visualDensity: VisualDensity.compact,
           ),
       ],
+    );
+  }
+}
+
+extension _OccurrenceCreationSheetFormSections
+    on _OccurrenceCreationSheetState {
+  Widget _buildFormHeader({
+    required Color accent,
+    required Color muted,
+    required Color titleColor,
+  }) {
+    if (widget.compactHeader && widget.initialOccurrence == null) {
+      return _compactMapHeader(muted: muted, titleColor: titleColor);
+    }
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: .15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: accent, width: .6),
+          ),
+          child: Icon(Icons.location_on_rounded, color: accent, size: 22),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.initialOccurrence == null
+                    ? (_isAreaVisitada ? 'Área Visitada' : 'Nova Ocorrência')
+                    : 'Editar Ocorrência',
+                style: TextStyle(
+                  color: titleColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                'Ponto definido no mapa',
+                style: TextStyle(color: muted, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        if (widget.onCancel != null)
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: _handleCancel,
+            color: muted,
+          ),
+      ],
+    );
+  }
+
+  /// Criação: talhão do prefill (ou o que contém o pin). Edição: talhão
+  /// já vinculado (ou o que contém o pin).
+  OccurrenceLocationQuery get _locationQuery {
+    final occurrence = widget.initialOccurrence;
+    final prefill = occurrence == null ? widget.talhaoPrefill : null;
+    return (
+      fieldId: occurrence?.fieldId ?? prefill?.fieldId,
+      fazendaId: prefill?.fazendaId,
+      talhaoNome: prefill?.talhaoNome,
+      lat: _pinLatitude,
+      lng: _pinLongitude,
+    );
+  }
+
+  Widget _buildLocationLine(Color muted) {
+    final location = ref
+        .watch(occurrenceLocationProvider(_locationQuery))
+        .valueOrNull;
+    if (location == null) return const SizedBox.shrink();
+    return Padding(
+      key: const Key('occurrence_location_line'),
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          Icon(Icons.place_outlined, size: 14, color: muted),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              location.display,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: muted, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCultivarPlantioBlock() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const OccurrenceSectionHeader(icon: '🌱', title: 'Cultivar & Plantio'),
+        const SizedBox(height: 10),
+        OccurrenceDarkField(
+          controller: _cultivarCtrl,
+          label: 'Cultivar (opcional)',
+          hint: 'ex.: Intacta 2 IPRO, M6410 IPRO…',
+        ),
+        const SizedBox(height: 10),
+        OccurrenceDateField(
+          label: 'Data de plantio',
+          value: _dataPlantio,
+          helperText: occurrenceDapLabel(_dataPlantio),
+          onChanged: (d) => _patchForm(() => _dataPlantio = d),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryPicker() {
+    final v = SoloForteSheetVisuals.of(context);
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      alignment: WrapAlignment.center,
+      children: _categories.map((cat) {
+        final isSelected = _selectedCategoryValue == cat.value;
+        final selectedColor =
+            cat.enumValue?.markerColor ?? const Color(0xFF795548);
+        return GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            _patchForm(() {
+              _selectedCategoryValue = cat.value;
+              _cats.clear();
+              if (cat.enumValue != null) {
+                _cats.add(cat.enumValue!);
+              }
+              if (cat.value == kOccurrenceAreaVisitadaCategory) {
+                _selectedClient = null;
+              }
+            });
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected
+                      ? selectedColor.withValues(alpha: 0.2)
+                      : v.cardBackground,
+                  border: isSelected
+                      ? Border.all(color: selectedColor, width: 2)
+                      : (v.isDark ? null : Border.all(color: v.cardBorder)),
+                ),
+                child: Icon(
+                  cat.icon,
+                  size: 22,
+                  color: isSelected ? selectedColor : v.subtitleColor,
+                ),
+              ),
+              const SizedBox(height: 4),
+              SizedBox(
+                width: 64,
+                child: Text(
+                  cat.label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isSelected ? selectedColor : v.subtitleColor,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildUrgencySelector() {
+    final v = SoloForteSheetVisuals.of(context);
+    return Row(
+      children: ['Baixa', 'Média', 'Alta'].map((u) {
+        final sel = _urgency == u;
+        final color = u == 'Baixa'
+            ? const Color(0xFFFFCC00)
+            : u == 'Média'
+            ? const Color(0xFFFF9500)
+            : const Color(0xFFFF3B30);
+        return Expanded(
+          child: GestureDetector(
+            onTap: () => _patchForm(() => _urgency = u),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.only(right: 6),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: sel ? color.withValues(alpha: .18) : v.cardBackground,
+                borderRadius: BorderRadius.circular(v.cardRadius),
+                border: Border.all(
+                  color: sel ? color : v.chipBorderInactive,
+                  width: sel ? 1.5 : 1,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  u,
+                  style: TextStyle(
+                    color: sel ? color : v.chipTextInactive,
+                    fontWeight: sel ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }
