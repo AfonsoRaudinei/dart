@@ -52,7 +52,7 @@ Não exigir os outros jobs do `architecture.yml` (NDVI, coverage, radar, shield)
 
 1. **Supervisor** (chat padrão) — não escreve `lib/`; lança executor e revisor; arma `gh pr merge --auto --rebase`; não polla CI.
 2. **Executor** (`.cursor/agents/soloforte-executor.md`) — escreve no escopo fechado; push só da branch.
-3. **Revisor** (`.cursor/agents/soloforte-revisor.md`) — DIFF read-only. Modelo padrão: `cursor-grok-4.6-high` (`force-default-model: true`). Supervisor **não** passa `model` no Task; proibido `*-fast`.
+3. **Revisor** (`.cursor/agents/soloforte-revisor.md`) — DIFF read-only. Modelo padrão: `claude-sonnet-5-5-high` (`force-default-model: false`, para permitir o fallback). Na primeira tentativa o supervisor **não** passa `model` no Task. Se o modelo falhar por crédito, cota ou limite de taxa, relança com `cursor-grok-4.6-high` e depois `gpt-5.6-sol-high` (ver `.cursor/rules/soloforte-supervisor.mdc`). Proibido `*-fast` e `*-low`. Falha de modelo nunca vale como `No findings`.
 
 ## Merge por risco
 
