@@ -400,7 +400,6 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const OccurrenceSectionHeader(
-            icon: '📷',
             title: 'Fotos da ocorrência',
           ),
           const SizedBox(height: 6),
@@ -673,7 +672,7 @@ extension _OccurrenceCreationSheetFormSections
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const OccurrenceSectionHeader(icon: '🌱', title: 'Cultivar & Plantio'),
+        const OccurrenceSectionHeader(title: 'Cultivar & Plantio'),
         const SizedBox(height: 10),
         OccurrenceDarkField(
           controller: _cultivarCtrl,
