@@ -146,6 +146,27 @@ void main() {
     expect(client.farms.single.fields.single.hasGeometry, isTrue);
   });
 
+  test('ocorrência remota usa a descrição e, sem ela, a categoria', () {
+    final withDescription = ProducerLinkRepository.occurrenceFromRemote({
+      'id': 'occ-1',
+      'description': 'Ferrugem na bordadura',
+      'category': 'doenca',
+      'created_at': '2026-06-12T10:00:00.000Z',
+      'latitude': -10.5,
+      'longitude': -48.2,
+    });
+
+    expect(withDescription, isNotNull);
+    expect(withDescription!.title, 'Ferrugem na bordadura');
+    expect(withDescription.hasLocation, isTrue);
+
+    final categoryOnly = ProducerLinkRepository.occurrenceTitle({
+      'description': '   ',
+      'category': 'area_visitada',
+    });
+    expect(categoryOnly, 'Área visitada');
+  });
+
   test('leitura de vínculo ativo não corta pelo vencimento do token', () {
     final source = File(
       'lib/modules/produtor/data/producer_link_repository.dart',
