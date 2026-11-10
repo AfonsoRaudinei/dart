@@ -23,6 +23,9 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
     _dataEmergencia = draft.dataEmergenciaIso != null
         ? DateTime.tryParse(draft.dataEmergenciaIso!)
         : null;
+    _dataFimPlantio = draft.dataFimPlantioIso != null
+        ? DateTime.tryParse(draft.dataFimPlantioIso!)
+        : null;
     _cicloDiasCtrl.text = draft.cicloDias;
     _sementesPorMetroCtrl.text = draft.sementesPorMetro;
     _estandePlantasCtrl.text = draft.estandePlantas;
@@ -106,6 +109,7 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
       cultivar: _cultivarCtrl.text,
       dataPlantioIso: _isoDate(_dataPlantio),
       dataEmergenciaIso: _isoDate(_dataEmergencia),
+      dataFimPlantioIso: _isoDate(_dataFimPlantio),
       cicloDias: _cicloDiasCtrl.text,
       sementesPorMetro: _sementesPorMetroCtrl.text,
       estandePlantas: _estandePlantasCtrl.text,
