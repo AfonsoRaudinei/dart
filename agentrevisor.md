@@ -5,8 +5,8 @@ description: >
   AUDIT (lote/módulo) ou DIFF (PR / uncommitted / commit). Encontra, classifica
   e propõe — SEM alterar código de produção. Produz relatório priorizado +
   prompts de execução (no chat; gravar em prompt/ só com aprovação explícita).
-model: cursor-grok-4.6-high
-force-default-model: true
+model: claude-sonnet-5-5-high
+force-default-model: false
 tools: [read, grep, glob, bash:readonly]
 scope: project
 version: 1.3
