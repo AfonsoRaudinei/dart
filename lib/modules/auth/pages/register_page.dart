@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
@@ -40,6 +41,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   // Debounce for double submit protection
   DateTime? _lastSubmitTime;
 
+  static const int _resendCooldownSeconds = 60;
+  Timer? _resendTimer;
+  int _resendCooldown = 0;
+  bool _isResending = false;
+
   @override
   void initState() {
     super.initState();
@@ -53,6 +59,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   @override
   void dispose() {
+    _resendTimer?.cancel();
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
@@ -142,6 +149,47 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _startResendCooldown() {
+    _resendTimer?.cancel();
+    setState(() => _resendCooldown = _resendCooldownSeconds);
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_resendCooldown <= 1) {
+        timer.cancel();
+        setState(() => _resendCooldown = 0);
+      } else {
+        setState(() => _resendCooldown -= 1);
+      }
+    });
+  }
+
+  Future<void> _handleResend() async {
+    if (_isResending || _resendCooldown > 0 || _registeredEmail.isEmpty) {
+      return;
+    }
+    setState(() => _isResending = true);
+    try {
+      await ref
+          .read(authServiceProvider.notifier)
+          .resendSignupConfirmation(_registeredEmail);
+      if (!mounted) return;
+      _startResendCooldown();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('E-mail de confirmação reenviado. Verifique sua caixa de entrada.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (mounted) _showError(e.toString().replaceAll('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _isResending = false);
     }
   }
 
@@ -500,6 +548,21 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: (_isResending || _resendCooldown > 0)
+                ? null
+                : _handleResend,
+            child: Text(
+              _resendCooldown > 0
+                  ? 'Reenviar e-mail (${_resendCooldown}s)'
+                  : 'Reenviar e-mail',
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
