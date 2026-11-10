@@ -432,7 +432,9 @@ class Occurrence {
     String? deletedAt,
     // v14 agronômico
     String? cultivar,
+    bool clearCultivar = false,
     String? dataPlantio,
+    bool clearDataPlantio = false,
     String? estadioFenologico,
     String? tipoOcorrencia,
     bool? amostraSolo,
@@ -447,10 +449,15 @@ class Occurrence {
     String? notasCategoriasJson,
     String? fotosCategoriasJson,
     String? dataEmergencia,
+    bool clearDataEmergencia = false,
     double? sementesPorMetro,
+    bool clearSementesPorMetro = false,
     int? estandePlantas,
+    bool clearEstandePlantas = false,
     String? avaliacaoPlantio,
+    bool clearAvaliacaoPlantio = false,
     String? objetivoPlantio,
+    bool clearObjetivoPlantio = false,
     String? andamento,
     String? responsavelNome,
     bool clearResponsavelNome = false,
@@ -492,8 +499,9 @@ class Occurrence {
       analysisPayloadJson: analysisPayloadJson ?? this.analysisPayloadJson,
       deletedAt: deletedAt ?? this.deletedAt,
       // v14 agronômico
-      cultivar: cultivar ?? this.cultivar,
-      dataPlantio: dataPlantio ?? this.dataPlantio,
+      cultivar: clearCultivar ? null : (cultivar ?? this.cultivar),
+      dataPlantio:
+          clearDataPlantio ? null : (dataPlantio ?? this.dataPlantio),
       estadioFenologico: estadioFenologico ?? this.estadioFenologico,
       tipoOcorrencia: tipoOcorrencia ?? this.tipoOcorrencia,
       amostraSolo: amostraSolo ?? this.amostraSolo,
@@ -514,11 +522,21 @@ class Occurrence {
       categoriasJson: categoriasJson ?? this.categoriasJson,
       notasCategoriasJson: notasCategoriasJson ?? this.notasCategoriasJson,
       fotosCategoriasJson: fotosCategoriasJson ?? this.fotosCategoriasJson,
-      dataEmergencia: dataEmergencia ?? this.dataEmergencia,
-      sementesPorMetro: sementesPorMetro ?? this.sementesPorMetro,
-      estandePlantas: estandePlantas ?? this.estandePlantas,
-      avaliacaoPlantio: avaliacaoPlantio ?? this.avaliacaoPlantio,
-      objetivoPlantio: objetivoPlantio ?? this.objetivoPlantio,
+      dataEmergencia: clearDataEmergencia
+          ? null
+          : (dataEmergencia ?? this.dataEmergencia),
+      sementesPorMetro: clearSementesPorMetro
+          ? null
+          : (sementesPorMetro ?? this.sementesPorMetro),
+      estandePlantas: clearEstandePlantas
+          ? null
+          : (estandePlantas ?? this.estandePlantas),
+      avaliacaoPlantio: clearAvaliacaoPlantio
+          ? null
+          : (avaliacaoPlantio ?? this.avaliacaoPlantio),
+      objetivoPlantio: clearObjetivoPlantio
+          ? null
+          : (objetivoPlantio ?? this.objetivoPlantio),
       andamento: andamento ?? this.andamento,
       responsavelNome: clearResponsavelNome
           ? null
