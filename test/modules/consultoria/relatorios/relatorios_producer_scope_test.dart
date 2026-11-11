@@ -30,6 +30,62 @@ void main() {
     expect(scoped.map((row) => row.clientId), ['jonata']);
   });
 
+  test('authorized sem valor não está pronto', () {
+    final resolved = resolveProducerAllowedClients(
+      authorizedHasValue: false,
+      authorizedHasError: false,
+      authorizedIds: const {'jonata'},
+      ownHasValue: true,
+      ownHasError: false,
+      ownClientId: 'jonathan',
+    );
+
+    expect(resolved.ready, isFalse);
+    expect(resolved.ids, isEmpty);
+  });
+
+  test('authorized jonata com own ainda sem valor mantém o vínculo', () {
+    final resolved = resolveProducerAllowedClients(
+      authorizedHasValue: true,
+      authorizedHasError: false,
+      authorizedIds: const {'jonata'},
+      ownHasValue: false,
+      ownHasError: false,
+      ownClientId: null,
+    );
+
+    expect(resolved.ready, isTrue);
+    expect(resolved.ids, {'jonata'});
+  });
+
+  test('authorized jonata e own jonathan entram os dois', () {
+    final resolved = resolveProducerAllowedClients(
+      authorizedHasValue: true,
+      authorizedHasError: false,
+      authorizedIds: const {'jonata'},
+      ownHasValue: true,
+      ownHasError: false,
+      ownClientId: 'jonathan',
+    );
+
+    expect(resolved.ready, isTrue);
+    expect(resolved.ids, {'jonata', 'jonathan'});
+  });
+
+  test('authorized com erro não está pronto', () {
+    final resolved = resolveProducerAllowedClients(
+      authorizedHasValue: true,
+      authorizedHasError: true,
+      authorizedIds: const {'jonata'},
+      ownHasValue: true,
+      ownHasError: false,
+      ownClientId: 'jonathan',
+    );
+
+    expect(resolved.ready, isFalse);
+    expect(resolved.ids, isEmpty);
+  });
+
   test('consultor mantém as duas linhas', () {
     final scoped = scopeRowsToAllowedClients(
       isProdutor: false,
