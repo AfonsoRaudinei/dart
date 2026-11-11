@@ -9,6 +9,7 @@ import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/services/sync_orchestrator.dart';
 import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import '../../../../core/router/app_routes.dart';
+import '../../../../core/utils/user_facing_error.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../data/producer_link_models.dart';
 import '../../data/producer_link_repository.dart';
@@ -20,15 +21,7 @@ String _tokenAcceptErrorMessage(Object error) {
   if (error is FormatException) {
     return error.message;
   }
-  if (error is Exception) {
-    final text = error.toString();
-    const prefix = 'Exception: ';
-    if (text.startsWith(prefix)) {
-      return text.substring(prefix.length);
-    }
-    return text;
-  }
-  return 'Token inválido, expirado ou já utilizado.';
+  return userFacingError(error, action: 'Não foi possível vincular');
 }
 
 class ProducerPropertyScreen extends ConsumerStatefulWidget {
