@@ -21,6 +21,12 @@ void main() {
       expect(shouldShowMapLongPressHint(prefs), isFalse);
     });
 
+    test('returns false after acknowledge', () async {
+      await markMapLongPressHintAcknowledged(prefs);
+      expect(hasAcknowledgedMapLongPressHint(prefs), isTrue);
+      expect(shouldShowMapLongPressHint(prefs), isFalse);
+    });
+
     test('returns false after max hint sessions without using gesture', () async {
       for (var i = 0; i < kMapLongPressHintMaxSessions; i++) {
         await recordMapLongPressHintSession(prefs);
@@ -35,10 +41,15 @@ void main() {
       expect(shouldShowMapLongPressHint(prefs), isTrue);
     });
 
+    test('max sessions constant is 12', () {
+      expect(kMapLongPressHintMaxSessions, 12);
+    });
+
     test('hint copy references free map area and occurrence', () {
       expect(kMapLongPressHintMessage, contains('área livre'));
       expect(kMapLongPressHintMessage, contains('ocorrência'));
       expect(kMapLongPressOccupiedFeedbackMessage, contains('área livre'));
+      expect(kMapLongPressHintAcknowledgeLabel, 'Entendi');
     });
   });
 
