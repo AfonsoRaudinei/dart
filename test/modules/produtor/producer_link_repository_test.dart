@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/producer_invite_dialog.dart';
 import 'package:soloforte_app/modules/produtor/data/producer_link_models.dart';
 import 'package:soloforte_app/modules/produtor/data/producer_link_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -35,8 +36,27 @@ void main() {
   group('ProducerLinkRepository token helpers', () {
     test('normaliza token removendo espaços e padronizando caixa', () {
       expect(
-        ProducerLinkRepository.normalizeToken(' sf-12ab  - 34cd '),
-        'SF-12AB-34CD',
+        ProducerLinkRepository.normalizeToken(' sf-abcd  - 1234 - ef56 '),
+        'SF-ABCD-1234-EF56',
+      );
+    });
+
+    test('extrai token da mensagem completa do WhatsApp', () {
+      final message = ProducerInviteDialog.shareMessage(
+        clientName: 'Jonathan',
+        token: 'SF-ABCD-1234-EF56',
+      );
+
+      expect(
+        ProducerLinkRepository.normalizeToken(message),
+        'SF-ABCD-1234-EF56',
+      );
+    });
+
+    test('texto sem código SF rejeita com orientação clara', () {
+      expect(
+        () => ProducerLinkRepository.normalizeToken('cole o token aqui'),
+        throwsFormatException,
       );
     });
 
@@ -46,6 +66,26 @@ void main() {
 
       expect(a, b);
       expect(a, isNot(contains('ABCD')));
+    });
+
+    test('linha retornada pelo RPC pode vir em lista', () {
+      final map = ProducerLinkRepository.linkRowFromRpc([
+        {'id': 'link-1', 'status': 'active'},
+      ]);
+
+      expect(map, isNotNull);
+      expect(map!['id'], 'link-1');
+    });
+
+    test('mapeia erro de papel produtor na aceitação', () {
+      final message = ProducerLinkRepository.mapAcceptTokenError(
+        const PostgrestException(
+          message: 'producer_role_required',
+          code: 'P0001',
+        ),
+      );
+
+      expect(message, contains('produtor'));
     });
 
     test('gera token no formato compartilhável', () {
