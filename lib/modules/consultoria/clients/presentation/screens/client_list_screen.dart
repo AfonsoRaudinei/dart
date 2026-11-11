@@ -10,6 +10,7 @@ import '../widgets/client_avatar_widget.dart';
 import 'dart:ui' as ui;
 import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
+import 'package:soloforte_app/ui/components/consultant_share_accept_dialog.dart';
 
 class ClientListScreen extends ConsumerWidget {
   const ClientListScreen({super.key});
@@ -32,7 +33,7 @@ class ClientListScreen extends ConsumerWidget {
           slivers: [
             SliverAppBar(
               pinned: true,
-              expandedHeight: 176.0,
+              expandedHeight: 220.0,
               backgroundColor: context.premiumBackground.withValues(alpha: 0.8),
               surfaceTintColor: Colors.transparent,
               flexibleSpace: ClipRect(
@@ -52,7 +53,7 @@ class ClientListScreen extends ConsumerWidget {
                 const SizedBox(width: 8),
               ],
               bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(176),
+                preferredSize: const Size.fromHeight(220),
                 child: Column(
                   children: [
                     Padding(
@@ -70,7 +71,14 @@ class ClientListScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        onPressed: () =>
+                            showConsultantShareAcceptDialog(context),
+                        child: const Text('Receber de outro consultor'),
+                      ),
+                    ),
                     // Search Bar
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),

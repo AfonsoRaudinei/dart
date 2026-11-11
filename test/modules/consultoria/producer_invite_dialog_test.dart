@@ -9,7 +9,10 @@ class _FakeInviteWriter implements IProducerInviteWriter {
   int calls = 0;
 
   @override
-  Future<ProducerInviteData> createInvite(String clientId) async {
+  Future<ProducerInviteData> createInvite(
+    String clientId, {
+    ProducerShareSelection share = const ProducerShareSelection(),
+  }) async {
     calls += 1;
     return ProducerInviteData(
       token: 'SF-ABCD-1234-EF56',
@@ -43,6 +46,10 @@ void main() {
     );
 
     expect(find.text('Convite do produtor'), findsOneWidget);
+    expect(find.text('Fazendas'), findsOneWidget);
+    expect(find.text('Talhões e mapa'), findsOneWidget);
+    expect(find.text('Ocorrências'), findsOneWidget);
+    expect(find.text('Relatórios'), findsOneWidget);
     await tester.tap(find.text('Gerar token'));
     await tester.pumpAndSettle();
 
@@ -52,7 +59,7 @@ void main() {
     expect(find.text('Gerar novo'), findsOneWidget);
     expect(find.text('Copiar'), findsOneWidget);
     expect(find.text('Copiar mensagem'), findsOneWidget);
-    expect(find.textContaining('para aceitar'), findsOneWidget);
+    expect(find.textContaining('Válido até'), findsOneWidget);
   });
 
   test('mensagem do convite leva o nome e o token', () {
