@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/layout_constants.dart';
+import '../../../../core/design/sf_icons.dart';
 import '../../../screens/map/utils/map_long_press_prefs.dart';
 
-/// Hint progressivo: long press no mapa para ações rápidas.
+/// Hint progressivo: long press no mapa para registrar ocorrência.
 class MapLongPressHint extends StatefulWidget {
   final bool visible;
 
@@ -118,7 +119,7 @@ class _MapLongPressHintState extends State<MapLongPressHint>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.touch_app_rounded,
+                          SFIcons.warning,
                           color: Colors.white.withValues(alpha: 0.92),
                           size: 20,
                         ),
