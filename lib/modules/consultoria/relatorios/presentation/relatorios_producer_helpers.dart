@@ -139,6 +139,31 @@ List<Occurrence> _sortOccurrencesByCreatedAt(List<Occurrence> occurrences) {
   return sorted;
 }
 
+/// Vínculo autorizado decide se o conjunto está pronto. Propriedade própria
+/// só entra quando já resolveu; refresh com valor anterior não zera a lista.
+({bool ready, Set<String> ids}) resolveProducerAllowedClients({
+  required bool authorizedHasValue,
+  required bool authorizedHasError,
+  required Set<String> authorizedIds,
+  required bool ownHasValue,
+  required bool ownHasError,
+  required String? ownClientId,
+}) {
+  if (!authorizedHasValue || authorizedHasError) {
+    return (ready: false, ids: <String>{});
+  }
+
+  final ids = <String>{
+    for (final raw in authorizedIds)
+      if (raw.trim().isNotEmpty) raw.trim(),
+  };
+  if (ownHasValue && !ownHasError) {
+    final ownId = ownClientId?.trim() ?? '';
+    if (ownId.isNotEmpty) ids.add(ownId);
+  }
+  return (ready: true, ids: ids);
+}
+
 /// Produtor só vê clientId do vínculo ativo ou da propriedade própria.
 /// Enquanto o conjunto não está pronto, a lista fica vazia.
 List<T> scopeRowsToAllowedClients<T>({
