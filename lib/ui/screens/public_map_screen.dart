@@ -21,6 +21,7 @@ import '../../modules/marketing/domain/enums/plano_marketing.dart';
 import '../../modules/marketing/presentation/widgets/marketing_case_marker.dart';
 import '../../modules/marketing/presentation/widgets/marketing_case_sheet.dart';
 import '../../core/config/map_config.dart';
+import '../../core/constants/layout_constants.dart';
 import '../../core/permissions/permission_provider.dart';
 import '../../core/permissions/location_permission_gate.dart';
 import '../../core/session/session_controller.dart';
@@ -300,19 +301,25 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
           ),
 
           // Pill vertical: zoom + localização
+          // Tamanho/insets alinhados ao padrão kMapActionColumnButtonSize
+          // (REGRA-MAP-CHROME-1) usado na coluna direita do mapa autenticado.
           Positioned(
-            top: MediaQuery.of(context).padding.top + 16,
-            right: 16,
+            top: MediaQuery.of(context).padding.top + kMapTopControlsTopInset,
+            right: kMapTopControlsRightInset,
             child: RepaintBoundary(
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(30),
+                borderRadius: BorderRadius.circular(
+                  kMapActionColumnButtonSize / 2,
+                ),
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                   child: Container(
-                    width: 52,
+                    width: kMapActionColumnButtonSize,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.72),
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(
+                        kMapActionColumnButtonSize / 2,
+                      ),
                       border: Border.all(
                         color: Colors.white.withValues(alpha: 0.6),
                         width: 0.8,
@@ -428,8 +435,8 @@ class _PillButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 52,
-        height: 50,
+        width: kMapActionColumnButtonSize,
+        height: kMapActionColumnButtonSize,
         child: Icon(
           icon,
           size: 22,

@@ -29,7 +29,7 @@ class PublicMapTaglineCarousel extends StatefulWidget {
 
   static const List<PublicMapTaglineSlide> slides = [
     PublicMapTaglineSlide(
-      headline: 'Simples. Poderoso. Teu.',
+      headline: 'Simples. Poderoso. Seu.',
       support: 'A experiência e a sabedoria falam alto na lavoura.',
     ),
     PublicMapTaglineSlide(

@@ -17,7 +17,7 @@ void main() {
       find.text(PublicMapTaglineCarousel.slides.first.headline),
       findsOneWidget,
     );
-    expect(find.text('Simples. Poderoso. Teu.'), findsOneWidget);
+    expect(find.text('Simples. Poderoso. Seu.'), findsOneWidget);
     expect(find.byType(PremiumGlassPanel), findsOneWidget);
 
     await tester.pump(
