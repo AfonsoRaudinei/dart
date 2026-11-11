@@ -4,6 +4,7 @@ import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/contracts/i_ndvi_field_presenter_provider.dart';
 import 'package:soloforte_app/core/contracts/i_visit_client_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/visit_client_hierarchy.dart';
@@ -19,7 +20,7 @@ final _visitClientHierarchyProvider = FutureProvider.autoDispose
       return ref.watch(visitClientLookupProvider).getClientHierarchy(clientId);
     });
 
-/// Card compacto de visita ativa — canto superior esquerdo do mapa.
+/// Card compacto de visita ativa — canto inferior esquerdo do mapa.
 ///
 /// ADR-045: dados de cliente via IVisitClientLookup; NDVI via INdviFieldPresenter.
 class VisitActiveCard extends ConsumerWidget {
@@ -59,7 +60,7 @@ class VisitActiveCard extends ConsumerWidget {
 
         return ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.62,
+            maxWidth: mapContextCardMaxWidth(MediaQuery.sizeOf(context).width),
           ),
           child: _GlassChip(
             child: Column(
