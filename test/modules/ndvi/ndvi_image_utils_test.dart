@@ -51,6 +51,16 @@ void main() {
     expect(text, contains('OAuth Copernicus'));
   });
 
+  test('sentinel_refined: rotulo, pixel 10m e hint cobertura baixa', () {
+    expect(ndviSourceLabel('sentinel_refined'), 'Sentinel NDVI (Ouro)');
+    expect(ndviShowsTenMeterPixelLabel('sentinel_refined'), isTrue);
+    expect(ndviShowsTenMeterPixelLabel('sentinel'), isFalse);
+    expect(ndviLowCoverHint('sentinel_refined', 0.3), isNotNull);
+    expect(ndviLowCoverHint('sentinel_refined', 0.5), isNull);
+    expect(ndviLowCoverHint('sentinel', 0.3), isNull);
+    expect(ndviIsColormapSource('sentinel_refined'), isTrue);
+  });
+
   test('ndviDateChipLabel inclui nuvem quando informada', () {
     expect(
       ndviDateChipLabel(DateTime(2026, 10, 8), cloudCoverage: 12.4),

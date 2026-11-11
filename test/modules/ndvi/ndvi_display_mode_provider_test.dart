@@ -28,7 +28,7 @@ void main() {
       addTearDown(container.dispose);
 
       final bytes = await container.read(
-        ndviGreenMaskBytesProvider(file.path).future,
+        ndviGreenMaskBytesProvider((path: file.path, refined: false)).future,
       );
       final mask = img.decodePng(bytes!);
       final maskFile = File(
@@ -57,14 +57,20 @@ void main() {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
-    await container.read(ndviGreenMaskBytesProvider(file.path).future);
+    await container.read(
+      ndviGreenMaskBytesProvider((path: file.path, refined: false)).future,
+    );
     final maskFile = File(
       '${tempDir.path}/ndvi_green_mask_talhao-01_2026-06-01.png',
     );
     final firstModified = (await maskFile.stat()).modified;
 
-    container.invalidate(ndviGreenMaskBytesProvider(file.path));
-    await container.read(ndviGreenMaskBytesProvider(file.path).future);
+    container.invalidate(
+      ndviGreenMaskBytesProvider((path: file.path, refined: false)),
+    );
+    await container.read(
+      ndviGreenMaskBytesProvider((path: file.path, refined: false)).future,
+    );
     final secondModified = (await maskFile.stat()).modified;
 
     expect(secondModified, firstModified);
@@ -86,16 +92,20 @@ void main() {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
-    await container.read(ndviGreenMaskBytesProvider(file.path).future);
+    await container.read(
+      ndviGreenMaskBytesProvider((path: file.path, refined: false)).future,
+    );
 
     final secondSource = img.Image(width: 1, height: 1)
       ..setPixelRgb(0, 0, 255, 0, 0);
     await file.writeAsBytes(img.encodePng(secondSource), flush: true);
     await file.setLastModified(DateTime.now().add(const Duration(seconds: 2)));
 
-    container.invalidate(ndviGreenMaskBytesProvider(file.path));
+    container.invalidate(
+      ndviGreenMaskBytesProvider((path: file.path, refined: false)),
+    );
     final bytes = await container.read(
-      ndviGreenMaskBytesProvider(file.path).future,
+      ndviGreenMaskBytesProvider((path: file.path, refined: false)).future,
     );
     final mask = img.decodePng(bytes!);
 
