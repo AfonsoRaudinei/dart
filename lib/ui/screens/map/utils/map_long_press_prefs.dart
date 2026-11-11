@@ -8,14 +8,14 @@ const String kMapLongPressHintSessionCountKey =
     'map_longpress_hint_session_count';
 
 /// Máximo de sessões com hint antes de parar de exibir (sem uso do gesto).
-const int kMapLongPressHintMaxSessions = 3;
+const int kMapLongPressHintMaxSessions = 5;
 
 /// Duração máxima do hint na tela antes do auto-dismiss (segundos).
-const int kMapLongPressHintVisibleSeconds = 6;
+const int kMapLongPressHintVisibleSeconds = 8;
 
 /// Copy do hint progressivo (área livre — alinhado ao hit-test).
 const String kMapLongPressHintMessage =
-    'Toque e segure numa área livre do mapa para ações rápidas';
+    'Toque e segure numa área livre do mapa para registrar uma ocorrência';
 
 /// Feedback curto quando long press cai sobre talhão, pin ou desenho.
 const String kMapLongPressOccupiedFeedbackMessage =
