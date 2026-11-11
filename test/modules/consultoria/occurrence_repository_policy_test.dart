@@ -57,14 +57,25 @@ void main() {
       );
     });
 
-    test('escopo de leitura inclui usuario atual e orfaos temporarios', () {
+    test('usuario conhecido le somente o proprio user_id', () {
       expect(
-        OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause(),
-        "(user_id = ? OR user_id = '')",
+        OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause('user-123'),
+        'user_id = ?',
       );
       expect(
         OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereArgs('user-123'),
         ['user-123'],
+      );
+    });
+
+    test('pre-login le somente user_id vazio', () {
+      expect(
+        OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause(''),
+        "user_id = ''",
+      );
+      expect(
+        OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereArgs(''),
+        isEmpty,
       );
     });
   });
