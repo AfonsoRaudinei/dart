@@ -128,19 +128,23 @@ void main() {
   });
 
   group('Fatia A editing chrome regression', () {
-    testWidgets('idle mantém card de contexto em safeTop+8', (tester) async {
+    testWidgets('idle mantém card de contexto na base', (tester) async {
       const safeTop = 50.0;
       await _pumpMapControlsOverlay(
         tester,
         safePadding: const EdgeInsets.only(top: safeTop),
       );
 
-      final contextTop = tester.getTopLeft(find.byType(VisitActiveCard)).dy;
-      expect(contextTop, safeTop + 8);
+      final card = tester.getRect(find.byType(VisitActiveCard));
+      expect(card.top, isNot(closeTo(safeTop + 8, 0.5)));
+      expect(
+        card.bottom,
+        closeTo(_kViewport.height - kMapContextCardBottomInset, 0.5),
+      );
       expect(find.textContaining('Editando:'), findsNothing);
     });
 
-    testWidgets('editing com nome mostra pill e empurra card de contexto', (
+    testWidgets('editing com nome mostra pill no topo e card acima da toolbar', (
       tester,
     ) async {
       const safeTop = 50.0;
@@ -152,9 +156,53 @@ void main() {
       );
 
       expect(find.text('Editando: Talhão 2'), findsOneWidget);
-      final contextTop = tester.getTopLeft(find.byType(VisitActiveCard)).dy;
-      expect(contextTop, safeTop + 72);
+      final card = tester.getRect(find.byType(VisitActiveCard));
+      expect(card.top, isNot(closeTo(safeTop + 72, 0.5)));
+      final toolbar = tester.getRect(
+        find.byKey(const Key('drawing_bottom_toolbar')),
+      );
+      final pill = tester.getRect(find.text('Editando: Talhão 2'));
+      expect(card.bottom, lessThan(toolbar.top));
+      expect(
+        toolbar.top - card.bottom,
+        greaterThanOrEqualTo(kMapContextCardToolbarGap - 0.5),
+      );
+      expect(card.overlaps(pill), isFalse);
     });
+
+    testWidgets(
+      'card largo no canto inferior esquerdo não cobre o basemap',
+      (tester) async {
+        await _pumpMapControlsOverlay(
+          tester,
+          safePadding: const EdgeInsets.only(bottom: _kSafeBottom),
+          topLeftCard: const SizedBox(
+            key: Key('map_context_card_probe'),
+            height: 48,
+            child: Text(
+              'JONATHAN PEREIRA DOS SANTOS NOME LONGO DEMAIS PARA O TOPO',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        );
+
+        final card = tester.getRect(
+          find.byKey(const Key('map_context_card_probe')),
+        );
+        final basemap = tester.getRect(
+          find.byKey(const Key('map_control_basemap_toggle_btn')),
+        );
+        expect(card.overlaps(basemap), isFalse);
+        expect(
+          card.bottom,
+          closeTo(
+            _kViewport.height - _kSafeBottom - kMapContextCardBottomInset,
+            0.5,
+          ),
+        );
+      },
+    );
 
     testWidgets('layers FAB não dispara onOpenMapTools durante editing', (
       tester,
@@ -624,6 +672,7 @@ Future<void> _pumpMapControlsOverlay(
   String? editingFieldName,
   VoidCallback? onOpenMapTools,
   EdgeInsets safePadding = EdgeInsets.zero,
+  Widget? topLeftCard,
 }) async {
   _setViewport(tester, safePadding);
   SharedPreferences.setMockInitialValues({});
@@ -652,6 +701,7 @@ Future<void> _pumpMapControlsOverlay(
             onTabSelected: (_, _) {},
             isDrawMode: isDrawMode,
             showCheckInAction: showCheckInAction,
+            topLeftCard: topLeftCard,
             currentCenter: const LatLng(-10.2, -48.3),
             currentZoom: 13,
             drawingState: drawingState,
