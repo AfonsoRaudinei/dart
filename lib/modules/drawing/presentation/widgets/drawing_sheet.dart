@@ -11,6 +11,8 @@ import '../../domain/drawing_feature_actions_mode.dart';
 import '../../domain/repositories/i_clients_repository.dart';
 import '../drawing_compact_selection_actions.dart';
 import '../providers/drawing_compact_ui_provider.dart';
+import 'package:soloforte_app/core/access/producer_create_context_resolver.dart';
+import 'package:soloforte_app/core/contracts/i_producer_property_gateway_provider.dart';
 import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:soloforte_app/core/session/session_models.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
@@ -55,6 +57,10 @@ class DrawingSheet extends ConsumerStatefulWidget {
   /// Recolhe o chrome do host sem cancelar [DrawingState.editing] (fluxo 1A).
   final VoidCallback? onCollapseWhileEditing;
 
+  /// Produtor: o cliente da folha é só a propriedade própria.
+  /// Ignora pré-seleção de outra conta (sessão anterior ou `/map?clienteId=`).
+  final bool forceOwnPropertyClient;
+
   const DrawingSheet({
     super.key,
     required this.controller,
@@ -65,6 +71,7 @@ class DrawingSheet extends ConsumerStatefulWidget {
     this.onSaved,
     this.onClose,
     this.onCollapseWhileEditing,
+    this.forceOwnPropertyClient = false,
   });
 
   @override
@@ -87,6 +94,10 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   Client? _selectedClient;
   Farm? _selectedFarm;
 
+  /// Cliente da propriedade própria, resolvido quando [forceOwnPropertyClient].
+  String? _ownPropertyClientId;
+  String? _ownPropertyClientName;
+
   /// Papel real da sessão: produtor desenha como cliente e não carrega a
   /// lista de clientes; papel desconhecido preserva o comportamento de
   /// consultor (padrão histórico desta sheet).
@@ -106,12 +117,17 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Auto-load clients via DrawingClientNotifier (ADR-019)
-      if (_isConsultant) {
-        ref.read(drawingClientProvider.notifier).loadClients();
+      if (!mounted) return;
+      if (widget.forceOwnPropertyClient) {
+        _bindOwnPropertyClient();
+      } else {
+        // Auto-load clients via DrawingClientNotifier (ADR-019)
+        if (_isConsultant) {
+          ref.read(drawingClientProvider.notifier).loadClients();
+        }
+        // Sincronizar pré-seleção inicial
+        _syncPreSelectedContext(ref.read(drawingClientProvider));
       }
-      // Sincronizar pré-seleção inicial
-      _syncPreSelectedContext(ref.read(drawingClientProvider));
       _drainCompactOpenMetadataIfNeeded();
     });
 
@@ -131,6 +147,51 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     if (!ref.read(drawingCompactOpenMetadataProvider)) return;
     ref.read(drawingCompactOpenMetadataProvider.notifier).state = false;
     setState(() => _isEditingMetadata = true);
+  }
+
+  /// Produtor: limpa pré-seleção estrangeira antes do primeiro frame útil
+  /// e trava o cliente na propriedade própria. Não pré-seleciona fazenda.
+  Future<void> _bindOwnPropertyClient() async {
+    if (!mounted) return;
+    ref.read(drawingClientProvider.notifier).clearSessionContext();
+    final summary = await ProducerCreateContextResolver.asClientSummary(
+      ref.read(producerPropertyGatewayProvider),
+    );
+    if (!mounted || !widget.forceOwnPropertyClient) return;
+    if (summary == null) {
+      _ownPropertyClientId = null;
+      _ownPropertyClientName = null;
+      return;
+    }
+    _ownPropertyClientId = summary.id;
+    _ownPropertyClientName = summary.name;
+    ref
+        .read(drawingClientProvider.notifier)
+        .setClienteAtivo(summary.id, clientName: summary.name);
+  }
+
+  /// Reaplica o cliente próprio se um `/map?clienteId=` de outra conta
+  /// regravar a pré-seleção por cima.
+  void _keepOwnPropertyClient(DrawingClientState next) {
+    final ownId = _ownPropertyClientId;
+    final ownName = _ownPropertyClientName;
+    if (ownId == null || !mounted) return;
+    if (next.preSelectedClientId != ownId) {
+      ref
+          .read(drawingClientProvider.notifier)
+          .setClienteAtivo(ownId, clientName: ownName);
+      return;
+    }
+    if (ownName == null || ownName.isEmpty) return;
+    final already =
+        _selectedClient?.id == ownId &&
+        _selectedClient?.name == ownName &&
+        _selectedFarm == null;
+    if (already) return;
+    setState(() {
+      _selectedClient = Client(id: ownId, name: ownName);
+      _selectedFarm = null;
+    });
   }
 
   /// Aplica pré-seleção de cliente/fazenda proveniente do fluxo Map-First.
@@ -315,6 +376,10 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
     // ADR-019: escuta mudancas de clientes para pre-selecao Map-First
     ref.listen<DrawingClientState>(drawingClientProvider, (_, next) {
+      if (widget.forceOwnPropertyClient) {
+        _keepOwnPropertyClient(next);
+        return;
+      }
       _syncPreSelectedContext(next);
     });
 
@@ -514,7 +579,9 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
             widget.controller.pendingImportOrigin ??
             DrawingOrigin.desenho_manual,
         autorId: 'current_user',
-        autorTipo: _isConsultant ? AuthorType.consultor : AuthorType.cliente,
+        autorTipo: widget.forceOwnPropertyClient || !_isConsultant
+            ? AuthorType.cliente
+            : AuthorType.consultor,
         subtipo: widget.controller.pendingDrawingSubtipo,
         raioMetros: widget.controller.pendingDrawingRaioMetros,
         clienteId: _selectedClient!.id,
