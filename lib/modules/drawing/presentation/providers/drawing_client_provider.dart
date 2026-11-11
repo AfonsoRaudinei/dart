@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/repositories/i_clients_repository.dart';
 import '../../infra/clients/i_clients_repository_provider.dart';
+import '../../../../core/session/session_controller.dart';
 import '../../../../core/utils/app_logger.dart';
 
 // =============================================================================
@@ -45,16 +46,29 @@ class DrawingClientState {
     String? preSelectedFarmName,
     bool clearPreSelected = false,
     bool clearPreSelectedFarm = false,
+    bool clearPreSelectedClientName = false,
     bool? isLoadingClients,
     bool? isLoadingFarms,
   }) {
+    final nextClientId = clearPreSelected
+        ? null
+        : (preSelectedClientId ?? this.preSelectedClientId);
+    final clientIdChanged = nextClientId != this.preSelectedClientId;
+    final incomingNameBlank =
+        preSelectedClientName == null || preSelectedClientName.trim().isEmpty;
+    // Id novo sem nome não herda o nome da conta anterior.
+    // Com o mesmo id, nome null continua no ?? (clearPreSelectedClientName
+    // é o único jeito explícito de zerar sem trocar o id).
+    final dropClientName =
+        clearPreSelected ||
+        clearPreSelectedClientName ||
+        (clientIdChanged && incomingNameBlank);
+
     return DrawingClientState(
       clients: clients ?? this.clients,
       farms: farms ?? this.farms,
-      preSelectedClientId: clearPreSelected
-          ? null
-          : (preSelectedClientId ?? this.preSelectedClientId),
-      preSelectedClientName: clearPreSelected
+      preSelectedClientId: nextClientId,
+      preSelectedClientName: dropClientName
           ? null
           : (preSelectedClientName ?? this.preSelectedClientName),
       preSelectedFarmId: clearPreSelected || clearPreSelectedFarm
@@ -172,14 +186,22 @@ class DrawingClientNotifier extends Notifier<DrawingClientState> {
     String? farmId,
     String? farmName,
   }) {
+    final idChanged = clientId != state.preSelectedClientId;
+    final nameBlank = clientName == null || clientName.trim().isEmpty;
     state = state.copyWith(
       preSelectedClientId: clientId,
-      preSelectedClientName: clientName,
+      preSelectedClientName: nameBlank ? null : clientName,
       preSelectedFarmId: farmId,
       preSelectedFarmName: farmName,
       clearPreSelectedFarm: farmId == null,
+      clearPreSelectedClientName: idChanged && nameBlank,
     );
     loadFarms(clientId);
+  }
+
+  /// Zera clientes, fazendas e pré-seleção da sessão de desenho.
+  void clearSessionContext() {
+    state = const DrawingClientState();
   }
 }
 
@@ -187,7 +209,17 @@ class DrawingClientNotifier extends Notifier<DrawingClientState> {
 // PROVIDER
 // =============================================================================
 
-final drawingClientProvider =
-    NotifierProvider<DrawingClientNotifier, DrawingClientState>(
-      DrawingClientNotifier.new,
-    );
+final drawingClientProvider = _createDrawingClientProvider();
+
+NotifierProvider<DrawingClientNotifier, DrawingClientState>
+_createDrawingClientProvider() {
+  // Carregamento da biblioteca: o primeiro acesso ao provider registra o
+  // logout. build() já devolve estado vazio — invalidate basta.
+  SessionController.registerLogoutInvalidation(
+    key: 'drawingClientProvider',
+    invalidate: (ref) => ref.invalidate(drawingClientProvider),
+  );
+  return NotifierProvider<DrawingClientNotifier, DrawingClientState>(
+    DrawingClientNotifier.new,
+  );
+}
