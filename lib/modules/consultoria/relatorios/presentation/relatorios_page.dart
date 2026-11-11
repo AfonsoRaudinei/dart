@@ -137,7 +137,8 @@ Future<_ReportBrandingContext> _resolveReportBrandingContext(
 ///
 /// Segmentos: Visitas | Ocorrências | Marketing | Consolidados
 /// (Mídia oculta 17/08/2026 — reativar com o relatório HTML de marketing)
-/// Abre em Visitas. Marketing = publicações/cases (ADR-050).
+/// Consultor abre em Visitas; produtor não vê aba Visitas (abre em Ocorrências).
+/// Marketing = publicações/cases (ADR-050).
 class RelatoriosScreen extends ConsumerStatefulWidget {
   const RelatoriosScreen({super.key});
 
@@ -149,6 +150,14 @@ class _RelatoriosScreenState extends ConsumerState<RelatoriosScreen> {
   static final _dateFormat = DateFormat('dd/MM/yyyy', 'pt_BR');
   _RelatoriosSegment _segment = _RelatoriosSegment.visitas;
   String? _selectedProducerClientId;
+
+  @override
+  void initState() {
+    super.initState();
+    if (ref.read(currentUserRoleProvider).isProdutor) {
+      _segment = _RelatoriosSegment.ocorrencias;
+    }
+  }
 
   void _selectSegment(_RelatoriosSegment value) {
     if (_segment == value) return;
@@ -163,6 +172,12 @@ class _RelatoriosScreenState extends ConsumerState<RelatoriosScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isProdutor = ref.watch(currentUserRoleProvider).isProdutor;
+    ref.listen(currentUserRoleProvider, (previous, next) {
+      if (!next.isProdutor || _segment != _RelatoriosSegment.visitas) return;
+      setState(() => _segment = _RelatoriosSegment.ocorrencias);
+    });
+
     return ColoredBox(
       color: context.premiumBackground,
       child: SafeArea(
@@ -186,6 +201,7 @@ class _RelatoriosScreenState extends ConsumerState<RelatoriosScreen> {
               child: _RelatoriosSegmentBar(
                 selected: _segment,
                 onSelected: _selectSegment,
+                hideVisitas: isProdutor,
               ),
             ),
             Expanded(child: _buildSegmentBody()),

@@ -118,10 +118,12 @@ enum _RelatoriosSegment { visitas, ocorrencias, gerados, consolidados, midia }
 class _RelatoriosSegmentBar extends StatelessWidget {
   final _RelatoriosSegment selected;
   final ValueChanged<_RelatoriosSegment> onSelected;
+  final bool hideVisitas;
 
   const _RelatoriosSegmentBar({
     required this.selected,
     required this.onSelected,
+    this.hideVisitas = false,
   });
 
   @override
@@ -138,7 +140,8 @@ class _RelatoriosSegmentBar extends StatelessWidget {
           // 4 visíveis: scroll horizontal quando a largura não comporta labels.
           final useScroll = constraints.maxWidth < 420;
           final segments = <Widget>[
-            _seg(context, 'Visitas', _RelatoriosSegment.visitas, useScroll),
+            if (!hideVisitas)
+              _seg(context, 'Visitas', _RelatoriosSegment.visitas, useScroll),
             _seg(
               context,
               'Ocorrências',
