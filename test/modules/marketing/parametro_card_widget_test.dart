@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/modules/marketing/domain/entities/parametro_comparativo.dart';
+import 'package:soloforte_app/modules/marketing/presentation/models/novo_case_comparacao.dart';
 import 'package:soloforte_app/modules/marketing/presentation/widgets/novo_case_antes_depois_section.dart';
 import 'package:soloforte_app/modules/marketing/presentation/widgets/parametro_card.dart';
 
@@ -65,6 +66,8 @@ void main() {
       testemunha: 0,
       teste: 0,
     );
+    final conclusaoCtrl = TextEditingController();
+    addTearDown(conclusaoCtrl.dispose);
 
     await tester.pumpWidget(
       MaterialApp(
@@ -73,18 +76,33 @@ void main() {
             builder: (context, setState) {
               return SingleChildScrollView(
                 child: NovoCaseAntesDepoisSection(
-                  fotoAntesUrl: 'https://example.com/antes.jpg',
-                  fotoDepoisUrl: 'https://example.com/depois.jpg',
-                  onFotoAntesChanged: (_) {},
-                  onFotoDepoisChanged: (_) {},
-                  parametros: [current],
-                  parametroSelecionadoId: current.id,
-                  onAddParametro: () {},
-                  onSelectParametro: (_) {},
-                  onParametroChanged: (parametro) {
+                  comparacoes: [
+                    NovoCaseComparacao(
+                      id: 'cmp-1',
+                      fotoAntesUrl: 'https://example.com/antes.jpg',
+                      fotoDepoisUrl: 'https://example.com/depois.jpg',
+                      parametros: [current],
+                      parametroSelecionadoId: current.id,
+                    ),
+                  ],
+                  produtoUtilizado: 'Produto teste',
+                  hasConclusao: false,
+                  conclusaoCtrl: conclusaoCtrl,
+                  onAddComparacao: () {},
+                  onRemoveComparacao: (_) {},
+                  onComparacaoChanged: (_, comparacao) {
+                    if (comparacao.parametros.isNotEmpty) {
+                      setState(() => current = comparacao.parametros.first);
+                    }
+                  },
+                  onAddParametro: (_) {},
+                  onParametroChanged: (_, parametro) {
                     setState(() => current = parametro);
                   },
-                  onDeleteParametro: (_) {},
+                  onDeleteParametro: (_, __) {},
+                  onSelectParametro: (_, __) {},
+                  onAddConclusao: () {},
+                  onRemoveConclusao: () {},
                 ),
               );
             },
