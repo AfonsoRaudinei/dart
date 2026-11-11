@@ -14,6 +14,7 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final producerScope = _watchRelatoriosProducerScope(ref);
     final relatoriosAsync = ref.watch(_relatoriosTecnicosListProvider);
     final occurrencesAsync = ref.watch(occurrencesListProvider);
     final marketingAsync = ref.watch(marketingCaseReportsListProvider);
@@ -42,8 +43,10 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
 
     final relatorios =
         relatoriosAsync.valueOrNull ?? const <RelatorioTecnico>[];
-    final allOccurrences =
-        occurrencesAsync.valueOrNull ?? const <Occurrence>[];
+    final allOccurrences = _scopeRelatoriosOccurrences(
+      producerScope,
+      occurrencesAsync.valueOrNull ?? const <Occurrence>[],
+    );
     final allMarketing =
         marketingAsync.valueOrNull ?? const <MarketingCaseReportSnapshot>[];
     final nowLabel = dateFormat.format(DateTime.now());
