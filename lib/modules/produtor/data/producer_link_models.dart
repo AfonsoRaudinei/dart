@@ -1,3 +1,5 @@
+import '../../../core/contracts/i_producer_invite_writer.dart';
+
 class ProducerClientLink {
   final String id;
   final String consultorUserId;
@@ -8,6 +10,7 @@ class ProducerClientLink {
   final DateTime? usedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final ProducerShareSelection share;
 
   const ProducerClientLink({
     required this.id,
@@ -19,6 +22,7 @@ class ProducerClientLink {
     required this.usedAt,
     required this.createdAt,
     required this.updatedAt,
+    this.share = const ProducerShareSelection(),
   });
 
   factory ProducerClientLink.fromRemote(Map<String, dynamic> map) {
@@ -34,6 +38,12 @@ class ProducerClientLink {
           : DateTime.parse(map['used_at'] as String).toUtc(),
       createdAt: DateTime.parse(map['created_at'] as String).toUtc(),
       updatedAt: DateTime.parse(map['updated_at'] as String).toUtc(),
+      share: ProducerShareSelection(
+        farms: ProducerShareSelection.readFlag(map['share_farms']),
+        fields: ProducerShareSelection.readFlag(map['share_fields']),
+        occurrences: ProducerShareSelection.readFlag(map['share_occurrences']),
+        reports: ProducerShareSelection.readFlag(map['share_reports']),
+      ),
     );
   }
 
@@ -50,6 +60,12 @@ class ProducerClientLink {
           : DateTime.parse(map['used_at'] as String).toUtc(),
       createdAt: DateTime.parse(map['created_at'] as String).toUtc(),
       updatedAt: DateTime.parse(map['updated_at'] as String).toUtc(),
+      share: ProducerShareSelection(
+        farms: ProducerShareSelection.readFlag(map['share_farms']),
+        fields: ProducerShareSelection.readFlag(map['share_fields']),
+        occurrences: ProducerShareSelection.readFlag(map['share_occurrences']),
+        reports: ProducerShareSelection.readFlag(map['share_reports']),
+      ),
     );
   }
 
@@ -64,6 +80,10 @@ class ProducerClientLink {
     'created_at': createdAt.toIso8601String(),
     'updated_at': updatedAt.toIso8601String(),
     'sync_status': syncStatus,
+    'share_farms': share.farms ? 1 : 0,
+    'share_fields': share.fields ? 1 : 0,
+    'share_occurrences': share.occurrences ? 1 : 0,
+    'share_reports': share.reports ? 1 : 0,
   };
 }
 

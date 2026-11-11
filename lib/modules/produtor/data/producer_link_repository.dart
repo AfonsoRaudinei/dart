@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/contracts/i_producer_invite_writer.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/session/local_session_identity.dart';
 import 'linked_consultant_geometry.dart';
@@ -29,7 +30,13 @@ class ProducerLinkRepository implements ProducerLinkReader {
   static const linkedReportsTable = 'relatorios_v2';
   static const _tokenBytes = 6;
 
-  Future<ProducerInvite> createInvite(String clientId) async {
+  Future<ProducerInvite> createInvite(
+    String clientId, {
+    ProducerShareSelection share = const ProducerShareSelection(),
+  }) async {
+    if (!share.hasAny) {
+      throw Exception('Escolha ao menos um tipo de dado para compartilhar.');
+    }
     // Convite exige JWT autenticado: LocalSessionIdentity.lastKnown não
     // basta — a RLS de insert compara auth.uid() com consultor_user_id.
     final userId = _authenticatedUserId();
@@ -47,6 +54,10 @@ class ProducerLinkRepository implements ProducerLinkReader {
             'token_hash': hashToken(token),
             'status': 'pending',
             'expires_at': expiresAt.toIso8601String(),
+            'share_farms': share.farms,
+            'share_fields': share.fields,
+            'share_occurrences': share.occurrences,
+            'share_reports': share.reports,
           })
           .select()
           .single();
@@ -150,9 +161,9 @@ class ProducerLinkRepository implements ProducerLinkReader {
     final message = error.message.toLowerCase();
     final combined = '$message $details';
 
-    if (combined.contains('producer_role_required')) {
-      return 'Esta conta precisa ser de produtor para aceitar o convite. '
-          'Confira o perfil em Configurações.';
+    if (combined.contains('producer_role_required') ||
+        combined.contains('share_role_required')) {
+      return 'Esta conta precisa ser de produtor ou consultor para aceitar o convite.';
     }
     if (combined.contains('not_authenticated')) {
       return 'Sessão expirada. Faça login novamente e tente outra vez.';
@@ -205,10 +216,16 @@ class ProducerLinkRepository implements ProducerLinkReader {
         await _cacheLink(link, syncStatus: 0);
       }
       await _removeStaleCachedProducerLinks(userId, links);
-      return links.map((link) => link.clientId).toList(growable: false);
+      return links
+          .where((link) => link.share.occurrences)
+          .map((link) => link.clientId)
+          .toList(growable: false);
     } catch (_) {
       final cached = await _loadCachedActiveLinks(userId);
-      return cached.map((link) => link.clientId).toList(growable: false);
+      return cached
+          .where((link) => link.share.occurrences)
+          .map((link) => link.clientId)
+          .toList(growable: false);
     }
   }
 
@@ -217,6 +234,7 @@ class ProducerLinkRepository implements ProducerLinkReader {
     final links = await _loadActiveLinks();
     final names = <String, String>{};
     for (final link in links) {
+      if (!link.share.occurrences) continue;
       try {
         final rows = await _client
             .from('clients')
@@ -277,9 +295,15 @@ class ProducerLinkRepository implements ProducerLinkReader {
     if ((clientRows as List).isEmpty) return null;
 
     final client = Map<String, dynamic>.from(clientRows.first as Map);
-    final farms = await _loadFarms(link.clientId);
-    final reports = await _loadReports(link.clientId);
-    final occurrences = await _loadOccurrences(link.clientId);
+    final farms = link.share.farms || link.share.fields
+        ? await _loadFarms(link.clientId, includeFields: link.share.fields)
+        : <ProducerLinkedFarm>[];
+    final reports = link.share.reports
+        ? await _loadReports(link.clientId)
+        : const <ProducerLinkedReport>[];
+    final occurrences = link.share.occurrences
+        ? await _loadOccurrences(link.clientId)
+        : const <ProducerLinkedOccurrence>[];
 
     return ProducerLinkedClient(
       link: link,
@@ -351,7 +375,10 @@ class ProducerLinkRepository implements ProducerLinkReader {
     return _occurrenceCategoryLabel[category] ?? 'Ocorrência';
   }
 
-  Future<List<ProducerLinkedFarm>> _loadFarms(String clientId) async {
+  Future<List<ProducerLinkedFarm>> _loadFarms(
+    String clientId, {
+    required bool includeFields,
+  }) async {
     final rows = await _client
         .from('farms')
         .select()
@@ -370,7 +397,9 @@ class ProducerLinkRepository implements ProducerLinkReader {
           city: (farm['municipio'] ?? farm['city']) as String?,
           state: (farm['uf'] ?? farm['state']) as String?,
           areaHa: _asDouble(farm['area_total'] ?? farm['area_ha']),
-          fields: await _loadFields(farmId),
+          fields: includeFields
+              ? await _loadFields(farmId)
+              : const <ProducerLinkedField>[],
         ),
       );
     }
@@ -388,24 +417,29 @@ class ProducerLinkRepository implements ProducerLinkReader {
       whereArgs: [link.clientId, userId],
       limit: 1,
     );
-    final farmRows = await db.query(
-      'farms',
-      where: 'cliente_id = ? AND user_id = ? AND deleted_at IS NULL',
-      whereArgs: [link.clientId, userId],
-      orderBy: 'nome',
-    );
+    final includeFarms = link.share.farms || link.share.fields;
+    final farmRows = includeFarms
+        ? await db.query(
+            'farms',
+            where: 'cliente_id = ? AND user_id = ? AND deleted_at IS NULL',
+            whereArgs: [link.clientId, userId],
+            orderBy: 'nome',
+          )
+        : <Map<String, Object?>>[];
     final fieldRows = <Map<String, Object?>>[];
-    for (final farm in farmRows) {
-      final farmId = farm['id'] as String?;
-      if (farmId == null || farmId.isEmpty) continue;
-      fieldRows.addAll(
-        await db.query(
-          'fields',
-          where: 'fazenda_id = ? AND user_id = ? AND deleted_at IS NULL',
-          whereArgs: [farmId, userId],
-          orderBy: 'nome',
-        ),
-      );
+    if (link.share.fields) {
+      for (final farm in farmRows) {
+        final farmId = farm['id'] as String?;
+        if (farmId == null || farmId.isEmpty) continue;
+        fieldRows.addAll(
+          await db.query(
+            'fields',
+            where: 'fazenda_id = ? AND user_id = ? AND deleted_at IS NULL',
+            whereArgs: [farmId, userId],
+            orderBy: 'nome',
+          ),
+        );
+      }
     }
     return linkedClientFromLocalRows(
       link: link,

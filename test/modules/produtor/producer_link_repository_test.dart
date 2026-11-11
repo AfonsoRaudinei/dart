@@ -88,6 +88,48 @@ void main() {
       expect(message, contains('produtor'));
     });
 
+    test('vínculo antigo sem colunas de escopo libera tudo', () {
+      final link = ProducerClientLink.fromRemote({
+        'id': 'link-1',
+        'consultor_user_id': 'consultor-1',
+        'client_id': 'client-1',
+        'producer_user_id': 'produtor-1',
+        'status': 'active',
+        'expires_at': '2026-12-01T00:00:00.000Z',
+        'used_at': null,
+        'created_at': '2026-11-01T00:00:00.000Z',
+        'updated_at': '2026-11-01T00:00:00.000Z',
+      });
+
+      expect(link.share.farms, isTrue);
+      expect(link.share.fields, isTrue);
+      expect(link.share.occurrences, isTrue);
+      expect(link.share.reports, isTrue);
+    });
+
+    test('escopo falso no remoto permanece falso', () {
+      final link = ProducerClientLink.fromRemote({
+        'id': 'link-1',
+        'consultor_user_id': 'consultor-1',
+        'client_id': 'client-1',
+        'producer_user_id': null,
+        'status': 'pending',
+        'expires_at': '2026-12-01T00:00:00.000Z',
+        'used_at': null,
+        'created_at': '2026-11-01T00:00:00.000Z',
+        'updated_at': '2026-11-01T00:00:00.000Z',
+        'share_farms': false,
+        'share_fields': true,
+        'share_occurrences': false,
+        'share_reports': true,
+      });
+
+      expect(link.share.farms, isFalse);
+      expect(link.share.fields, isTrue);
+      expect(link.share.occurrences, isFalse);
+      expect(link.share.reports, isTrue);
+    });
+
     test('gera token no formato compartilhável', () {
       final token = ProducerLinkRepository.generateInviteToken(
         random: Random(7),
