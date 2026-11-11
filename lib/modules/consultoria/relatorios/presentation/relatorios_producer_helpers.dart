@@ -139,6 +139,23 @@ List<Occurrence> _sortOccurrencesByCreatedAt(List<Occurrence> occurrences) {
   return sorted;
 }
 
+/// Produtor só vê clientId do vínculo ativo ou da propriedade própria.
+/// Enquanto o conjunto não está pronto, a lista fica vazia.
+List<T> scopeRowsToAllowedClients<T>({
+  required bool isProdutor,
+  required bool allowedReady,
+  required Set<String> allowedClientIds,
+  required List<T> rows,
+  required String? Function(T row) clientIdOf,
+}) {
+  if (!isProdutor) return rows;
+  if (!allowedReady) return List<T>.empty();
+  return rows.where((row) {
+    final id = clientIdOf(row)?.trim() ?? '';
+    return id.isNotEmpty && allowedClientIds.contains(id);
+  }).toList();
+}
+
 Map<String, int> _producerCountsFromIds(Iterable<String?> clientIds) {
   final counts = <String, int>{};
   for (final raw in clientIds) {
