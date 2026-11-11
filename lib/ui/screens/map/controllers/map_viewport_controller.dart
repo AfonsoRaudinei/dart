@@ -13,7 +13,7 @@ import '../../../../modules/consultoria/clients/domain/agronomic_models.dart';
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
 import '../../../../modules/produtor/data/linked_consultant_geometry.dart';
-import '../../../../modules/produtor/data/producer_property_repository.dart';
+import '../../../../modules/produtor/data/producer_link_repository.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/dashboard/services/location_service.dart';
@@ -117,7 +117,7 @@ class MapViewportController {
     final isProducer = viewportUsesProducerStrategy(user);
     final fieldsState = ref.read(mapFieldsProvider);
     var farmPoints = polygonPointsFromFields(fieldsState.valueOrNull);
-    if (isProducer && farmPoints.isEmpty && !fieldsState.isLoading) {
+    if (farmPoints.isEmpty && !fieldsState.isLoading) {
       farmPoints = await _linkedConsultantCameraPoints(
         ref: ref,
         isMounted: isMounted,
@@ -170,13 +170,13 @@ class MapViewportController {
     required List<LatLng> ownPoints,
   }) async {
     try {
-      final dashboard = await ref.read(
-        producerPropertyDashboardProvider.future,
-      );
+      final linked = await ref
+          .read(producerLinkRepositoryProvider)
+          .loadLinkedConsultantData();
       if (!isMounted) return ownPoints;
       return producerCameraPoints(
         ownPoints: ownPoints,
-        linkedPoints: focusPointsForLinkedClients(dashboard.linkedClients),
+        linkedPoints: focusPointsForLinkedClients(linked),
       );
     } catch (_) {
       return ownPoints;
