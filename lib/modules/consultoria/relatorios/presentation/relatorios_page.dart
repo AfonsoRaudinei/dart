@@ -109,11 +109,7 @@ class _RelatoriosProducerScope {
   final Set<String> allowedClientIds;
 }
 
-bool _relatoriosAllowedSetReady(AsyncValue<Object?> value) {
-  return value.hasValue && !value.isLoading && !value.hasError;
-}
-
-/// Consultor e papel desconhecido não filtram. Produtor espera o conjunto permitido.
+/// Consultor e papel desconhecido não filtram. Produtor usa o vínculo já resolvido.
 _RelatoriosProducerScope _watchRelatoriosProducerScope(WidgetRef ref) {
   final isProdutor = ref.watch(currentUserRoleProvider).isProdutor;
   if (!isProdutor) {
@@ -126,25 +122,18 @@ _RelatoriosProducerScope _watchRelatoriosProducerScope(WidgetRef ref) {
 
   final authorized = ref.watch(authorizedClientIdsProvider);
   final own = ref.watch(_relatoriosProducerOwnClientIdProvider);
-  if (!_relatoriosAllowedSetReady(authorized) ||
-      !_relatoriosAllowedSetReady(own)) {
-    return const _RelatoriosProducerScope(
-      isProdutor: true,
-      allowedReady: false,
-      allowedClientIds: <String>{},
-    );
-  }
-
-  final ids = <String>{
-    for (final raw in authorized.requireValue)
-      if (raw.trim().isNotEmpty) raw.trim(),
-  };
-  final ownId = own.requireValue?.trim() ?? '';
-  if (ownId.isNotEmpty) ids.add(ownId);
+  final resolved = resolveProducerAllowedClients(
+    authorizedHasValue: authorized.hasValue,
+    authorizedHasError: authorized.hasError,
+    authorizedIds: authorized.valueOrNull ?? const <String>{},
+    ownHasValue: own.hasValue,
+    ownHasError: own.hasError,
+    ownClientId: own.valueOrNull,
+  );
   return _RelatoriosProducerScope(
     isProdutor: true,
-    allowedReady: true,
-    allowedClientIds: ids,
+    allowedReady: resolved.ready,
+    allowedClientIds: resolved.ids,
   );
 }
 
