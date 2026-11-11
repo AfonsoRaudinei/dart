@@ -154,3 +154,26 @@ const double kMapTopControlsReservedRightWidth =
 /// Fileira superior com indicador de feature selecionada (4.º botão circular).
 const double kMapTopControlsSelectedFeatureChromeWidth =
     kMapTopControlsButtonSpacing + kMapActionColumnButtonSize;
+
+/// Card de contexto do mapa (produtor e consultor) no canto inferior esquerdo.
+///
+/// 36dp livra o botão de atribuição do flutter_map.
+const double kMapContextCardLeftInset = 12.0;
+
+/// Folga entre a base do card de contexto e a borda útil (acima da safe area).
+const double kMapContextCardBottomInset = 36.0;
+
+/// Folga entre o card de contexto e a coluna de ações (lápis / check-in).
+const double kMapContextCardColumnGap = 12.0;
+
+/// Folga entre o card de contexto e a toolbar de desenho, quando ela está visível.
+const double kMapContextCardToolbarGap = 8.0;
+
+/// Largura máxima do card de contexto: a tela menos a margem esquerda e a coluna direita.
+double mapContextCardMaxWidth(double screenWidth) {
+  return screenWidth -
+      kMapContextCardLeftInset -
+      kMapActionColumnRightInset -
+      kMapActionColumnButtonSize -
+      kMapContextCardColumnGap;
+}
