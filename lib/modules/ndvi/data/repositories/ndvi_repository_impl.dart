@@ -15,6 +15,7 @@ class NdviRepositoryImpl implements INdviRepository {
   final NdviRemoteDatasource _remote;
   final IFieldLookup _fieldLookup;
   final NdviCachePolicy _cachePolicy;
+  final bool Function() _isRefinedEnabled;
 
   /// Evita repetir `source: sentinel` para o mesmo Preview RGB nesta sessão.
   final Set<String> _sentinelRetried = {};
@@ -24,7 +25,12 @@ class NdviRepositoryImpl implements INdviRepository {
     this._remote,
     this._fieldLookup, {
     NdviCachePolicy? cachePolicy,
-  }) : _cachePolicy = cachePolicy ?? _NoOpNdviCachePolicy();
+    bool Function()? isRefinedEnabled,
+  }) : _cachePolicy = cachePolicy ?? _NoOpNdviCachePolicy(),
+       _isRefinedEnabled = isRefinedEnabled ?? (() => false);
+
+  String _fingerprint(FieldSummary summary) =>
+      ndviOriginFingerprintWithTier(summary, _isRefinedEnabled());
 
   @override
   Future<NdviImage?> getLatestByFieldId(String fieldId) async {
@@ -40,7 +46,8 @@ class NdviRepositoryImpl implements INdviRepository {
   @override
   Future<List<NdviImage>> getByFieldId(String fieldId) async {
     final summary = await _fieldLookup.findById(fieldId);
-    final fingerprint = summary != null ? ndviOriginFingerprint(summary) : '';
+    final fingerprint =
+        summary != null ? _fingerprint(summary) : '';
 
     final cached = await _local.getAll(fieldId);
     if (cached.isNotEmpty &&
@@ -270,7 +277,7 @@ class NdviRepositoryImpl implements INdviRepository {
       await _local.save(
         _unavailableImage(fieldId: fieldId, degradedReason: reason),
       );
-      await _cachePolicy.markSynced(fieldId, ndviOriginFingerprint(summary));
+      await _cachePolicy.markSynced(fieldId, _fingerprint(summary));
       final stored = await _local.getAll(fieldId);
       return stored.map((model) => model.toEntity()).toList();
     }
@@ -291,7 +298,7 @@ class NdviRepositoryImpl implements INdviRepository {
       );
     }
 
-    await _cachePolicy.markSynced(fieldId, ndviOriginFingerprint(summary));
+    await _cachePolicy.markSynced(fieldId, _fingerprint(summary));
     final all = await _local.getAll(fieldId);
     return _enrichAllStats(
       await _replacePlanetPreview(

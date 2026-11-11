@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/contracts/i_field_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/i_ndvi_refined_entitlement_provider.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/core/state/map_ndvi_overlay.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -29,11 +30,13 @@ final ndviRepositoryProvider = Provider<INdviRepository>((ref) {
   final remote = ref.watch(ndviRemoteDatasourceProvider);
   final fieldLookup = ref.watch(iFieldLookupProvider);
   final cachePolicy = ref.watch(ndviCachePolicyProvider);
+  final entitlement = ref.watch(ndviRefinedEntitlementProvider);
   return NdviRepositoryImpl(
     local,
     remote,
     fieldLookup,
     cachePolicy: cachePolicy,
+    isRefinedEnabled: () => entitlement.isNdviRefinedEnabled,
   );
 });
 
