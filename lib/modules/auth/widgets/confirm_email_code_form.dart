@@ -45,6 +45,8 @@ class _ConfirmEmailCodeFormState extends State<ConfirmEmailCodeForm> {
   int _resendCooldown = 0;
   int _lockRemaining = 0;
   int _failedAttempts = 0;
+  String? _errorText;
+  String? _successText;
 
   @override
   void initState() {
@@ -117,20 +119,23 @@ class _ConfirmEmailCodeFormState extends State<ConfirmEmailCodeForm> {
   String _messageFrom(Object error) =>
       error.toString().replaceAll('Exception: ', '');
 
-  void _showError(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: const Color(0xFFFF3B30),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  void _setError(String message) {
+    _errorText = message;
+    _successText = null;
+  }
+
+  void _setSuccess(String message) {
+    _successText = message;
+    _errorText = null;
   }
 
   Future<void> _handleVerify() async {
     if (!_canSubmit) return;
-    setState(() => _isVerifying = true);
+    setState(() {
+      _isVerifying = true;
+      _errorText = null;
+      _successText = null;
+    });
     try {
       await widget.onVerify(_codeController.text);
       if (!mounted) return;
@@ -141,9 +146,9 @@ class _ConfirmEmailCodeFormState extends State<ConfirmEmailCodeForm> {
       _failedAttempts += 1;
       if (_failedAttempts >= ConfirmEmailCodeForm.maxFailedAttempts) {
         _startLock();
-        _showError('Muitas tentativas incorretas. Aguarde 1 minuto.');
+        _setError('Muitas tentativas incorretas. Aguarde 1 minuto.');
       } else {
-        _showError(_messageFrom(e));
+        _setError(_messageFrom(e));
       }
     } finally {
       if (mounted) setState(() => _isVerifying = false);
@@ -152,19 +157,19 @@ class _ConfirmEmailCodeFormState extends State<ConfirmEmailCodeForm> {
 
   Future<void> _handleResend() async {
     if (!_canResend) return;
-    setState(() => _isResending = true);
+    setState(() {
+      _isResending = true;
+      _errorText = null;
+      _successText = null;
+    });
     try {
       await widget.onResend();
       if (!mounted) return;
       _startResendCooldown();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Novo código enviado. Verifique sua caixa de entrada.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      _setSuccess('Novo código enviado. Verifique sua caixa de entrada.');
     } catch (e) {
-      _showError(_messageFrom(e));
+      if (!mounted) return;
+      _setError(_messageFrom(e));
     } finally {
       if (mounted) setState(() => _isResending = false);
     }
@@ -210,6 +215,19 @@ class _ConfirmEmailCodeFormState extends State<ConfirmEmailCodeForm> {
           ),
           onSubmitted: (_) => _handleVerify(),
         ),
+        if (_errorText != null || _successText != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            _errorText ?? _successText!,
+            key: const Key('confirm_code_feedback'),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: _errorText != null
+                  ? PremiumTokens.alertError
+                  : PremiumTokens.brandGreen,
+            ),
+          ),
+        ],
         const SizedBox(height: 16),
         ElevatedButton(
           key: const Key('confirm_code_submit'),
