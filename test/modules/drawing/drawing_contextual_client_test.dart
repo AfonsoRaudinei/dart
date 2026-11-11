@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:soloforte_app/core/contracts/i_producer_property_gateway.dart';
+import 'package:soloforte_app/core/contracts/i_producer_property_gateway_provider.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/domain/repositories/i_clients_repository.dart';
@@ -30,6 +32,49 @@ class _ClientsRepository implements IClientsRepository {
 
   @override
   Future<void> saveFarm(Farm farm, String clientId) async {}
+}
+
+class _OwnPropertyGateway implements IProducerPropertyGateway {
+  @override
+  Future<ProducerPropertySnapshot> loadOwnProperty() async {
+    return const ProducerPropertySnapshot(
+      clientId: 'jonathan-id',
+      name: 'Jonathan',
+      email: null,
+      farms: [],
+    );
+  }
+
+  @override
+  Future<void> saveOwnFarm({
+    String? farmId,
+    required String name,
+    required String city,
+    required String state,
+    required double areaHa,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> saveOwnField({
+    String? fieldId,
+    required String farmId,
+    required String name,
+    required double areaHa,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> deleteOwnFarm(String farmId) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> deleteOwnField(String fieldId) {
+    throw UnimplementedError();
+  }
 }
 
 class _DrawingRepository extends DrawingRepository {
@@ -77,6 +122,25 @@ void main() {
     expect(state.preSelectedFarmId, 'farm-1');
     expect(state.preSelectedFarmName, 'Retiro');
     expect(state.farms.single.id, 'farm-1');
+  });
+
+  test('troca de cliente sem nome não conserva o nome anterior', () {
+    final container = ProviderContainer(
+      overrides: [
+        drawingClientsRepositoryProvider.overrideWithValue(
+          _ClientsRepository(),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final notifier = container.read(drawingClientProvider.notifier);
+    notifier.setClienteAtivo('adriano', clientName: 'Adriano Gomes');
+    notifier.setClienteAtivo('jonathan', clientName: null);
+
+    final state = container.read(drawingClientProvider);
+    expect(state.preSelectedClientId, 'jonathan');
+    expect(state.preSelectedClientName, isNull);
   });
 
   testWidgets('revisão contextual trava cliente e fazenda pré-selecionados', (
@@ -131,5 +195,57 @@ void main() {
     expect(find.text('Selecione o cliente...'), findsNothing);
     expect(find.text('Selecione a fazenda...'), findsNothing);
     expect(find.byIcon(Icons.lock_outline), findsNWidgets(2));
+  });
+
+  testWidgets('produtor substitui pré-seleção estrangeira pela propriedade', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 2200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final container = ProviderContainer(
+      overrides: [
+        drawingClientsRepositoryProvider.overrideWithValue(
+          _ClientsRepository(),
+        ),
+        producerPropertyGatewayProvider.overrideWithValue(
+          _OwnPropertyGateway(),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    container
+        .read(drawingClientProvider.notifier)
+        .setClienteAtivo('adriano', clientName: 'Adriano Gomes');
+
+    final controller = DrawingController(repository: _DrawingRepository());
+    addTearDown(controller.dispose);
+    controller.selectTool('polygon');
+    controller.appendDrawingPoint(const LatLng(-10.57, -48.80));
+    controller.appendDrawingPoint(const LatLng(-10.57, -48.79));
+    controller.appendDrawingPoint(const LatLng(-10.56, -48.79));
+    controller.completeDrawing();
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: DrawingSheet(
+                controller: controller,
+                forceOwnPropertyClient: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Jonathan'), findsOneWidget);
+    expect(find.text('Adriano Gomes'), findsNothing);
   });
 }
