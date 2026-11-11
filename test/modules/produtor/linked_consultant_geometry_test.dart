@@ -47,7 +47,7 @@ void main() {
         email: null,
         city: null,
         state: null,
-        farms: [
+        farms: const [
           ProducerLinkedFarm(
             id: 'farm-1',
             name: 'Pium',
@@ -61,7 +61,7 @@ void main() {
                 areaHa: 4,
                 geometryJson: polygon,
               ),
-              const ProducerLinkedField(
+              ProducerLinkedField(
                 id: 'field-2',
                 name: 'Sem desenho',
                 areaHa: 1,
