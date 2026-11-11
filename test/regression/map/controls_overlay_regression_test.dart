@@ -133,10 +133,16 @@ void main() {
       await _pumpMapControlsOverlay(
         tester,
         safePadding: const EdgeInsets.only(top: safeTop),
+        topLeftCard: const SizedBox(
+          key: Key('map_context_card_idle_probe'),
+          height: 48,
+          width: 160,
+        ),
       );
 
-      final card = tester.getRect(find.byType(VisitActiveCard));
-      expect(card.top, isNot(closeTo(safeTop + 8, 0.5)));
+      final card = tester.getRect(
+        find.byKey(const Key('map_context_card_idle_probe')),
+      );
       expect(
         card.bottom,
         closeTo(_kViewport.height - kMapContextCardBottomInset, 0.5),
@@ -175,11 +181,11 @@ void main() {
       (tester) async {
         await _pumpMapControlsOverlay(
           tester,
-          safePadding: const EdgeInsets.only(bottom: _kSafeBottom),
-          topLeftCard: const SizedBox(
-            key: Key('map_context_card_probe'),
-            height: 48,
-            child: Text(
+          topLeftCard: SizedBox(
+            key: const Key('map_context_card_probe'),
+            width: mapContextCardMaxWidth(_kViewport.width),
+            height: 80,
+            child: const Text(
               'JONATHAN PEREIRA DOS SANTOS NOME LONGO DEMAIS PARA O TOPO',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -193,13 +199,20 @@ void main() {
         final basemap = tester.getRect(
           find.byKey(const Key('map_control_basemap_toggle_btn')),
         );
+        final layers = tester.getRect(
+          find.byKey(const Key('map_control_layers_btn')),
+        );
+        final checkIn = tester.getRect(
+          find.byKey(const Key('map_control_check_in')),
+        );
+        final attribution = Rect.fromLTWH(4, _kViewport.height - 52, 48, 48);
         expect(card.overlaps(basemap), isFalse);
+        expect(card.overlaps(layers), isFalse);
+        expect(card.overlaps(checkIn), isFalse);
+        expect(card.overlaps(attribution), isFalse);
         expect(
           card.bottom,
-          closeTo(
-            _kViewport.height - _kSafeBottom - kMapContextCardBottomInset,
-            0.5,
-          ),
+          closeTo(_kViewport.height - kMapContextCardBottomInset, 0.5),
         );
       },
     );
@@ -335,6 +348,26 @@ void main() {
         );
       },
     );
+
+    testWidgets('card de contexto não cobre o FAB', (tester) async {
+      await _pumpOverlayWithFabHarness(
+        tester,
+        safePadding: EdgeInsets.zero,
+        topLeftCard: SizedBox(
+          key: const Key('map_context_card_probe'),
+          width: mapContextCardMaxWidth(_kViewport.width),
+          height: 80,
+        ),
+      );
+
+      final card = tester.getRect(
+        find.byKey(const Key('map_context_card_probe')),
+      );
+      final fab = tester.getRect(
+        find.byKey(const Key('map_chrome_fab_harness')),
+      );
+      expect(card.overlaps(fab), isFalse);
+    });
 
     testWidgets(
       'modo produtor: sem check-in e layers ancorado no bottom inset',
@@ -723,6 +756,7 @@ Future<void> _pumpMapControlsOverlay(
 Future<void> _pumpOverlayWithFabHarness(
   WidgetTester tester, {
   required EdgeInsets safePadding,
+  Widget? topLeftCard,
 }) async {
   _setViewport(tester, safePadding);
   SharedPreferences.setMockInitialValues({});
@@ -754,6 +788,7 @@ Future<void> _pumpOverlayWithFabHarness(
                 onTabSelected: (_, _) {},
                 isDrawMode: false,
                 showCheckInAction: true,
+                topLeftCard: topLeftCard,
                 currentCenter: const LatLng(-10.2, -48.3),
                 currentZoom: 13,
                 drawingState: DrawingState.idle,
