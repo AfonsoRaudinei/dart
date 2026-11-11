@@ -228,7 +228,7 @@ void main() {
   );
 
   testWidgets(
-    'MapControlsOverlay renderiza card customizado no topo esquerdo',
+    'MapControlsOverlay renderiza card customizado na metade inferior',
     (tester) async {
       await _pumpMapControlsOverlay(
         tester,
@@ -238,6 +238,9 @@ void main() {
 
       expect(find.text('Contexto produtor'), findsOneWidget);
       expect(find.byKey(const Key('map_control_check_in')), findsNothing);
+      final cardTop = tester.getTopLeft(find.text('Contexto produtor')).dy;
+      final screenHeight = tester.getSize(find.byType(Scaffold)).height;
+      expect(cardTop, greaterThan(screenHeight * 0.5));
     },
   );
 
