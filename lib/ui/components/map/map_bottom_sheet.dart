@@ -8,6 +8,8 @@ import '../premium/premium_glass_panel.dart';
 import 'package:latlong2/latlong.dart';
 import 'map_layers_sheet.dart';
 import '../../../modules/drawing/presentation/widgets/drawing_sheet.dart';
+import '../../../modules/settings/presentation/providers/user_profile_provider.dart';
+import 'package:soloforte_app/core/session/user_role.dart';
 import '../../../modules/drawing/presentation/controllers/drawing_controller.dart';
 import '../../../modules/drawing/presentation/coordinators/drawing_close_coordinator.dart';
 import '../../../modules/drawing/domain/drawing_state.dart';
@@ -560,6 +562,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   }
 
   Widget _buildDraw() {
+    final role = ref.watch(currentUserRoleProvider);
     return DrawingSheet(
       controller: widget.drawingController,
       scrollController: _scrollController,
@@ -569,6 +572,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       onSaved: _onDrawingSaved,
       onClose: _closeDrawingSheetChrome,
       onCollapseWhileEditing: _collapseDrawingSheetWhileEditing,
+      forceOwnPropertyClient: role.isProdutor,
     );
   }
 
