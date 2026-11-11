@@ -100,7 +100,11 @@ void main() {
     await tester.pump();
 
     expect(confirmed, 0);
-    expect(find.text('Código inválido ou expirado.'), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
+    expect(
+      tester.widget<Text>(find.byKey(const Key('confirm_code_feedback'))).data,
+      'Código inválido ou expirado.',
+    );
   });
 
   testWidgets('reenvio inicia cooldown de 60s e reabilita ao final', (
