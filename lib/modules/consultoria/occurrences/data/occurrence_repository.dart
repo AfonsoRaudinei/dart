@@ -30,12 +30,17 @@ class OccurrenceOwnershipPolicy {
     return SyncStatusContract.normalize(currentSyncStatus);
   }
 
-  static String buildOwnedOrOrphanWhereClause() {
-    return "(user_id = ? OR user_id = '${OccurrenceOwnershipPolicy.orphanUserId}')";
+  /// Pré-login (`scopedUserId` vazio) lê só órfão. Conta logada lê só o próprio id.
+  static String buildOwnedOrOrphanWhereClause(String scopedUserId) {
+    if (scopedUserId.isEmpty) {
+      return "user_id = '${OccurrenceOwnershipPolicy.orphanUserId}'";
+    }
+    return 'user_id = ?';
   }
 
-  static List<Object?> buildOwnedOrOrphanWhereArgs(String currentUserId) {
-    return [currentUserId];
+  static List<Object?> buildOwnedOrOrphanWhereArgs(String scopedUserId) {
+    if (scopedUserId.isEmpty) return const <Object?>[];
+    return [scopedUserId];
   }
 }
 
@@ -113,7 +118,7 @@ class OccurrenceRepository {
         'updated_at': deletedAt,
       },
       where:
-          'id = ? AND ${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause()}',
+          'id = ? AND ${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause(currentUserId)}',
       whereArgs: [
         id,
         ...OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereArgs(currentUserId),
@@ -129,7 +134,7 @@ class OccurrenceRepository {
       'occurrences',
       where:
           'id = ? AND '
-          '(${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause()} '
+          '(${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause(currentUserId)} '
           'OR cached_by_user_id = ?)',
       whereArgs: [
         id,
@@ -152,7 +157,7 @@ class OccurrenceRepository {
       'occurrences',
       where:
           'client_id = ? AND '
-          '(${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause()} '
+          '(${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause(currentUserId)} '
           'OR cached_by_user_id = ?) '
           "AND sync_status NOT IN ('deleted', 'deleted_local') "
           'AND deleted_at IS NULL',
@@ -179,7 +184,7 @@ class OccurrenceRepository {
       'occurrences',
       where:
           "field_id = ? AND LOWER(TRIM(category)) = 'plantio' AND "
-          '(${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause()} '
+          '(${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause(currentUserId)} '
           'OR cached_by_user_id = ?) '
           "AND sync_status NOT IN ('deleted', 'deleted_local') "
           'AND deleted_at IS NULL',
@@ -220,8 +225,9 @@ class OccurrenceRepository {
   ) async {
     final db = await _databaseHelper.database;
     final currentUserId = _scopedUserId();
-    final ownedClause =
-        "(o.user_id = ? OR o.user_id = '${OccurrenceOwnershipPolicy.orphanUserId}')";
+    final ownedClause = OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause(
+      currentUserId,
+    ).replaceAll('user_id', 'o.user_id');
     final maps = await db.rawQuery(
       '''
       SELECT o.* FROM occurrences o
@@ -251,7 +257,7 @@ class OccurrenceRepository {
       'occurrences',
       where:
           'visit_session_id = ? AND '
-          '${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause()} '
+          '${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause(currentUserId)} '
           "AND sync_status NOT IN ('deleted', 'deleted_local') "
           'AND deleted_at IS NULL',
       whereArgs: [
@@ -283,7 +289,7 @@ class OccurrenceRepository {
     final List<Map<String, dynamic>> maps = await db.query(
       'occurrences',
       where:
-          '(${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause()}$sharedClause) '
+          '(${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause(currentUserId)}$sharedClause) '
           "AND sync_status NOT IN ('deleted', 'deleted_local') "
           'AND deleted_at IS NULL',
       whereArgs: args,
@@ -296,7 +302,7 @@ class OccurrenceRepository {
     final db = await _databaseHelper.database;
     final currentUserId = _scopedUserId();
     String where =
-        'WHERE ${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause()} '
+        'WHERE ${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause(currentUserId)} '
         "AND sync_status NOT IN ('deleted', 'deleted_local') "
         'AND deleted_at IS NULL';
     List<dynamic> args = [
