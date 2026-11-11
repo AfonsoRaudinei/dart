@@ -35,8 +35,9 @@ void main() {
       expect(shouldShowMapLongPressHint(prefs), isTrue);
     });
 
-    test('hint copy references free map area', () {
+    test('hint copy references free map area and occurrence', () {
       expect(kMapLongPressHintMessage, contains('área livre'));
+      expect(kMapLongPressHintMessage, contains('ocorrência'));
       expect(kMapLongPressOccupiedFeedbackMessage, contains('área livre'));
     });
   });
