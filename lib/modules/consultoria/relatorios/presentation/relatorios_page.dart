@@ -12,7 +12,9 @@ import '../../../../core/contracts/i_client_lookup.dart';
 import '../../../../core/contracts/i_client_lookup_provider.dart';
 import '../../../../core/contracts/i_farm_lookup_provider.dart';
 import '../../../../core/contracts/i_field_lookup_provider.dart';
+import '../../../../core/access/producer_create_context_resolver.dart';
 import '../../../../core/contracts/i_occurrence_access_reader_provider.dart';
+import '../../../../core/contracts/i_producer_property_gateway_provider.dart';
 import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/design/sf_icons.dart';
@@ -80,6 +82,84 @@ final _relatoriosTecnicosListProvider =
       final authorized = await ref.watch(authorizedClientIdsProvider.future);
       return repo.getVisibleForAuthorizedClients(authorized);
     });
+
+/// `clients.id` da propriedade própria do produtor. Falha → sem id (não inventa).
+final _relatoriosProducerOwnClientIdProvider =
+    FutureProvider.autoDispose<String?>((ref) async {
+      try {
+        final summary = await ProducerCreateContextResolver.asClientSummary(
+          ref.read(producerPropertyGatewayProvider),
+        );
+        final id = summary?.id.trim() ?? '';
+        return id.isEmpty ? null : id;
+      } catch (_) {
+        return null;
+      }
+    });
+
+class _RelatoriosProducerScope {
+  const _RelatoriosProducerScope({
+    required this.isProdutor,
+    required this.allowedReady,
+    required this.allowedClientIds,
+  });
+
+  final bool isProdutor;
+  final bool allowedReady;
+  final Set<String> allowedClientIds;
+}
+
+bool _relatoriosAllowedSetReady(AsyncValue<Object?> value) {
+  return value.hasValue && !value.isLoading && !value.hasError;
+}
+
+/// Consultor e papel desconhecido não filtram. Produtor espera o conjunto permitido.
+_RelatoriosProducerScope _watchRelatoriosProducerScope(WidgetRef ref) {
+  final isProdutor = ref.watch(currentUserRoleProvider).isProdutor;
+  if (!isProdutor) {
+    return const _RelatoriosProducerScope(
+      isProdutor: false,
+      allowedReady: true,
+      allowedClientIds: <String>{},
+    );
+  }
+
+  final authorized = ref.watch(authorizedClientIdsProvider);
+  final own = ref.watch(_relatoriosProducerOwnClientIdProvider);
+  if (!_relatoriosAllowedSetReady(authorized) ||
+      !_relatoriosAllowedSetReady(own)) {
+    return const _RelatoriosProducerScope(
+      isProdutor: true,
+      allowedReady: false,
+      allowedClientIds: <String>{},
+    );
+  }
+
+  final ids = <String>{
+    for (final raw in authorized.requireValue)
+      if (raw.trim().isNotEmpty) raw.trim(),
+  };
+  final ownId = own.requireValue?.trim() ?? '';
+  if (ownId.isNotEmpty) ids.add(ownId);
+  return _RelatoriosProducerScope(
+    isProdutor: true,
+    allowedReady: true,
+    allowedClientIds: ids,
+  );
+}
+
+List<Occurrence> _scopeRelatoriosOccurrences(
+  _RelatoriosProducerScope scope,
+  List<Occurrence> rows,
+) {
+  return scopeRowsToAllowedClients(
+    isProdutor: scope.isProdutor,
+    allowedReady: scope.allowedReady,
+    allowedClientIds: scope.allowedClientIds,
+    rows: rows,
+    clientIdOf: (occurrence) => occurrence.clientId,
+  );
+}
 
 class _ReportBrandingContext {
   final String? brandName;
@@ -431,10 +511,12 @@ class _OccurrenciasSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final producerScope = _watchRelatoriosProducerScope(ref);
     final occAsync = ref.watch(occurrencesListProvider);
 
     return occAsync.when(
-      data: (list) {
+      data: (raw) {
+        final list = _scopeRelatoriosOccurrences(producerScope, raw);
         final nowLabel = dateFormat.format(DateTime.now());
         final producerCounts = _producerCountsFromIds(
           list.map((o) => o.clientId),
@@ -466,7 +548,7 @@ class _OccurrenciasSection extends ConsumerWidget {
           children: [
             _InsetGroupHeader(
               title: 'Ocorrências Registradas',
-              count: effectiveClientId != null ? scoped.length : list.length,
+              count: effectiveClientId != null ? scoped.length : 0,
             ),
             if (list.isNotEmpty && producerIds.isNotEmpty) ...[
               _relatoriosProducerSelectorBlock(
