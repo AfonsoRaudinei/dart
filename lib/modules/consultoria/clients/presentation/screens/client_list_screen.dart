@@ -33,7 +33,7 @@ class ClientListScreen extends ConsumerWidget {
           slivers: [
             SliverAppBar(
               pinned: true,
-              expandedHeight: 220.0,
+              expandedHeight: 176.0,
               backgroundColor: context.premiumBackground.withValues(alpha: 0.8),
               surfaceTintColor: Colors.transparent,
               flexibleSpace: ClipRect(
@@ -53,7 +53,7 @@ class ClientListScreen extends ConsumerWidget {
                 const SizedBox(width: 8),
               ],
               bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(220),
+                preferredSize: const Size.fromHeight(176),
                 child: Column(
                   children: [
                     Padding(
@@ -71,14 +71,7 @@ class ClientListScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton(
-                        onPressed: () =>
-                            showConsultantShareAcceptDialog(context),
-                        child: const Text('Receber de outro consultor'),
-                      ),
-                    ),
+                    const SizedBox(height: 12),
                     // Search Bar
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -168,6 +161,8 @@ class ClientListScreen extends ConsumerWidget {
                 ),
               ),
             ),
+
+            const SliverToBoxAdapter(child: ConsultantReceiveCodeCard()),
 
             // List
             SliverPadding(
