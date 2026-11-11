@@ -30,6 +30,12 @@ class _SideMenuContent extends StatelessWidget {
                     route: AppRoutes.clients,
                   ),
                   _MenuItem(
+                    icon: Icons.vpn_key_outlined,
+                    label: 'Receber código',
+                    subtitle: 'Vínculo de outro consultor',
+                    route: AppRoutes.clients,
+                  ),
+                  _MenuItem(
                     icon: Icons.analytics_outlined,
                     label: 'Relatórios',
                     subtitle: 'Análises e KPIs',

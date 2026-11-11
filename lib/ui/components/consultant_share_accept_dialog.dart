@@ -6,6 +6,100 @@ import '../../core/utils/user_facing_error.dart';
 import '../../modules/produtor/data/producer_link_models.dart';
 import '../../modules/produtor/data/producer_link_repository.dart';
 
+class ConsultantReceiveCodeCard extends ConsumerStatefulWidget {
+  const ConsultantReceiveCodeCard({super.key});
+
+  @override
+  ConsumerState<ConsultantReceiveCodeCard> createState() =>
+      _ConsultantReceiveCodeCardState();
+}
+
+class _ConsultantReceiveCodeCardState
+    extends ConsumerState<ConsultantReceiveCodeCard> {
+  final _tokenController = TextEditingController();
+  var _submitting = false;
+  String? _message;
+  var _success = false;
+
+  @override
+  void dispose() {
+    _tokenController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _accept() async {
+    final token = _tokenController.text.trim();
+    if (token.isEmpty || _submitting) return;
+    setState(() {
+      _submitting = true;
+      _message = null;
+      _success = false;
+    });
+    try {
+      await ref.read(producerLinkRepositoryProvider).acceptToken(token);
+      _tokenController.clear();
+      if (!mounted) return;
+      setState(() {
+        _success = true;
+        _message = 'Vínculo aceito. Os dados liberados aparecem no mapa.';
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _success = false;
+        _message = error is FormatException
+            ? error.message
+            : userFacingError(error, action: 'Não foi possível vincular');
+      });
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Código de outro consultor',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _tokenController,
+            minLines: 1,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              hintText: 'Cole o código ou a mensagem',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton(
+              onPressed: _submitting ? null : _accept,
+              child: Text(_submitting ? 'Vinculando…' : 'Vincular'),
+            ),
+          ),
+          if (_message != null)
+            Text(
+              _message!,
+              style: TextStyle(
+                color: _success
+                    ? const Color(0xFF1B7F3A)
+                    : const Color(0xFFFF3B30),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 Future<void> showConsultantShareAcceptDialog(BuildContext context) {
   return showDialog<void>(
     context: context,
