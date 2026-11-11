@@ -35,7 +35,10 @@ class NdviLatestLookupAdapter implements INdviLatestLookup {
     if (localPath != null &&
         localPath.isNotEmpty &&
         ndviSupportsGreenMask(image.source)) {
-      greenMaskLocalPath = await _resolveGreenMaskPath(localPath);
+      greenMaskLocalPath = await _resolveGreenMaskPath(
+        localPath,
+        refined: ndviIsRefinedSource(image.source),
+      );
     }
 
     return NdviLatestSummary(
@@ -52,12 +55,15 @@ class NdviLatestLookupAdapter implements INdviLatestLookup {
     );
   }
 
-  Future<String?> _resolveGreenMaskPath(String colorPath) async {
+  Future<String?> _resolveGreenMaskPath(
+    String colorPath, {
+    bool refined = false,
+  }) async {
     try {
       final colorFile = File(colorPath);
       if (!await colorFile.exists()) return null;
 
-      final maskPath = _greenMaskPathFor(colorPath);
+      final maskPath = _greenMaskPathFor(colorPath, refined: refined);
       final maskFile = File(maskPath);
       final colorStat = await colorFile.stat();
       if (await maskFile.exists()) {
@@ -71,7 +77,7 @@ class NdviLatestLookupAdapter implements INdviLatestLookup {
       final source = img.decodeImage(bytes);
       if (source == null) return null;
 
-      final mask = applyNdviGreenMask(source);
+      final mask = applyNdviGreenMask(source, refined: refined);
       final maskBytes = Uint8List.fromList(img.encodePng(mask));
       await maskFile.writeAsBytes(maskBytes, flush: true);
       return maskPath;
@@ -80,13 +86,14 @@ class NdviLatestLookupAdapter implements INdviLatestLookup {
     }
   }
 
-  String _greenMaskPathFor(String colorPath) {
+  String _greenMaskPathFor(String colorPath, {bool refined = false}) {
     final dir = p.dirname(colorPath);
     final extension = p.extension(colorPath);
     final basename = p.basenameWithoutExtension(colorPath);
     final maskBase = basename.startsWith('ndvi_color_')
         ? basename.replaceFirst('ndvi_color_', 'ndvi_green_mask_')
         : '${basename}_green_mask';
-    return p.join(dir, '$maskBase${extension.isEmpty ? '.png' : extension}');
+    final refinedTag = refined ? '_refined' : '';
+    return p.join(dir, '$maskBase$refinedTag${extension.isEmpty ? '.png' : extension}');
   }
 }

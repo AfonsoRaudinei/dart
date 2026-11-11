@@ -8,7 +8,8 @@ const double _minGreenBrightness = 0.18;
 /// Converts a colored NDVI image into a binary green mask.
 ///
 /// Green pixels become white. Every other visible color becomes black.
-img.Image applyNdviGreenMask(img.Image source) {
+/// [refined] inclui a faixa amarelo-esverdeada do colormap Ouro (NDVI ~0,2–0,4).
+img.Image applyNdviGreenMask(img.Image source, {bool refined = false}) {
   final output = img.Image(
     width: source.width,
     height: source.height,
@@ -24,11 +25,11 @@ img.Image applyNdviGreenMask(img.Image source) {
         continue;
       }
 
-      final isGreen = isNdviGreenPixel(
-        red: pixel.r.toInt(),
-        green: pixel.g.toInt(),
-        blue: pixel.b.toInt(),
-      );
+      final red = pixel.r.toInt();
+      final green = pixel.g.toInt();
+      final blue = pixel.b.toInt();
+      final isGreen = isNdviGreenPixel(red: red, green: green, blue: blue) ||
+          (refined && isNdviRefinedYellowGreenPixel(red: red, green: green, blue: blue));
       final value = isGreen ? 255 : 0;
       output.setPixelRgba(x, y, value, value, value, alpha);
     }
@@ -66,4 +67,20 @@ bool isNdviGreenPixel({
   final normalizedHue = hue < 0 ? hue + 360 : hue;
 
   return normalizedHue >= _minGreenHue && normalizedHue <= _maxGreenHue;
+}
+
+/// Cor do evalscript refinado: `return [0.85, 0.92, 0.35, …]` na faixa 0,2–0,4.
+bool isNdviRefinedYellowGreenPixel({
+  required int red,
+  required int green,
+  required int blue,
+}) {
+  const targetR = 217;
+  const targetG = 235;
+  const targetB = 89;
+  const tolerance = 28;
+
+  return (red - targetR).abs() <= tolerance &&
+      (green - targetG).abs() <= tolerance &&
+      (blue - targetB).abs() <= tolerance;
 }
