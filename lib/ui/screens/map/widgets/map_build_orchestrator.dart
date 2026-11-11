@@ -103,6 +103,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
   final Future<void> Function() downloadOfflineArea;
   final bool absorbMapPointers;
   final bool showLongPressHint;
+  final VoidCallback? onLongPressHintAcknowledged;
   final VoidCallback? onMapUserInteraction;
 
   const MapBuildOrchestrator({
@@ -125,6 +126,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
     required this.downloadOfflineArea,
     this.absorbMapPointers = false,
     this.showLongPressHint = false,
+    this.onLongPressHintAcknowledged,
     this.onMapUserInteraction,
   });
 
@@ -565,7 +567,10 @@ class MapBuildOrchestrator extends ConsumerWidget {
           ),
           DraggablePinLayer(mapController: mapController),
           const PinPositionCorrectionOverlay(),
-          MapLongPressHint(visible: showLongPressHint),
+          MapLongPressHint(
+            visible: showLongPressHint,
+            onAcknowledged: onLongPressHintAcknowledged,
+          ),
           MapTalhaoSelectionToolbar(
             mapController: mapController,
             setSheetState: setSheetState,
