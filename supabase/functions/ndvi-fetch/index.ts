@@ -1,5 +1,6 @@
 import { Buffer } from "node:buffer";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -155,6 +156,23 @@ function evaluatePixel(sample) {
 }
 `;
 
+// ── Evalscript NDVI refinado (Ouro): faixa 0.2–0.4 amarelo-esverdeado ───────
+const NDVI_REFINED_EVALSCRIPT = `
+//VERSION=3
+function setup() {
+  return { input: ["B04", "B08", "dataMask"], output: { bands: 4 } };
+}
+function evaluatePixel(sample) {
+  let ndvi = (sample.B08 - sample.B04) / (sample.B08 + sample.B04);
+  if (sample.B08 + sample.B04 === 0) return [0.2, 0.2, 0.2, sample.dataMask];
+  if (ndvi < 0)   return [0.5, 0.0, 0.0, sample.dataMask];
+  if (ndvi < 0.2) return [1.0, 0.3, 0.0, sample.dataMask];
+  if (ndvi < 0.4) return [0.85, 0.92, 0.35, sample.dataMask];
+  if (ndvi < 0.6) return [0.6, 0.9, 0.2, sample.dataMask];
+  return [0.1, 0.6, 0.1, sample.dataMask];
+}
+`;
+
 const COMMERCIAL_API_BASE = "https://services.sentinel-hub.com/api/v1";
 const CDSE_API_BASE = "https://sh.dataspace.copernicus.eu/api/v1";
 
@@ -188,8 +206,8 @@ function daysBetweenIsoDates(a: string, b: string): number {
 /** Uma cena por janela de revisita — menor `eo:cloud_cover`. */
 function thinSentinelDatesByRevisit(
   candidates: SentinelSceneCandidate[],
-): string[] {
-  if (candidates.length === 0) return [];
+): { dates: string[]; cloudByDate: Record<string, number> } {
+  if (candidates.length === 0) return { dates: [], cloudByDate: {} };
   const sorted = [...candidates].sort((a, b) => b.date.localeCompare(a.date));
   const selected: SentinelSceneCandidate[] = [];
 
@@ -208,9 +226,16 @@ function thinSentinelDatesByRevisit(
     }
   }
 
-  return selected
-    .map((item) => item.date)
-    .sort((a, b) => b.localeCompare(a));
+  const cloudByDate: Record<string, number> = {};
+  for (const item of selected) {
+    cloudByDate[item.date] = item.cloudCover;
+  }
+  return {
+    dates: selected
+      .map((item) => item.date)
+      .sort((a, b) => b.localeCompare(a)),
+    cloudByDate,
+  };
 }
 
 // ── Sentinel Hub: buscar datas disponíveis ───────────────────────────────────
@@ -219,14 +244,19 @@ async function fetchSentinelDates(
   bbox: number[],
   token: string,
   fromDate: string,
-  toDate: string
-): Promise<{ dates: string[]; catalogOk: boolean }> {
+  toDate: string,
+  cloudMax = 80,
+): Promise<{
+  dates: string[];
+  catalogOk: boolean;
+  cloudByDate: Record<string, number>;
+}> {
   const body = {
     bbox: bbox,
     datetime: `${fromDate}T00:00:00Z/${toDate}T23:59:59Z`,
     collections: ["sentinel-2-l2a"],
     limit: 50,
-    filter: "eo:cloud_cover < 80",
+    filter: `eo:cloud_cover < ${cloudMax}`,
     "filter-lang": "cql2-text",
   };
 
@@ -241,7 +271,7 @@ async function fetchSentinelDates(
 
   if (!res.ok) {
     console.error("Sentinel catalog error:", await res.text());
-    return { dates: [], catalogOk: false };
+    return { dates: [], catalogOk: false, cloudByDate: {} };
   }
 
   const data = await res.json();
@@ -255,9 +285,10 @@ async function fetchSentinelDates(
       cloudCover: sentinelSceneCloudCover(props ?? {}),
     });
   }
-  const dates = thinSentinelDatesByRevisit(candidates);
+  const thinned = thinSentinelDatesByRevisit(candidates);
   return {
-    dates,
+    dates: thinned.dates,
+    cloudByDate: thinned.cloudByDate,
     catalogOk: true,
   };
 }
@@ -269,7 +300,8 @@ async function fetchSentinelImage(
   token: string,
   date: string,
   geometry?: GeoJsonGeometry,
-  cloudCoverageMax = 80
+  cloudCoverageMax = 80,
+  evalscript: string = NDVI_EVALSCRIPT,
 ): Promise<{ base64: string; cloudCoverage: number } | null> {
   const bounds = sentinelProcessBounds(bbox, geometry);
   const size = outputSizeForBbox(bbox, 512);
@@ -300,7 +332,7 @@ async function fetchSentinelImage(
         },
       ],
     },
-    evalscript: NDVI_EVALSCRIPT,
+    evalscript,
   };
 
   const res = await fetch(`${apiBase}/process`, {
@@ -652,6 +684,32 @@ type SentinelFetchAttempt = {
   degradedReason: string | null;
 };
 
+type SentinelFetchOptions = {
+  catalogCloudMax?: number;
+  processCloudMax?: number;
+  evalscript?: string;
+};
+
+async function userHasActiveOuroPlan(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<boolean> {
+  const now = new Date().toISOString();
+  const { data, error } = await admin
+    .from("user_plans")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("ativo", true)
+    .eq("plano", "ouro")
+    .gt("expira_em", now)
+    .limit(1);
+  if (error) {
+    console.error("user_plans ouro lookup error:", error.message);
+    return false;
+  }
+  return (data?.length ?? 0) > 0;
+}
+
 async function trySentinelBackends(
   backends: SentinelBackendConfig[],
   bbox: number[],
@@ -660,7 +718,11 @@ async function trySentinelBackends(
   toDate: string,
   requestedDate: string | undefined,
   defaultDate: string,
+  options: SentinelFetchOptions = {},
 ): Promise<SentinelFetchAttempt> {
+  const catalogCloudMax = options.catalogCloudMax ?? 80;
+  const processCloudMax = options.processCloudMax ?? 80;
+  const evalscript = options.evalscript ?? NDVI_EVALSCRIPT;
   let lastReason: string | null = backends.length === 0
     ? "sentinel_credentials_missing"
     : null;
@@ -678,6 +740,7 @@ async function trySentinelBackends(
       token,
       fromDate,
       toDate,
+      catalogCloudMax,
     );
 
     if (!catalog.catalogOk) {
@@ -702,6 +765,8 @@ async function trySentinelBackends(
       token,
       finalDate,
       processGeometry,
+      processCloudMax,
+      evalscript,
     );
     // Polígono recusado pelo process: repete só com bbox, sem máscara.
     if (!result && geometry) {
@@ -711,6 +776,9 @@ async function trySentinelBackends(
         bbox,
         token,
         finalDate,
+        undefined,
+        processCloudMax,
+        evalscript,
       );
     }
     if (!result) {
@@ -727,12 +795,15 @@ async function trySentinelBackends(
       token,
       finalDate,
       processGeometry,
+      processCloudMax,
     );
     if (stats) {
       ndviMin = stats.ndviMin;
       ndviMax = stats.ndviMax;
       ndviMean = stats.ndviMean;
     }
+
+    const sceneCloud = catalog.cloudByDate[finalDate] ?? result.cloudCoverage;
 
     return {
       imageBase64: result.base64,
@@ -741,7 +812,7 @@ async function trySentinelBackends(
       ndviMin,
       ndviMax,
       ndviMean,
-      cloudCoverage: result.cloudCoverage,
+      cloudCoverage: sceneCloud,
       degradedReason: null,
     };
   }
@@ -828,30 +899,74 @@ serve(async (req) => {
     let ndviMax = 0;
     let ndviMean = 0;
 
+    let isOuroRefined = false;
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const jwt = authHeader.replace("Bearer ", "").trim();
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        { auth: { persistSession: false } },
+      );
+      const { data: { user } } = await supabaseAdmin.auth.getUser(jwt);
+      if (user) {
+        isOuroRefined = await userHasActiveOuroPlan(supabaseAdmin, user.id);
+      }
+    }
+
     // ── 4. Sentinel Hub / CDSE (primária) ───────────────────────────────────
     if (source === "sentinel" || source === "auto") {
-      const attempt = await trySentinelBackends(
-        sentinelBackends,
-        bbox,
-        geometry,
-        fromDate,
-        toDate,
-        requestedDate,
-        finalDate,
-      );
-      if (attempt.imageBase64) {
-        imageBase64 = attempt.imageBase64;
-        availableDates = attempt.availableDates;
-        finalDate = attempt.finalDate;
-        ndviMin = attempt.ndviMin;
-        ndviMax = attempt.ndviMax;
-        ndviMean = attempt.ndviMean;
-        cloudCoverage = attempt.cloudCoverage;
-        usedSource = "sentinel";
-      } else {
-        sentinelDegradedReason = attempt.degradedReason;
-        if (attempt.availableDates.length > 0) {
+      if (isOuroRefined) {
+        const refinedAttempt = await trySentinelBackends(
+          sentinelBackends,
+          bbox,
+          geometry,
+          fromDate,
+          toDate,
+          requestedDate,
+          finalDate,
+          {
+            catalogCloudMax: 30,
+            processCloudMax: 30,
+            evalscript: NDVI_REFINED_EVALSCRIPT,
+          },
+        );
+        if (refinedAttempt.imageBase64) {
+          imageBase64 = refinedAttempt.imageBase64;
+          availableDates = refinedAttempt.availableDates;
+          finalDate = refinedAttempt.finalDate;
+          ndviMin = refinedAttempt.ndviMin;
+          ndviMax = refinedAttempt.ndviMax;
+          ndviMean = refinedAttempt.ndviMean;
+          cloudCoverage = refinedAttempt.cloudCoverage;
+          usedSource = "sentinel_refined";
+        }
+      }
+
+      if (!imageBase64) {
+        const attempt = await trySentinelBackends(
+          sentinelBackends,
+          bbox,
+          geometry,
+          fromDate,
+          toDate,
+          requestedDate,
+          finalDate,
+        );
+        if (attempt.imageBase64) {
+          imageBase64 = attempt.imageBase64;
           availableDates = attempt.availableDates;
+          finalDate = attempt.finalDate;
+          ndviMin = attempt.ndviMin;
+          ndviMax = attempt.ndviMax;
+          ndviMean = attempt.ndviMean;
+          cloudCoverage = attempt.cloudCoverage;
+          usedSource = "sentinel";
+        } else {
+          sentinelDegradedReason = attempt.degradedReason;
+          if (attempt.availableDates.length > 0) {
+            availableDates = attempt.availableDates;
+          }
         }
       }
     }
@@ -893,7 +1008,7 @@ serve(async (req) => {
       area_id: areaId,
       date: finalDate,
       source: usedSource,
-      is_ndvi: usedSource === "sentinel",
+      is_ndvi: usedSource === "sentinel" || usedSource === "sentinel_refined",
       image_base64: imageBase64,
       available_dates: availableDates,
       cloud_coverage: cloudCoverage,
