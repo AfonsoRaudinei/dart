@@ -152,6 +152,12 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     setState(() => _showLongPressHint = false);
   }
 
+  void _onLongPressHintAcknowledged() {
+    final prefs = ref.read(preferencesServiceProvider);
+    unawaited(markMapLongPressHintAcknowledged(prefs));
+    _dismissLongPressHint();
+  }
+
   void _onMapUserInteraction() {
     _dismissLongPressHint();
   }
@@ -1033,6 +1039,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           downloadOfflineArea: _downloadOfflineArea,
           absorbMapPointers: _actionsSheetOpen,
           showLongPressHint: _showLongPressHint,
+          onLongPressHintAcknowledged: _onLongPressHintAcknowledged,
           onMapUserInteraction: _onMapUserInteraction,
         ),
       ),
