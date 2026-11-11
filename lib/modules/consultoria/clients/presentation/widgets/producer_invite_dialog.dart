@@ -70,6 +70,10 @@ class _ProducerInviteDialogState extends ConsumerState<ProducerInviteDialog> {
   DateTime? _expiresAt;
   Object? _error;
   var _loading = false;
+  var _shareFarms = true;
+  var _shareFields = true;
+  var _shareOccurrences = true;
+  var _shareReports = true;
 
   Future<void> _generateInvite() async {
     setState(() {
@@ -88,7 +92,16 @@ class _ProducerInviteDialogState extends ConsumerState<ProducerInviteDialog> {
       final injectedWriter = widget.inviteWriter;
       final IProducerInviteWriter writer =
           injectedWriter ?? ref.read(producerInviteWriterProvider);
-      final invite = await writer.createInvite(widget.clientId);
+      final share = ProducerShareSelection(
+        farms: _shareFarms,
+        fields: _shareFields,
+        occurrences: _shareOccurrences,
+        reports: _shareReports,
+      );
+      if (!share.hasAny) {
+        throw Exception('Escolha ao menos um tipo de dado para compartilhar.');
+      }
+      final invite = await writer.createInvite(widget.clientId, share: share);
       if (!mounted) return;
       setState(() {
         _token = invite.token;
@@ -109,70 +122,110 @@ class _ProducerInviteDialogState extends ConsumerState<ProducerInviteDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Convite do produtor'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Gere um token para ${widget.clientName} vincular a conta dele a este cadastro.',
-          ),
-          const SizedBox(height: 16),
-          if (_token != null) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF2F8F2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: SelectableText(
-                _token!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Escolha o que ${widget.clientName} libera para outro consultor ou para o produtor. O código continua valendo 7 dias para aceitar.',
+            ),
+            const SizedBox(height: 8),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              title: const Text('Fazendas'),
+              value: _shareFarms,
+              onChanged: _token == null
+                  ? (value) => setState(() => _shareFarms = value ?? false)
+                  : null,
+            ),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              title: const Text('Talhões e mapa'),
+              value: _shareFields,
+              onChanged: _token == null
+                  ? (value) => setState(() => _shareFields = value ?? false)
+                  : null,
+            ),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              title: const Text('Ocorrências'),
+              value: _shareOccurrences,
+              onChanged: _token == null
+                  ? (value) =>
+                        setState(() => _shareOccurrences = value ?? false)
+                  : null,
+            ),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              title: const Text('Relatórios'),
+              value: _shareReports,
+              onChanged: _token == null
+                  ? (value) => setState(() => _shareReports = value ?? false)
+                  : null,
+            ),
+            const SizedBox(height: 8),
+            if (_token != null) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF2F8F2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: SelectableText(
+                  _token!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                  ),
                 ),
               ),
-            ),
-            if (_expiresAt != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Válido até ${_formatDate(_expiresAt!)} para aceitar',
-                style: const TextStyle(color: Color(0xFF6B7280)),
+              if (_expiresAt != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Válido até ${_formatDate(_expiresAt!)} para aceitar',
+                  style: const TextStyle(color: Color(0xFF6B7280)),
+                ),
+              ],
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () {
+                    final message = ProducerInviteDialog.shareMessage(
+                      clientName: widget.clientName,
+                      token: _token!,
+                    );
+                    Clipboard.setData(ClipboardData(text: message));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Mensagem copiada. Cole no WhatsApp.'),
+                      ),
+                    );
+                  },
+                  child: const Text('Copiar mensagem'),
+                ),
               ),
             ],
-            const SizedBox(height: 4),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: () {
-                  final message = ProducerInviteDialog.shareMessage(
-                    clientName: widget.clientName,
-                    token: _token!,
-                  );
-                  Clipboard.setData(ClipboardData(text: message));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Mensagem copiada. Cole no WhatsApp.'),
-                    ),
-                  );
-                },
-                child: const Text('Copiar mensagem'),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                userFacingError(
+                  _error,
+                  action: 'Não foi possível gerar o convite',
+                ),
+                style: const TextStyle(color: Color(0xFFFF3B30)),
               ),
-            ),
+            ],
           ],
-          if (_error != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              userFacingError(
-                _error,
-                action: 'Não foi possível gerar o convite',
-              ),
-              style: const TextStyle(color: Color(0xFFFF3B30)),
-            ),
-          ],
-        ],
+        ),
       ),
       actions: [
         TextButton(
