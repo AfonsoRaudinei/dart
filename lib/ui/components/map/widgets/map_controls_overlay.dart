@@ -171,23 +171,80 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
         widget.drawingState == DrawingState.editing &&
         widget.editingFieldName != null &&
         widget.editingFieldName!.trim().isNotEmpty;
-    final contextCardTop = safeTop + (showEditingPill ? 72 : 8);
     return Stack(
       children: [
-        // 1. Card de contexto (Top Left) + talhão selected (consultor)
+        // Card de contexto ancorado no canto inferior esquerdo.
         Positioned(
-          top: contextCardTop,
-          left: 12,
+          left: 0,
+          right: 0,
+          bottom: 0,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              widget.topLeftCard ?? const VisitActiveCard(),
-              // Produtor já tem contexto no ProducerMapContextCard.
-              if (widget.topLeftCard == null) ...[
-                const SizedBox(height: 8),
-                const SelectedTalhaoCard(),
-              ],
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: kMapContextCardLeftInset,
+                  right:
+                      kMapActionColumnRightInset +
+                      kMapActionColumnButtonSize +
+                      kMapContextCardColumnGap,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    widget.topLeftCard ?? const VisitActiveCard(),
+                    // Produtor já tem contexto no ProducerMapContextCard.
+                    if (widget.topLeftCard == null) const SelectedTalhaoCard(),
+                  ],
+                ),
+              ),
+              if (_showsBottomDrawingToolbar) ...[
+                const SizedBox(height: kMapContextCardToolbarGap),
+                // Redo não entra na toolbar (paridade com desenho / modelo Imagem 4).
+                // DrawingController.redoEdit() permanece no domínio para uso futuro.
+                DrawingBottomToolbarOverlay(
+                  onConfirm: widget.drawingState == DrawingState.editing
+                      ? widget.onSaveEdit
+                      : widget.onFinishDrawing,
+                  onUndo: widget.drawingState == DrawingState.editing
+                      ? widget.onUndoEdit
+                      : (widget.onUndoDrawing ?? () {}),
+                  onCancel: widget.drawingState == DrawingState.editing
+                      ? widget.onCancelEdit
+                      : widget.onCancelDrawing,
+                  canUndo: widget.canUndo,
+                  // Confirmar fica habilitado no sketch. Cruzamento do anel
+                  // fechado é recusado em completeDrawing, não aqui.
+                  canConfirm: true,
+                  measurementAreaHa: widget.measurementAreaHa,
+                  measurementPerimeterKm: widget.measurementPerimeterKm,
+                  vertexDragPreview: widget.vertexDragPreview,
+                  measurementAzimuthDeg: widget.measurementAzimuthDeg,
+                  gpsAccuracyM: widget.gpsAccuracyM,
+                  areaUnit: areaUnit,
+                  onAreaUnit: (u) =>
+                      ref.read(areaDisplayUnitProvider.notifier).setUnit(u),
+                  showMeasurementDetails: _showMeasurementDetails,
+                  onToggleMeasurementDetails: () {
+                    setState(() {
+                      _showMeasurementDetails = !_showMeasurementDetails;
+                    });
+                  },
+                  distanceUnit: distanceUnit,
+                  onDistanceUnit: (u) =>
+                      ref.read(distanceDisplayUnitProvider.notifier).setUnit(u),
+                  onStartHoleCut: _holeCutCallback(),
+                  canStartHoleCut: _holeCutEnabled(),
+                  onRemoveHoleRing: widget.onRemoveHoleRing,
+                  showRemoveHoleRing:
+                      widget.drawingState == DrawingState.editing &&
+                      widget.editHasHoleRings,
+                  canRemoveHoleRing: widget.canRemoveHoleRing,
+                ),
+              ] else
+                SizedBox(height: safeBottom + kMapContextCardBottomInset),
             ],
           ),
         ),
@@ -298,50 +355,6 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             ],
           ),
         ),
-
-        // 4. Drawing / editing actions — mesmo chrome inferior (toolbar + medição).
-        // Redo não entra na toolbar (paridade com desenho / modelo Imagem 4).
-        // DrawingController.redoEdit() permanece no domínio para uso futuro.
-        if (_showsBottomDrawingToolbar)
-          DrawingBottomToolbarOverlay(
-            onConfirm: widget.drawingState == DrawingState.editing
-                ? widget.onSaveEdit
-                : widget.onFinishDrawing,
-            onUndo: widget.drawingState == DrawingState.editing
-                ? widget.onUndoEdit
-                : (widget.onUndoDrawing ?? () {}),
-            onCancel: widget.drawingState == DrawingState.editing
-                ? widget.onCancelEdit
-                : widget.onCancelDrawing,
-            canUndo: widget.canUndo,
-            // Confirmar fica habilitado no sketch. Cruzamento do anel
-            // fechado é recusado em completeDrawing, não aqui.
-            canConfirm: true,
-            measurementAreaHa: widget.measurementAreaHa,
-            measurementPerimeterKm: widget.measurementPerimeterKm,
-            vertexDragPreview: widget.vertexDragPreview,
-            measurementAzimuthDeg: widget.measurementAzimuthDeg,
-            gpsAccuracyM: widget.gpsAccuracyM,
-            areaUnit: areaUnit,
-            onAreaUnit: (u) =>
-                ref.read(areaDisplayUnitProvider.notifier).setUnit(u),
-            showMeasurementDetails: _showMeasurementDetails,
-            onToggleMeasurementDetails: () {
-              setState(() {
-                _showMeasurementDetails = !_showMeasurementDetails;
-              });
-            },
-            distanceUnit: distanceUnit,
-            onDistanceUnit: (u) =>
-                ref.read(distanceDisplayUnitProvider.notifier).setUnit(u),
-            onStartHoleCut: _holeCutCallback(),
-            canStartHoleCut: _holeCutEnabled(),
-            onRemoveHoleRing: widget.onRemoveHoleRing,
-            showRemoveHoleRing:
-                widget.drawingState == DrawingState.editing &&
-                widget.editHasHoleRings,
-            canRemoveHoleRing: widget.canRemoveHoleRing,
-          ),
       ],
     );
   }
