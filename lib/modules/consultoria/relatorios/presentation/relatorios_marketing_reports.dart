@@ -134,6 +134,7 @@ class _MarketingCasesReportsSectionState
 
   @override
   Widget build(BuildContext context) {
+    final producerScope = _watchRelatoriosProducerScope(ref);
     final dateFormat = widget.dateFormat;
     late final AsyncValue<List<MarketingCaseReportSnapshot>> casesAsync;
     try {
@@ -161,7 +162,10 @@ class _MarketingCasesReportsSectionState
         onRetry: () => ref.invalidate(occurrencesListProvider),
       );
     }
-    final allOccurrences = occurrencesAsync.valueOrNull ?? const <Occurrence>[];
+    final allOccurrences = _scopeRelatoriosOccurrences(
+      producerScope,
+      occurrencesAsync.valueOrNull ?? const <Occurrence>[],
+    );
 
     return casesAsync.when(
       data: (visible) {
