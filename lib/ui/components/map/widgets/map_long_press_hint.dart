@@ -125,38 +125,34 @@ class _MapLongPressHintState extends State<MapLongPressHint>
           opacity: _pulseOpacity,
           child: ScaleTransition(
             scale: _scale,
-            child: Center(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IgnorePointer(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              SFIcons.warning,
-                              color: Colors.white.withValues(alpha: 0.92),
-                              size: 20,
-                            ),
-                            const SizedBox(width: 10),
-                            Flexible(
-                              child: Text(
-                                kMapLongPressHintMessage,
-                                style: bodyStyle,
-                              ),
-                            ),
-                          ],
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    IgnorePointer(
+                      child: Icon(
+                        SFIcons.warning,
+                        color: Colors.white.withValues(alpha: 0.92),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: IgnorePointer(
+                        child: Text(
+                          kMapLongPressHintMessage,
+                          style: bodyStyle,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Material(
+                    ),
+                    const SizedBox(width: 8),
+                    Material(
                         color: Colors.transparent,
                         child: InkWell(
                           onTap: _handleAcknowledgeTap,
@@ -195,7 +191,6 @@ class _MapLongPressHintState extends State<MapLongPressHint>
             ),
           ),
         ),
-      ),
     );
   }
 }
