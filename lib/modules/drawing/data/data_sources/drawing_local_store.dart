@@ -31,7 +31,7 @@ class DrawingOwnershipPolicy {
     if (scopedUserId.isEmpty) {
       return "user_id = '$orphanUserId'";
     }
-    return "(user_id = ? OR user_id = '$orphanUserId')";
+    return 'user_id = ?';
   }
 
   static List<Object?> buildOwnedOrOrphanWhereArgs(String scopedUserId) {
