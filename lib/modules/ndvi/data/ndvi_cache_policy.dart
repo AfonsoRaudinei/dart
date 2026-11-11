@@ -18,6 +18,12 @@ String ndviOriginFingerprint(FieldSummary summary) {
   return '$bbox|$geometry';
 }
 
+/// Tier no fingerprint invalida cache ao mudar entitlement Ouro ↔ padrão.
+String ndviOriginFingerprintWithTier(FieldSummary summary, bool refined) {
+  final tier = refined ? 'refined' : 'standard';
+  return '${ndviOriginFingerprint(summary)}|$tier';
+}
+
 class PreferencesNdviCachePolicy implements NdviCachePolicy {
   PreferencesNdviCachePolicy(this._prefs);
 
