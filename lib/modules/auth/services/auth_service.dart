@@ -88,7 +88,11 @@ class AuthService extends _$AuthService {
         () => _client.auth.signUp(
           email: dto.email,
           password: dto.password,
-          data: {'full_name': dto.name, 'role': dto.role},
+          data: {
+            'full_name': dto.name,
+            'role': dto.role,
+            'phone': dto.phone,
+          },
           emailRedirectTo: kAuthEmailRedirectUrl,
         ),
       );
@@ -134,6 +138,51 @@ class AuthService extends _$AuthService {
           emailRedirectTo: kAuthEmailRedirectUrl,
         ),
       );
+    } on AuthException catch (e) {
+      throw Exception(_traduzirAuthException(e));
+    } on StateError {
+      throw Exception(
+        'Configuração inválida do aplicativo. Reinstale a versão mais recente ou contate o suporte.',
+      );
+    } catch (e) {
+      throw Exception(_traduzirErroDesconhecido(e));
+    }
+  }
+
+  /// Confirma o cadastro com o código de 6 dígitos enviado por e-mail.
+  ///
+  /// Alternativa ao link (scanners de e-mail, outro aparelho). Em caso de
+  /// sucesso a sessão fica ativa e o router redireciona.
+  Future<AuthResponse> verifySignupCode({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      AppConfig.validate();
+      final normalizedEmail = email.trim();
+      final result = await NetworkPolicy.withTimeout(
+        () => _client.auth.verifyOTP(
+          type: OtpType.signup,
+          email: normalizedEmail,
+          token: code.trim(),
+        ),
+      );
+
+      if (result.session != null) {
+        try {
+          await ensureProfileComplete();
+          await _pendingSignupRoleStore().clear(normalizedEmail);
+        } catch (e) {
+          AppLogger.error(
+            'perfil pós-confirmação falhou',
+            tag: 'AuthService',
+            error: e,
+          );
+          // Não bloquear a confirmação por falha no perfil
+        }
+      }
+
+      return result;
     } on AuthException catch (e) {
       throw Exception(_traduzirAuthException(e));
     } on StateError {
@@ -214,14 +263,16 @@ class AuthService extends _$AuthService {
       final profile = await NetworkPolicy.withTimeout(
         () => _client
             .from('perfis')
-            .select('name, role')
+            .select('name, role, phone')
             .eq('id', user.id)
             .maybeSingle(),
       );
 
       final currentName = profile?['name'] as String?;
       final currentRole = profile?['role'] as String?;
+      final currentPhone = profile?['phone'] as String?;
       final metadataName = user.userMetadata?['full_name'] as String?;
+      final metadataPhone = (user.userMetadata?['phone'] as String?)?.trim();
       final metadataRole = user.userMetadata?['role'] as String?;
       final pendingSignupRole = await _readPendingSignupRole(user.email);
       final resolvedRole = ProfileRoleResolver.resolve(
@@ -253,6 +304,11 @@ class AuthService extends _$AuthService {
 
       if (currentName == null || currentName.isEmpty) {
         updates['name'] = metadataName ?? '';
+      }
+      if ((currentPhone == null || currentPhone.trim().isEmpty) &&
+          metadataPhone != null &&
+          metadataPhone.isNotEmpty) {
+        updates['phone'] = metadataPhone;
       }
       if (ProfileRoleResolver.shouldUpdateProfileRole(
         pendingSignupRole: pendingSignupRole,
