@@ -85,7 +85,8 @@ void main() {
     final safeTop = MediaQuery.paddingOf(tester.element(chipFinder)).top;
     final positioned = tester.widget<Positioned>(find.byType(Positioned));
     expect(positioned.top, safeTop + kMapLocalityChipTopBelowSafeArea);
-    expect(positioned.right, kMapTopControlsReservedRightWidth);
+    expect(positioned.right, kMapTopControlsRightInset);
+    expect(positioned.left, isNull);
     expect(kMapTopControlsReservedRightWidth, 188.0);
 
     final chipBox = tester.renderObject<RenderBox>(
@@ -100,6 +101,10 @@ void main() {
       kMapTopControlsRowHeight,
     );
     expect(chipRect.overlaps(toggleRect), isFalse);
+    expect(
+      chipRect.right,
+      closeTo(screenWidth - kMapTopControlsRightInset, 0.5),
+    );
   });
 
   testWidgets('chip oculto quando divisas UF desativadas', (tester) async {
