@@ -5,9 +5,9 @@ import 'package:soloforte_app/ui/components/login/social_auth_button.dart';
 
 void main() {
   group('LoginSheetKeyboardLayout', () {
-    test('sheetBottomOffset segue o inset do teclado', () {
+    test('sheetBottomOffset fica 0 porque o scaffold já sobe com o teclado', () {
       expect(LoginSheetKeyboardLayout.sheetBottomOffset(0), 0);
-      expect(LoginSheetKeyboardLayout.sheetBottomOffset(300), 300);
+      expect(LoginSheetKeyboardLayout.sheetBottomOffset(300), 0);
     });
 
     test('sheetMaxHeight encolhe com teclado', () {
