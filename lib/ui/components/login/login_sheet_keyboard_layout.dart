@@ -2,7 +2,10 @@
 class LoginSheetKeyboardLayout {
   const LoginSheetKeyboardLayout._();
 
-  static double sheetBottomOffset(double keyboardInset) => keyboardInset;
+  /// Sheet stays pinned to the Scaffold's bottom edge; with
+  /// `resizeToAvoidBottomInset: true` that edge already sits right above
+  /// the keyboard, so the sheet itself never needs to shift.
+  static double sheetBottomOffset(double keyboardInset) => 0;
 
   /// Max height of the bottom sheet; shrinks when [keyboardInset] > 0 so fields stay above the keyboard.
   static double sheetMaxHeight({
