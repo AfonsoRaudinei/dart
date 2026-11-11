@@ -7,4 +7,8 @@ void main() {
     expect(ndvi, closeTo(0.3, 0.01));
   });
 
+  test('estimateNdviFromColormapRgb mapeia amarelo-esverdeado Ouro refinado', () {
+    final ndvi = estimateNdviFromColormapRgb(217, 235, 89);
+    expect(ndvi, closeTo(0.3, 0.01));
+  });
 }

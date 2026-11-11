@@ -21,6 +21,7 @@ const _colormapBuckets = <({int r, int g, int b, double ndvi})>[
   (r: 128, g: 0, b: 0, ndvi: -0.1),
   (r: 255, g: 77, b: 0, ndvi: 0.1),
   (r: 255, g: 204, b: 0, ndvi: 0.3),
+  (r: 217, g: 235, b: 89, ndvi: 0.3),
   (r: 153, g: 230, b: 51, ndvi: 0.5),
   (r: 26, g: 153, b: 26, ndvi: 0.75),
 ];
