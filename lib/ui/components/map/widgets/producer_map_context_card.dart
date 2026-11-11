@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/geo/geo_json_polygon_geometry.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 import 'package:soloforte_app/modules/produtor/data/producer_link_models.dart';
@@ -47,7 +48,7 @@ class ProducerMapContextCard extends ConsumerWidget {
 
         return ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.62,
+            maxWidth: mapContextCardMaxWidth(MediaQuery.sizeOf(context).width),
           ),
           child: _GlassCard(
             child: Column(
