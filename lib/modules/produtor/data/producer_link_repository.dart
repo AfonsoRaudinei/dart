@@ -117,17 +117,56 @@ class ProducerLinkRepository implements ProducerLinkReader {
   }
 
   Future<void> acceptToken(String token) async {
-    final row = await _client.rpc(
-      'accept_producer_link_token',
-      params: {'p_token': normalizeToken(token)},
-    );
-    if (row is! Map) {
-      throw Exception('Token inválido ou expirado.');
+    final normalized = normalizeToken(token);
+    try {
+      final row = await _client.rpc(
+        'accept_producer_link_token',
+        params: {'p_token': normalized},
+      );
+      final map = linkRowFromRpc(row);
+      if (map == null) {
+        throw Exception('Token inválido, expirado ou já utilizado.');
+      }
+      await _cacheLink(ProducerClientLink.fromRemote(map), syncStatus: 0);
+    } on PostgrestException catch (error) {
+      throw Exception(mapAcceptTokenError(error));
     }
-    await _cacheLink(
-      ProducerClientLink.fromRemote(Map<String, dynamic>.from(row)),
-      syncStatus: 0,
-    );
+  }
+
+  @visibleForTesting
+  static Map<String, dynamic>? linkRowFromRpc(Object? row) {
+    if (row is Map) {
+      return Map<String, dynamic>.from(row);
+    }
+    if (row is List && row.isNotEmpty && row.first is Map) {
+      return Map<String, dynamic>.from(row.first as Map);
+    }
+    return null;
+  }
+
+  @visibleForTesting
+  static String mapAcceptTokenError(PostgrestException error) {
+    final details = (error.details ?? '').toString().toLowerCase();
+    final message = error.message.toLowerCase();
+    final combined = '$message $details';
+
+    if (combined.contains('producer_role_required')) {
+      return 'Esta conta precisa ser de produtor para aceitar o convite. '
+          'Confira o perfil em Configurações.';
+    }
+    if (combined.contains('not_authenticated')) {
+      return 'Sessão expirada. Faça login novamente e tente outra vez.';
+    }
+    if (combined.contains('self_link_not_allowed')) {
+      return 'Este convite foi gerado pela mesma conta. Use a conta do produtor.';
+    }
+    if (combined.contains('invalid_or_expired_token')) {
+      return 'Token inválido, expirado ou já utilizado.';
+    }
+    if (message.contains('jwt') || message.contains('not authenticated')) {
+      return 'Sessão expirada. Faça login novamente e tente outra vez.';
+    }
+    return 'Não foi possível vincular agora. Verifique o código e a conexão.';
   }
 
   @override
@@ -527,8 +566,32 @@ class ProducerLinkRepository implements ProducerLinkReader {
     return 'SF-${hex.substring(0, 4)}-${hex.substring(4, 8)}-${hex.substring(8)}';
   }
 
+  static final RegExp _inviteTokenPattern = RegExp(
+    r'SF-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}',
+    caseSensitive: false,
+  );
+
+  /// Aceita o token puro ou a mensagem do WhatsApp com o código no final.
   static String normalizeToken(String token) {
-    return token.replaceAll(RegExp(r'\s+'), '').toUpperCase();
+    final trimmed = token.trim();
+    if (trimmed.isEmpty) {
+      throw const FormatException('Informe o código enviado pelo consultor.');
+    }
+
+    final directMatch = _inviteTokenPattern.firstMatch(trimmed);
+    if (directMatch != null) {
+      return directMatch.group(0)!.toUpperCase();
+    }
+
+    final compact = trimmed.replaceAll(RegExp(r'\s+'), '').toUpperCase();
+    final compactMatch = _inviteTokenPattern.firstMatch(compact);
+    if (compactMatch != null) {
+      return compactMatch.group(0)!;
+    }
+
+    throw const FormatException(
+      'Cole o código SF-XXXX-XXXX-XXXX ou a mensagem completa do consultor.',
+    );
   }
 
   static String hashToken(String token) {
