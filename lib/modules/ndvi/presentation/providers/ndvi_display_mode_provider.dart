@@ -8,15 +8,20 @@ import 'package:soloforte_app/modules/ndvi/data/processing/ndvi_green_mask_proce
 
 enum NdviDisplayMode { color, greenMask }
 
+/// Parâmetro da família: caminho do PNG colorido + modo refinado (Ouro).
+typedef NdviGreenMaskRequest = ({String path, bool refined});
+
 final ndviDisplayModeProvider = StateProvider.family
     .autoDispose<NdviDisplayMode, String>((ref, key) => NdviDisplayMode.color);
 
 final ndviGreenMaskBytesProvider = FutureProvider.family
-    .autoDispose<Uint8List?, String>((ref, path) async {
+    .autoDispose<Uint8List?, NdviGreenMaskRequest>((ref, request) async {
+      final path = request.path;
+      final refined = request.refined;
       final colorFile = File(path);
       if (!await colorFile.exists()) return null;
 
-      final maskFile = File(_greenMaskPathFor(path));
+      final maskFile = File(_greenMaskPathFor(path, refined: refined));
       final colorStat = await colorFile.stat();
       if (await maskFile.exists()) {
         final maskStat = await maskFile.stat();
@@ -29,18 +34,19 @@ final ndviGreenMaskBytesProvider = FutureProvider.family
       final source = img.decodeImage(bytes);
       if (source == null) return null;
 
-      final mask = applyNdviGreenMask(source);
+      final mask = applyNdviGreenMask(source, refined: refined);
       final maskBytes = Uint8List.fromList(img.encodePng(mask));
       await maskFile.writeAsBytes(maskBytes, flush: true);
       return maskBytes;
     });
 
-String _greenMaskPathFor(String colorPath) {
+String _greenMaskPathFor(String colorPath, {bool refined = false}) {
   final dir = p.dirname(colorPath);
   final extension = p.extension(colorPath);
   final basename = p.basenameWithoutExtension(colorPath);
   final maskBase = basename.startsWith('ndvi_color_')
       ? basename.replaceFirst('ndvi_color_', 'ndvi_green_mask_')
       : '${basename}_green_mask';
-  return p.join(dir, '$maskBase${extension.isEmpty ? '.png' : extension}');
+  final refinedTag = refined ? '_refined' : '';
+  return p.join(dir, '$maskBase$refinedTag${extension.isEmpty ? '.png' : extension}');
 }
