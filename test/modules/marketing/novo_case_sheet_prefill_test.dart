@@ -6,7 +6,6 @@ import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/modules/marketing/domain/enums/case_tipo.dart';
 import 'package:soloforte_app/modules/marketing/presentation/screens/novo_case_sheet.dart';
-import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.dart';
 
 void main() {
   testWidgets('pré-preenche contexto da visita e mantém campo editável', (

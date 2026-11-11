@@ -4,7 +4,6 @@ import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/ui/components/map/map_sheet_state.dart';
 import 'package:soloforte_app/ui/screens/map/providers/map_armed_mode_provider.dart';
 import 'package:soloforte_app/ui/screens/map/utils/map_long_press_hint_scheduler.dart';
-import 'package:soloforte_app/ui/screens/map/utils/map_long_press_prefs.dart';
 
 void main() {
   late PreferencesService prefs;
