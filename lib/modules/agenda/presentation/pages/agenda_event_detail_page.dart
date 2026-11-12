@@ -17,6 +17,7 @@ import '../widgets/status_badge.dart';
 import '../widgets/event_type_badge.dart';
 import '../widgets/visit_edit_dialog.dart';
 import '../widgets/visit_reports_section.dart';
+import '../widgets/confirm_visit_for_producer_button.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 /// Página de detalhes expandida de um evento
@@ -139,6 +140,18 @@ class AgendaEventDetailPage extends ConsumerWidget {
 
             // Ações
             if (!event.status.isFinished) _buildActions(context, ref, event),
+            if (event.status == EventStatus.concluido &&
+                event.visitSessionId != null &&
+                event.clienteId.isNotEmpty) ...[
+              ConfirmVisitForProducerButton(
+                sessionId: event.visitSessionId!,
+                clientId: event.clienteId,
+                visitedAt: event.dataInicioPlanejada,
+                farmName: farmNome,
+                fieldName: fieldNome,
+              ),
+              const SizedBox(height: 12),
+            ],
             if (event.status == EventStatus.concluido &&
                 event.visitSessionId != null)
               _buildKeepOrDelete(context, ref, event),

@@ -31,6 +31,7 @@ class AppRoutes {
   static const String reports = '/consultoria/relatorios';
   static const String clients = '/consultoria/clientes';
   static const String producerProperty = '/produtor/propriedade';
+  static const String producerCalendar = '/produtor/calendario';
 
   // Módulo marketing/ — story de case (L1, retorno ao mapa)
   static const String marketingStory = '/marketing/story';
@@ -93,6 +94,7 @@ class AppRoutes {
     reports,
     clients,
     producerProperty,
+    producerCalendar,
     marketingStory,
     planos, // ADR-012
     meuPlano, // ADR-012
