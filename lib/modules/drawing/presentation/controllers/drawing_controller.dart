@@ -322,6 +322,11 @@ class DrawingController extends ChangeNotifier {
   bool _pivotRadiusFinalized = false;
   double? _pivotRadiusMeters;
 
+  /// Pivô em edição. Separado do sketch para não vazar no próximo desenho.
+  LatLng? _editPivotCenter;
+  LatLng? _editPivotEdge;
+  double? _editPivotRadiusMeters;
+
   // Performance State
   bool _isHighComplexity = false;
   Timer? _validationDebounce;
@@ -1093,6 +1098,7 @@ class DrawingController extends ChangeNotifier {
     DrawingGeometry? newGeometry,
     String? editorId,
     AuthorType? editorType,
+    double? raioMetros,
   }) {
     final result = Completer<void>();
     void job() {
@@ -1103,6 +1109,7 @@ class DrawingController extends ChangeNotifier {
         newGeometry: newGeometry,
         editorId: editorId,
         editorType: editorType,
+        raioMetros: raioMetros,
       );
       future
           .then((_) {
@@ -1143,6 +1150,7 @@ class DrawingController extends ChangeNotifier {
     DrawingGeometry? newGeometry,
     String? editorId,
     AuthorType? editorType,
+    double? raioMetros,
   }) async {
     final index = _features.indexWhere((f) => f.id == id);
     if (index == -1 || _isDisposed) return;
@@ -1155,6 +1163,7 @@ class DrawingController extends ChangeNotifier {
       newGeometry: newGeometry,
       editorId: editorId,
       editorType: editorType,
+      raioMetros: raioMetros,
     );
 
     _features[index] = updated;
@@ -1763,6 +1772,7 @@ class DrawingController extends ChangeNotifier {
     _holeCutSketchBase = null;
     _editGeometry = null;
     _editGeometrySnapshotJson = null;
+    _clearEditPivot();
     _history.clear();
     _previewGeometry = null;
     _reviewGeometrySnapshot = null;
@@ -1874,9 +1884,14 @@ class DrawingController extends ChangeNotifier {
   void startEditMode() {
     if (_selectedFeature == null) return;
 
+    _clearEditPivot();
     // Delega deep copy ao DrawingVertexEditService
-    final cloned = _vertexService.cloneGeometry(_selectedFeature!.geometry);
+    final feature = _selectedFeature!;
+    final cloned = _vertexService.cloneGeometry(feature.geometry);
     _editGeometry = _vertexService.normalizeForVertexEdit(cloned);
+    if (feature.isPivot) {
+      _seedEditPivotCircle();
+    }
     _editGeometrySnapshotJson = _serializeGeometry(_editGeometry!);
     _history.clear();
     if (_editGeometry is DrawingPolygon) {
@@ -1892,6 +1907,7 @@ class DrawingController extends ChangeNotifier {
     // Se a SM rejeitar a transição, não setar interactionMode.
     final ok = _stateMachine.startEditing();
     if (!ok) {
+      _clearEditPivot();
       if (kDebugMode) {
         AppLogger.debug(
           'startEditMode: SM rejeitou startEditing() — interactionMode não alterado',
@@ -1912,6 +1928,7 @@ class DrawingController extends ChangeNotifier {
   void cancelEdit() {
     _editGeometry = null;
     _editGeometrySnapshotJson = null;
+    _clearEditPivot();
     _history.clear();
     _selectedEditRingIndex = null;
     _selectedEditPointIndex = null;
@@ -1956,11 +1973,15 @@ class DrawingController extends ChangeNotifier {
         );
       }
       final featureId = _selectedFeature!.id;
+      final raioMetros = _selectedFeature!.isPivot
+          ? _editPivotRadiusMeters
+          : null;
       await updateFeature(
         featureId,
         newGeometry: geometryToSave,
         editorId: "sistema", // Placeholder, usually would be current user
         editorType: AuthorType.sistema,
+        raioMetros: raioMetros,
       );
     }
     if (_isDisposed) return true;
@@ -1992,8 +2013,158 @@ class DrawingController extends ChangeNotifier {
     } else {
       _editGeometry = _verticesToGeom(vertices, _editGeometry);
     }
+    if (_selectedFeature?.isPivot == true) {
+      _placeEditPivotHandlesFromGeometry();
+    }
     _updateRealTimeIntersection();
     validateGeometry(_editGeometry);
+  }
+
+  void _clearEditPivot() {
+    _editPivotCenter = null;
+    _editPivotEdge = null;
+    _editPivotRadiusMeters = null;
+  }
+
+  /// Pivô salvo entra em edição já como círculo. Centroide do anel, raio
+  /// gravado (ou distância ao primeiro ponto) e borda no mesmo azimute.
+  void _seedEditPivotCircle() {
+    final geometry = _editGeometry;
+    if (geometry is! DrawingPolygon || geometry.coordinates.isEmpty) return;
+    final ring = geometry.coordinates.first;
+    final openCount = _openRingCount(ring);
+    if (openCount <= 0) return;
+
+    final center = _centroidOfOpenRing(ring, openCount);
+    final first = LatLng(ring.first[1], ring.first[0]);
+    final distance = const Distance();
+    final toFirst = distance.as(LengthUnit.Meter, center, first);
+    final stored = _selectedFeature?.properties.raioMetros;
+    final radius = (stored != null && stored > 0) ? stored : toFirst;
+    if (radius <= 0) return;
+
+    final bearing = toFirst < 0.05 ? 90.0 : distance.bearing(center, first);
+    _editPivotCenter = center;
+    _editPivotRadiusMeters = radius;
+    _editPivotEdge = distance.offset(center, radius, bearing);
+    _editGeometry = DrawingUtils.createPivotPolygon(center, radius);
+  }
+
+  /// Depois do undo/redo, as alças seguem o polígono restaurado.
+  void _placeEditPivotHandlesFromGeometry() {
+    final geometry = _editGeometry;
+    if (geometry is! DrawingPolygon || geometry.coordinates.isEmpty) return;
+    final ring = geometry.coordinates.first;
+    final openCount = _openRingCount(ring);
+    if (openCount <= 0) return;
+
+    final center = _centroidOfOpenRing(ring, openCount);
+    final first = LatLng(ring.first[1], ring.first[0]);
+    final distance = const Distance();
+    final radius = distance.as(LengthUnit.Meter, center, first);
+    final bearing = radius < 0.05 ? 90.0 : distance.bearing(center, first);
+    _editPivotCenter = center;
+    if (radius <= 0) return;
+    _editPivotRadiusMeters = radius;
+    _editPivotEdge = distance.offset(center, radius, bearing);
+  }
+
+  int _openRingCount(List<List<double>> ring) {
+    if (ring.isEmpty) return 0;
+    if (ring.length >= 2) {
+      final first = ring.first;
+      final last = ring.last;
+      if ((first[0] - last[0]).abs() < 1e-9 &&
+          (first[1] - last[1]).abs() < 1e-9) {
+        return ring.length - 1;
+      }
+    }
+    return ring.length;
+  }
+
+  LatLng _centroidOfOpenRing(List<List<double>> ring, int count) {
+    var lat = 0.0;
+    var lng = 0.0;
+    for (var i = 0; i < count; i++) {
+      lng += ring[i][0];
+      lat += ring[i][1];
+    }
+    return LatLng(lat / count, lng / count);
+  }
+
+  /// Arrasta o centro na edição: o raio e o azimute da borda ficam.
+  void moveEditPivotCenter(LatLng newCenter) {
+    if (_isDisposed) return;
+    if (_stateMachine.currentState != DrawingState.editing) return;
+    if (_selectedFeature?.isPivot != true) return;
+    if (_editPivotCenter == null) return;
+
+    final radius = _editPivotRadiusMeters;
+    final edge = _editPivotEdge;
+    if (edge == null || radius == null || radius <= 0) {
+      _editPivotCenter = newCenter;
+      _notify();
+      return;
+    }
+
+    final distance = const Distance();
+    final bearing = distance.bearing(_editPivotCenter!, edge);
+    _editPivotCenter = newCenter;
+    _editPivotEdge = distance.offset(newCenter, radius, bearing);
+    _editPivotRadiusMeters = radius;
+    _editGeometry = DrawingUtils.createPivotPolygon(newCenter, radius);
+    _updateRealTimeIntersection();
+    _notify();
+  }
+
+  /// Arrasta a borda na edição: só o raio muda. O centro fica parado.
+  void updateEditPivotEdge(LatLng point) {
+    if (_isDisposed) return;
+    if (_stateMachine.currentState != DrawingState.editing) return;
+    if (_selectedFeature?.isPivot != true) return;
+    final center = _editPivotCenter;
+    if (center == null) return;
+
+    final radius = _distanceMeters(center, point);
+    if (radius <= 0) return;
+    _editPivotEdge = point;
+    _editPivotRadiusMeters = radius;
+    _editGeometry = DrawingUtils.createPivotPolygon(center, radius);
+    _updateRealTimeIntersection();
+    _notify();
+  }
+
+  /// Fim do arraste do pivô em edição. Empurra o histórico uma vez.
+  void finishEditPivotGesture() {
+    if (_isDisposed) return;
+    if (_stateMachine.currentState != DrawingState.editing) return;
+    if (_selectedFeature?.isPivot != true) return;
+    _pushEditPivotHistory();
+    validateGeometry(_editGeometry);
+    _notify();
+  }
+
+  void _pushEditPivotHistory() {
+    final geometry = _editGeometry;
+    if (geometry is! DrawingPolygon) return;
+    final vertices = _geomToVertices(geometry);
+    final current = _history.current;
+    if (current != null &&
+        current.length == vertices.length &&
+        _editPivotVerticesMatch(current, vertices)) {
+      return;
+    }
+    _history.push(vertices, fullPolygonSnapshot: geometry);
+  }
+
+  bool _editPivotVerticesMatch(List<LatLng> a, List<LatLng> b) {
+    for (var i = 0; i < a.length; i++) {
+      if ((a[i].latitude - b[i].latitude).abs() > 1e-10 ||
+          (a[i].longitude - b[i].longitude).abs() > 1e-10) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// Desfaz o último vértice adicionado no modo de desenho livre.
