@@ -7,6 +7,7 @@ class AgendaState {
   final List<VisitSession> sessions;
   final List<Event> conflicts;
   final bool isLoading;
+  final bool hasLoaded;
   final String? error;
 
   const AgendaState({
@@ -14,6 +15,7 @@ class AgendaState {
     this.sessions = const [],
     this.conflicts = const [],
     this.isLoading = false,
+    this.hasLoaded = false,
     this.error,
   });
 
@@ -22,6 +24,7 @@ class AgendaState {
     List<VisitSession>? sessions,
     List<Event>? conflicts,
     bool? isLoading,
+    bool? hasLoaded,
     String? error,
   }) {
     return AgendaState(
@@ -29,6 +32,7 @@ class AgendaState {
       sessions: sessions ?? this.sessions,
       conflicts: conflicts ?? this.conflicts,
       isLoading: isLoading ?? this.isLoading,
+      hasLoaded: hasLoaded ?? this.hasLoaded,
       error: error,
     );
   }
