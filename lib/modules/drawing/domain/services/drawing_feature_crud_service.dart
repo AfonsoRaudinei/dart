@@ -111,6 +111,7 @@ class DrawingFeatureCrudService {
     DrawingGeometry? newGeometry,
     String? editorId,
     AuthorType? editorType,
+    double? raioMetros,
   }) {
     if (newGeometry != null && editorId != null && editorType != null) {
       final newArea = DrawingUtils.calculateGeometryArea(newGeometry);
@@ -121,6 +122,7 @@ class DrawingFeatureCrudService {
         newAreaHa: newArea,
         authorId: editorId,
         authorType: editorType,
+        raioMetros: raioMetros,
       );
       final deactivated = DrawingFeature(
         id: oldFeature.id,
