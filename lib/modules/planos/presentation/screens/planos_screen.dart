@@ -162,7 +162,7 @@ class _PlanoAtual extends ConsumerWidget {
     final nome = plano.plano.name[0].toUpperCase() + plano.plano.name.substring(1);
     return Text(
       'Plano atual: $nome · ${plano.diasRestantesLabel} · '
-      'até ${plano.limiteCases} cases no mapa',
+      '${plano.limiteCases >= 999999 ? 'cases ilimitados no mapa' : 'até ${plano.limiteCases} cases no mapa'}',
       textAlign: TextAlign.center,
       style: TextStyle(
         fontSize: 14,

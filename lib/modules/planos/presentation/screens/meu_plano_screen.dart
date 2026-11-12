@@ -189,7 +189,7 @@ class _PlanoAtivoContent extends ConsumerWidget {
         _InfoRow(
           icon: Icons.location_on_rounded,
           label: 'Cases ativos no mapa',
-          value: '${plano.limiteCases} case${plano.limiteCases > 1 ? 's' : ''}',
+          value: plano.limiteCasesLabel,
         ),
         if (plano.plano != PlanoTipo.ouro) ...[
           const SizedBox(height: 16),

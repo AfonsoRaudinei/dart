@@ -88,6 +88,12 @@ class UserPlan {
     return plano.limiteCases;
   }
 
+  /// Rótulo seguro para UI (evita "999999 cases" do admin/plano ilimitado).
+  String get limiteCasesLabel {
+    if (limiteCases >= 999999) return 'Cases ilimitados';
+    return '$limiteCases case${limiteCases > 1 ? 's' : ''}';
+  }
+
   UserPlan copyWith({
     String? id,
     String? userId,
