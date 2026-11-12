@@ -142,6 +142,44 @@ void main() {
     });
   });
 
+  group('ocorrências vinculadas', () {
+    test('select remoto não referencia colunas lat/long legadas', () {
+      expect(
+        ProducerLinkRepository.linkedOccurrenceColumns,
+        isNot(contains('lat,')),
+      );
+      expect(
+        ProducerLinkRepository.linkedOccurrenceColumns,
+        contains('latitude'),
+      );
+      expect(
+        ProducerLinkRepository.linkedOccurrenceColumns,
+        contains('field_id'),
+      );
+    });
+
+    test('occurrenceRowsFromRemote ignora linhas inválidas', () {
+      final rows = ProducerLinkRepository.occurrenceRowsFromRemote([
+        {
+          'id': 'occ-1',
+          'category': 'doenca',
+          'description': 'Mancha foliar',
+          'created_at': '2026-06-12T10:00:00.000Z',
+          'deleted_at': null,
+        },
+        {
+          'id': '',
+          'category': 'doenca',
+          'created_at': '2026-06-12T10:00:00.000Z',
+        },
+      ]);
+
+      expect(rows, hasLength(1));
+      expect(rows.first.id, 'occ-1');
+      expect(rows.first.title, 'Mancha foliar');
+    });
+  });
+
   group('relatórios vinculados', () {
     test('usa relatorios_v2 como tabela remota do produtor', () {
       expect(ProducerLinkRepository.linkedReportsTable, 'relatorios_v2');
