@@ -30,6 +30,10 @@ abstract class IRelatorioRepository {
   /// Retorna o relatório pelo [id], ou [null] se não encontrado.
   Future<RelatorioTecnico?> getById(String id);
 
+  /// Relatório não excluído da sessão de visita, ou null.
+  /// ADR-060 — gerar de novo não duplica.
+  Future<RelatorioTecnico?> findByVisitSessionId(String visitSessionId);
+
   /// Retorna todos os relatórios não deletados.
   Future<List<RelatorioTecnico>> getAll();
 

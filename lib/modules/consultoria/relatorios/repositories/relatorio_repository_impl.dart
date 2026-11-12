@@ -70,6 +70,25 @@ class RelatorioRepositoryImpl implements IRelatorioRepository {
   }
 
   @override
+  Future<RelatorioTecnico?> findByVisitSessionId(String visitSessionId) async {
+    final normalized = visitSessionId.trim();
+    if (normalized.isEmpty) return null;
+    final db = await _dbHelper.database;
+    final agronomistId = LocalSessionIdentity.resolveUserId();
+    final rows = await db.query(
+      RelatorioTable.tableName,
+      where:
+          '${RelatorioTable.colVisitSessionId} = ?'
+          ' AND ${RelatorioTable.colAgronomistId} = ?'
+          ' AND ${RelatorioTable.colDeletedAt} IS NULL',
+      whereArgs: [normalized, agronomistId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return _fromMap(rows.first);
+  }
+
+  @override
   Future<List<RelatorioTecnico>> getAll() async {
     final db = await _dbHelper.database;
     final agronomistId = LocalSessionIdentity.resolveUserId();

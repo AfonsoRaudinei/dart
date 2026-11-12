@@ -58,6 +58,7 @@ class OccurrenceReadAdapter implements IOccurrenceRead {
       amostraColetor: o.amostraColetor,
       amostraTramite: o.amostraTramite,
       amostraLaudoTexto: o.amostraLaudoTexto,
+      fieldId: o.fieldId,
     );
   }
 }
