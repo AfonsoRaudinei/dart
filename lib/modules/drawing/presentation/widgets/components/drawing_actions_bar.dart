@@ -162,6 +162,20 @@ class DrawingActionsBar extends StatelessWidget {
               },
             ),
           ],
+          if (onUnion != null &&
+              selectedFeature.properties.tipo == DrawingType.talhao &&
+              actionsMode == DrawingFeatureActionsMode.compact) ...[
+            const SizedBox(height: 12),
+            _ActionButton(
+              icon: Icons.add_circle_outline,
+              label: 'Unir talhões',
+              description: 'Combinar com outra área',
+              onTap: () {
+                HapticFeedback.lightImpact();
+                onUnion!.call();
+              },
+            ),
+          ],
           if (actionsMode == DrawingFeatureActionsMode.full) ...[
           const SizedBox(height: 16),
           const Divider(height: 1),
