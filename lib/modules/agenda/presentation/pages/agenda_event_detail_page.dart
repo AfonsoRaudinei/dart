@@ -16,6 +16,7 @@ import '../providers/agenda_provider.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/event_type_badge.dart';
 import '../widgets/visit_edit_dialog.dart';
+import '../widgets/visit_reports_section.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 /// Página de detalhes expandida de um evento
@@ -118,6 +119,12 @@ class AgendaEventDetailPage extends ConsumerWidget {
             if (event.visitSessionId != null) ...[
               _buildSessionInfo(ref, event),
               const SizedBox(height: 24),
+              VisitReportsSection(
+                sessionId: event.visitSessionId!,
+                eventFieldName: fieldNome,
+                eventFarmName: farmNome,
+              ),
+              const SizedBox(height: 24),
             ],
 
             // Oportunidades — ver ficha do cliente
@@ -132,6 +139,9 @@ class AgendaEventDetailPage extends ConsumerWidget {
 
             // Ações
             if (!event.status.isFinished) _buildActions(context, ref, event),
+            if (event.status == EventStatus.concluido &&
+                event.visitSessionId != null)
+              _buildKeepOrDelete(context, ref, event),
             const SizedBox(height: kFabSafeArea),
           ],
         ),
@@ -392,7 +402,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
               builder: (context) => AlertDialog(
                 title: const Text('Excluir evento?'),
                 content: const Text(
-                  'O evento será removido permanentemente.',
+                  'O evento sai da agenda. Os relatórios feitos na visita continuam em Relatórios.',
                 ),
                 actions: [
                   TextButton(
@@ -439,6 +449,85 @@ class AgendaEventDetailPage extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Widget _buildKeepOrDelete(
+    BuildContext context,
+    WidgetRef ref,
+    Event event,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        OutlinedButton(
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Visita mantida na agenda.')),
+            );
+          },
+          child: const Text('Manter na agenda'),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton(
+          onPressed: () => _confirmDelete(
+            context,
+            ref,
+            event,
+            title: 'Excluir da agenda?',
+            message:
+                'A visita sai da agenda. Os relatórios feitos no talhão continuam em Relatórios.',
+            success: 'Visita excluída da agenda.',
+          ),
+          style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+          child: const Text('Excluir da agenda'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    Event event, {
+    required String title,
+    required String message,
+    required String success,
+  }) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !context.mounted) return;
+    try {
+      await ref.read(agendaProvider.notifier).deleteEvent(event.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(success)),
+        );
+        context.go(AppRoutes.agendaDay(event.dataInicioPlanejada));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(userFacingError(e, action: 'Erro ao excluir'))),
+        );
+      }
+    }
   }
 
   void _showEditDialog(BuildContext context, WidgetRef ref, Event event) {

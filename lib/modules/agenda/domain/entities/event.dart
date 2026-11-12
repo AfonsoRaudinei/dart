@@ -135,13 +135,15 @@ class Event extends Equatable {
     VisitPriority? priority,
     double? latitude,
     double? longitude,
+    bool clearTalhaoId = false,
+    bool clearFazendaId = false,
   }) {
     return Event(
       id: id ?? this.id,
       tipo: tipo ?? this.tipo,
       clienteId: clienteId ?? this.clienteId,
-      fazendaId: fazendaId ?? this.fazendaId,
-      talhaoId: talhaoId ?? this.talhaoId,
+      fazendaId: clearFazendaId ? null : (fazendaId ?? this.fazendaId),
+      talhaoId: clearTalhaoId ? null : (talhaoId ?? this.talhaoId),
       titulo: titulo ?? this.titulo,
       dataInicioPlanejada: dataInicioPlanejada ?? this.dataInicioPlanejada,
       dataFimPlanejada: dataFimPlanejada ?? this.dataFimPlanejada,
