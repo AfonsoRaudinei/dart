@@ -179,6 +179,10 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
           return const SizedBox.shrink();
         }
 
+        if (widget.controller.isEditingPivot) {
+          return const SizedBox.shrink();
+        }
+
         final geometry = widget.controller.liveGeometry;
         final displayGeometry = _resolveDisplayGeometry(geometry);
         final previewPolygons = _buildDragPreviewPolygons(displayGeometry);
