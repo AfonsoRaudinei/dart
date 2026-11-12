@@ -53,6 +53,29 @@ void main() {
     });
   });
 
+  group('OfflineTileCacheService.scopedUserId', () {
+    test('usuários distintos gravam em pastas separadas', () async {
+      installPathProviderTestBindings();
+      const consultant = OfflineTileCacheService(scopedUserId: 'user-a');
+      const producer = OfflineTileCacheService(scopedUserId: 'user-b');
+
+      final consultantRoot = await consultant.rootPath();
+      final producerRoot = await producer.rootPath();
+
+      expect(consultantRoot, isNot(producerRoot));
+      expect(consultantRoot, contains('/offline_tiles/users/user-a'));
+      expect(producerRoot, contains('/offline_tiles/users/user-b'));
+    });
+
+    test('scopedUserId vazio mantém pasta legada offline_tiles', () async {
+      installPathProviderTestBindings();
+      const legacy = OfflineTileCacheService();
+      final root = await legacy.rootPath();
+      expect(root, endsWith('/offline_tiles'));
+      expect(root, isNot(contains('/users/')));
+    });
+  });
+
   group('OfflineTileCacheService.prefetchArea concurrency', () {
     test('baixa tiles em paralelo até prefetchConcurrency', () async {
       installPathProviderTestBindings();
