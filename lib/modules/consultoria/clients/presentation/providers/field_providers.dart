@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/geo/geo_json_polygon_geometry.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
+import 'package:soloforte_app/core/session/user_role.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
 import 'package:soloforte_app/modules/consultoria/fields/data/repositories/field_repository.dart';
+import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../domain/agronomic_models.dart';
@@ -100,6 +102,16 @@ final selectedFarmIdProvider = StateProvider<String?>((ref) => null);
 final mapFieldsProvider = FutureProvider.autoDispose<List<Talhao>>((ref) async {
   final farmId = ref.watch(selectedFarmIdProvider);
   final repo = ref.read(fieldRepositoryProvider);
+  final isProdutor = ref.watch(currentUserRoleProvider).isProdutor;
+
+  // Produtor: nunca carregar o espelho completo do consultor no SQLite.
+  // Sem fazenda própria no mapa, só [LinkedConsultantFieldLayer] (vínculos).
+  if (isProdutor) {
+    if (farmId == null || farmId.isEmpty) {
+      return const [];
+    }
+    return repo.getFieldsByFarmId(farmId);
+  }
 
   if (farmId == null) {
     return repo.getAllFields();
