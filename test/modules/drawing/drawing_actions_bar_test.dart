@@ -110,21 +110,42 @@ void main() {
     expect(find.text('Ver mapa NDVI'), findsNothing);
   });
 
-  testWidgets('modo compacto com callback exibe Ver mapa NDVI', (tester) async {
-    var tapped = false;
+  testWidgets('modo compacto não exibe Ver mapa NDVI mesmo com callback', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
           body: DrawingActionsBar(
             selectedFeature: _feature(),
             actionsMode: DrawingFeatureActionsMode.compact,
-            onShowNdviMap: () => tapped = true,
+            onShowNdviMap: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Ver mapa NDVI'), findsNothing);
+  });
+
+  testWidgets('modo full com callback exibe Ver mapa NDVI', (tester) async {
+    var tapped = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: DrawingActionsBar(
+              selectedFeature: _feature(),
+              actionsMode: DrawingFeatureActionsMode.full,
+              onShowNdviMap: () => tapped = true,
+            ),
           ),
         ),
       ),
     );
 
     expect(find.text('Ver mapa NDVI'), findsOneWidget);
+    await tester.ensureVisible(find.text('Ver mapa NDVI'));
     await tester.tap(find.text('Ver mapa NDVI'));
     expect(tapped, isTrue);
   });

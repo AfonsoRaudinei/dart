@@ -150,7 +150,10 @@ class DrawingActionsBar extends StatelessWidget {
               onEditMetadata?.call();
             },
           ),
-          if (onShowNdviMap != null) ...[
+          // NDVI fica no chrome do mapa; no sheet compacto (lápis) só atalhos
+          // exclusivos — ex.: Unir talhões.
+          if (onShowNdviMap != null &&
+              actionsMode == DrawingFeatureActionsMode.full) ...[
             const SizedBox(height: 12),
             _ActionButton(
               icon: Icons.grass_rounded,
