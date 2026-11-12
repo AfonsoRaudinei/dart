@@ -22,4 +22,15 @@ void main() {
     expect(accept, contains("status = 'pending'"));
     expect(accept, contains('expires_at > now()'));
   });
+
+  test('aceite do token usa digest no schema extensions', () {
+    final digestFix = File(
+      'supabase/migrations/20261112223000_accept_producer_link_digest.sql',
+    ).readAsStringSync();
+
+    expect(digestFix, contains('extensions.digest('));
+    expect(digestFix, isNot(contains('encode(digest(')));
+    expect(digestFix, contains("set search_path = public, extensions"));
+    expect(digestFix, contains('grant execute on function public.accept_producer_link_token(text) to authenticated'));
+  });
 }
