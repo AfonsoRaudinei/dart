@@ -56,4 +56,50 @@ void main() {
       expect(plan.diasRestantesLabel, contains('dias restantes'));
     });
   });
+
+  group('UserPlan.limiteCasesLabel', () {
+    test('admin (sentinela 999999) não mostra "999999 cases"', () {
+      final plan = UserPlan(
+        id: 'p-admin',
+        userId: 'u1',
+        plano: PlanoTipo.bronze,
+        origem: PlanoOrigem.pagamento,
+        ativo: true,
+        isAdmin: true,
+        iniciouEm: DateTime.now(),
+        expiraEm: DateTime.now().add(const Duration(days: 30)),
+        criadoEm: DateTime.now(),
+      );
+      expect(plan.limiteCases, 999999);
+      expect(plan.limiteCasesLabel, 'Cases ilimitados');
+    });
+
+    test('plano ouro (sentinela 999999) não mostra "999999 cases"', () {
+      final plan = UserPlan(
+        id: 'p1',
+        userId: 'u1',
+        plano: PlanoTipo.ouro,
+        origem: PlanoOrigem.pagamento,
+        ativo: true,
+        iniciouEm: DateTime.now(),
+        expiraEm: DateTime.now().add(const Duration(days: 30)),
+        criadoEm: DateTime.now(),
+      );
+      expect(plan.limiteCasesLabel, 'Cases ilimitados');
+    });
+
+    test('plano bronze mostra limite numérico real', () {
+      final plan = UserPlan(
+        id: 'p1',
+        userId: 'u1',
+        plano: PlanoTipo.bronze,
+        origem: PlanoOrigem.pagamento,
+        ativo: true,
+        iniciouEm: DateTime.now(),
+        expiraEm: DateTime.now().add(const Duration(days: 30)),
+        criadoEm: DateTime.now(),
+      );
+      expect(plan.limiteCasesLabel, '5 cases');
+    });
+  });
 }
