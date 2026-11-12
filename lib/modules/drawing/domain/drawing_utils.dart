@@ -681,6 +681,7 @@ class DrawingUtils {
     List<DrawingFeature>? existingFeatures,
     String? ignoreId,
     bool skipExpensiveChecks = false,
+    bool skipOverlapChecks = false,
   }) {
     if (geometry == null) return const DrawingValidationResult.valid();
 
@@ -734,13 +735,17 @@ class DrawingUtils {
     }
 
     // 4. Overlaps (⚡ OTIMIZADO: BBox check primeiro)
-    if (existingFeatures != null && !skipExpensiveChecks) {
+    // Teste pode cobrir talhão e outro teste. Talhão não é bloqueado por teste.
+    if (existingFeatures != null &&
+        !skipExpensiveChecks &&
+        !skipOverlapChecks) {
       // ⚡ Calcular BBox uma vez só
       final bounds = _getBoundsGeometry(geometry);
 
       for (var f in existingFeatures) {
         if (ignoreId != null && f.id == ignoreId) continue;
         if (!f.properties.ativo) continue; // Ignore inactive
+        if (f.properties.tipo == DrawingType.teste) continue;
 
         // ⚡ BBox check primeiro (O(1) - muito rápido)
         final fBounds = _getBoundsGeometry(f.geometry);
