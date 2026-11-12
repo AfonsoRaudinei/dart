@@ -42,6 +42,7 @@ class OccurrenceSummary {
     this.amostraColetor,
     this.amostraTramite,
     this.amostraLaudoTexto,
+    this.fieldId,
   });
 
   final String id;
@@ -96,6 +97,10 @@ class OccurrenceSummary {
   final String? amostraColetor;
   final String? amostraTramite;
   final String? amostraLaudoTexto;
+
+  /// Talhão da ocorrência, quando o relatório foi feito num talhão.
+  /// ADR-060 — a agenda mostra "Talhão · Fazenda".
+  final String? fieldId;
 }
 
 /// Contrato de leitura de ocorrências vinculadas a uma sessão de visita.

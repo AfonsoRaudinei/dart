@@ -2,6 +2,7 @@
 //
 // Contrato neutro — acessível por todos os bounded contexts.
 // ADR-020 (origem) + ADR-023 (expansão — DT-023-1, DT-023-2)
+// ADR-060 — listFinished para acerto de visitas sem evento de agenda.
 //
 // PROIBIDO: importar lib/modules/ neste arquivo.
 // RETROCOMPATÍVEL: campos id e status mantidos, novos campos adicionados.
@@ -19,6 +20,8 @@ class VisitSessionSummary {
     this.areaId,
     this.activityType,
     this.endTime,
+    this.initialLat,
+    this.initialLong,
   });
 
   final String id;
@@ -29,6 +32,8 @@ class VisitSessionSummary {
   final String? areaId;
   final String? activityType;
   final DateTime? endTime;
+  final double? initialLat;
+  final double? initialLong;
 
   bool get isActive => status == 'active';
 }
@@ -44,4 +49,7 @@ abstract interface class IVisitSessionLookup {
   /// Retorna sessão por ID. Retorna null se não encontrada.
   /// Adicionado em ADR-023 — DT-023-2
   Future<VisitSessionSummary?> findById(String sessionId);
+
+  /// Sessões já encerradas do usuário atual. ADR-060.
+  Future<List<VisitSessionSummary>> listFinished();
 }
