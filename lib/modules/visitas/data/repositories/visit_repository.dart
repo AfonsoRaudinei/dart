@@ -245,6 +245,20 @@ class VisitRepository {
     );
   }
 
+  /// Sessões encerradas do usuário. ADR-060.
+  Future<List<VisitSession>> listFinished() async {
+    final db = await _databaseHelper.database;
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty) return [];
+    final maps = await db.query(
+      'visit_sessions',
+      where: 'status = ? AND user_id = ?',
+      whereArgs: ['finished', userId],
+      orderBy: 'start_time DESC',
+    );
+    return maps.map(VisitSession.fromMap).toList();
+  }
+
   // --- QUERY HISTÓRICO ---
   Future<List<VisitSession>> getHistory({
     required DateTime start,
