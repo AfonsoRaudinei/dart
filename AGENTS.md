@@ -286,7 +286,7 @@ lib/
 
 -----
 
-## ADRs ATIVOS (008–050)
+## ADRs ATIVOS (008–060)
 
 | ADR | Decisão |
 |---|---|
@@ -333,6 +333,7 @@ lib/
 | 057 | Rota sugerida da visita (paradas locais, sem sync) |
 | 058 | Término do plantio e ciclo na ocorrência (SQLite v51 + sync tier dos campos de plantio) |
 | 059 | Dados do plantio por safra nas ocorrências do talhão (SQLite v52, Plantio mais recente substitui o talhão) |
+| 060 | Visita de campo no mapa entra na agenda (mesmo UUID) e gera relatório ao encerrar |
 
 Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 
