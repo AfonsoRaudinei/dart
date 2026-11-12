@@ -9,6 +9,8 @@ import '../domain/publicacao.dart';
 import '../data/map_repository.dart';
 import '../utils/app_logger.dart';
 import '../config/inpe_satellite_overlay_mode.dart' as inpe_overlay;
+import '../session/local_session_identity.dart';
+import '../session/session_controller.dart';
 
 part 'map_state.g.dart';
 
@@ -20,10 +22,11 @@ MapRepository mapRepository(Ref ref) {
   );
 }
 
-final offlineTileCacheServiceProvider = Provider<OfflineTileCacheService>((
-  ref,
-) {
-  return const OfflineTileCacheService();
+final offlineTileCacheServiceProvider = Provider<OfflineTileCacheService>((ref) {
+  ref.watch(sessionControllerProvider);
+  return OfflineTileCacheService(
+    scopedUserId: LocalSessionIdentity.resolveUserId(),
+  );
 });
 
 final offlineTileCacheRootPathProvider = FutureProvider<String>((ref) async {
@@ -404,6 +407,8 @@ class OfflineMapAreaConfig {
   final double maxZoom;
   final DateTime createdAt;
 
+  final String? ownerUserId;
+
   const OfflineMapAreaConfig({
     required this.id,
     required this.layerKey,
@@ -414,6 +419,7 @@ class OfflineMapAreaConfig {
     required this.minZoom,
     required this.maxZoom,
     required this.createdAt,
+    this.ownerUserId,
   });
 
   Map<String, dynamic> toJson() => {
@@ -426,6 +432,8 @@ class OfflineMapAreaConfig {
     'minZoom': minZoom,
     'maxZoom': maxZoom,
     'createdAt': createdAt.toIso8601String(),
+    if (ownerUserId != null && ownerUserId!.isNotEmpty)
+      'ownerUserId': ownerUserId,
   };
 
   factory OfflineMapAreaConfig.fromJson(Map<String, dynamic> json) {
@@ -441,6 +449,7 @@ class OfflineMapAreaConfig {
       createdAt:
           DateTime.tryParse((json['createdAt'] ?? '') as String) ??
           DateTime.now(),
+      ownerUserId: (json['ownerUserId'] as String?)?.trim(),
     );
   }
 
@@ -498,13 +507,31 @@ class OfflineMapAreaConfig {
 }
 
 class OfflineMapAreasNotifier extends Notifier<List<OfflineMapAreaConfig>> {
-  static const _kKey = 'map_offline_areas_v1';
+  static String prefsKeyForUser(String userId) {
+    final normalized = userId.trim();
+    if (normalized.isEmpty) return '';
+    return 'map_offline_areas_v1_$normalized';
+  }
+
+  String _activeUserId = '';
 
   @override
   List<OfflineMapAreaConfig> build() {
+    ref.watch(sessionControllerProvider);
+    SessionController.registerLogoutInvalidation(
+      key: 'offlineMapAreasProvider',
+      invalidate: (ref) {
+        ref.invalidate(offlineMapAreasProvider);
+        ref.invalidate(offlineTileCacheServiceProvider);
+        ref.invalidate(offlineTileCacheRootPathProvider);
+      },
+    );
+    _activeUserId = LocalSessionIdentity.resolveUserId();
+    final prefsKey = prefsKeyForUser(_activeUserId);
+    if (prefsKey.isEmpty) return const [];
     try {
       final prefs = ref.read(preferencesServiceProvider);
-      final raw = prefs.getString(_kKey);
+      final raw = prefs.getString(prefsKey);
       if (raw == null || raw.isEmpty) return const [];
       final decoded = jsonDecode(raw) as List<dynamic>;
       return decoded
@@ -617,9 +644,11 @@ class OfflineMapAreasNotifier extends Notifier<List<OfflineMapAreaConfig>> {
   Future<void> deleteArea(String id) => deleteAreas([id]);
 
   void _persist() {
+    final prefsKey = prefsKeyForUser(_activeUserId);
+    if (prefsKey.isEmpty) return;
     final prefs = ref.read(preferencesServiceProvider);
     prefs.setString(
-      _kKey,
+      prefsKey,
       jsonEncode(state.map((e) => e.toJson()).toList(growable: false)),
     );
   }
@@ -635,10 +664,8 @@ final externalRasterLayerProvider =
       ExternalRasterLayerNotifier.new,
     );
 
-final offlineMapAreasProvider =
-    NotifierProvider<OfflineMapAreasNotifier, List<OfflineMapAreaConfig>>(
-      OfflineMapAreasNotifier.new,
-    );
+final offlineMapAreasProvider = NotifierProvider<OfflineMapAreasNotifier,
+    List<OfflineMapAreaConfig>>(OfflineMapAreasNotifier.new);
 
 class OfflineCoverageQuery {
   final String layerKey;
