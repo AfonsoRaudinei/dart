@@ -5,7 +5,29 @@ import 'package:soloforte_app/core/config/map_config.dart';
 import 'package:soloforte_app/core/domain/map_models.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/core/services/offline_tile_cache_service.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
+import 'package:soloforte_app/core/session/session_controller.dart';
+import 'package:soloforte_app/core/session/session_models.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
+
+class _BareSessionController extends SessionController {
+  @override
+  SessionState build() => const SessionUnknown();
+}
+
+ProviderContainer _coverageTestContainer({
+  required PreferencesService prefs,
+  OfflineTileCacheService? cacheService,
+}) {
+  return ProviderContainer(
+    overrides: [
+      preferencesServiceProvider.overrideWithValue(prefs),
+      sessionControllerProvider.overrideWith(_BareSessionController.new),
+      if (cacheService != null)
+        offlineTileCacheServiceProvider.overrideWithValue(cacheService),
+    ],
+  );
+}
 
 void main() {
   test(
@@ -14,11 +36,9 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final prefs = PreferencesService(await SharedPreferences.getInstance());
       const cacheService = _FakeOfflineTileCacheService(hasTiles: true);
-      final container = ProviderContainer(
-        overrides: [
-          preferencesServiceProvider.overrideWithValue(prefs),
-          offlineTileCacheServiceProvider.overrideWithValue(cacheService),
-        ],
+      final container = _coverageTestContainer(
+        prefs: prefs,
+        cacheService: cacheService,
       );
       addTearDown(container.dispose);
 
@@ -69,11 +89,9 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final prefs = PreferencesService(await SharedPreferences.getInstance());
       const cacheService = _FakeOfflineTileCacheService(hasTiles: false);
-      final container = ProviderContainer(
-        overrides: [
-          preferencesServiceProvider.overrideWithValue(prefs),
-          offlineTileCacheServiceProvider.overrideWithValue(cacheService),
-        ],
+      final container = _coverageTestContainer(
+        prefs: prefs,
+        cacheService: cacheService,
       );
       addTearDown(container.dispose);
 
@@ -133,11 +151,9 @@ void main() {
         coveredNorth: farmNorth,
         coveredEast: farmEast,
       );
-      final container = ProviderContainer(
-        overrides: [
-          preferencesServiceProvider.overrideWithValue(prefs),
-          offlineTileCacheServiceProvider.overrideWithValue(cacheService),
-        ],
+      final container = _coverageTestContainer(
+        prefs: prefs,
+        cacheService: cacheService,
       );
       addTearDown(container.dispose);
 
@@ -189,11 +205,9 @@ void main() {
       coveredNorth: -9,
       coveredEast: -47,
     );
-    final container = ProviderContainer(
-      overrides: [
-        preferencesServiceProvider.overrideWithValue(prefs),
-        offlineTileCacheServiceProvider.overrideWithValue(cacheService),
-      ],
+    final container = _coverageTestContainer(
+      prefs: prefs,
+      cacheService: cacheService,
     );
     addTearDown(container.dispose);
 
@@ -229,6 +243,63 @@ void main() {
       isFalse,
     );
     expect(cacheService.lastBounds, isNull);
+  });
+
+  test('áreas offline usam prefs isoladas por user_id', () async {
+    const consultantId = 'consultant-uuid';
+    const producerId = 'producer-uuid';
+    const legacyPayload = '[{"id":"legacy-only","layerKey":"sat","south":-1,"west":-1,"north":1,"east":1,"minZoom":10,"maxZoom":12,"createdAt":"2026-01-01T00:00:00.000"}]';
+
+    SharedPreferences.setMockInitialValues({
+      'map_offline_areas_v1': legacyPayload,
+      OfflineMapAreasNotifier.prefsKeyForUser(consultantId):
+          '[{"id":"consultant-area","layerKey":"sat","south":-2,"west":-2,"north":2,"east":2,"minZoom":10,"maxZoom":12,"createdAt":"2026-01-01T00:00:00.000"}]',
+    });
+    final prefs = PreferencesService(await SharedPreferences.getInstance());
+    LocalSessionIdentity.configure(prefs);
+    LocalSessionIdentity.remember(consultantId);
+
+    final container = _coverageTestContainer(prefs: prefs);
+    addTearDown(() {
+      container.dispose();
+      LocalSessionIdentity.resetForTesting();
+    });
+
+    final consultantAreas = container.read(offlineMapAreasProvider);
+    expect(consultantAreas, hasLength(1));
+    expect(consultantAreas.single.id, 'consultant-area');
+
+    LocalSessionIdentity.remember(producerId);
+    container.invalidate(offlineMapAreasProvider);
+    
+    final producerAreas = container.read(offlineMapAreasProvider);
+    expect(producerAreas, isEmpty);
+
+    container.read(offlineMapAreasProvider.notifier).addArea(
+      OfflineMapAreaConfig(
+        id: 'producer-area',
+        layerKey: 'sat',
+        south: -3,
+        west: -3,
+        north: 3,
+        east: 3,
+        minZoom: 10,
+        maxZoom: 12,
+        createdAt: DateTime(2026, 1, 1),
+      ),
+    );
+
+    final storedProducer = prefs.getString(
+      OfflineMapAreasNotifier.prefsKeyForUser(producerId),
+    );
+    expect(storedProducer, isNotNull);
+    expect(storedProducer!, contains('producer-area'));
+
+    expect(
+      prefs.getString(OfflineMapAreasNotifier.prefsKeyForUser(consultantId)),
+      contains('consultant-area'),
+    );
+    expect(storedProducer, isNot(contains('consultant-area')));
   });
 }
 
