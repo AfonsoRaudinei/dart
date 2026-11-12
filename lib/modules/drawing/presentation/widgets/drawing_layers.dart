@@ -32,6 +32,10 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
   static const Color _manualOutlineHalo = Color(0xCC111111);
   static const Color _gpsOutlineHalo = Color(0xB3000000);
 
+  /// Azul Samsung (`PremiumTokens.blackAccentPrimary`) e a variante mais escura.
+  static const Color _testFill = Color(0xFF1428A0);
+  static const Color _testBorder = Color(0xFF0F1E7A);
+
   List<Polygon>? _cachedPolygons;
   List<Polyline>? _cachedPolylines;
   List<Marker>? _cachedMarkers;
@@ -47,6 +51,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
   DrawingTool? _lastTool;
   Set<int>? _lastIntersectingIndices;
   bool _lastHoleCut = false;
+  bool _lastSketchingTest = false;
   AreaDisplayUnit? _lastAreaUnit;
   TalhaoMapLabelPrefs? _lastLabelPrefs;
   String? _lastNdviOverlayId;
@@ -83,6 +88,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
         final gpsVertices = widget.controller.gpsVertices;
         final holeCutActive = widget.controller.isCuttingHole;
         final holeCutFeatureId = widget.controller.holeCutFeatureId;
+        final sketchingTest = widget.controller.isSketchingTest;
         final sketchVerticesOwnedByEditLayer =
             currentTool == DrawingTool.polygon &&
             (currentState == DrawingState.drawing ||
@@ -101,6 +107,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
             _lastIntersectingIndices != intersectingIndices ||
             _lastTool != currentTool ||
             _lastHoleCut != holeCutActive ||
+            _lastSketchingTest != sketchingTest ||
             !_samePoints(_lastFreehandTrail, freehandTrail) ||
             _lastPivotCenter != pivotCenter ||
             _lastPivotEdge != pivotEdge ||
@@ -137,6 +144,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
         _lastFreehandActive = isFreehandStrokeActive;
         _lastTool = currentTool;
         _lastHoleCut = holeCutActive;
+        _lastSketchingTest = sketchingTest;
         _lastIntersectingIndices = Set.from(intersectingIndices);
         _lastAreaUnit = areaUnit;
         _lastLabelPrefs = labelPrefs;
@@ -154,7 +162,13 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
 
         final editingThisFeature =
             currentState == DrawingState.editing && liveGeo != null;
-        for (final feature in features) {
+        final orderedFeatures = <DrawingFeature>[
+          for (final feature in features)
+            if (feature.properties.tipo != DrawingType.teste) feature,
+          for (final feature in features)
+            if (feature.properties.tipo == DrawingType.teste) feature,
+        ];
+        for (final feature in orderedFeatures) {
           final geometry = editingThisFeature && feature.id == selectedId
               ? liveGeo
               : holeCutActive &&
@@ -285,6 +299,10 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
           final parts = liveGeo is DrawingPolygon
               ? [liveGeo.coordinates]
               : (liveGeo as DrawingMultiPolygon).coordinates;
+          final liveOutlineHalo = sketchingTest
+              ? _testFill.withValues(alpha: 0.85)
+              : _manualOutlineHalo;
+          final liveOutline = sketchingTest ? _testBorder : _manualOutlineColor;
           for (final rings in parts) {
             if (rings.isEmpty) continue;
             final outerRing = _toLatLngRing(rings.first);
@@ -292,14 +310,14 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
               polylines.add(
                 Polyline(
                   points: outerRing,
-                  color: _manualOutlineHalo,
+                  color: liveOutlineHalo,
                   strokeWidth: 8,
                 ),
               );
               polylines.add(
                 Polyline(
                   points: outerRing,
-                  color: _manualOutlineColor,
+                  color: liveOutline,
                   strokeWidth: 4,
                   pattern: const StrokePattern.dotted(),
                 ),
@@ -308,8 +326,10 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
             polygons.add(
               _polygonFromRings(
                 rings,
-                color: Colors.white.withValues(alpha: 0.2),
-                borderColor: Colors.white,
+                color: sketchingTest
+                    ? _testFill.withValues(alpha: 0.45)
+                    : Colors.white.withValues(alpha: 0.2),
+                borderColor: sketchingTest ? _testBorder : Colors.white,
                 borderStrokeWidth: 3,
                 pattern: const StrokePattern.dotted(),
               ),
