@@ -111,4 +111,11 @@ abstract interface class IOccurrenceRead {
   /// Retorna todas as ocorrências vinculadas à sessão informada.
   /// Retorna lista vazia se não houver ocorrências.
   Future<List<OccurrenceSummary>> getBySessionId(String sessionId);
+
+  /// Ocorrências da sessão visíveis pelos clientes vinculados ao produtor.
+  /// ADR-061
+  Future<List<OccurrenceSummary>> getAuthorizedBySessionId(
+    String sessionId,
+    Set<String> authorizedClientIds,
+  );
 }

@@ -69,6 +69,12 @@ class _SideMenuContent extends StatelessWidget {
                     route: AppRoutes.producerProperty,
                   ),
                   _MenuItem(
+                    icon: Icons.calendar_today_outlined,
+                    label: 'Calendário',
+                    subtitle: 'Visitas confirmadas',
+                    route: AppRoutes.producerCalendar,
+                  ),
+                  _MenuItem(
                     icon: Icons.analytics_outlined,
                     label: 'Relatórios',
                     subtitle: 'Análises e KPIs',

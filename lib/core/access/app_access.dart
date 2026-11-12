@@ -43,6 +43,7 @@ class AppAccess {
   static const Set<String> _producerAllowedExactRoutes = {
     AppRoutes.feedback,
     AppRoutes.producerProperty,
+    AppRoutes.producerCalendar,
     AppRoutes.reports,
     AppRoutes.settings,
     AppRoutes.settingsEditProfile,

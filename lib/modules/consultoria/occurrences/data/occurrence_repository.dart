@@ -268,6 +268,35 @@ class OccurrenceRepository {
     return List.generate(maps.length, (i) => Occurrence.fromMap(maps[i]));
   }
 
+  Future<List<Occurrence>> getAuthorizedBySession(
+    String sessionId,
+    Set<String> authorizedClientIds,
+  ) async {
+    final db = await _databaseHelper.database;
+    final currentUserId = _scopedUserId();
+    final placeholders = List.filled(authorizedClientIds.length, '?').join(',');
+    final sharedClause = authorizedClientIds.isEmpty
+        ? ''
+        : ' OR (cached_by_user_id = ? AND client_id IN ($placeholders))';
+    final args = <Object?>[
+      sessionId,
+      ...OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereArgs(currentUserId),
+      if (authorizedClientIds.isNotEmpty) currentUserId,
+      ...authorizedClientIds,
+    ];
+    final maps = await db.query(
+      'occurrences',
+      where:
+          'visit_session_id = ? AND '
+          '(${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause(currentUserId)}$sharedClause) '
+          "AND sync_status NOT IN ('deleted', 'deleted_local') "
+          'AND deleted_at IS NULL',
+      whereArgs: args,
+      orderBy: 'created_at ASC',
+    );
+    return maps.map(Occurrence.fromMap).toList();
+  }
+
   Future<List<Occurrence>> getAllOccurrences() {
     return getAllAuthorizedOccurrences();
   }
