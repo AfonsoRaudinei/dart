@@ -58,6 +58,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
   bool _lastNdviCover = false;
   DrawingState? _lastDrawingState;
   List<LatLng>? _lastGpsVertices;
+  bool _lastEditingPivot = false;
 
   @override
   Widget build(BuildContext context) {
@@ -81,6 +82,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
         final currentTool = widget.controller.currentTool;
         final pivotCenter = widget.controller.pivotCenter;
         final pivotEdge = widget.controller.pivotEdgePoint;
+        final editingPivot = widget.controller.isEditingPivot;
         final isFreehandStrokeActive = widget.controller.isFreehandStrokeActive;
         final intersectingIndices =
             widget.controller.intersectingSegmentIndices;
@@ -117,6 +119,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
             _lastNdviOverlayId != ndviOverlayId ||
             _lastNdviCover != ndviCover ||
             _lastDrawingState != currentState ||
+            _lastEditingPivot != editingPivot ||
             !_samePoints(_lastGpsVertices, gpsVertices);
 
         if (!needsRebuild &&
@@ -151,6 +154,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
         _lastNdviOverlayId = ndviOverlayId;
         _lastNdviCover = ndviCover;
         _lastDrawingState = currentState;
+        _lastEditingPivot = editingPivot;
         _lastGpsVertices = List.of(gpsVertices);
 
         final polygons = <Polygon>[];
@@ -236,7 +240,8 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
           markers.add(_vertexMarker(currentPoints.single, index: 0));
         }
 
-        if (currentTool == DrawingTool.pivot && pivotCenter != null) {
+        if ((currentTool == DrawingTool.pivot || editingPivot) &&
+            pivotCenter != null) {
           markers.add(_pivotCenterMarker(pivotCenter));
           if (pivotEdge != null) {
             markers.add(_pivotEdgeMarker(pivotEdge));
