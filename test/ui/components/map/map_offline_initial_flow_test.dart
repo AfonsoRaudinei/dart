@@ -11,9 +11,19 @@ import 'package:soloforte_app/core/domain/map_models.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/core/services/connectivity_service.dart';
 import 'package:soloforte_app/core/services/offline_tile_cache_service.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
+import 'package:soloforte_app/core/session/session_controller.dart';
+import 'package:soloforte_app/core/session/session_models.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/ui/components/map/widgets/map_offline_widgets.dart';
+
+const _testUserId = 'map-offline-initial-flow-user';
+
+class _BareSessionController extends SessionController {
+  @override
+  SessionState build() => const SessionUnknown();
+}
 
 void main() {
   testWidgets('sheet de camadas sinaliza cobertura local ativa no cold start', (
@@ -21,12 +31,17 @@ void main() {
   ) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = PreferencesService(await SharedPreferences.getInstance());
+    LocalSessionIdentity.resetForTesting();
+    LocalSessionIdentity.configure(prefs);
+    LocalSessionIdentity.remember(_testUserId);
+    addTearDown(LocalSessionIdentity.resetForTesting);
     const cacheService = _FakeOfflineTileCacheService(hasTiles: true);
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           preferencesServiceProvider.overrideWithValue(prefs),
+          sessionControllerProvider.overrideWith(_BareSessionController.new),
           offlineTileCacheServiceProvider.overrideWithValue(cacheService),
           connectivityServiceProvider.overrideWithValue(
             const _FakeConnectivityService(initialValue: false),
