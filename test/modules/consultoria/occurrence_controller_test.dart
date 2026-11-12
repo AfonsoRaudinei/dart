@@ -27,6 +27,9 @@ class FakeVisitSessionLookup implements IVisitSessionLookup {
     if (active != null && active.id == sessionId) return active;
     return null;
   }
+
+  @override
+  Future<List<VisitSessionSummary>> listFinished() async => const [];
 }
 
 void main() {

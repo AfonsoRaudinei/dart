@@ -321,4 +321,7 @@ class _FakeVisitSessionLookup implements IVisitSessionLookup {
   @override
   Future<VisitSessionSummary?> findById(String sessionId) async =>
       session?.id == sessionId ? session : null;
+
+  @override
+  Future<List<VisitSessionSummary>> listFinished() async => const [];
 }

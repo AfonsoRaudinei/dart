@@ -60,6 +60,10 @@ class FakeAgendaSessionBridge implements IAgendaSessionBridge {
   String? lastLinkedEventId;
   String? lastLinkedSessionId;
   String? lastDoneSessionId;
+  String? lastRegisteredSessionId;
+  String? lastClosedSessionId;
+  String? lastPlaceSessionId;
+  bool failRegister = false;
 
   @override
   Future<void> linkSessionToEvent({
@@ -74,6 +78,30 @@ class FakeAgendaSessionBridge implements IAgendaSessionBridge {
   Future<void> markEventAsDone(String sessionId) async {
     lastDoneSessionId = sessionId;
   }
+
+  @override
+  Future<void> registerFieldCheckIn(FieldVisitCheckIn input) async {
+    if (failRegister) throw StateError('agenda indisponível');
+    lastRegisteredSessionId = input.sessionId;
+  }
+
+  @override
+  Future<void> updateFieldVisitPlace({
+    required String sessionId,
+    String? farmId,
+    String? areaId,
+    bool clearArea = false,
+  }) async {
+    lastPlaceSessionId = sessionId;
+  }
+
+  @override
+  Future<void> closeFieldVisit(String sessionId) async {
+    lastClosedSessionId = sessionId;
+  }
+
+  @override
+  Future<void> registerFinishedFieldVisit(FieldVisitCheckIn input) async {}
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -126,6 +154,10 @@ void main() {
       expect(fakeVisitRepo.lastSaved, isNotNull);
       expect(fakeVisitRepo.lastSaved!.producerId, equals('producer-001'));
       expect(fakeVisitRepo.lastSaved!.farmId, equals('farm-001'));
+      expect(
+        fakeAgendaBridge.lastRegisteredSessionId,
+        fakeVisitRepo.lastSaved!.id,
+      );
       final state = container.read(visitControllerProvider);
       expect(state.valueOrNull, isNotNull);
       expect(state.valueOrNull!.areaId, equals('area-001'));
@@ -162,7 +194,30 @@ void main() {
       await controller.endSession();
 
       expect(fakeVisitRepo.lastEndedId, equals('session-test-001'));
-      expect(fakeAgendaBridge.lastDoneSessionId, equals('session-test-001'));
+      expect(
+        fakeAgendaBridge.lastClosedSessionId,
+        equals('session-test-001'),
+      );
+      expect(
+        fakeAgendaBridge.lastRegisteredSessionId,
+        equals('session-test-001'),
+      );
+    });
+
+    test('falha ao registrar na agenda não impede o check-in', () async {
+      fakeAgendaBridge.failRegister = true;
+      final controller = container.read(visitControllerProvider.notifier);
+
+      await controller.startSession(
+        'producer-001',
+        'area-001',
+        'Visita técnica',
+        -15.0,
+        -47.0,
+      );
+
+      expect(fakeVisitRepo.lastSaved, isNotNull);
+      expect(container.read(visitControllerProvider).valueOrNull, isNotNull);
     });
 
     test('updateFarm troca fazenda e limpa talhão anterior', () async {
@@ -173,6 +228,7 @@ void main() {
       await controller.updateFarm('farm-002');
 
       expect(fakeVisitRepo.lastUpdatedFarmId, 'farm-002');
+      expect(fakeAgendaBridge.lastPlaceSessionId, 'session-test-001');
       expect(
         container.read(visitControllerProvider).valueOrNull!.farmId,
         'farm-002',
