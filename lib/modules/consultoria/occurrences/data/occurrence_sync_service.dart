@@ -136,6 +136,7 @@ class OccurrenceSyncService {
     }
 
     final activeClientIds = await _accessReader.loadActiveClientIds();
+    final activeFieldIds = await _accessReader.loadActiveFieldIdsForOccurrences();
     final ownRows = await SyncRetryRunner.execute(
       operation: () => _supabase
           .from('occurrences')
@@ -158,8 +159,20 @@ class OccurrenceSyncService {
             tag: 'OccurrenceSync',
           );
 
+    final sharedByField = activeFieldIds.isEmpty
+        ? const <Map<String, dynamic>>[]
+        : await SyncRetryRunner.execute(
+            operation: () => _supabase
+                .from('occurrences')
+                .select()
+                .inFilter('field_id', activeFieldIds.toList())
+                .order('updated_at'),
+            stage: 'occurrence_pull_shared_fields',
+            tag: 'OccurrenceSync',
+          );
+
     final rowsById = <String, Map<String, dynamic>>{};
-    for (final raw in [...ownRows, ...sharedRows]) {
+    for (final raw in [...ownRows, ...sharedRows, ...sharedByField]) {
       final row = Map<String, dynamic>.from(raw);
       rowsById[row['id'] as String] = row;
     }

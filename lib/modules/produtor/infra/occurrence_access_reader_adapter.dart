@@ -14,6 +14,12 @@ class OccurrenceAccessReaderAdapter implements IOccurrenceAccessReader {
   }
 
   @override
+  Future<Set<String>> loadActiveFieldIdsForOccurrences() async {
+    final ids = await _repository.loadAuthorizedOccurrenceFieldIds();
+    return ids.toSet();
+  }
+
+  @override
   Future<Map<String, String>> loadLinkedClientNames() {
     return _repository.loadLinkedClientNames();
   }

@@ -229,6 +229,27 @@ class ProducerLinkRepository implements ProducerLinkReader {
     }
   }
 
+  /// `client_id` com `share_fields` — desenhos/talhões no mapa.
+  Future<List<String>> loadAuthorizedClientIdsForDrawings() async {
+    final links = await _loadActiveLinks();
+    return links
+        .where((link) => link.share.fields)
+        .map((link) => link.clientId)
+        .toList(growable: false);
+  }
+
+  /// Talhões liberados para leitura de ocorrências via vínculo.
+  Future<List<String>> loadAuthorizedOccurrenceFieldIds() async {
+    final links = await _loadActiveLinks();
+    final fieldIds = <String>{};
+    for (final link in links) {
+      if (!link.share.occurrences) continue;
+      final ids = await _fieldIdsForLinkedClient(link.clientId);
+      fieldIds.addAll(ids);
+    }
+    return fieldIds.toList(growable: false);
+  }
+
   /// Nome da ficha do consultor para cada `client_id` ativo.
   Future<Map<String, String>> loadLinkedClientNames() async {
     final links = await _loadActiveLinks();

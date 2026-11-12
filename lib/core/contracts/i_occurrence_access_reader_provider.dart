@@ -26,5 +26,8 @@ class _NoOccurrenceAccessReader implements IOccurrenceAccessReader {
   Future<Set<String>> loadActiveClientIds() async => const {};
 
   @override
+  Future<Set<String>> loadActiveFieldIdsForOccurrences() async => const {};
+
+  @override
   Future<Map<String, String>> loadLinkedClientNames() async => const {};
 }

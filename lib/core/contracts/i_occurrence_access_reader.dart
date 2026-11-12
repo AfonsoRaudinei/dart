@@ -5,6 +5,9 @@
 abstract interface class IOccurrenceAccessReader {
   Future<Set<String>> loadActiveClientIds();
 
+  /// Talhões cujas ocorrências o produtor pode ler (vínculo + `share_occurrences`).
+  Future<Set<String>> loadActiveFieldIdsForOccurrences();
+
   /// Nome do cadastro do consultor (`clients.id` → nome), para a ocorrência
   /// compartilhada aparecer no nome do produtor.
   Future<Map<String, String>> loadLinkedClientNames();

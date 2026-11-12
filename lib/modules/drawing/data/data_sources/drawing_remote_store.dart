@@ -127,7 +127,9 @@ class DrawingRemoteStore {
   }
 
   /// Reconstrói [DrawingFeature] a partir de uma linha remota.
-  ///
+  DrawingFeature featureFromRemoteRow(Map<String, dynamic> row) =>
+      _fromRemoteRow(row);
+
   /// Linhas corrompidas interrompem o sync com erro explícito. Ignorar payload
   /// inválido aqui deixaria o cliente acreditar que o sync terminou corretamente.
   DrawingFeature _fromRemoteRow(Map<String, dynamic> row) {
