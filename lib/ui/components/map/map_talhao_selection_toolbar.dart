@@ -26,8 +26,14 @@ import '../../screens/map/handlers/visit_check_in_talhoes.dart';
 import 'map_sheet_state.dart';
 
 /// Geometria, Dados e, quando há id, NDVI + P&B + Status.
-int talhaoSelectionToolbarChipCount({required bool showNdvi}) =>
-    showNdvi ? 5 : 2;
+/// Teste não entra na contagem de Status.
+int talhaoSelectionToolbarChipCount({
+  required bool showNdvi,
+  bool includeStatus = true,
+}) {
+  if (!showNdvi) return 2;
+  return includeStatus ? 5 : 4;
+}
 
 /// Talhão cujo painel de condição está aberto neste card. null = fechado.
 final mapTalhaoStatusPanelFieldIdProvider = StateProvider<String?>(
@@ -118,13 +124,15 @@ class _MapTalhaoSelectionToolbarState
 
     final toolbarWidth = _estimateToolbarWidth(feature);
     final showNdvi = feature.id.isNotEmpty;
+    final isTestOverlay = feature.properties.tipo == DrawingType.teste;
+    final showStatus = showNdvi && !isTestOverlay;
     final condicao = _condicaoFor(feature);
     final overlayFieldId = ref.watch(mapNdviOverlayFieldIdProvider);
     final dateChoices = ref.watch(mapNdviDateChoicesProvider);
     final dateSelection = ref.watch(mapNdviSelectedDateProvider);
     final dateError = ref.watch(mapNdviOverlayDateErrorProvider);
     final statusPanelFieldId = ref.watch(mapTalhaoStatusPanelFieldIdProvider);
-    final showStatusPanel = showNdvi && statusPanelFieldId == feature.id;
+    final showStatusPanel = showStatus && statusPanelFieldId == feature.id;
     final ndviOverlayHere =
         overlayFieldId != null && overlayFieldId == feature.id;
     final choiceImages = dateChoices.asData?.value ?? const <NdviImage>[];
@@ -249,6 +257,8 @@ class _MapTalhaoSelectionToolbarState
                               );
                             },
                           ),
+                        ],
+                        if (showStatus) ...[
                           _divider,
                           _ToolbarChip(
                             key: const Key('map_talhao_toolbar_status'),
@@ -337,6 +347,7 @@ class _MapTalhaoSelectionToolbarState
 double estimateMapTalhaoToolbarWidth(DrawingFeature feature) {
   final chips = talhaoSelectionToolbarChipCount(
     showNdvi: feature.id.isNotEmpty,
+    includeStatus: feature.properties.tipo != DrawingType.teste,
   );
   return chips * _talhaoToolbarChipWidth + (chips - 1);
 }
