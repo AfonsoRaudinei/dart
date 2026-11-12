@@ -348,7 +348,10 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     // 🔧 FIX CRÍTICO: Notificar o controller para ativar/desativar a ferramenta
     if (shouldActivate) {
       widget.controller.selectTool(key);
-      if (key == 'polygon' || key == 'freehand' || key == 'pivot') {
+      if (key == 'polygon' ||
+          key == 'freehand' ||
+          key == 'pivot' ||
+          key == 'teste') {
         _requestClose(DrawingCloseIntent.dismissSheetPreserveArmed);
       }
     } else {
@@ -570,11 +573,12 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
     setState(() => _isSaving = true);
     final List<DrawingFeature> savedFeatures;
+    final pendingTipo = widget.controller.pendingDrawingType;
     try {
       savedFeatures = await widget.controller.addFeaturesFromGeometry(
         geometry: geometry,
         nome: _nomeController.text.trim(),
-        tipo: DrawingType.talhao,
+        tipo: pendingTipo,
         origem:
             widget.controller.pendingImportOrigin ??
             DrawingOrigin.desenho_manual,
@@ -587,7 +591,10 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
         clienteId: _selectedClient!.id,
         fazendaId: _selectedFarm?.id,
         grupo: _selectedFarm?.name,
-        cor: TalhaoCondicao.bom.argb,
+        // Teste grava azul Samsung. Talhão segue a condição (Bom por padrão).
+        cor: pendingTipo == DrawingType.teste
+            ? 0xFF1428A0
+            : TalhaoCondicao.bom.argb,
       );
     } finally {
       if (mounted) {
