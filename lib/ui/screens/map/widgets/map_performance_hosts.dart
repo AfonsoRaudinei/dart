@@ -15,6 +15,7 @@ import '../../../../modules/drawing/presentation/widgets/gps_walk_controls_overl
 import '../../../../modules/drawing/presentation/widgets/gps_tracking_overlay.dart';
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
+import '../../../../modules/produtor/data/producer_property_repository.dart';
 import '../../../../modules/visitas/presentation/controllers/geofence_controller.dart';
 import '../../../components/map/map_bottom_sheet.dart';
 import '../../../components/map/map_sheet_state.dart';
@@ -62,6 +63,21 @@ class MapInitialViewportListener extends ConsumerWidget {
       if (vp != InitialViewportState.applied &&
           vp != InitialViewportState.aborted &&
           ref.read(mapReadyStateProvider)) {
+        applyInitialViewport();
+      }
+    });
+
+    ref.listen(producerPropertyDashboardProvider, (prev, next) {
+      final prevLoading = prev == null || prev.isLoading;
+      final nowData = next.hasValue && !next.isLoading;
+      if (!prevLoading || !nowData) return;
+      if (ref.read(explicitMapCameraIntentProvider)) return;
+      final vp = ref.read(viewportStateProvider);
+      if (vp == InitialViewportState.applied ||
+          vp == InitialViewportState.aborted) {
+        return;
+      }
+      if (ref.read(mapReadyStateProvider)) {
         applyInitialViewport();
       }
     });
