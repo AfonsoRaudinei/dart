@@ -104,6 +104,7 @@ void main() {
     expect(find.text('Editar Geometria'), findsOneWidget);
     expect(find.text('Vincular / editar dados'), findsOneWidget);
     expect(find.text('União'), findsNothing);
+    expect(find.text('Unir talhões'), findsNothing);
     expect(find.text('Exportar este talhão'), findsNothing);
     expect(find.text('Excluir'), findsNothing);
     expect(find.text('Ver mapa NDVI'), findsNothing);
@@ -127,6 +128,60 @@ void main() {
     await tester.tap(find.text('Ver mapa NDVI'));
     expect(tapped, isTrue);
   });
+
+  testWidgets(
+    'modo compacto com onUnion e tipo talhao exibe Unir talhões',
+    (tester) async {
+      var unionTapped = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DrawingActionsBar(
+              selectedFeature: _feature(),
+              actionsMode: DrawingFeatureActionsMode.compact,
+              onUnion: () => unionTapped = true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Unir talhões'), findsOneWidget);
+      expect(find.text('União'), findsNothing);
+      expect(find.text('Diferença'), findsNothing);
+      expect(find.text('Interseção'), findsNothing);
+      expect(find.text('Exportar este talhão'), findsNothing);
+      expect(find.text('Excluir'), findsNothing);
+
+      await tester.tap(find.text('Unir talhões'));
+      expect(unionTapped, isTrue);
+    },
+  );
+
+  testWidgets(
+    'modo compacto com onUnion e tipo teste não exibe Unir talhões',
+    (tester) async {
+      final base = _feature();
+      final testeFeature = DrawingFeature(
+        id: base.id,
+        geometry: base.geometry,
+        properties: base.properties.copyWith(tipo: DrawingType.teste),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DrawingActionsBar(
+              selectedFeature: testeFeature,
+              actionsMode: DrawingFeatureActionsMode.compact,
+              onUnion: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Unir talhões'), findsNothing);
+    },
+  );
 }
 
 DrawingFeature _feature() {
