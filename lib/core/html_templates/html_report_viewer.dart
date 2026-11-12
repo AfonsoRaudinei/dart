@@ -2,23 +2,64 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../design/sf_icons.dart';
 import '../utils/share_position.dart';
-import '../utils/whatsapp_share.dart';
 import 'report_export_service.dart';
 import 'report_photo_links.dart';
 import 'report_photo_viewer.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
-import 'package:soloforte_app/core/contracts/i_report_share_link_publisher_provider.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
+
+/// HTML → bytes de PDF. Testes injetam um fake; produção usa [convertReportHtmlToPdf].
+typedef ReportHtmlToPdf = Future<Uint8List> Function(String html);
+
+/// Cópia do HTML para o PDF: esconde o player de áudio e o rodapé de
+/// `window.print()`, e evita cortar a foto no meio da página.
+///
+/// A legenda (duração, ficha) permanece. Não altera o HTML exibido no app.
+@visibleForTesting
+String prepareReportHtmlForPdf(String html) {
+  const style = '''
+<style id="sf-pdf-print">
+audio,
+#sf-share-pdf-toolbar,
+.sf-share-pdf-stub { display: none !important; }
+@media print {
+  audio,
+  #sf-share-pdf-toolbar,
+  .sf-share-pdf-stub { display: none !important; }
+  .sf-figure,
+  img[data-sf-photo] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+</style>
+''';
+  if (html.contains('id="sf-pdf-print"')) return html;
+  if (html.contains('</head>')) {
+    return html.replaceFirst('</head>', '$style</head>');
+  }
+  return '$style$html';
+}
+
+/// Desenha o HTML no WebKit e devolve o PDF.
+///
+/// `Printing.convertHtml` está obsoleto desde o printing 5.12 e segue
+/// disponível no 5.14. É o caminho que reaproveita o documento editorial.
+@visibleForTesting
+Future<Uint8List> convertReportHtmlToPdf(String html) {
+  // ignore: deprecated_member_use
+  return Printing.convertHtml(html: html, format: PdfPageFormat.a4);
+}
 
 /// Testes injetam corpo fake via override; produção permanece `null` (WebView).
 final htmlReportViewerBodyBuilderProvider = Provider<WidgetBuilder?>(
@@ -80,11 +121,23 @@ class HtmlReportViewer extends ConsumerStatefulWidget {
   /// Substitui o corpo WebView (somente testes). Produção: omitir (`null`).
   final WidgetBuilder? bodyBuilder;
 
-  /// Dígitos do telefone do cliente (sem +55) para abrir wa.me com destinatário.
+  /// Dígitos do telefone do cliente. O PDF não abre wa.me; os call sites
+  /// de ocorrência e visita ainda passam o valor.
+  // ignore: unused_field
   final String? whatsAppPhoneDigits;
 
-  /// Exibe botão de publicar link + WhatsApp (opt-in; ocorrência e visita).
+  /// Exibe o botão Enviar PDF (ocorrência, visita e relatórios).
+  ///
+  /// O nome histórico é o do link WhatsApp (ADR-053). O botão gera o PDF
+  /// local a partir de [htmlContent] e não publica o HTML.
   final bool enableWhatsAppShareLink;
+
+  /// Conversor HTML → PDF. `null` usa [convertReportHtmlToPdf].
+  final ReportHtmlToPdf? htmlToPdfConverter;
+
+  /// Substitui gravar o arquivo e abrir o share. Testes conferem os bytes
+  /// sem WebKit, path_provider nem folha de compartilhamento.
+  final Future<void> Function(Uint8List bytes)? deliverPdfBytes;
 
   const HtmlReportViewer({
     super.key,
@@ -99,6 +152,8 @@ class HtmlReportViewer extends ConsumerStatefulWidget {
     this.actions,
     this.whatsAppPhoneDigits,
     this.enableWhatsAppShareLink = false,
+    this.htmlToPdfConverter,
+    this.deliverPdfBytes,
   });
 
   @override
@@ -111,6 +166,7 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
   bool _loading = true;
   bool _actionBusy = false;
   final GlobalKey _exportButtonKey = GlobalKey();
+  final GlobalKey _pdfButtonKey = GlobalKey();
 
   bool get _usesCustomBody => widget.bodyBuilder != null;
 
@@ -229,9 +285,7 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(userFacingError(e, action: 'Erro na ação')),
-          ),
+          SnackBar(content: Text(userFacingError(e, action: 'Erro na ação'))),
         );
       }
     } finally {
@@ -249,9 +303,7 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(userFacingError(e, action: 'Erro na ação')),
-          ),
+          SnackBar(content: Text(userFacingError(e, action: 'Erro na ação'))),
         );
       }
     } finally {
@@ -296,7 +348,8 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
               : () => _runBoolAction(
                   actions.onPublish!,
                   confirmTitle: actions.publishDialogTitle,
-                  confirmMessage: actions.publishDialogMessage ??
+                  confirmMessage:
+                      actions.publishDialogMessage ??
                       'Confirma a publicação deste item?',
                   confirmActionLabel: 'Publicar',
                 ),
@@ -314,8 +367,8 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
               : () => _runBoolAction(
                   actions.onConfirm!,
                   confirmTitle: actions.confirmDialogTitle,
-                  confirmMessage: actions.confirmDialogMessage ??
-                      'Marcar como confirmada?',
+                  confirmMessage:
+                      actions.confirmDialogMessage ?? 'Marcar como confirmada?',
                   confirmActionLabel: 'Confirmar',
                 ),
           icon: const Icon(Icons.check_circle_outline),
@@ -356,67 +409,26 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
     return icons;
   }
 
-  Future<void> _shareLinkViaWhatsApp() async {
+  Future<void> _shareReportPdf() async {
     if (_actionBusy) return;
-    if (Supabase.instance.client.auth.currentUser == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Faça login para enviar link')),
-        );
-      }
-      return;
-    }
-    final confirmed = await _confirmAction(
-      title: 'Enviar link público?',
-      message: 'Este link fica público na internet. Continuar?',
-      actionLabel: 'Continuar',
-    );
-    if (confirmed != true || !mounted) return;
-
     setState(() => _actionBusy = true);
     try {
-      final publisher = ref.read(reportShareLinkPublisherProvider);
-      final result = await publisher.publishHtml(
-        title: widget.title,
-        html: widget.htmlContent,
-      );
-      final message = 'Relatório SoloForte: ${result.publicUrl}';
-      final publicUrl = result.publicUrl;
-      try {
-        await launchWhatsAppShare(
-          phoneDigitsBrazil: widget.whatsAppPhoneDigits,
-          message: message,
-        );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Link publicado. WhatsApp aberto.')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Link publicado (copie se o WhatsApp não abriu): $publicUrl',
-              ),
-              duration: const Duration(seconds: 10),
-              action: SnackBarAction(
-                label: 'Copiar',
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: publicUrl));
-                },
-              ),
-            ),
-          );
-        }
+      final html = prepareReportHtmlForPdf(widget.htmlContent);
+      final converter = widget.htmlToPdfConverter ?? convertReportHtmlToPdf;
+      final bytes = await converter(html);
+      if (!mounted) return;
+      final deliver = widget.deliverPdfBytes;
+      if (deliver != null) {
+        await deliver(bytes);
+      } else {
+        await _sharePdfBytes(bytes, anchorKey: _pdfButtonKey);
       }
     } catch (e) {
       if (mounted) {
-        final text = e is StateError
-            ? e.message
-            : userFacingError(e, action: 'Erro ao enviar link');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(text)),
+          SnackBar(
+            content: Text(userFacingError(e, action: 'Erro ao gerar PDF')),
+          ),
         );
       }
     } finally {
@@ -458,9 +470,10 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
           ...actionIcons,
           if (widget.enableWhatsAppShareLink)
             IconButton(
-              tooltip: 'Enviar link (WhatsApp)',
-              onPressed: _actionBusy ? null : _shareLinkViaWhatsApp,
-              icon: const Icon(Icons.chat_outlined),
+              key: _pdfButtonKey,
+              tooltip: 'Enviar PDF',
+              onPressed: _actionBusy ? null : _shareReportPdf,
+              icon: const Icon(Icons.picture_as_pdf_outlined),
             ),
           if (widget.pdfBytesProvider != null)
             PopupMenuButton<String>(
@@ -475,14 +488,8 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
                 }
               },
               itemBuilder: (context) => const [
-                PopupMenuItem(
-                  value: 'pdf',
-                  child: Text('Enviar PDF'),
-                ),
-                PopupMenuItem(
-                  value: 'html',
-                  child: Text('Enviar página'),
-                ),
+                PopupMenuItem(value: 'pdf', child: Text('Enviar PDF')),
+                PopupMenuItem(value: 'html', child: Text('Enviar página')),
               ],
             )
           else
@@ -534,10 +541,10 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
-          SnackBar(content: Text(userFacingError(e, action: 'Erro ao exportar'))),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(userFacingError(e, action: 'Erro ao exportar')),
+          ),
         );
       }
     }
@@ -548,31 +555,38 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
     if (provider == null) return;
     try {
       final bytes = await provider();
-      final dir = await getTemporaryDirectory();
-      final base =
-          widget.fileBaseName?.trim().isNotEmpty == true
-          ? widget.fileBaseName!.trim()
-          : 'soloforte_relatorio';
-      final file = File('${dir.path}/$base.pdf');
-      await file.writeAsBytes(bytes);
       if (!mounted) return;
-      await Share.shareXFiles(
-        [XFile(file.path, mimeType: 'application/pdf')],
-        subject: widget.title,
-        sharePositionOrigin: resolveSharePositionOrigin(
-          context,
-          anchorKey: _exportButtonKey,
-        ),
-      );
+      await _sharePdfBytes(bytes, anchorKey: _exportButtonKey);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
-          SnackBar(content: Text(userFacingError(e, action: 'Erro ao gerar PDF'))),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(userFacingError(e, action: 'Erro ao gerar PDF')),
+          ),
         );
       }
     }
+  }
+
+  Future<void> _sharePdfBytes(
+    Uint8List bytes, {
+    required GlobalKey anchorKey,
+  }) async {
+    final dir = await getTemporaryDirectory();
+    final base = widget.fileBaseName?.trim().isNotEmpty == true
+        ? widget.fileBaseName!.trim()
+        : 'soloforte_relatorio';
+    final file = File('${dir.path}/$base.pdf');
+    await file.writeAsBytes(bytes);
+    if (!mounted) return;
+    await Share.shareXFiles(
+      [XFile(file.path, mimeType: 'application/pdf')],
+      subject: widget.title,
+      sharePositionOrigin: resolveSharePositionOrigin(
+        context,
+        anchorKey: anchorKey,
+      ),
+    );
   }
 }
 
