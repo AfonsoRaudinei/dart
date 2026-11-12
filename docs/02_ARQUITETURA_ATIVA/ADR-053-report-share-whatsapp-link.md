@@ -34,3 +34,11 @@ permanece inalterado.
 - Migration `20261105220000_report_share_links.sql` deve ser aplicada no projeto live.
 - Demais entry points do viewer podem omitir telefone (`wa.me/?text=`).
 - PDF server-side (render headless, fila) fica fora do MVP; o fluxo no browser cobre o caso do produtor.
+
+## Revisão — 12/11/2026
+
+O botão do `HtmlReportViewer` deixou de publicar o link. O ícone (antes o balão **Enviar link (WhatsApp)**) agora é **Enviar PDF**: gera o PDF no aparelho a partir do HTML do relatório e abre o compartilhamento do arquivo. Não chama `publishHtml`.
+
+O bucket `report-shares` entrega o HTML como texto puro, então o produtor via o código-fonte. O botão **Gerar PDF** (`window.print()`) injetado na página pública não aparecia.
+
+A tabela `report_share_links` e o bucket permanecem. Links já enviados continuam no ar. `ReportShareLinkService` não foi removido.
