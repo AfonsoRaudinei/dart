@@ -122,9 +122,9 @@ class SettingsScreen extends ConsumerWidget {
                 _buildSwitchTile(
                   context,
                   title: 'Modo Offline',
-                  subtitle: 'Baixar mapas e dados para uso sem internet.',
-                  value: false, // Placeholder
-                  onChanged: (val) {},
+                  subtitle: 'Em breve — baixar mapas e dados para uso sem internet.',
+                  value: false,
+                  onChanged: null,
                   icon: SFIcons.layers,
                 ),
                 // Storage Usage
@@ -632,17 +632,19 @@ class SettingsScreen extends ConsumerWidget {
     required String title,
     String? subtitle,
     required bool value,
-    required Function(bool) onChanged,
+    required Function(bool)? onChanged,
     IconData? icon,
   }) {
     final accent = Theme.of(context).colorScheme.primary;
 
     return SwitchListTile(
       value: value,
-      onChanged: (val) {
-        HapticFeedback.lightImpact();
-        onChanged(val);
-      },
+      onChanged: onChanged == null
+          ? null
+          : (val) {
+              HapticFeedback.lightImpact();
+              onChanged(val);
+            },
       title: Text(
         title,
         style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle())
