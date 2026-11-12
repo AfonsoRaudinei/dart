@@ -13,7 +13,7 @@ import '../controllers/feedback_controller.dart';
 import '../widgets/feedback_suggestions_chart.dart';
 import '../widgets/feedback_stats_card.dart';
 
-const _supportEmail = 'raudyneyb@icloud.com';
+const _supportEmail = 'suporte@soloforte.com';
 const _messageMaxLength = 500;
 const _messageMinLength = 12;
 
