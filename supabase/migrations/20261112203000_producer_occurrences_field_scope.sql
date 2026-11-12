@@ -1,6 +1,9 @@
 -- Ocorrências sem client_id preenchido ainda pertencem ao cliente quando o
 -- field_id aponta para um talhão da fazenda vinculada.
 
+alter table public.occurrences
+  add column if not exists field_id text;
+
 drop policy if exists "fields_select_linked_producer" on public.fields;
 create policy "fields_select_linked_producer"
   on public.fields for select to authenticated
@@ -34,7 +37,7 @@ create policy occurrences_select_authorized
               from public.farms f
               join public.fields fi on fi.fazenda_id = f.id
              where f.cliente_id = link.client_id
-               and fi.id = occurrences.field_id
+               and fi.id::text = occurrences.field_id
                and f.deleted_at is null
                and fi.deleted_at is null
           )
