@@ -1,7 +1,12 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
+import 'package:soloforte_app/modules/produtor/data/producer_link_models.dart';
+import 'package:soloforte_app/ui/components/map/widgets/producer_map_context_card.dart';
 import 'package:soloforte_app/ui/screens/map/controllers/map_viewport_controller.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -44,6 +49,58 @@ void main() {
       ),
       OfflineCameraChoice.storedFarm,
     );
+  });
+
+  test('produtor aguarda dashboard antes de preferir GPS', () {
+    expect(
+      resolveOfflineCamera(
+        isProducer: true,
+        hasStoredFarmPoints: false,
+        fieldsLoading: false,
+        gpsFixAvailable: true,
+        producerPropertyLoading: true,
+      ),
+      OfflineCameraChoice.wait,
+    );
+  });
+
+  testWidgets('syncProducerMapFarmSelection define primeira fazenda', (
+    tester,
+  ) async {
+    late WidgetRef widgetRef;
+    const farms = [
+      ProducerOwnFarm(
+        id: 'farm-1',
+        name: 'Fazenda 1',
+        city: '',
+        state: '',
+        areaHa: 10,
+        fields: [],
+      ),
+      ProducerOwnFarm(
+        id: 'farm-2',
+        name: 'Fazenda 2',
+        city: '',
+        state: '',
+        areaHa: 20,
+        fields: [],
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: Consumer(
+          builder: (context, ref, _) {
+            widgetRef = ref;
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    syncProducerMapFarmSelection(widgetRef, farms, null);
+    expect(widgetRef.read(producerMapSelectedFarmIdProvider), 'farm-1');
+    expect(widgetRef.read(selectedFarmIdProvider), 'farm-1');
   });
 
   test('sem GPS a coordenada da fazenda salva ainda vale', () {
