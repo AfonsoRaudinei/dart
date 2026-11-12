@@ -6,13 +6,22 @@ extension DrawingControllerSketch on DrawingController {
 
   bool get isFreehandStrokeActive => _freehandStrokeActive;
 
-  LatLng? get pivotCenter => _pivotCenter;
+  /// Edição de pivô salvo. O sketch usa os campos próprios.
+  bool get isEditingPivot =>
+      _stateMachine.currentState == DrawingState.editing &&
+      _editPivotCenter != null;
 
-  LatLng? get pivotEdgePoint => _pivotPreviewEdge;
+  LatLng? get pivotCenter => isEditingPivot ? _editPivotCenter : _pivotCenter;
 
-  bool get pivotRadiusFinalized => _pivotRadiusFinalized;
+  LatLng? get pivotEdgePoint =>
+      isEditingPivot ? _editPivotEdge : _pivotPreviewEdge;
 
-  double? get pivotRadiusMeters => _pivotRadiusMeters;
+  bool get pivotRadiusFinalized => isEditingPivot
+      ? (_editPivotRadiusMeters ?? 0) > 0
+      : _pivotRadiusFinalized;
+
+  double? get pivotRadiusMeters =>
+      isEditingPivot ? _editPivotRadiusMeters : _pivotRadiusMeters;
 
   int get polygonVertexCount => _currentPoints.length;
 
@@ -57,10 +66,10 @@ extension DrawingControllerSketch on DrawingController {
         if (_pivotCenter == null) {
           return 'Toque no mapa para definir o centro do pivô';
         }
-        if (_pivotPreviewEdge == null) {
+        if (_pivotPreviewEdge == null || (_pivotRadiusMeters ?? 0) <= 0) {
           return 'Toque novamente para definir o raio';
         }
-        return 'Ajuste o raio ou toque em concluir para revisar';
+        return 'Arraste o centro para posicionar ou a borda para o raio';
       default:
         return 'Geometria inválida para finalizar';
     }
@@ -173,15 +182,8 @@ extension DrawingControllerSketch on DrawingController {
     return (index: best, distancePx: closestPx);
   }
 
-  ({
-    int segment,
-    LatLng point,
-    double distancePx,
-  })? _findSketchEdgeNearestPixels(
-    MapCamera camera,
-    LatLng tap,
-    double maxPx,
-  ) {
+  ({int segment, LatLng point, double distancePx})?
+  _findSketchEdgeNearestPixels(MapCamera camera, LatLng tap, double maxPx) {
     int? bestSegment;
     LatLng? bestPoint;
     var closestPx = maxPx;
@@ -371,10 +373,10 @@ extension DrawingControllerSketch on DrawingController {
         if (_pivotCenter == null) {
           return 'Toque no mapa para definir o centro do pivô';
         }
-        if (_pivotPreviewEdge == null) {
+        if (_pivotPreviewEdge == null || (_pivotRadiusMeters ?? 0) <= 0) {
           return 'Toque ou arraste para definir o raio';
         }
-        return 'Ajuste o raio ou toque em concluir para revisar';
+        return 'Arraste o centro para posicionar ou a borda para o raio';
       default:
         return 'Toque no mapa para iniciar o desenho';
     }
@@ -410,6 +412,32 @@ extension DrawingControllerSketch on DrawingController {
     }
 
     _setPivotPreview(point, finalize: true);
+  }
+
+  /// Move o centro do pivô em sketch.
+  ///
+  /// Sem raio, só reposiciona o centro. Com raio, preserva [_pivotRadiusMeters]
+  /// e recoloca a borda no mesmo azimute.
+  void movePivotCenter(LatLng newCenter) {
+    if (_isDisposed) return;
+    if (_stateMachine.currentTool != DrawingTool.pivot) return;
+    if (!_canAcceptSketchInput()) return;
+    if (_pivotCenter == null) return;
+
+    final radius = _pivotRadiusMeters;
+    final edge = _pivotPreviewEdge;
+    if (edge == null || radius == null || radius <= 0) {
+      _pivotCenter = newCenter;
+      _notify();
+      return;
+    }
+
+    final distance = const Distance();
+    final bearing = distance.bearing(_pivotCenter!, edge);
+    _pivotCenter = newCenter;
+    _pivotPreviewEdge = distance.offset(newCenter, radius, bearing);
+    _updateRealTimeIntersection();
+    _notify();
   }
 
   void updatePivotEdge(LatLng point) {
