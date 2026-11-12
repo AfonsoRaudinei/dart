@@ -17,6 +17,9 @@ import 'vertex_handle_drag_preview.dart';
 const double _kHandleWidth = 56;
 const double _kHandleHeight = 78;
 
+/// Alça do pivô: quadrado centrado no LatLng, sem o offset da gota.
+const double _kPivotHandleSize = 44;
+
 /// Alças de vértice acima do [FlutterMap].
 ///
 /// O dedo fica no corpo da gota (abaixo do LatLng). O mapa não recebe esse
@@ -42,6 +45,8 @@ class _DrawingVertexHandleOverlayState
     extends State<DrawingVertexHandleOverlay> {
   StreamSubscription<MapEvent>? _cameraSub;
   VertexHandleDrag? _active;
+  _PivotHandleRole? _activePivotRole;
+  bool _activePivotSketch = false;
 
   @override
   void initState() {
@@ -100,6 +105,9 @@ class _DrawingVertexHandleOverlayState
   }
 
   List<_VertexHandleTarget> _handles() {
+    final pivot = _pivotHandles();
+    if (pivot != null) return pivot;
+
     final controller = widget.controller;
     final preview = controller.vertexDragPreview.drag ?? _active;
     if (_isSketch) {
@@ -171,6 +179,42 @@ class _DrawingVertexHandleOverlayState
     return targets;
   }
 
+  /// Duas alças quando o raio do sketch já fechou, ou na edição de um pivô.
+  List<_VertexHandleTarget>? _pivotHandles() {
+    final controller = widget.controller;
+    final center = controller.pivotCenter;
+    final edge = controller.pivotEdgePoint;
+    if (center == null || edge == null) return null;
+
+    final sketch =
+        controller.currentTool == DrawingTool.pivot &&
+        controller.currentState == DrawingState.drawing &&
+        controller.pivotRadiusFinalized;
+    final editing = controller.isEditingPivot;
+    if (!sketch && !editing) return null;
+
+    return [
+      _VertexHandleTarget(
+        key: const Key('drawing_pivot_center_hit'),
+        point: center,
+        isSketch: sketch,
+        ringIndex: 0,
+        pointIndex: 0,
+        centered: true,
+        pivotRole: _PivotHandleRole.center,
+      ),
+      _VertexHandleTarget(
+        key: const Key('drawing_pivot_edge_hit'),
+        point: edge,
+        isSketch: sketch,
+        ringIndex: 0,
+        pointIndex: 1,
+        centered: true,
+        pivotRole: _PivotHandleRole.edge,
+      ),
+    ];
+  }
+
   bool get _isSketch {
     final c = widget.controller;
     return c.currentTool == DrawingTool.polygon &&
@@ -182,6 +226,27 @@ class _DrawingVertexHandleOverlayState
   Widget _positioned(_VertexHandleTarget handle) {
     final screen = _screenOf(handle.point);
     if (screen == null) return const SizedBox.shrink();
+    if (handle.centered) {
+      return Positioned(
+        left: screen.x - _kPivotHandleSize / 2,
+        top: screen.y - _kPivotHandleSize / 2,
+        width: _kPivotHandleSize,
+        height: _kPivotHandleSize,
+        child: _VertexHandleHitScope(
+          showGota: false,
+          centeredHit: true,
+          child: GestureDetector(
+            key: handle.key,
+            behavior: HitTestBehavior.opaque,
+            onPanStart: (_) => _onPanStart(handle),
+            onPanUpdate: (details) => _onPanUpdate(details, handle),
+            onPanEnd: (_) => _onPanEnd(handle),
+            onPanCancel: _onPanCancel,
+            child: const SizedBox.expand(),
+          ),
+        ),
+      );
+    }
     final showGota = handle.showGota;
     final canDrag = handle.isSketch || showGota;
     final detector = GestureDetector(
@@ -214,6 +279,7 @@ class _DrawingVertexHandleOverlayState
   }
 
   void _onTap(_VertexHandleTarget handle) {
+    if (handle.pivotRole != null) return;
     final controller = widget.controller;
     if (handle.isSketch) {
       final already = controller.selectedSketchVertexIndex == handle.pointIndex;
@@ -235,11 +301,23 @@ class _DrawingVertexHandleOverlayState
   }
 
   void _onDoubleTap(_VertexHandleTarget handle) {
+    if (handle.pivotRole != null) return;
     widget.controller.removeVertex(handle.ringIndex, handle.pointIndex);
     widget.controller.clearEditVertexSelection();
   }
 
   void _onPanStart(_VertexHandleTarget handle) {
+    if (handle.pivotRole != null) {
+      _activePivotRole = handle.pivotRole;
+      _activePivotSketch = handle.isSketch;
+      _active = VertexHandleDrag(
+        isSketch: handle.isSketch,
+        ringIndex: handle.ringIndex,
+        pointIndex: handle.pointIndex,
+        position: handle.point,
+      );
+      return;
+    }
     final controller = widget.controller;
     if (handle.isSketch) {
       controller.beginSketchVertexDrag(handle.pointIndex);
@@ -271,6 +349,16 @@ class _DrawingVertexHandleOverlayState
     } catch (_) {
       return;
     }
+    if (handle.pivotRole != null) {
+      _active = VertexHandleDrag(
+        isSketch: handle.isSketch,
+        ringIndex: handle.ringIndex,
+        pointIndex: handle.pointIndex,
+        position: next,
+      );
+      _applyPivotHandle(handle, next);
+      return;
+    }
     final drag = VertexHandleDrag(
       isSketch: handle.isSketch,
       ringIndex: handle.ringIndex,
@@ -284,6 +372,17 @@ class _DrawingVertexHandleOverlayState
   void _onPanEnd(_VertexHandleTarget handle) {
     final drag = _active;
     _active = null;
+    if (handle.pivotRole != null) {
+      _activePivotRole = null;
+      final controller = widget.controller;
+      if (drag != null) {
+        _applyPivotHandle(handle, drag.position, end: true);
+      } else if (!handle.isSketch) {
+        controller.finishEditPivotGesture();
+      }
+      controller.vertexDragPreview.clear();
+      return;
+    }
     final controller = widget.controller;
     if (drag != null) {
       if (drag.isSketch) {
@@ -305,9 +404,42 @@ class _DrawingVertexHandleOverlayState
     controller.vertexDragPreview.clear();
   }
 
+  void _applyPivotHandle(
+    _VertexHandleTarget handle,
+    LatLng point, {
+    bool end = false,
+  }) {
+    final controller = widget.controller;
+    final center = handle.pivotRole == _PivotHandleRole.center;
+    if (handle.isSketch) {
+      if (center) {
+        controller.movePivotCenter(point);
+      } else if (end) {
+        controller.finalizePivotEdge(point);
+      } else {
+        controller.updatePivotEdge(point);
+      }
+      return;
+    }
+    if (center) {
+      controller.moveEditPivotCenter(point);
+    } else {
+      controller.updateEditPivotEdge(point);
+    }
+    if (end) controller.finishEditPivotGesture();
+  }
+
   void _onPanCancel() {
+    final pivotRole = _activePivotRole;
+    final pivotSketch = _activePivotSketch;
+    _activePivotRole = null;
     final wasSketch = _active?.isSketch ?? false;
     _active = null;
+    if (pivotRole != null) {
+      if (!pivotSketch) widget.controller.finishEditPivotGesture();
+      widget.controller.vertexDragPreview.clear();
+      return;
+    }
     if (wasSketch) {
       widget.controller.endSketchVertexDrag();
     } else {
@@ -379,6 +511,8 @@ class _DrawingVertexHandleOverlayState
   }
 }
 
+enum _PivotHandleRole { center, edge }
+
 class _VertexHandleTarget {
   const _VertexHandleTarget({
     required this.key,
@@ -387,6 +521,8 @@ class _VertexHandleTarget {
     required this.ringIndex,
     required this.pointIndex,
     this.showGota = false,
+    this.centered = false,
+    this.pivotRole,
   });
 
   final Key key;
@@ -395,6 +531,8 @@ class _VertexHandleTarget {
   final int ringIndex;
   final int pointIndex;
   final bool showGota;
+  final bool centered;
+  final _PivotHandleRole? pivotRole;
 }
 
 /// Stack que repassa o hit apenas ao handle cuja ponta (top-center) está mais
@@ -435,8 +573,12 @@ class _RenderNearestVertexHandleStack extends RenderStack {
         if (box.size.contains(local) &&
             box is _RenderVertexHandleHitScope &&
             box.containsLocalHit(local)) {
-          final isIdleHit = box.containsIdleHit(local);
-          final anchor = isIdleHit
+          final centered = box.centeredHit;
+          final isIdleHit = !centered && box.containsIdleHit(local);
+          final anchor = centered
+              ? parentData.offset +
+                    Offset(box.size.width / 2, box.size.height / 2)
+              : isIdleHit
               ? parentData.offset +
                     Offset(box.size.width / 2, kVertexIdleHitDiameter / 2)
               : parentData.offset + Offset(box.size.width / 2, 0);
@@ -460,13 +602,21 @@ class _RenderNearestVertexHandleStack extends RenderStack {
 
 /// Só a bolinha idle (28px) ou o corpo da gota capturam o dedo — não o 56×78.
 class _VertexHandleHitScope extends SingleChildRenderObjectWidget {
-  const _VertexHandleHitScope({required this.showGota, required super.child});
+  const _VertexHandleHitScope({
+    required this.showGota,
+    required super.child,
+    this.centeredHit = false,
+  });
 
   final bool showGota;
+  final bool centeredHit;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
-    return _RenderVertexHandleHitScope(showGota: showGota);
+    return _RenderVertexHandleHitScope(
+      showGota: showGota,
+      centeredHit: centeredHit,
+    );
   }
 
   @override
@@ -475,17 +625,30 @@ class _VertexHandleHitScope extends SingleChildRenderObjectWidget {
     _RenderVertexHandleHitScope renderObject,
   ) {
     renderObject.showGota = showGota;
+    renderObject.centeredHit = centeredHit;
   }
 }
 
 class _RenderVertexHandleHitScope extends RenderProxyBox {
-  _RenderVertexHandleHitScope({required bool showGota}) : _showGota = showGota;
+  _RenderVertexHandleHitScope({
+    required bool showGota,
+    required bool centeredHit,
+  }) : _showGota = showGota,
+       _centeredHit = centeredHit;
 
   bool _showGota;
+  bool _centeredHit;
+
+  bool get centeredHit => _centeredHit;
 
   set showGota(bool value) {
     if (_showGota == value) return;
     _showGota = value;
+  }
+
+  set centeredHit(bool value) {
+    if (_centeredHit == value) return;
+    _centeredHit = value;
   }
 
   bool containsIdleHit(Offset local) {
@@ -493,11 +656,8 @@ class _RenderVertexHandleHitScope extends RenderProxyBox {
   }
 
   bool containsLocalHit(Offset local) {
-    return vertexHandleHitContainsLocal(
-      local,
-      size,
-      showGota: _showGota,
-    );
+    if (_centeredHit) return size.contains(local);
+    return vertexHandleHitContainsLocal(local, size, showGota: _showGota);
   }
 
   @override
