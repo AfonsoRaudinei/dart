@@ -277,11 +277,45 @@ class ProducerLinkRepository implements ProducerLinkReader {
   Future<ProducerLinkedClient?> _loadLinkedClient(
     ProducerClientLink link,
   ) async {
+    ProducerLinkedClient? client;
     try {
-      return await _loadLinkedClientRemote(link);
+      client = await _loadLinkedClientRemote(link);
     } catch (_) {
-      return _loadLinkedClientLocal(link);
+      client = await _loadLinkedClientLocal(link);
     }
+    if (client == null) return null;
+    return _enrichLinkedClientFromRemote(client, link);
+  }
+
+  Future<ProducerLinkedClient> _enrichLinkedClientFromRemote(
+    ProducerLinkedClient client,
+    ProducerClientLink link,
+  ) async {
+    var occurrences = client.occurrences;
+    var reports = client.reports;
+  // Painel do produtor relê o Supabase: tenta de novo se o primeiro
+  // caminho (v. g. cache local) não trouxe dados compartilhados.
+    if (link.share.occurrences && occurrences.isEmpty) {
+      occurrences = await _loadOccurrences(link.clientId);
+    }
+    if (link.share.reports && reports.isEmpty) {
+      reports = await _loadReports(link.clientId);
+    }
+    if (identical(occurrences, client.occurrences) &&
+        identical(reports, client.reports)) {
+      return client;
+    }
+    return ProducerLinkedClient(
+      link: client.link,
+      name: client.name,
+      phone: client.phone,
+      email: client.email,
+      city: client.city,
+      state: client.state,
+      farms: client.farms,
+      reports: reports,
+      occurrences: occurrences,
+    );
   }
 
   Future<ProducerLinkedClient?> _loadLinkedClientRemote(
@@ -318,25 +352,76 @@ class ProducerLinkRepository implements ProducerLinkReader {
     );
   }
 
+  /// Colunas canônicas no PostgREST (`lat`/`long` legados quebram o select).
+  static const linkedOccurrenceColumns =
+      'id, category, type, description, created_at, latitude, longitude, '
+      'deleted_at, client_id, field_id';
+
   Future<List<ProducerLinkedOccurrence>> _loadOccurrences(
     String clientId,
   ) async {
     try {
-      final rows = await _client
+      final byClient = await _client
           .from('occurrences')
-          .select(
-            'id, category, type, description, created_at, latitude, longitude, lat, long, deleted_at',
-          )
+          .select(linkedOccurrenceColumns)
           .eq('client_id', clientId)
           .isFilter('deleted_at', null)
           .order('created_at', ascending: false)
           .limit(50);
-      return (rows as List)
-          .map(
-            (row) =>
-                occurrenceFromRemote(Map<String, dynamic>.from(row as Map)),
-          )
-          .whereType<ProducerLinkedOccurrence>()
+      final clientRows = occurrenceRowsFromRemote(byClient);
+      if (clientRows.isNotEmpty) return clientRows;
+
+      final fieldIds = await _fieldIdsForLinkedClient(clientId);
+      if (fieldIds.isEmpty) return const [];
+
+      final byField = await _client
+          .from('occurrences')
+          .select(linkedOccurrenceColumns)
+          .inFilter('field_id', fieldIds)
+          .isFilter('deleted_at', null)
+          .order('created_at', ascending: false)
+          .limit(50);
+      return occurrenceRowsFromRemote(byField);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  @visibleForTesting
+  static List<ProducerLinkedOccurrence> occurrenceRowsFromRemote(
+    Object? rows,
+  ) {
+    return (rows as List? ?? const [])
+        .map(
+          (row) => occurrenceFromRemote(Map<String, dynamic>.from(row as Map)),
+        )
+        .whereType<ProducerLinkedOccurrence>()
+        .toList(growable: false);
+  }
+
+  Future<List<String>> _fieldIdsForLinkedClient(String clientId) async {
+    try {
+      final farmRows = await _client
+          .from('farms')
+          .select('id')
+          .eq('cliente_id', clientId)
+          .isFilter('deleted_at', null);
+      final farmIds = (farmRows as List)
+          .map((row) => (row as Map)['id'] as String?)
+          .whereType<String>()
+          .where((id) => id.isNotEmpty)
+          .toList(growable: false);
+      if (farmIds.isEmpty) return const [];
+
+      final fieldRows = await _client
+          .from('fields')
+          .select('id')
+          .inFilter('fazenda_id', farmIds)
+          .isFilter('deleted_at', null);
+      return (fieldRows as List)
+          .map((row) => (row as Map)['id'] as String?)
+          .whereType<String>()
+          .where((id) => id.isNotEmpty)
           .toList(growable: false);
     } catch (_) {
       return const [];
