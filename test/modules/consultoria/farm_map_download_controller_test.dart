@@ -7,9 +7,22 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/core/providers/connectivity_provider.dart';
 import 'package:soloforte_app/core/services/offline_tile_cache_service.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
+import 'package:soloforte_app/core/session/session_controller.dart';
+import 'package:soloforte_app/core/session/session_models.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/farm_map_download_controller.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/farm_map_download_plan.dart';
+
+const _testUserId = 'farm-map-download-test-user';
+
+class _BareSessionController extends SessionController {
+  @override
+  SessionState build() => const SessionUnknown();
+}
+
+Override sessionOverride() =>
+    sessionControllerProvider.overrideWith(_BareSessionController.new);
 
 class _FakeOfflineTileCacheService extends OfflineTileCacheService {
   _FakeOfflineTileCacheService({required this.onPrefetch});
@@ -56,7 +69,11 @@ void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({});
     preferences = PreferencesService(await SharedPreferences.getInstance());
+    LocalSessionIdentity.configure(preferences);
+    LocalSessionIdentity.remember(_testUserId);
   });
+
+  tearDownAll(LocalSessionIdentity.resetForTesting);
 
   const farmId = 'farm-1';
   const plan = FarmMapDownloadPlan(
@@ -77,6 +94,7 @@ void main() {
     test('cancel marca snackbar de cancelamento', () async {
       final container = ProviderContainer(
         overrides: [
+          sessionOverride(),
           alwaysOnline(),
           offlineTileCacheServiceProvider.overrideWithValue(
             _FakeOfflineTileCacheService(
@@ -117,6 +135,7 @@ void main() {
       bool Function()? liveCancel;
       final container = ProviderContainer(
         overrides: [
+          sessionOverride(),
           alwaysOnline(),
           offlineTileCacheServiceProvider.overrideWithValue(
             _FakeOfflineTileCacheService(
@@ -159,6 +178,7 @@ void main() {
     test('logout invalidação zera jobs após cancelAllForLogout', () async {
       final container = ProviderContainer(
         overrides: [
+          sessionOverride(),
           alwaysOnline(),
           preferencesServiceProvider.overrideWithValue(preferences),
           offlineTileCacheServiceProvider.overrideWithValue(
@@ -204,6 +224,7 @@ void main() {
       final enteredPause = Completer<void>();
       final container = ProviderContainer(
         overrides: [
+          sessionOverride(),
           isOnlineProvider.overrideWith((ref) async* {
             yield true;
             yield* connectivity.stream;
@@ -282,6 +303,7 @@ void main() {
       () async {
         final container = ProviderContainer(
           overrides: [
+            sessionOverride(),
             alwaysOnline(),
             preferencesServiceProvider.overrideWithValue(preferences),
             offlineTileCacheServiceProvider.overrideWithValue(
