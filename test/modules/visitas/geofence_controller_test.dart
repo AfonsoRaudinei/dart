@@ -48,6 +48,23 @@ class _FakeAgendaBridge implements IAgendaSessionBridge {
 
   @override
   Future<void> markEventAsDone(String sessionId) async {}
+
+  @override
+  Future<void> registerFieldCheckIn(FieldVisitCheckIn input) async {}
+
+  @override
+  Future<void> updateFieldVisitPlace({
+    required String sessionId,
+    String? farmId,
+    String? areaId,
+    bool clearArea = false,
+  }) async {}
+
+  @override
+  Future<void> closeFieldVisit(String sessionId) async {}
+
+  @override
+  Future<void> registerFinishedFieldVisit(FieldVisitCheckIn input) async {}
 }
 
 void main() {
