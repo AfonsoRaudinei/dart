@@ -315,6 +315,9 @@ class DrawingController extends ChangeNotifier {
   bool _isDirty = false;
   bool _isSnapping = false; // RT-DRAW-09 Feedback state
   final List<LatLng> _currentPoints = []; // Vértices — ferramenta polígono
+
+  /// Sketch atual foi armado pela ferramenta Teste. O gesto é o do polígono.
+  bool _sketchAsTest = false;
   final List<LatLng> _freehandPoints = []; // Trilha — ferramenta mão livre
   bool _freehandStrokeActive = false;
   LatLng? _pivotCenter;
@@ -386,6 +389,19 @@ class DrawingController extends ChangeNotifier {
   // New state machine getters
   DrawingState get currentState => _stateMachine.currentState;
   DrawingTool get currentTool => _stateMachine.currentTool;
+
+  /// Ferramenta Teste armada neste sketch. Não herda para o próximo desenho.
+  bool get isSketchingTest => _sketchAsTest;
+
+  /// Tipo a persistir. Teste só com sketch de teste em drawing ou reviewing.
+  DrawingType get pendingDrawingType {
+    final state = _stateMachine.currentState;
+    final liveSketch =
+        state == DrawingState.drawing || state == DrawingState.reviewing;
+    if (_sketchAsTest && liveSketch) return DrawingType.teste;
+    return DrawingType.talhao;
+  }
+
   BooleanOperationType get booleanOperation => _stateMachine.booleanOperation;
 
   /// Recorte interno do talhão selecionado (moita), sem abrir revisão.
@@ -828,6 +844,9 @@ class DrawingController extends ChangeNotifier {
 
     // Use simplified validation for high complexity unless forced (e.g. on save)
     final skipExpensive = _isHighComplexity && !forceFull;
+    final skipOverlapChecks =
+        isSketchingTest ||
+        _selectedFeature?.properties.tipo == DrawingType.teste;
 
     final stopwatch = Stopwatch()..start();
 
@@ -836,6 +855,7 @@ class DrawingController extends ChangeNotifier {
       existingFeatures: _features,
       ignoreId: _selectedFeature?.id,
       skipExpensiveChecks: skipExpensive,
+      skipOverlapChecks: skipOverlapChecks,
     );
 
     stopwatch.stop();
@@ -1583,8 +1603,11 @@ class DrawingController extends ChangeNotifier {
   void selectTool(String toolKey) {
     if (_isDisposed) return;
 
+    final armAsTest = toolKey == 'teste';
+
     DrawingTool tool;
     switch (toolKey) {
+      case 'teste':
       case 'polygon':
         tool = DrawingTool.polygon;
         break;
@@ -1602,6 +1625,7 @@ class DrawingController extends ChangeNotifier {
         break;
       case 'gps':
         // GPS Tracking é tratado separadamente — não mapeia para DrawingTool
+        _sketchAsTest = false;
         startGpsTracking();
         return;
       default:
@@ -1668,6 +1692,9 @@ class DrawingController extends ChangeNotifier {
         notifyListeners();
         return;
       }
+
+      // _clearSketchState acima desliga o flag. Religa só nesta armação.
+      _sketchAsTest = armAsTest;
 
       _interactionMode =
           DrawingInteraction.normal; // Ensure mode is normal for drawing
