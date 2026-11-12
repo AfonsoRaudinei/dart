@@ -1,13 +1,21 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/contracts/i_agenda_observable.dart';
 import '../../../../core/contracts/i_agenda_observable_provider.dart';
+import '../../../../core/contracts/i_agenda_session_bridge.dart';
+import '../../../../core/contracts/i_agenda_session_bridge_provider.dart';
+import '../../../../core/contracts/i_farm_lookup_provider.dart';
+import '../../../../core/contracts/i_field_lookup_provider.dart';
 import '../../../../core/contracts/i_occurrence_read.dart';
 import '../../../../core/contracts/i_occurrence_read_provider.dart';
 import '../../../../core/contracts/i_report_writer.dart';
 import '../../../../core/contracts/i_report_writer_provider.dart';
 import '../../../../core/contracts/i_visit_photo_read_provider.dart';
+import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 import '../../../../core/utils/app_logger.dart';
+import '../../domain/visit_report_place_name.dart';
 
 part 'visit_completion_observer.g.dart';
 
@@ -47,6 +55,7 @@ part 'visit_completion_observer.g.dart';
 @Riverpod(keepAlive: true)
 class VisitCompletionObserver extends _$VisitCompletionObserver {
   static const String _tag = 'VisitCompletionObserver';
+  bool _reconciled = false;
 
   @override
   void build() {
@@ -97,6 +106,67 @@ class VisitCompletionObserver extends _$VisitCompletionObserver {
       }
 
       _dispatchReportGeneration(event: event, session: session);
+    }
+
+    if (next.ready && !_reconciled) {
+      _reconciled = true;
+      unawaited(_reconcileUnlinkedFinishedVisits());
+    }
+  }
+
+  /// Visitas encerradas no mapa antes desta entrega não têm evento.
+  /// Entram na agenda já concluídas e ganham relatório uma vez. ADR-060.
+  Future<void> _reconcileUnlinkedFinishedVisits() async {
+    try {
+      final finished = await ref
+          .read(visitSessionLookupProvider)
+          .listFinished();
+      final linked = ref
+          .read(agendaObservableProvider)
+          .events
+          .map((event) => event.visitSessionId)
+          .whereType<String>()
+          .toSet();
+
+      for (final session in finished) {
+        if (session.id.isEmpty || linked.contains(session.id)) continue;
+        final end =
+            session.endTime ??
+            session.startTime.add(const Duration(minutes: 5));
+        await ref
+            .read(agendaSessionBridgeProvider)
+            .registerFinishedFieldVisit(
+              FieldVisitCheckIn(
+                sessionId: session.id,
+                clientId: session.producerId,
+                farmId: session.farmId,
+                areaId: session.areaId,
+                activityType: session.activityType,
+                startTime: session.startTime,
+                latitude: session.initialLat ?? 0,
+                longitude: session.initialLong ?? 0,
+                endTime: end,
+              ),
+            );
+        linked.add(session.id);
+
+        final state = ref.read(agendaObservableProvider);
+        final event = state.events
+            .where((item) => item.visitSessionId == session.id)
+            .firstOrNull;
+        final agendaSession = state.sessions
+            .where((item) => item.id == session.id && item.endAtReal != null)
+            .firstOrNull;
+        if (event == null || agendaSession == null) continue;
+        await _buildAndDispatch(event: event, session: agendaSession);
+      }
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Falha ao registrar visitas encerradas sem evento de agenda.',
+        tag: _tag,
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -160,10 +230,18 @@ class VisitCompletionObserver extends _$VisitCompletionObserver {
     required AgendaEventData event,
     required AgendaSessionData session,
   }) async {
-    // ── DT-025-8: farmName proxy ──────────────────────────────────────
-    // event.fazendaId como proxy enquanto lookup de nome não existe.
-    // Substituir por IFarmLookup quando ADR-010 for implementado.
-    final farmName = event.fazendaId ?? 'Fazenda não identificada';
+    final farmName = await _placeName(
+      id: event.fazendaId,
+      unidentified: 'Fazenda não identificada',
+      lookup: (id) async =>
+          (await ref.read(iFarmLookupProvider).findById(id))?.name,
+    );
+    final fieldName = await _placeName(
+      id: event.talhaoId,
+      unidentified: 'Talhão',
+      lookup: (id) async =>
+          (await ref.read(iFieldLookupProvider).findById(id))?.name,
+    );
 
     // ── Ocorrências via IOccurrenceRead (ADR-024) ─────────────────────
     final occurrences = await ref
@@ -183,8 +261,30 @@ class VisitCompletionObserver extends _$VisitCompletionObserver {
       occurrences: occurrences,
       fotos: fotos,
       talhaoId: event.talhaoId,
-      // TODO: buscar nome via IFieldLookup quando disponível
-      talhaoName: event.talhaoId,
+      talhaoName: event.talhaoId == null ? null : fieldName,
     );
+  }
+
+  Future<String> _placeName({
+    required String? id,
+    required String unidentified,
+    required Future<String?> Function(String id) lookup,
+  }) async {
+    final normalized = id?.trim() ?? '';
+    if (normalized.isEmpty) return unidentified;
+    try {
+      final lookedUp = await lookup(normalized);
+      return resolveVisitPlaceName(
+        lookedUpName: lookedUp,
+        unidentified: unidentified,
+      );
+    } catch (error) {
+      AppLogger.warning(
+        'Nome de $unidentified indisponível',
+        tag: _tag,
+        error: error,
+      );
+      return unidentified;
+    }
   }
 }

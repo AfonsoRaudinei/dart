@@ -237,12 +237,14 @@ Future<void> main() async {
               visitPhotoReadProvider.overrideWithValue(
                 QuickPhotoReadAdapter(QuickPhotoRepository()),
               ),
-              // ADR-024: implementação concreta de IAgendaSessionBridge
-              agendaSessionBridgeProvider.overrideWithValue(
-                AgendaSessionBridgeAdapter(
-                  AgendaRepositoryAdapter(agendaRepository),
-                ),
-              ),
+              // ADR-024 / ADR-060: bridge atualiza o notifier da agenda.
+              agendaSessionBridgeProvider.overrideWith((ref) {
+                return AgendaSessionBridgeAdapter(
+                  AgendaRepositoryAdapter(ref.watch(agendaRepositoryProvider)),
+                  visitSessionWriter: ref.watch(visitSessionWriterProvider),
+                  sink: AgendaFieldVisitSinkBinding(ref),
+                );
+              }),
               // ADR-024: IFieldLookup para geofence_controller (consultoria/fields)
               iFieldLookupGeofenceProvider.overrideWithValue(
                 FieldLookupGeofenceAdapter(fieldRepository),
@@ -300,6 +302,7 @@ Future<void> main() async {
                         ),
                       )
                       .toList(),
+                  ready: agendaState.hasLoaded,
                 );
               }),
               // ADR-025: IReportWriter para visit_completion_observer (DT-025-7)
