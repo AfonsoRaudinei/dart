@@ -21,8 +21,7 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
   final bool isMapReady;
 
   /// Altura reservada para toolbar de desenho + chips de medição (safe area extra).
-  static const double _bottomChromeReserve =
-      kDrawingBottomToolbarHeight + 56;
+  static const double _bottomChromeReserve = kDrawingBottomToolbarHeight + 56;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -34,7 +33,8 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
     final capturePivotRadius =
         controller.currentTool == DrawingTool.pivot &&
         controller.currentState == DrawingState.drawing &&
-        controller.pivotCenter != null;
+        controller.pivotCenter != null &&
+        !controller.pivotRadiusFinalized;
 
     if (!captureFreehand && !capturePivotRadius) {
       return const SizedBox.shrink();
@@ -113,13 +113,12 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
     Size size, {
     required double safeBottom,
     DrawingState drawingState = DrawingState.drawing,
-  }) =>
-      _isMapChromePointer(
-        local,
-        size,
-        safeBottom: safeBottom,
-        drawingState: drawingState,
-      );
+  }) => _isMapChromePointer(
+    local,
+    size,
+    safeBottom: safeBottom,
+    drawingState: drawingState,
+  );
 
   /// Evita que toques na toolbar inferior ou na coluna direita iniciem freehand.
   static bool _isMapChromePointer(
@@ -154,8 +153,8 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
     final columnStackHeight = drawModeColumn
         ? kMapActionColumnButtonSize
         : kMapActionColumnButtonSize +
-            kMapActionColumnSpacingAboveCheckIn +
-            kMapActionColumnButtonSize;
+              kMapActionColumnSpacingAboveCheckIn +
+              kMapActionColumnButtonSize;
     final columnBottom = safeBottom + kMapActionColumnBottomInset;
     if (fromBottom <= columnBottom + columnStackHeight + 8) {
       return true;
