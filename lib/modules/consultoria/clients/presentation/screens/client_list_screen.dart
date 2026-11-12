@@ -10,6 +10,7 @@ import '../widgets/client_avatar_widget.dart';
 import 'dart:ui' as ui;
 import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
+import 'package:soloforte_app/ui/components/consultant_share_accept_dialog.dart';
 
 class ClientListScreen extends ConsumerWidget {
   const ClientListScreen({super.key});
@@ -160,6 +161,8 @@ class ClientListScreen extends ConsumerWidget {
                 ),
               ),
             ),
+
+            const SliverToBoxAdapter(child: ConsultantReceiveCodeCard()),
 
             // List
             SliverPadding(

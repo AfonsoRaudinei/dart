@@ -4,6 +4,7 @@ import 'package:soloforte_app/core/contracts/i_visit_session_lookup_provider.dar
 import 'package:soloforte_app/core/contracts/i_occurrence_access_reader_provider.dart';
 import 'package:soloforte_app/core/domain/occurrence_recomendacao_ordem.dart';
 import 'package:soloforte_app/core/services/sync_status_contract.dart';
+import 'package:soloforte_app/core/session/session_controller.dart';
 import '../../domain/occurrence.dart';
 import '../../data/occurrence_repository.dart';
 import 'package:uuid/uuid.dart';
@@ -15,6 +16,11 @@ final occurrenceRepositoryProvider = Provider<OccurrenceRepository>((ref) {
 final occurrencesListProvider = FutureProvider.autoDispose<List<Occurrence>>((
   ref,
 ) async {
+  // Troca de conta reexecuta a lista. Sem Supabase (teste) o watch falha e a
+  // leitura local segue; no app a sessão sobe e a dependência fica ativa.
+  try {
+    ref.watch(sessionControllerProvider);
+  } catch (_) {}
   final repo = ref.watch(occurrenceRepositoryProvider);
   final activeClientIds = await ref
       .watch(occurrenceAccessReaderProvider)
@@ -22,6 +28,15 @@ final occurrencesListProvider = FutureProvider.autoDispose<List<Occurrence>>((
   if (activeClientIds.isEmpty) return repo.getAllOccurrences();
   return repo.getAllAuthorizedOccurrences(authorizedClientIds: activeClientIds);
 });
+
+// ignore: unused_element
+final _occurrencesLogoutInvalidationRegistration = () {
+  SessionController.registerLogoutInvalidation(
+    key: 'occurrencesListProvider',
+    invalidate: (ref) => ref.invalidate(occurrencesListProvider),
+  );
+  return true;
+}();
 
 /// Ocorrência atualizada na lista (evita snapshot stale no detalhe).
 Occurrence resolveLiveOccurrence(List<Occurrence>? list, Occurrence seed) {

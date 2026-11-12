@@ -121,6 +121,19 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
           agendaEventId: agendaEventId,
           sessionId: newSession.id,
         );
+      } else {
+        // ADR-060: check-in no mapa entra na agenda. Falha não cancela a visita.
+        try {
+          await _agendaBridge.registerFieldCheckIn(
+            _checkInOf(newSession),
+          );
+        } catch (error) {
+          AppLogger.warning(
+            'Falha ao registrar check-in na agenda',
+            tag: 'VisitController',
+            error: error,
+          );
+        }
       }
 
       state = AsyncValue.data(newSession);
@@ -135,6 +148,11 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
     if (currentSession == null) return;
     try {
       await _repository.updateFarm(currentSession.id, newFarmId);
+      await _syncPlace(
+        currentSession.id,
+        farmId: newFarmId,
+        clearArea: true,
+      );
       state = AsyncValue.data(
         currentSession.copyWith(
           farmId: newFarmId,
@@ -156,6 +174,11 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
         currentSession.id,
         newAreaId,
         farmId: farmId,
+      );
+      await _syncPlace(
+        currentSession.id,
+        farmId: farmId,
+        areaId: newAreaId,
       );
       state = AsyncValue.data(
         currentSession.copyWith(
@@ -181,15 +204,59 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
     try {
       final now = DateTime.now();
 
-      // 1. Fetch Occurrences — via contrato neutro IOccurrenceRead (ADR-024)
-      // 4. Update Agenda Event — via contrato neutro IAgendaSessionBridge (ADR-024)
-      await _agendaBridge.markEventAsDone(currentSession.id);
+      // Agenda: registra de novo se o check-in não conseguiu, depois conclui.
+      // A falha aqui não impede encerrar a sessão de visita (ADR-060).
+      try {
+        await _agendaBridge.registerFieldCheckIn(_checkInOf(currentSession));
+        await _agendaBridge.closeFieldVisit(currentSession.id);
+      } catch (error) {
+        AppLogger.warning(
+          'Falha ao concluir a visita na agenda',
+          tag: 'VisitController',
+          error: error,
+        );
+      }
 
-      // 5. End Session
       await _repository.endSession(currentSession.id, now);
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+    }
+  }
+
+  FieldVisitCheckIn _checkInOf(VisitSession session) {
+    return FieldVisitCheckIn(
+      sessionId: session.id,
+      clientId: session.producerId,
+      farmId: session.farmId,
+      areaId: session.areaId,
+      activityType: session.activityType,
+      startTime: session.startTime,
+      latitude: session.initialLat,
+      longitude: session.initialLong,
+      endTime: session.endTime,
+    );
+  }
+
+  Future<void> _syncPlace(
+    String sessionId, {
+    String? farmId,
+    String? areaId,
+    bool clearArea = false,
+  }) async {
+    try {
+      await _agendaBridge.updateFieldVisitPlace(
+        sessionId: sessionId,
+        farmId: farmId,
+        areaId: areaId,
+        clearArea: clearArea,
+      );
+    } catch (error) {
+      AppLogger.warning(
+        'Falha ao atualizar fazenda ou talhão na agenda',
+        tag: 'VisitController',
+        error: error,
+      );
     }
   }
 

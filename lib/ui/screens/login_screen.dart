@@ -9,6 +9,7 @@ import '../../core/session/session_controller.dart';
 import '../../core/router/app_routes.dart';
 import '../../modules/auth/services/auth_service.dart';
 import '../../modules/auth/utils/auth_validators.dart';
+import '../../modules/auth/widgets/confirm_email_code_form.dart';
 import '../../modules/marketing/presentation/widgets/ouro_map_background.dart';
 import '../components/login/login_input_field.dart';
 import '../components/login/gradient_button.dart';
@@ -161,6 +162,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               ? _emailCtrl.text.trim().toLowerCase()
               : null,
         );
+        if (emailNaoConfirmado) {
+          unawaited(_showConfirmCodeDialog(_emailCtrl.text.trim().toLowerCase()));
+        }
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -188,6 +192,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         _showErrorMessage(e.toString().replaceAll('Exception: ', ''));
       }
     }
+  }
+
+  Future<void> _showConfirmCodeDialog(String email) async {
+    if (email.isEmpty || !mounted) return;
+    final authService = ref.read(authServiceProvider.notifier);
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Confirme seu e-mail'),
+        content: SingleChildScrollView(
+          child: ConfirmEmailCodeForm(
+            email: email,
+            onVerify: (code) =>
+                authService.verifySignupCode(email: email, code: code),
+            onResend: () => authService.resendSignupConfirmation(email),
+            onConfirmed: () {
+              if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Fechar'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showErrorMessage(String message, {String? resendEmail}) {

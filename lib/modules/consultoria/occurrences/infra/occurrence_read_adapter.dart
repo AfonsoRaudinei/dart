@@ -25,6 +25,18 @@ class OccurrenceReadAdapter implements IOccurrenceRead {
     return occurrences.map(_toSummary).toList();
   }
 
+  @override
+  Future<List<OccurrenceSummary>> getAuthorizedBySessionId(
+    String sessionId,
+    Set<String> authorizedClientIds,
+  ) async {
+    final occurrences = await _repository.getAuthorizedBySession(
+      sessionId,
+      authorizedClientIds,
+    );
+    return occurrences.map(_toSummary).toList();
+  }
+
   OccurrenceSummary _toSummary(Occurrence o) {
     return OccurrenceSummary(
       id: o.id,
@@ -58,6 +70,7 @@ class OccurrenceReadAdapter implements IOccurrenceRead {
       amostraColetor: o.amostraColetor,
       amostraTramite: o.amostraTramite,
       amostraLaudoTexto: o.amostraLaudoTexto,
+      fieldId: o.fieldId,
     );
   }
 }

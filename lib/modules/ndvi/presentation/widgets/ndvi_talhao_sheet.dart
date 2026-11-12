@@ -133,6 +133,23 @@ class NdviTalhaoSheet extends ConsumerWidget {
                                   current.cloudCoverage,
                                 )!,
                               ),
+                            if (ndviShowsTenMeterPixelLabel(current.source))
+                              const _InfoPill(
+                                icon: Icons.grid_on_outlined,
+                                label: 'Pixel 10 m',
+                              ),
+                            if (ndviLowCoverHint(
+                                  current.source,
+                                  current.ndviMean,
+                                ) !=
+                                null)
+                              _InfoPill(
+                                icon: Icons.grass_outlined,
+                                label: ndviLowCoverHint(
+                                  current.source,
+                                  current.ndviMean,
+                                )!,
+                              ),
                             _InfoPill(
                               icon: Icons.storage_outlined,
                               label: _imageStatusLabel(current),
@@ -392,7 +409,10 @@ class NdviTalhaoSheet extends ConsumerWidget {
       return const _MaskUnavailable();
     }
 
-    final maskAsync = ref.watch(ndviGreenMaskBytesProvider(localPath));
+    final refined = ndviIsRefinedSource(current.source);
+    final maskAsync = ref.watch(
+      ndviGreenMaskBytesProvider((path: localPath, refined: refined)),
+    );
     return maskAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, __) => const _MaskUnavailable(),

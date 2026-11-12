@@ -5,6 +5,8 @@ import '../modules/drawing/data/data_sources/drawing_sync_service.dart';
 import '../modules/consultoria/occurrences/data/occurrence_sync_service.dart';
 import '../modules/visitas/data/repositories/visit_sync_service.dart';
 import '../modules/agenda/data/services/agenda_sync_service.dart';
+import '../modules/agenda/data/services/producer_visit_confirmation_sync.dart';
+import '../modules/agenda/data/producer_visit_confirmation_store.dart';
 import '../modules/agenda/data/repositories/agenda_repository.dart';
 import '../modules/produtor/data/producer_link_repository.dart';
 import '../modules/produtor/infra/occurrence_access_reader_adapter.dart';
@@ -23,6 +25,7 @@ void registerSyncModules(SyncOrchestrator orchestrator) {
   orchestrator.registerModule(OccurrenceSyncModule(supabase));
   orchestrator.registerModule(VisitSyncModule(supabase));
   orchestrator.registerModule(AgendaSyncModule(supabase));
+  orchestrator.registerModule(ProducerVisitConfirmationSyncModule(supabase));
   orchestrator.registerModule(RelatorioSyncModule(supabase));
   orchestrator.registerModule(RelatorioCombinadoSyncModule(supabase));
   orchestrator.registerModule(MarketingSyncModule(supabase));
@@ -71,6 +74,34 @@ class OccurrenceSyncModule implements SyncModule {
     supabase,
     OccurrenceAccessReaderAdapter(ProducerLinkRepository(supabase)),
   ).syncOccurrences();
+}
+
+class ProducerVisitConfirmationSyncModule implements SyncModule {
+  ProducerVisitConfirmationSyncModule(this.supabase);
+
+  final SupabaseClient supabase;
+
+  @override
+  String get name => 'Confirmação de visita';
+
+  @override
+  int get syncTier => 1;
+
+  @override
+  Future<void> sync() {
+    final access = OccurrenceAccessReaderAdapter(ProducerLinkRepository(supabase));
+    return ProducerVisitConfirmationSync(
+      supabase,
+      ProducerVisitConfirmationStore(),
+      access,
+    ).pushPending().then((_) {
+      return ProducerVisitConfirmationSync(
+        supabase,
+        ProducerVisitConfirmationStore(),
+        access,
+      ).pull();
+    });
+  }
 }
 
 class VisitSyncModule implements SyncModule {

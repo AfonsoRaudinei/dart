@@ -154,3 +154,27 @@ const double kMapTopControlsReservedRightWidth =
 /// Fileira superior com indicador de feature selecionada (4.º botão circular).
 const double kMapTopControlsSelectedFeatureChromeWidth =
     kMapTopControlsButtonSpacing + kMapActionColumnButtonSize;
+
+/// Margem esquerda do card de contexto do mapa (produtor e consultor).
+const double kMapContextCardLeftInset = 12.0;
+
+/// Folga entre a base do card de contexto e a borda física da tela.
+///
+/// 56dp livra o RichAttributionWidget (padding 4 + IconButton ~48) na base
+/// física, inclusive com safeBottom 0.
+const double kMapContextCardBottomInset = 56.0;
+
+/// Folga entre o card de contexto e a coluna de ações (lápis / check-in).
+const double kMapContextCardColumnGap = 12.0;
+
+/// Folga entre o card de contexto e a toolbar de desenho, quando ela está visível.
+const double kMapContextCardToolbarGap = 8.0;
+
+/// Largura máxima do card de contexto: a tela menos a margem esquerda e a coluna direita.
+double mapContextCardMaxWidth(double screenWidth) {
+  return screenWidth -
+      kMapContextCardLeftInset -
+      kMapActionColumnRightInset -
+      kMapActionColumnButtonSize -
+      kMapContextCardColumnGap;
+}

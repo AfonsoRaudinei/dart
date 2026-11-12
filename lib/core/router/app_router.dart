@@ -35,6 +35,7 @@ import '../../../modules/consultoria/clients/presentation/screens/farm_detail_sc
 import '../../../modules/consultoria/clients/presentation/screens/field_detail_screen.dart';
 import '../../../modules/feedback/presentation/screens/feedback_screen.dart';
 import '../../../modules/produtor/presentation/screens/producer_property_screen.dart';
+import '../../../modules/produtor/presentation/screens/producer_calendar_screen.dart';
 // ADR-012 — Módulo planos/
 import '../../../modules/planos/presentation/screens/planos_screen.dart';
 import '../../../modules/planos/presentation/screens/pagamento_screen.dart';
@@ -262,6 +263,10 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: AppRoutes.producerProperty,
             builder: (_, __) => const ProducerPropertyScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.producerCalendar,
+            builder: (_, __) => const ProducerCalendarScreen(),
           ),
           // ════════════════════════════════════════════════════════════════
           // MÓDULO PLANOS — ADR-012

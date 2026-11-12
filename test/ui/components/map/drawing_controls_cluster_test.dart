@@ -228,7 +228,7 @@ void main() {
   );
 
   testWidgets(
-    'MapControlsOverlay renderiza card customizado no topo esquerdo',
+    'MapControlsOverlay renderiza card customizado na metade inferior',
     (tester) async {
       await _pumpMapControlsOverlay(
         tester,
@@ -238,6 +238,9 @@ void main() {
 
       expect(find.text('Contexto produtor'), findsOneWidget);
       expect(find.byKey(const Key('map_control_check_in')), findsNothing);
+      final cardTop = tester.getTopLeft(find.text('Contexto produtor')).dy;
+      final screenHeight = tester.getSize(find.byType(Scaffold)).height;
+      expect(cardTop, greaterThan(screenHeight * 0.5));
     },
   );
 
@@ -437,6 +440,23 @@ class _NoopAgendaBridge implements IAgendaSessionBridge {
 
   @override
   Future<void> markEventAsDone(String sessionId) async {}
+
+  @override
+  Future<void> registerFieldCheckIn(FieldVisitCheckIn input) async {}
+
+  @override
+  Future<void> updateFieldVisitPlace({
+    required String sessionId,
+    String? farmId,
+    String? areaId,
+    bool clearArea = false,
+  }) async {}
+
+  @override
+  Future<void> closeFieldVisit(String sessionId) async {}
+
+  @override
+  Future<void> registerFinishedFieldVisit(FieldVisitCheckIn input) async {}
 }
 
 class _PublicSessionController extends SessionController {

@@ -36,6 +36,7 @@ import '../components/map/widgets/map_mark_sheet.dart';
 import '../theme/premium/design_tokens.dart';
 import 'map/utils/map_camera_snapshot_throttle.dart';
 import 'map/utils/map_empty_area_hit_test.dart';
+import 'map/utils/map_long_press_hint_scheduler.dart';
 import 'map/utils/map_long_press_prefs.dart';
 // 🔧 MODAL: imports para sheets dos tipos não-draw
 // (conteúdo migrado para map_sheet_content_builder.dart — ADR-031 F3)
@@ -94,7 +95,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       ref.read(marketingCasesProvider.notifier).load();
       ref.read(locationStateProvider.notifier).init();
       _requestLocationPermission();
-      _scheduleLongPressHintWhenReady();
+      _tryShowLongPressHint();
 
       // Bootstrap silencioso: garantir perfil completo.
       // Fire-and-forget — sem await, sem loading, sem rebuild.
@@ -113,30 +114,20 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   }
 
   bool _canShowLongPressHint() {
-    if (!shouldShowMapLongPressHint(ref.read(preferencesServiceProvider))) {
-      return false;
-    }
-    if (!ref.read(mapReadyStateProvider)) return false;
-    if (ref.read(armedModeProvider) != ArmedMode.none) return false;
-    if (ref.read(mapSheetStateProvider) != null) return false;
-    if (ref.read(isModalOpenProvider)) return false;
-    return true;
+    return mapLongPressHintEnvironmentReady(
+      prefs: ref.read(preferencesServiceProvider),
+      mapReady: ref.read(mapReadyStateProvider),
+      armedMode: ref.read(armedModeProvider),
+      sheetState: ref.read(mapSheetStateProvider),
+      isModalOpen: ref.read(isModalOpenProvider),
+    );
   }
 
-  void _scheduleLongPressHintWhenReady({int attempt = 0}) {
+  void _tryShowLongPressHint() {
     if (!mounted) return;
-    if (_canShowLongPressHint()) {
-      _startLongPressHint();
-      return;
-    }
-    if (attempt >= 40) return;
-    if (!shouldShowMapLongPressHint(ref.read(preferencesServiceProvider))) {
-      return;
-    }
-    Future<void>.delayed(const Duration(milliseconds: 50), () {
-      if (!mounted) return;
-      _scheduleLongPressHintWhenReady(attempt: attempt + 1);
-    });
+    if (_showLongPressHint || _longPressHintSessionRecorded) return;
+    if (!_canShowLongPressHint()) return;
+    _startLongPressHint();
   }
 
   void _startLongPressHint() {
@@ -161,19 +152,40 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     setState(() => _showLongPressHint = false);
   }
 
+  void _onLongPressHintAcknowledged() {
+    final prefs = ref.read(preferencesServiceProvider);
+    unawaited(markMapLongPressHintAcknowledged(prefs));
+    _dismissLongPressHint();
+  }
+
   void _onMapUserInteraction() {
     _dismissLongPressHint();
   }
 
-  void _listenLongPressHintDismissals() {
+  void _listenLongPressHintLifecycle() {
+    ref.listen<bool>(mapReadyStateProvider, (prev, next) {
+      if (next) _tryShowLongPressHint();
+    });
     ref.listen<MapSheetState?>(mapSheetStateProvider, (prev, next) {
-      if (next != null) _dismissLongPressHint();
+      if (next != null) {
+        _dismissLongPressHint();
+      } else {
+        _tryShowLongPressHint();
+      }
     });
     ref.listen<bool>(isModalOpenProvider, (prev, next) {
-      if (next) _dismissLongPressHint();
+      if (next) {
+        _dismissLongPressHint();
+      } else {
+        _tryShowLongPressHint();
+      }
     });
     ref.listen<ArmedMode>(armedModeProvider, (prev, next) {
-      if (next != ArmedMode.none) _dismissLongPressHint();
+      if (next != ArmedMode.none) {
+        _dismissLongPressHint();
+      } else {
+        _tryShowLongPressHint();
+      }
     });
   }
 
@@ -972,7 +984,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // seguro no dispose() — ref é invalidado antes de dispose() ser chamado.
     _drawingController = ref.read(drawingControllerProvider);
     _scheduleMapFirstQueryHandling(GoRouterState.of(context).uri);
-    _listenLongPressHintDismissals();
+    _listenLongPressHintLifecycle();
     _listenVisitCheckInMapFocusRequests();
 
     // ADR-032 F3: Build orchestrado por MapBuildOrchestrator.
@@ -1027,6 +1039,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           downloadOfflineArea: _downloadOfflineArea,
           absorbMapPointers: _actionsSheetOpen,
           showLongPressHint: _showLongPressHint,
+          onLongPressHintAcknowledged: _onLongPressHintAcknowledged,
           onMapUserInteraction: _onMapUserInteraction,
         ),
       ),

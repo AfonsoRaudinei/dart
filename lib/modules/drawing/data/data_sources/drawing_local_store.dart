@@ -31,7 +31,7 @@ class DrawingOwnershipPolicy {
     if (scopedUserId.isEmpty) {
       return "user_id = '$orphanUserId'";
     }
-    return "(user_id = ? OR user_id = '$orphanUserId')";
+    return 'user_id = ?';
   }
 
   static List<Object?> buildOwnedOrOrphanWhereArgs(String scopedUserId) {
@@ -259,6 +259,7 @@ class DrawingLocalStore {
 
   /// Retorna a soma de area_ha de todos os drawings vinculados a [clienteId].
   /// Drawings com area_ha NULL são ignorados na soma.
+  /// Polígono `tipo = teste` fica de fora: o talhão de baixo continua na soma.
   /// Retorna 0.0 se não houver nenhum drawing vinculado.
   Future<double> getTotalAreaByClienteId(String clienteId) async {
     final userId = _resolveScopedUserId();
@@ -267,7 +268,8 @@ class DrawingLocalStore {
       'SELECT COALESCE(SUM(area_ha), 0.0) AS total '
       'FROM drawings '
       'WHERE ${DrawingOwnershipPolicy.buildOwnedOrOrphanWhereClause(userId)} '
-      'AND cliente_id = ? AND deleted_at IS NULL',
+      'AND cliente_id = ? AND deleted_at IS NULL '
+      "AND (tipo IS NULL OR tipo != 'teste')",
       [
         ...DrawingOwnershipPolicy.buildOwnedOrOrphanWhereArgs(userId),
         clienteId,

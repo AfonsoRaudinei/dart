@@ -74,10 +74,10 @@ void main() {
       );
     });
 
-    test('escopo de leitura inclui usuario conhecido e orfaos temporarios', () {
+    test('usuario conhecido le somente o proprio user_id', () {
       expect(
         DrawingOwnershipPolicy.buildOwnedOrOrphanWhereClause('user-123'),
-        "(user_id = ? OR user_id = '')",
+        'user_id = ?',
       );
       expect(DrawingOwnershipPolicy.buildOwnedOrOrphanWhereArgs('user-123'), [
         'user-123',

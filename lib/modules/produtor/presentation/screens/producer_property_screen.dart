@@ -9,12 +9,20 @@ import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/services/sync_orchestrator.dart';
 import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import '../../../../core/router/app_routes.dart';
+import '../../../../core/utils/user_facing_error.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../data/producer_link_models.dart';
 import '../../data/producer_link_repository.dart';
 import '../../data/producer_property_repository.dart';
 
 part 'producer_property_forms.dart';
+
+String _tokenAcceptErrorMessage(Object error) {
+  if (error is FormatException) {
+    return error.message;
+  }
+  return userFacingError(error, action: 'Não foi possível vincular');
+}
 
 class ProducerPropertyScreen extends ConsumerStatefulWidget {
   const ProducerPropertyScreen({super.key});
@@ -56,12 +64,13 @@ class _ProducerPropertyScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Propriedade vinculada com sucesso.')),
       );
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
+      final message = _tokenAcceptErrorMessage(error);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Token inválido, expirado ou já utilizado.'),
-          backgroundColor: Color(0xFFFF3B30),
+        SnackBar(
+          content: Text(message),
+          backgroundColor: const Color(0xFFFF3B30),
         ),
       );
     } finally {

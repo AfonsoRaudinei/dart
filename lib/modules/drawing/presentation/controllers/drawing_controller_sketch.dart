@@ -76,6 +76,7 @@ extension DrawingControllerSketch on DrawingController {
     _pivotRadiusMeters = null;
     _selectedSketchVertexIndex = null;
     _isDraggingSketchVertex = false;
+    _sketchAsTest = false;
   }
 
   /// Seleciona vértice do polígono em andamento para ajuste mid-draw.

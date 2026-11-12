@@ -7,8 +7,11 @@ class ProducerInviteWriterAdapter implements IProducerInviteWriter {
   final ProducerLinkRepository _repository;
 
   @override
-  Future<ProducerInviteData> createInvite(String clientId) async {
-    final invite = await _repository.createInvite(clientId);
+  Future<ProducerInviteData> createInvite(
+    String clientId, {
+    ProducerShareSelection share = const ProducerShareSelection(),
+  }) async {
+    final invite = await _repository.createInvite(clientId, share: share);
     return ProducerInviteData(token: invite.token, expiresAt: invite.expiresAt);
   }
 }

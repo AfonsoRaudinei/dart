@@ -72,6 +72,24 @@ void main() {
       expect(isNdviGreenPixel(red: 80, green: 96, blue: 72), isFalse);
     });
 
+    test('modo refinado inclui amarelo-esverdeado do colormap Ouro', () {
+      final yellowGreenR = (0.85 * 255).round();
+      final yellowGreenG = (0.92 * 255).round();
+      final yellowGreenB = (0.35 * 255).round();
+
+      final source = img.Image(width: 3, height: 1)
+        ..setPixelRgb(0, 0, yellowGreenR, yellowGreenG, yellowGreenB)
+        ..setPixelRgb(1, 0, 255, 255, 0)
+        ..setPixelRgb(2, 0, 0, 180, 0);
+
+      final standardMask = applyNdviGreenMask(source, refined: false);
+      final refinedMask = applyNdviGreenMask(source, refined: true);
+
+      _expectPixel(standardMask, 0, 0);
+      _expectPixel(refinedMask, 0, 255);
+      _expectPixel(refinedMask, 2, 255);
+    });
+
     test('respeita alpha para nao contaminar fundo fora da camada NDVI', () {
       final source = img.Image(width: 3, height: 1, numChannels: 4)
         ..setPixelRgba(0, 0, 0, 255, 0, 0)

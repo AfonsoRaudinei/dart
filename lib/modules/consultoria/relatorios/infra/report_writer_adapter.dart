@@ -11,6 +11,7 @@ import 'package:soloforte_app/core/contracts/i_occurrence_read.dart';
 import 'package:soloforte_app/core/contracts/i_report_writer.dart';
 
 import '../models/visit_session_snapshot.dart';
+import '../providers/relatorio_repository_provider.dart';
 import '../use_cases/generate_relatorio_use_case.dart';
 
 /// Implementação concreta de IReportWriter.
@@ -24,6 +25,11 @@ class ReportWriterAdapter implements IReportWriter {
 
   @override
   Future<String> generateReport(VisitReportInput input) async {
+    final existing = await _ref
+        .read(relatorioRepositoryProvider)
+        .findByVisitSessionId(input.sessionId);
+    if (existing != null) return existing.id;
+
     final snapshot = _toSnapshot(input);
     final relatorio = await _ref.read(
       generateRelatorioProvider(snapshot).future,

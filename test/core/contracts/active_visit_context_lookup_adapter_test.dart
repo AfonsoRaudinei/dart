@@ -14,6 +14,9 @@ class FakeVisitSessionLookup implements IVisitSessionLookup {
 
   @override
   Future<VisitSessionSummary?> findById(String sessionId) async => session;
+
+  @override
+  Future<List<VisitSessionSummary>> listFinished() async => const [];
 }
 
 class FakeClientsRepository extends ClientsRepository {

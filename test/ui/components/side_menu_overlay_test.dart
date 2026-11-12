@@ -30,6 +30,7 @@ void main() {
       expect(find.text('Sincronizar agora'), findsOneWidget);
       expect(find.text('Agenda'), findsNothing);
       expect(find.text('Clientes'), findsNothing);
+      expect(find.text('Receber código'), findsNothing);
       expect(find.text('Relatórios'), findsOneWidget);
       expect(find.text('Carteira'), findsNothing);
       expect(find.text('Acesso rápido'), findsNothing);
@@ -44,6 +45,7 @@ void main() {
 
       expect(find.text('Agenda'), findsOneWidget);
       expect(find.text('Clientes'), findsWidgets);
+      expect(find.text('Receber código'), findsOneWidget);
       expect(find.text('Relatórios'), findsWidgets);
       expect(find.text('Carteira'), findsWidgets);
       expect(find.text('Nova Visita'), findsOneWidget);

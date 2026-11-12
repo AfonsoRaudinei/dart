@@ -30,6 +30,10 @@ String normalizeNdviSource(String source) {
   };
 }
 
+bool ndviIsRefinedSource(String source) {
+  return normalizeNdviSource(source) == 'sentinel_refined';
+}
+
 bool ndviIsColormapSource(String source) {
   return switch (normalizeNdviSource(source)) {
     'planet_preview' || 'unavailable' => false,
@@ -42,10 +46,20 @@ bool ndviSupportsGreenMask(String source) => ndviIsColormapSource(source);
 String ndviSourceLabel(String source) {
   return switch (normalizeNdviSource(source)) {
     'sentinel' => 'Sentinel NDVI',
+    'sentinel_refined' => 'Sentinel NDVI (Ouro)',
     'planet_preview' => 'Preview RGB (Planet)',
     'unavailable' => 'NDVI indisponivel',
     _ => 'Auto',
   };
+}
+
+bool ndviShowsTenMeterPixelLabel(String source) =>
+    ndviIsRefinedSource(source);
+
+String? ndviLowCoverHint(String source, double mean) {
+  if (!ndviIsRefinedSource(source)) return null;
+  if (mean < 0.2 || mean >= 0.4) return null;
+  return 'Cobertura vegetal baixa (NDVI médio)';
 }
 
 String? ndviDegradedReasonLabel(String? code) {

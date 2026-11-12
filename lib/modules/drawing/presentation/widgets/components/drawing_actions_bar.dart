@@ -150,7 +150,10 @@ class DrawingActionsBar extends StatelessWidget {
               onEditMetadata?.call();
             },
           ),
-          if (onShowNdviMap != null) ...[
+          // NDVI fica no chrome do mapa; no sheet compacto (lápis) só atalhos
+          // exclusivos — ex.: Unir talhões.
+          if (onShowNdviMap != null &&
+              actionsMode == DrawingFeatureActionsMode.full) ...[
             const SizedBox(height: 12),
             _ActionButton(
               icon: Icons.grass_rounded,
@@ -159,6 +162,20 @@ class DrawingActionsBar extends StatelessWidget {
               onTap: () {
                 HapticFeedback.lightImpact();
                 onShowNdviMap!.call();
+              },
+            ),
+          ],
+          if (onUnion != null &&
+              selectedFeature.properties.tipo == DrawingType.talhao &&
+              actionsMode == DrawingFeatureActionsMode.compact) ...[
+            const SizedBox(height: 12),
+            _ActionButton(
+              icon: Icons.add_circle_outline,
+              label: 'Unir talhões',
+              description: 'Combinar com outra área',
+              onTap: () {
+                HapticFeedback.lightImpact();
+                onUnion!.call();
               },
             ),
           ],

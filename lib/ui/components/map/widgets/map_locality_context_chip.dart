@@ -26,7 +26,8 @@ class MapLocalityContextChip extends ConsumerStatefulWidget {
       _MapLocalityContextChipState();
 }
 
-class _MapLocalityContextChipState extends ConsumerState<MapLocalityContextChip> {
+class _MapLocalityContextChipState
+    extends ConsumerState<MapLocalityContextChip> {
   static const Duration _debounce = Duration(milliseconds: 400);
   static const double _minCenterDeltaDegrees = 0.002;
 
@@ -97,26 +98,32 @@ class _MapLocalityContextChipState extends ConsumerState<MapLocalityContextChip>
         (c) => c.currentState == DrawingState.selected,
       ),
     );
-    final rightReserve = kMapTopControlsReservedRightWidth +
+    final chipMaxWidth =
+        (kMapTopControlsReservedRightWidth - kMapTopControlsRightInset) +
         (featureSelected ? kMapTopControlsSelectedFeatureChromeWidth : 0);
 
     return Positioned(
       top: top,
-      left: 48,
-      right: rightReserve,
+      right: kMapTopControlsRightInset,
       child: IgnorePointer(
-        child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: chipMaxWidth),
           child: Semantics(
             label: semanticsLabel,
             child: Material(
               type: MaterialType.transparency,
               child: Container(
                 key: const Key('map_locality_context_chip'),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.45),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.18),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,

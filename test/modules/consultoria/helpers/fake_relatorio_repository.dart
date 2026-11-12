@@ -60,6 +60,15 @@ class FakeRelatorioRepository implements IRelatorioRepository {
   Future<RelatorioTecnico?> getById(String id) async => _store[id];
 
   @override
+  Future<RelatorioTecnico?> findByVisitSessionId(String visitSessionId) async {
+    for (final report in _store.values) {
+      if (report.deletedAt != null) continue;
+      if (report.visitSessionId == visitSessionId) return report;
+    }
+    return null;
+  }
+
+  @override
   Future<List<RelatorioTecnico>> getAll() async {
     // Exclui soft-deleted (deletedAt != null) — igual à impl real
     return _store.values.where((r) => r.deletedAt == null).toList();

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/producer_invite_dialog.dart';
 import 'package:soloforte_app/modules/produtor/data/producer_link_models.dart';
 import 'package:soloforte_app/modules/produtor/data/producer_link_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -35,8 +36,27 @@ void main() {
   group('ProducerLinkRepository token helpers', () {
     test('normaliza token removendo espaços e padronizando caixa', () {
       expect(
-        ProducerLinkRepository.normalizeToken(' sf-12ab  - 34cd '),
-        'SF-12AB-34CD',
+        ProducerLinkRepository.normalizeToken(' sf-abcd  - 1234 - ef56 '),
+        'SF-ABCD-1234-EF56',
+      );
+    });
+
+    test('extrai token da mensagem completa do WhatsApp', () {
+      final message = ProducerInviteDialog.shareMessage(
+        clientName: 'Jonathan',
+        token: 'SF-ABCD-1234-EF56',
+      );
+
+      expect(
+        ProducerLinkRepository.normalizeToken(message),
+        'SF-ABCD-1234-EF56',
+      );
+    });
+
+    test('texto sem código SF rejeita com orientação clara', () {
+      expect(
+        () => ProducerLinkRepository.normalizeToken('cole o token aqui'),
+        throwsFormatException,
       );
     });
 
@@ -46,6 +66,68 @@ void main() {
 
       expect(a, b);
       expect(a, isNot(contains('ABCD')));
+    });
+
+    test('linha retornada pelo RPC pode vir em lista', () {
+      final map = ProducerLinkRepository.linkRowFromRpc([
+        {'id': 'link-1', 'status': 'active'},
+      ]);
+
+      expect(map, isNotNull);
+      expect(map!['id'], 'link-1');
+    });
+
+    test('mapeia erro de papel produtor na aceitação', () {
+      final message = ProducerLinkRepository.mapAcceptTokenError(
+        const PostgrestException(
+          message: 'producer_role_required',
+          code: 'P0001',
+        ),
+      );
+
+      expect(message, contains('produtor'));
+    });
+
+    test('vínculo antigo sem colunas de escopo libera tudo', () {
+      final link = ProducerClientLink.fromRemote({
+        'id': 'link-1',
+        'consultor_user_id': 'consultor-1',
+        'client_id': 'client-1',
+        'producer_user_id': 'produtor-1',
+        'status': 'active',
+        'expires_at': '2026-12-01T00:00:00.000Z',
+        'used_at': null,
+        'created_at': '2026-11-01T00:00:00.000Z',
+        'updated_at': '2026-11-01T00:00:00.000Z',
+      });
+
+      expect(link.share.farms, isTrue);
+      expect(link.share.fields, isTrue);
+      expect(link.share.occurrences, isTrue);
+      expect(link.share.reports, isTrue);
+    });
+
+    test('escopo falso no remoto permanece falso', () {
+      final link = ProducerClientLink.fromRemote({
+        'id': 'link-1',
+        'consultor_user_id': 'consultor-1',
+        'client_id': 'client-1',
+        'producer_user_id': null,
+        'status': 'pending',
+        'expires_at': '2026-12-01T00:00:00.000Z',
+        'used_at': null,
+        'created_at': '2026-11-01T00:00:00.000Z',
+        'updated_at': '2026-11-01T00:00:00.000Z',
+        'share_farms': false,
+        'share_fields': true,
+        'share_occurrences': false,
+        'share_reports': true,
+      });
+
+      expect(link.share.farms, isFalse);
+      expect(link.share.fields, isTrue);
+      expect(link.share.occurrences, isFalse);
+      expect(link.share.reports, isTrue);
     });
 
     test('gera token no formato compartilhável', () {

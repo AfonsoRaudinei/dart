@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/contracts/i_producer_invite_writer.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/session/local_session_identity.dart';
 import 'linked_consultant_geometry.dart';
@@ -29,7 +30,13 @@ class ProducerLinkRepository implements ProducerLinkReader {
   static const linkedReportsTable = 'relatorios_v2';
   static const _tokenBytes = 6;
 
-  Future<ProducerInvite> createInvite(String clientId) async {
+  Future<ProducerInvite> createInvite(
+    String clientId, {
+    ProducerShareSelection share = const ProducerShareSelection(),
+  }) async {
+    if (!share.hasAny) {
+      throw Exception('Escolha ao menos um tipo de dado para compartilhar.');
+    }
     // Convite exige JWT autenticado: LocalSessionIdentity.lastKnown não
     // basta — a RLS de insert compara auth.uid() com consultor_user_id.
     final userId = _authenticatedUserId();
@@ -47,6 +54,10 @@ class ProducerLinkRepository implements ProducerLinkReader {
             'token_hash': hashToken(token),
             'status': 'pending',
             'expires_at': expiresAt.toIso8601String(),
+            'share_farms': share.farms,
+            'share_fields': share.fields,
+            'share_occurrences': share.occurrences,
+            'share_reports': share.reports,
           })
           .select()
           .single();
@@ -117,17 +128,56 @@ class ProducerLinkRepository implements ProducerLinkReader {
   }
 
   Future<void> acceptToken(String token) async {
-    final row = await _client.rpc(
-      'accept_producer_link_token',
-      params: {'p_token': normalizeToken(token)},
-    );
-    if (row is! Map) {
-      throw Exception('Token inválido ou expirado.');
+    final normalized = normalizeToken(token);
+    try {
+      final row = await _client.rpc(
+        'accept_producer_link_token',
+        params: {'p_token': normalized},
+      );
+      final map = linkRowFromRpc(row);
+      if (map == null) {
+        throw Exception('Token inválido, expirado ou já utilizado.');
+      }
+      await _cacheLink(ProducerClientLink.fromRemote(map), syncStatus: 0);
+    } on PostgrestException catch (error) {
+      throw Exception(mapAcceptTokenError(error));
     }
-    await _cacheLink(
-      ProducerClientLink.fromRemote(Map<String, dynamic>.from(row)),
-      syncStatus: 0,
-    );
+  }
+
+  @visibleForTesting
+  static Map<String, dynamic>? linkRowFromRpc(Object? row) {
+    if (row is Map) {
+      return Map<String, dynamic>.from(row);
+    }
+    if (row is List && row.isNotEmpty && row.first is Map) {
+      return Map<String, dynamic>.from(row.first as Map);
+    }
+    return null;
+  }
+
+  @visibleForTesting
+  static String mapAcceptTokenError(PostgrestException error) {
+    final details = (error.details ?? '').toString().toLowerCase();
+    final message = error.message.toLowerCase();
+    final combined = '$message $details';
+
+    if (combined.contains('producer_role_required') ||
+        combined.contains('share_role_required')) {
+      return 'Esta conta precisa ser de produtor ou consultor para aceitar o convite.';
+    }
+    if (combined.contains('not_authenticated')) {
+      return 'Sessão expirada. Faça login novamente e tente outra vez.';
+    }
+    if (combined.contains('self_link_not_allowed')) {
+      return 'Este convite foi gerado pela mesma conta. Use a conta do produtor.';
+    }
+    if (combined.contains('invalid_or_expired_token')) {
+      return 'Token inválido, expirado ou já utilizado.';
+    }
+    if (message.contains('jwt') || message.contains('not authenticated')) {
+      return 'Sessão expirada. Faça login novamente e tente outra vez.';
+    }
+    return 'Não foi possível vincular agora. Verifique o código e a conexão.';
   }
 
   @override
@@ -166,10 +216,16 @@ class ProducerLinkRepository implements ProducerLinkReader {
         await _cacheLink(link, syncStatus: 0);
       }
       await _removeStaleCachedProducerLinks(userId, links);
-      return links.map((link) => link.clientId).toList(growable: false);
+      return links
+          .where((link) => link.share.occurrences)
+          .map((link) => link.clientId)
+          .toList(growable: false);
     } catch (_) {
       final cached = await _loadCachedActiveLinks(userId);
-      return cached.map((link) => link.clientId).toList(growable: false);
+      return cached
+          .where((link) => link.share.occurrences)
+          .map((link) => link.clientId)
+          .toList(growable: false);
     }
   }
 
@@ -178,6 +234,7 @@ class ProducerLinkRepository implements ProducerLinkReader {
     final links = await _loadActiveLinks();
     final names = <String, String>{};
     for (final link in links) {
+      if (!link.share.occurrences) continue;
       try {
         final rows = await _client
             .from('clients')
@@ -238,9 +295,15 @@ class ProducerLinkRepository implements ProducerLinkReader {
     if ((clientRows as List).isEmpty) return null;
 
     final client = Map<String, dynamic>.from(clientRows.first as Map);
-    final farms = await _loadFarms(link.clientId);
-    final reports = await _loadReports(link.clientId);
-    final occurrences = await _loadOccurrences(link.clientId);
+    final farms = link.share.farms || link.share.fields
+        ? await _loadFarms(link.clientId, includeFields: link.share.fields)
+        : <ProducerLinkedFarm>[];
+    final reports = link.share.reports
+        ? await _loadReports(link.clientId)
+        : const <ProducerLinkedReport>[];
+    final occurrences = link.share.occurrences
+        ? await _loadOccurrences(link.clientId)
+        : const <ProducerLinkedOccurrence>[];
 
     return ProducerLinkedClient(
       link: link,
@@ -312,7 +375,10 @@ class ProducerLinkRepository implements ProducerLinkReader {
     return _occurrenceCategoryLabel[category] ?? 'Ocorrência';
   }
 
-  Future<List<ProducerLinkedFarm>> _loadFarms(String clientId) async {
+  Future<List<ProducerLinkedFarm>> _loadFarms(
+    String clientId, {
+    required bool includeFields,
+  }) async {
     final rows = await _client
         .from('farms')
         .select()
@@ -331,7 +397,9 @@ class ProducerLinkRepository implements ProducerLinkReader {
           city: (farm['municipio'] ?? farm['city']) as String?,
           state: (farm['uf'] ?? farm['state']) as String?,
           areaHa: _asDouble(farm['area_total'] ?? farm['area_ha']),
-          fields: await _loadFields(farmId),
+          fields: includeFields
+              ? await _loadFields(farmId)
+              : const <ProducerLinkedField>[],
         ),
       );
     }
@@ -349,24 +417,29 @@ class ProducerLinkRepository implements ProducerLinkReader {
       whereArgs: [link.clientId, userId],
       limit: 1,
     );
-    final farmRows = await db.query(
-      'farms',
-      where: 'cliente_id = ? AND user_id = ? AND deleted_at IS NULL',
-      whereArgs: [link.clientId, userId],
-      orderBy: 'nome',
-    );
+    final includeFarms = link.share.farms || link.share.fields;
+    final farmRows = includeFarms
+        ? await db.query(
+            'farms',
+            where: 'cliente_id = ? AND user_id = ? AND deleted_at IS NULL',
+            whereArgs: [link.clientId, userId],
+            orderBy: 'nome',
+          )
+        : <Map<String, Object?>>[];
     final fieldRows = <Map<String, Object?>>[];
-    for (final farm in farmRows) {
-      final farmId = farm['id'] as String?;
-      if (farmId == null || farmId.isEmpty) continue;
-      fieldRows.addAll(
-        await db.query(
-          'fields',
-          where: 'fazenda_id = ? AND user_id = ? AND deleted_at IS NULL',
-          whereArgs: [farmId, userId],
-          orderBy: 'nome',
-        ),
-      );
+    if (link.share.fields) {
+      for (final farm in farmRows) {
+        final farmId = farm['id'] as String?;
+        if (farmId == null || farmId.isEmpty) continue;
+        fieldRows.addAll(
+          await db.query(
+            'fields',
+            where: 'fazenda_id = ? AND user_id = ? AND deleted_at IS NULL',
+            whereArgs: [farmId, userId],
+            orderBy: 'nome',
+          ),
+        );
+      }
     }
     return linkedClientFromLocalRows(
       link: link,
@@ -527,8 +600,32 @@ class ProducerLinkRepository implements ProducerLinkReader {
     return 'SF-${hex.substring(0, 4)}-${hex.substring(4, 8)}-${hex.substring(8)}';
   }
 
+  static final RegExp _inviteTokenPattern = RegExp(
+    r'SF-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}',
+    caseSensitive: false,
+  );
+
+  /// Aceita o token puro ou a mensagem do WhatsApp com o código no final.
   static String normalizeToken(String token) {
-    return token.replaceAll(RegExp(r'\s+'), '').toUpperCase();
+    final trimmed = token.trim();
+    if (trimmed.isEmpty) {
+      throw const FormatException('Informe o código enviado pelo consultor.');
+    }
+
+    final directMatch = _inviteTokenPattern.firstMatch(trimmed);
+    if (directMatch != null) {
+      return directMatch.group(0)!.toUpperCase();
+    }
+
+    final compact = trimmed.replaceAll(RegExp(r'\s+'), '').toUpperCase();
+    final compactMatch = _inviteTokenPattern.firstMatch(compact);
+    if (compactMatch != null) {
+      return compactMatch.group(0)!;
+    }
+
+    throw const FormatException(
+      'Cole o código SF-XXXX-XXXX-XXXX ou a mensagem completa do consultor.',
+    );
   }
 
   static String hashToken(String token) {

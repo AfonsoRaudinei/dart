@@ -139,6 +139,48 @@ List<Occurrence> _sortOccurrencesByCreatedAt(List<Occurrence> occurrences) {
   return sorted;
 }
 
+/// Vínculo autorizado decide se o conjunto está pronto. Propriedade própria
+/// só entra quando já resolveu; refresh com valor anterior não zera a lista.
+({bool ready, Set<String> ids}) resolveProducerAllowedClients({
+  required bool authorizedHasValue,
+  required bool authorizedHasError,
+  required Set<String> authorizedIds,
+  required bool ownHasValue,
+  required bool ownHasError,
+  required String? ownClientId,
+}) {
+  if (!authorizedHasValue || authorizedHasError) {
+    return (ready: false, ids: <String>{});
+  }
+
+  final ids = <String>{
+    for (final raw in authorizedIds)
+      if (raw.trim().isNotEmpty) raw.trim(),
+  };
+  if (ownHasValue && !ownHasError) {
+    final ownId = ownClientId?.trim() ?? '';
+    if (ownId.isNotEmpty) ids.add(ownId);
+  }
+  return (ready: true, ids: ids);
+}
+
+/// Produtor só vê clientId do vínculo ativo ou da propriedade própria.
+/// Enquanto o conjunto não está pronto, a lista fica vazia.
+List<T> scopeRowsToAllowedClients<T>({
+  required bool isProdutor,
+  required bool allowedReady,
+  required Set<String> allowedClientIds,
+  required List<T> rows,
+  required String? Function(T row) clientIdOf,
+}) {
+  if (!isProdutor) return rows;
+  if (!allowedReady) return List<T>.empty();
+  return rows.where((row) {
+    final id = clientIdOf(row)?.trim() ?? '';
+    return id.isNotEmpty && allowedClientIds.contains(id);
+  }).toList();
+}
+
 Map<String, int> _producerCountsFromIds(Iterable<String?> clientIds) {
   final counts = <String, int>{};
   for (final raw in clientIds) {

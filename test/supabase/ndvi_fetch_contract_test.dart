@@ -62,6 +62,33 @@ void main() {
     expect(edgeFunction, contains('status: 404'));
   });
 
+  test('Ouro refinado: cloud 30, evalscript e user_plans', () {
+    expect(edgeFunction, contains('sentinel_refined'));
+    expect(edgeFunction, contains('NDVI_REFINED_EVALSCRIPT'));
+    expect(edgeFunction, contains('0.85, 0.92, 0.35'));
+    expect(edgeFunction, contains('catalogCloudMax: 30'));
+    expect(edgeFunction, contains('processCloudMax: 30'));
+    expect(edgeFunction, contains('user_plans'));
+    expect(edgeFunction, contains('userHasActiveOuroPlan'));
+    expect(edgeFunction, contains('createClient'));
+    expect(edgeFunction, contains('auth.getUser'));
+    expect(
+      edgeFunction,
+      contains('is_ndvi: usedSource === "sentinel" || usedSource === "sentinel_refined"'),
+    );
+  });
+
+  test('catalogo parametrizado por cloudMax', () {
+    expect(edgeFunction, contains('cloudMax = 80'));
+    expect(edgeFunction, contains('eo:cloud_cover <'));
+    expect(edgeFunction, contains('cloudMax = 80'));
+  });
+
+  test('cloud_coverage real da cena escolhida', () {
+    expect(edgeFunction, contains('cloudByDate'));
+    expect(edgeFunction, contains('catalog.cloudByDate[finalDate]'));
+  });
+
   test('process com geometria que falha repete só com bbox', () {
     expect(edgeFunction, contains('processGeometry = undefined'));
     expect(

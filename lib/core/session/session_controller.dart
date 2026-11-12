@@ -42,6 +42,9 @@ String traduzirAuthException(AuthException error) {
   final code = (error.code ?? '').toLowerCase();
   final lower = error.message.toLowerCase();
 
+  if (lower.contains('token has expired or is invalid')) {
+    return 'Código inválido ou expirado. Peça um novo código.';
+  }
   if (code == 'otp_expired' ||
       lower.contains('otp_expired') ||
       lower.contains('link is invalid') ||

@@ -31,6 +31,6 @@ fi
 
 echo "→ supabase secrets set (${#ARGS[@]} chaves)…"
 supabase secrets set "${ARGS[@]}"
-echo "→ supabase functions deploy ndvi-fetch"
-supabase functions deploy ndvi-fetch
+echo "→ supabase functions deploy ndvi-fetch (--use-api, sem Docker local)"
+supabase functions deploy ndvi-fetch --use-api
 echo "✅ Secrets + deploy concluídos."

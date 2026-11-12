@@ -6,6 +6,10 @@ void main() {
   group('AppAccess', () {
     test('produtor não acessa agenda, clientes e carteira', () {
       expect(AppAccess.canAccessPath('produtor', AppRoutes.agenda), false);
+      expect(
+        AppAccess.canAccessPath('produtor', AppRoutes.producerCalendar),
+        true,
+      );
       expect(AppAccess.canAccessPath('produtor', AppRoutes.clients), false);
       expect(AppAccess.canAccessPath('produtor', AppRoutes.carteira), false);
     });

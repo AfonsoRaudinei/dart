@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
@@ -9,6 +8,7 @@ import '../../../core/router/app_routes.dart';
 import '../models/register_dto.dart';
 import '../services/auth_service.dart';
 import '../utils/auth_validators.dart';
+import '../widgets/confirm_email_code_form.dart';
 import '../widgets/profile_avatar_picker.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
@@ -41,11 +41,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   // Debounce for double submit protection
   DateTime? _lastSubmitTime;
 
-  static const int _resendCooldownSeconds = 60;
-  Timer? _resendTimer;
-  int _resendCooldown = 0;
-  bool _isResending = false;
-
   @override
   void initState() {
     super.initState();
@@ -59,7 +54,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   @override
   void dispose() {
-    _resendTimer?.cancel();
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
@@ -152,45 +146,23 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     }
   }
 
-  void _startResendCooldown() {
-    _resendTimer?.cancel();
-    setState(() => _resendCooldown = _resendCooldownSeconds);
-    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      if (_resendCooldown <= 1) {
-        timer.cancel();
-        setState(() => _resendCooldown = 0);
-      } else {
-        setState(() => _resendCooldown -= 1);
-      }
-    });
+  Future<void> _verifyCode(String code) async {
+    await ref
+        .read(authServiceProvider.notifier)
+        .verifySignupCode(email: _registeredEmail, code: code);
   }
 
-  Future<void> _handleResend() async {
-    if (_isResending || _resendCooldown > 0 || _registeredEmail.isEmpty) {
-      return;
-    }
-    setState(() => _isResending = true);
-    try {
-      await ref
-          .read(authServiceProvider.notifier)
-          .resendSignupConfirmation(_registeredEmail);
-      if (!mounted) return;
-      _startResendCooldown();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('E-mail de confirmação reenviado. Verifique sua caixa de entrada.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } catch (e) {
-      if (mounted) _showError(e.toString().replaceAll('Exception: ', ''));
-    } finally {
-      if (mounted) setState(() => _isResending = false);
-    }
+  Future<void> _resendConfirmation() async {
+    await ref
+        .read(authServiceProvider.notifier)
+        .resendSignupConfirmation(_registeredEmail);
+  }
+
+  void _handleCodeConfirmed() {
+    // Sessão ativa: /login é rota pública e o redirect do router leva o
+    // usuário autenticado ao mapa (mesmo caminho do signUp com sessão).
+    if (!mounted) return;
+    context.go(AppRoutes.login);
   }
 
   void _showError(String message) {
@@ -499,10 +471,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   Widget _buildSuccessState() {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(32.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 48),
@@ -522,16 +493,24 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            'Enviamos um link de confirmação para:\n$_registeredEmail\n\nAcesse seu e-mail, clique no link e volte para fazer login.\n\nVerifique também a pasta de spam.',
+          const Text(
+            'Enviamos um e-mail de confirmação com um código e um link.\n\nDigite o código abaixo ou clique no link do e-mail e volte para fazer login.\n\nVerifique também a pasta de spam.',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               color: Color(0xFF666666),
               height: 1.6,
             ),
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 24),
+          ConfirmEmailCodeForm(
+            email: _registeredEmail,
+            startWithResendCooldown: true,
+            onVerify: _verifyCode,
+            onResend: _resendConfirmation,
+            onConfirmed: _handleCodeConfirmed,
+          ),
+          const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () => context.go(AppRoutes.login),
             style: ElevatedButton.styleFrom(
@@ -548,21 +527,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: (_isResending || _resendCooldown > 0)
-                ? null
-                : _handleResend,
-            child: Text(
-              _resendCooldown > 0
-                  ? 'Reenviar e-mail (${_resendCooldown}s)'
-                  : 'Reenviar e-mail',
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
               ),
             ),
           ),

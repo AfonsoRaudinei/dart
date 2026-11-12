@@ -73,8 +73,13 @@ class AgendaObservableState {
   const AgendaObservableState({
     this.sessions = const [],
     this.events = const [],
+    this.ready = false,
   });
 
   final List<AgendaSessionData> sessions;
   final List<AgendaEventData> events;
+
+  /// `true` depois da primeira carga da agenda. O acerto de visitas
+  /// encerradas sem evento espera esse sinal (ADR-060).
+  final bool ready;
 }

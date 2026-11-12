@@ -7,12 +7,13 @@ import '../../../../../core/design/sf_icons.dart';
 /// Widget responsável por exibir e gerenciar a seleção de ferramentas de desenho.
 ///
 /// Responsabilidade: seleção de ferramenta de desenho
-/// (Polígono, Livre, Pivô, KML, GPS Caminhar, Área Visitada).
+/// (Polígono, Livre, Pivô, Teste, KML, GPS Caminhar, Área Visitada).
 ///
 /// Ferramentas disponíveis:
 /// - Polígono (desenho livre)
 /// - Livre (freehand)
 /// - Pivô (círculo de irrigação)
+/// - Teste (polígono sobre talhão já salvo; não soma hectares)
 /// - Importar (KML/KMZ)
 /// - GPS (caminhar)
 /// - Área Visitada (ação: arma pin no mapa)
@@ -63,6 +64,16 @@ class DrawingToolSelector extends StatelessWidget {
         label: 'Pivô',
         isSelected: selectedToolKey == 'pivot',
         onTap: () => onToolSelected('pivot'),
+        isIos: isIos,
+        backgroundColor: _sheetSurface,
+        borderColor: _sheetBorder,
+        accentColor: _accentGreen,
+      ),
+      _ToolButton(
+        icon: Icons.science_outlined,
+        label: 'Teste',
+        isSelected: selectedToolKey == 'teste',
+        onTap: () => onToolSelected('teste'),
         isIos: isIos,
         backgroundColor: _sheetSurface,
         borderColor: _sheetBorder,

@@ -31,6 +31,12 @@ class VisitSessionLookupAdapter implements IVisitSessionLookup {
     return _toSummary(session);
   }
 
+  @override
+  Future<List<VisitSessionSummary>> listFinished() async {
+    final sessions = await _repository.listFinished();
+    return sessions.map(_toSummary).toList();
+  }
+
   VisitSessionSummary _toSummary(VisitSession session) {
     return VisitSessionSummary(
       id: session.id,
@@ -41,6 +47,8 @@ class VisitSessionLookupAdapter implements IVisitSessionLookup {
       areaId: session.areaId,
       activityType: session.activityType,
       endTime: session.endTime,
+      initialLat: session.initialLat,
+      initialLong: session.initialLong,
     );
   }
 }

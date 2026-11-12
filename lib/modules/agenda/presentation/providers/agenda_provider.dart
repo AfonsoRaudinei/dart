@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/contracts/i_visit_session_writer_provider.dart';
 import '../../../../core/router/app_router.dart';
@@ -9,6 +10,7 @@ import '../../../../core/session/session_controller.dart';
 import '../../../../core/session/session_models.dart';
 import '../../data/repositories/agenda_repository.dart';
 import '../../data/services/agenda_notification_service.dart';
+import '../../domain/agenda_field_visit_sink.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/visit.dart';
 import '../../domain/entities/visit_session.dart';
@@ -40,7 +42,7 @@ AgendaNotificationService agendaNotificationService(
 
 /// Provider global da agenda — ADR-008 (Fase 4: @riverpod, substitui StateNotifier).
 @Riverpod(keepAlive: true)
-class Agenda extends _$Agenda {
+class Agenda extends _$Agenda implements AgendaFieldVisitSink {
   AgendaRepository get _repository => ref.read(agendaRepositoryProvider);
 
   AgendaNotificationService get _notificationService =>
@@ -76,6 +78,7 @@ class Agenda extends _$Agenda {
         events: events,
         sessions: sessions,
         isLoading: false,
+        hasLoaded: true,
       );
     } catch (e) {
       state = state.copyWith(
@@ -398,6 +401,27 @@ class Agenda extends _$Agenda {
     state = state.copyWith(conflicts: []);
   }
 
+  @override
+  void upsertFieldVisit({required Event event, required VisitSession session}) {
+    final events = [...state.events];
+    final eventIndex = events.indexWhere((item) => item.id == event.id);
+    if (eventIndex >= 0) {
+      events[eventIndex] = event;
+    } else {
+      events.add(event);
+    }
+
+    final sessions = [...state.sessions];
+    final sessionIndex = sessions.indexWhere((item) => item.id == session.id);
+    if (sessionIndex >= 0) {
+      sessions[sessionIndex] = session;
+    } else {
+      sessions.add(session);
+    }
+
+    state = state.copyWith(events: events, sessions: sessions);
+  }
+
   void _updateEvent(Event event) {
     final index = state.events.indexWhere((e) => e.id == event.id);
     if (index != -1) {
@@ -476,4 +500,22 @@ class Agenda extends _$Agenda {
   }
 
   double _toRadians(double degrees) => degrees * math.pi / 180;
+}
+
+/// Lê o notifier atual a cada chamada, inclusive depois do logout.
+class AgendaFieldVisitSinkBinding implements AgendaFieldVisitSink {
+  AgendaFieldVisitSinkBinding(this._ref);
+
+  final Ref _ref;
+
+  @override
+  void upsertFieldVisit({
+    required Event event,
+    required VisitSession session,
+  }) {
+    _ref.read(agendaProvider.notifier).upsertFieldVisit(
+      event: event,
+      session: session,
+    );
+  }
 }

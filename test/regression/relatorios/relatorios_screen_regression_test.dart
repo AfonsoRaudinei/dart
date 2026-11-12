@@ -105,6 +105,21 @@ void main() {
     );
 
     testWidgets(
+      'produtor não vê aba Visitas e abre em Ocorrências',
+      (tester) async {
+        await _pumpRelatoriosScreen(
+          tester,
+          relatorioRepository: FakeRelatorioRepository(),
+          occurrenceRepository: FakeOccurrenceRepository(),
+          role: UserRole.produtor,
+        );
+
+        expect(find.text('Visitas'), findsNothing);
+        expect(find.text('Ocorrências Registradas'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'seção de marketing exibe item de marketingCaseReportsListProvider',
       (tester) async {
         await _pumpRelatoriosScreen(
@@ -129,11 +144,12 @@ Future<void> _pumpRelatoriosScreen(
   required FakeRelatorioRepository relatorioRepository,
   required FakeOccurrenceRepository occurrenceRepository,
   List<MarketingCase>? marketingCases,
+  UserRole role = UserRole.consultor,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        currentUserRoleProvider.overrideWithValue(UserRole.consultor),
+        currentUserRoleProvider.overrideWithValue(role),
         relatorioRepositoryProvider.overrideWithValue(relatorioRepository),
         publish_repo.relatorioRepositoryProvider.overrideWithValue(
           relatorioRepository,

@@ -173,6 +173,50 @@ void main() {
       );
     });
 
+    test('código OTP inválido ou expirado (verifyOTP)', () {
+      const msg = 'Código inválido ou expirado. Peça um novo código.';
+      expect(
+        traduzirAuthException(
+          const AuthException(
+            'Token has expired or is invalid',
+            statusCode: '403',
+            code: 'otp_expired',
+          ),
+        ),
+        msg,
+      );
+      expect(
+        traduzirAuthException(
+          const AuthException('Token has expired or is invalid'),
+        ),
+        msg,
+      );
+    });
+
+    test('over_request_rate_limit', () {
+      expect(
+        traduzirAuthException(
+          const AuthException(
+            'Request rate limit reached',
+            statusCode: '429',
+            code: 'over_request_rate_limit',
+          ),
+        ),
+        'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
+      );
+    });
+
+    test('mensagem de código não vaza texto cru do servidor', () {
+      final msg = traduzirAuthException(
+        const AuthException(
+          'Token has expired or is invalid',
+          code: 'otp_expired',
+        ),
+      );
+      expect(msg, isNot(contains('Token')));
+      expect(msg, isNot(contains('otp_expired')));
+    });
+
     test('mensagem não vaza e-mail nem texto cru', () {
       final msg = traduzirAuthException(
         const AuthException(

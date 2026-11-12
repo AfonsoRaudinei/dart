@@ -156,7 +156,7 @@ final clientDrawingFieldsProvider = FutureProvider.family
           'ciclo_dias',
         ],
         where:
-            'user_id = ? AND cliente_id = ? AND deleted_at IS NULL AND ativo = 1 AND (fazenda_id IS NULL OR fazenda_id = \'\')',
+            'user_id = ? AND cliente_id = ? AND deleted_at IS NULL AND ativo = 1 AND tipo != \'teste\' AND (fazenda_id IS NULL OR fazenda_id = \'\')',
         whereArgs: [userId, clientId],
         orderBy: 'updated_at DESC',
       );
@@ -212,7 +212,7 @@ final clientAllDrawingFieldsProvider = FutureProvider.family
           'ciclo_dias',
         ],
         where:
-            'user_id = ? AND cliente_id = ? AND deleted_at IS NULL AND ativo = 1',
+            'user_id = ? AND cliente_id = ? AND deleted_at IS NULL AND ativo = 1 AND tipo != \'teste\'',
         whereArgs: [userId, clientId],
         orderBy: 'updated_at DESC',
       );
@@ -313,7 +313,7 @@ Future<List<FarmLinkedFieldSummary>> _loadDrawingFieldsByFarmId(
       'ciclo_dias',
     ],
     where:
-        'user_id = ? AND fazenda_id = ? AND deleted_at IS NULL AND ativo = 1',
+        'user_id = ? AND fazenda_id = ? AND deleted_at IS NULL AND ativo = 1 AND tipo != \'teste\'',
     whereArgs: [userId, farmId],
     orderBy: 'updated_at DESC',
   );
@@ -443,7 +443,7 @@ final clientDrawingCropRowsProvider = FutureProvider.family
         'drawings',
         columns: ['cultura', 'material', 'area_ha'],
         where:
-            'user_id = ? AND cliente_id = ? AND deleted_at IS NULL AND ativo = 1',
+            'user_id = ? AND cliente_id = ? AND deleted_at IS NULL AND ativo = 1 AND tipo != \'teste\'',
         whereArgs: [userId, clientId],
       );
 
