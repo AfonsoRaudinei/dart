@@ -77,7 +77,11 @@ class OfflineTileKeepRegion {
 }
 
 class OfflineTileCacheService {
-  const OfflineTileCacheService();
+  const OfflineTileCacheService({this.scopedUserId = ''});
+
+  /// Quando não vazio, tiles ficam em `offline_tiles/users/<scopedUserId>/`.
+  /// Vazio mantém `offline_tiles/` (legado e testes com `const` default).
+  final String scopedUserId;
 
   static const maxTileDownloadCount = 5000;
   static const prefetchConcurrency = 8;
@@ -118,7 +122,10 @@ class OfflineTileCacheService {
 
   Future<Directory> _baseDir() async {
     final dir = await getApplicationDocumentsDirectory();
-    final root = Directory('${dir.path}/offline_tiles');
+    final base = scopedUserId.isEmpty
+        ? '${dir.path}/offline_tiles'
+        : '${dir.path}/offline_tiles/users/$scopedUserId';
+    final root = Directory(base);
     if (!root.existsSync()) {
       root.createSync(recursive: true);
     }
