@@ -155,7 +155,33 @@ extension DrawingFeatureStyle on DrawingFeature {
     );
   }
 
+  /// Teste fica azul Samsung por cima do talhão. Nunca cai na paleta de condição.
+  FieldStyle _testeFill({required bool dashed, double borderWidth = 3.0}) {
+    const fill = PremiumTokens.blackAccentPrimary;
+    return FieldStyle(
+      fillColor: fill,
+      borderColor: PremiumTokens.blackAccentVariant,
+      borderWidth: borderWidth,
+      isDashed: dashed,
+      fillOpacity: 0.45,
+    );
+  }
+
   FieldStyle get style {
+    if (properties.tipo == DrawingType.teste && properties.ativo) {
+      switch (visualState) {
+        case FieldVisualState.draft:
+        case FieldVisualState.pendingSync:
+          return _testeFill(dashed: true, borderWidth: 2.5);
+        case FieldVisualState.conflict:
+          return _testeFill(dashed: false, borderWidth: 3.5);
+        case FieldVisualState.archived:
+        case FieldVisualState.standard:
+        case FieldVisualState.selected:
+        case FieldVisualState.editing:
+          return _testeFill(dashed: false);
+      }
+    }
     switch (visualState) {
       case FieldVisualState.draft:
         return _condicaoFill(dashed: true, borderWidth: 2.5);
