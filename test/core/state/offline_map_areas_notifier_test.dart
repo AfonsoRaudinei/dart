@@ -2,9 +2,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
+import 'package:soloforte_app/core/session/session_controller.dart';
+import 'package:soloforte_app/core/session/session_models.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 
 import '../../support/path_provider_test_bindings.dart';
+
+const _testUserId = 'offline-map-areas-test-user';
+
+class _BareSessionController extends SessionController {
+  @override
+  SessionState build() => const SessionUnknown();
+}
 
 void main() {
   late ProviderContainer container;
@@ -12,10 +22,19 @@ void main() {
   Future<void> setUpContainer() async {
     SharedPreferences.setMockInitialValues({});
     final prefs = PreferencesService(await SharedPreferences.getInstance());
+    LocalSessionIdentity.resetForTesting();
+    LocalSessionIdentity.configure(prefs);
+    LocalSessionIdentity.remember(_testUserId);
     container = ProviderContainer(
-      overrides: [preferencesServiceProvider.overrideWithValue(prefs)],
+      overrides: [
+        preferencesServiceProvider.overrideWithValue(prefs),
+        sessionControllerProvider.overrideWith(_BareSessionController.new),
+      ],
     );
-    addTearDown(container.dispose);
+    addTearDown(() {
+      container.dispose();
+      LocalSessionIdentity.resetForTesting();
+    });
   }
 
   OfflineMapAreaConfig farmArea({
@@ -163,7 +182,7 @@ void main() {
     expect(container.read(offlineMapAreasProvider), isEmpty);
     final raw = container
         .read(preferencesServiceProvider)
-        .getString('map_offline_areas_v1');
+        .getString(OfflineMapAreasNotifier.prefsKeyForUser(_testUserId));
     expect(raw, '[]');
   });
 
