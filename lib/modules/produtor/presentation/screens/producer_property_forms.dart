@@ -4,58 +4,87 @@ Future<_FarmFormData?> _showFarmFormDialog(
   BuildContext context, {
   ProducerOwnFarm? farm,
 }) {
-  final nameController = TextEditingController(text: farm?.name ?? '');
-  final cityController = TextEditingController(text: farm?.city ?? '');
-  final stateController = TextEditingController(text: farm?.state ?? '');
-  final areaController = TextEditingController(
-    text: farm == null || farm.areaHa == 0
-        ? ''
-        : farm.areaHa.toStringAsFixed(1),
-  );
-
   return showDialog<_FarmFormData>(
     context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: Text(farm == null ? 'Cadastrar fazenda' : 'Editar fazenda'),
+    builder: (dialogContext) => _FarmFormDialog(farm: farm),
+  );
+}
+
+class _FarmFormDialog extends StatefulWidget {
+  const _FarmFormDialog({this.farm});
+
+  final ProducerOwnFarm? farm;
+
+  @override
+  State<_FarmFormDialog> createState() => _FarmFormDialogState();
+}
+
+class _FarmFormDialogState extends State<_FarmFormDialog> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _cityController;
+  late final TextEditingController _stateController;
+  late final TextEditingController _areaController;
+
+  @override
+  void initState() {
+    super.initState();
+    final farm = widget.farm;
+    _nameController = TextEditingController(text: farm?.name ?? '');
+    _cityController = TextEditingController(text: farm?.city ?? '');
+    _stateController = TextEditingController(text: farm?.state ?? '');
+    _areaController = TextEditingController(
+      text: farm == null || farm.areaHa == 0
+          ? ''
+          : farm.areaHa.toStringAsFixed(1),
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _cityController.dispose();
+    _stateController.dispose();
+    _areaController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.farm == null ? 'Cadastrar fazenda' : 'Editar fazenda'),
       content: _FarmFormFields(
-        nameController: nameController,
-        cityController: cityController,
-        stateController: stateController,
-        areaController: areaController,
+        nameController: _nameController,
+        cityController: _cityController,
+        stateController: _stateController,
+        areaController: _areaController,
       ),
       actions: [
         TextButton(
           onPressed: () {
             SoloforteKeyboardDismiss.dismiss();
-            Navigator.of(dialogContext).pop();
+            Navigator.of(context).pop();
           },
           child: const Text('Cancelar'),
         ),
         FilledButton(
           onPressed: () {
-            final name = nameController.text.trim();
+            final name = _nameController.text.trim();
             if (name.isEmpty) return;
             SoloforteKeyboardDismiss.dismiss();
-            Navigator.of(dialogContext).pop(
+            Navigator.of(context).pop(
               _FarmFormData(
                 name: name,
-                city: cityController.text.trim(),
-                state: stateController.text.trim(),
-                areaHa: _parseArea(areaController.text),
+                city: _cityController.text.trim(),
+                state: _stateController.text.trim(),
+                areaHa: _parseArea(_areaController.text),
               ),
             );
           },
           child: const Text('Salvar'),
         ),
       ],
-    ),
-  ).whenComplete(() {
-    SoloforteKeyboardDismiss.dismiss();
-    nameController.dispose();
-    cityController.dispose();
-    stateController.dispose();
-    areaController.dispose();
-  });
+    );
+  }
 }
 
 Future<bool?> _confirmDelete(
@@ -86,50 +115,77 @@ Future<_FieldFormData?> _showFieldFormDialog(
   BuildContext context, {
   ProducerOwnField? field,
 }) {
-  final nameController = TextEditingController(text: field?.name ?? '');
-  final areaController = TextEditingController(
-    text: field == null || field.areaHa == 0
-        ? ''
-        : field.areaHa.toStringAsFixed(1),
-  );
-
   return showDialog<_FieldFormData>(
     context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: Text(field == null ? 'Cadastrar talhão' : 'Editar talhão'),
+    builder: (dialogContext) => _FieldFormDialog(field: field),
+  );
+}
+
+class _FieldFormDialog extends StatefulWidget {
+  const _FieldFormDialog({this.field});
+
+  final ProducerOwnField? field;
+
+  @override
+  State<_FieldFormDialog> createState() => _FieldFormDialogState();
+}
+
+class _FieldFormDialogState extends State<_FieldFormDialog> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _areaController;
+
+  @override
+  void initState() {
+    super.initState();
+    final field = widget.field;
+    _nameController = TextEditingController(text: field?.name ?? '');
+    _areaController = TextEditingController(
+      text: field == null || field.areaHa == 0
+          ? ''
+          : field.areaHa.toStringAsFixed(1),
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _areaController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.field == null ? 'Cadastrar talhão' : 'Editar talhão'),
       content: _FieldFormFields(
-        nameController: nameController,
-        areaController: areaController,
+        nameController: _nameController,
+        areaController: _areaController,
       ),
       actions: [
         TextButton(
           onPressed: () {
             SoloforteKeyboardDismiss.dismiss();
-            Navigator.of(dialogContext).pop();
+            Navigator.of(context).pop();
           },
           child: const Text('Cancelar'),
         ),
         FilledButton(
           onPressed: () {
-            final name = nameController.text.trim();
+            final name = _nameController.text.trim();
             if (name.isEmpty) return;
             SoloforteKeyboardDismiss.dismiss();
-            Navigator.of(dialogContext).pop(
+            Navigator.of(context).pop(
               _FieldFormData(
                 name: name,
-                areaHa: _parseArea(areaController.text),
+                areaHa: _parseArea(_areaController.text),
               ),
             );
           },
           child: const Text('Salvar'),
         ),
       ],
-    ),
-  ).whenComplete(() {
-    SoloforteKeyboardDismiss.dismiss();
-    nameController.dispose();
-    areaController.dispose();
-  });
+    );
+  }
 }
 
 double _parseArea(String value) {
