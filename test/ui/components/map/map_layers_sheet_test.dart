@@ -6,10 +6,17 @@ import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/core/services/connectivity_service.dart';
+import 'package:soloforte_app/core/session/session_controller.dart';
+import 'package:soloforte_app/core/session/session_models.dart';
 import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/ui/components/map/map_layer_preferences_section.dart';
 import 'package:soloforte_app/ui/components/map/map_layers_sheet.dart';
+
+class _BareSessionController extends SessionController {
+  @override
+  SessionState build() => const SessionUnknown();
+}
 
 void main() {
   group('LayersSheet ações operacionais', () {
@@ -187,6 +194,7 @@ Future<void> _pumpLayersSheet(
         connectivityServiceProvider.overrideWithValue(
           const _FakeConnectivityService(initialValue: true),
         ),
+        sessionControllerProvider.overrideWith(_BareSessionController.new),
       ],
       child: MaterialApp(
         home: Scaffold(

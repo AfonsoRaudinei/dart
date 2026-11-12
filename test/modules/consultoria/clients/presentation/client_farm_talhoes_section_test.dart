@@ -10,11 +10,18 @@ import 'package:soloforte_app/core/contracts/i_ndvi_latest_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_ndvi_latest_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/ndvi_latest_summary.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
+import 'package:soloforte_app/core/session/session_controller.dart';
+import 'package:soloforte_app/core/session/session_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/client_detail_farm_sections.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_map_preview.dart';
+
+class _BareSessionController extends SessionController {
+  @override
+  SessionState build() => const SessionUnknown();
+}
 
 void main() {
   late PreferencesService preferences;
@@ -85,6 +92,7 @@ void main() {
       ProviderScope(
         overrides: [
           preferencesServiceProvider.overrideWithValue(preferences),
+          sessionControllerProvider.overrideWith(_BareSessionController.new),
           farmLinkedFieldsProvider.overrideWith(
             (ref, farmId) async => linkedFields,
           ),
@@ -143,6 +151,7 @@ void main() {
       ProviderScope(
         overrides: [
           preferencesServiceProvider.overrideWithValue(preferences),
+          sessionControllerProvider.overrideWith(_BareSessionController.new),
           farmLinkedFieldsProvider.overrideWith(
             (ref, farmId) async => linkedFields,
           ),
@@ -191,6 +200,7 @@ void main() {
       ProviderScope(
         overrides: [
           preferencesServiceProvider.overrideWithValue(preferences),
+          sessionControllerProvider.overrideWith(_BareSessionController.new),
           farmLinkedFieldsProvider.overrideWith(
             (ref, farmId) async => twoDrawingFields,
           ),
@@ -225,6 +235,7 @@ void main() {
         ProviderScope(
           overrides: [
             preferencesServiceProvider.overrideWithValue(preferences),
+            sessionControllerProvider.overrideWith(_BareSessionController.new),
             farmLinkedFieldsProvider.overrideWith(
               (ref, farmId) async => linkedFields,
             ),
@@ -274,6 +285,7 @@ void main() {
       ProviderScope(
         overrides: [
           preferencesServiceProvider.overrideWithValue(preferences),
+          sessionControllerProvider.overrideWith(_BareSessionController.new),
           farmLinkedFieldsProvider.overrideWith(
             (ref, farmId) async => linkedFields,
           ),
