@@ -70,6 +70,9 @@ class _Access implements IOccurrenceAccessReader {
   Future<Set<String>> loadActiveClientIds() async => {'cli-1'};
 
   @override
+  Future<Set<String>> loadActiveFieldIdsForOccurrences() async => const {};
+
+  @override
   Future<Map<String, String>> loadLinkedClientNames() async => {};
 }
 

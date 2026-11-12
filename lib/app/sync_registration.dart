@@ -16,12 +16,14 @@ import '../modules/consultoria/relatorios/repositories/relatorio_repository_impl
 import '../modules/marketing/data/repositories/marketing_case_repository_impl.dart';
 import '../modules/marketing/data/services/marketing_sync_service.dart';
 import '../modules/carteira/data/carteira_sync_service.dart';
+import 'producer_linked_drawing_sync_service.dart';
 
 void registerSyncModules(SyncOrchestrator orchestrator) {
   final supabase = Supabase.instance.client;
   orchestrator.registerModule(AgronomicSyncModule(supabase));
   orchestrator.registerModule(CarteiraSyncModule(supabase));
   orchestrator.registerModule(DrawingSyncModule());
+  orchestrator.registerModule(ProducerLinkedDrawingSyncModule(supabase));
   orchestrator.registerModule(OccurrenceSyncModule(supabase));
   orchestrator.registerModule(VisitSyncModule(supabase));
   orchestrator.registerModule(AgendaSyncModule(supabase));
@@ -60,6 +62,24 @@ class DrawingSyncModule implements SyncModule {
   int get syncTier => 1;
   @override
   Future<void> sync() => DrawingSyncService().synchronize();
+}
+
+class ProducerLinkedDrawingSyncModule implements SyncModule {
+  ProducerLinkedDrawingSyncModule(this.supabase);
+
+  final SupabaseClient supabase;
+
+  @override
+  String get name => 'Desenhos vinculados (produtor)';
+
+  @override
+  int get syncTier => 1;
+
+  @override
+  Future<void> sync() => ProducerLinkedDrawingSyncService(
+    supabase: supabase,
+    linkRepository: ProducerLinkRepository(supabase),
+  ).pullLinkedDrawings();
 }
 
 class OccurrenceSyncModule implements SyncModule {
