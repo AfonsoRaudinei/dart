@@ -13,7 +13,11 @@ import '../../../../modules/consultoria/clients/domain/agronomic_models.dart';
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
 import '../../../../modules/produtor/data/linked_consultant_geometry.dart';
+import '../../../../modules/produtor/data/producer_link_models.dart';
 import '../../../../modules/produtor/data/producer_link_repository.dart';
+import '../../../../modules/produtor/data/producer_property_repository.dart';
+import '../../../components/map/widgets/producer_map_context_card.dart';
+import '../handlers/visit_check_in_map_focus.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/dashboard/services/location_service.dart';
@@ -58,7 +62,11 @@ OfflineCameraChoice resolveOfflineCamera({
   required bool hasStoredFarmPoints,
   required bool fieldsLoading,
   required bool gpsFixAvailable,
+  bool producerPropertyLoading = false,
 }) {
+  if (isProducer && producerPropertyLoading) {
+    return OfflineCameraChoice.wait;
+  }
   if (isProducer && hasStoredFarmPoints) {
     return OfflineCameraChoice.storedFarm;
   }
@@ -78,6 +86,27 @@ bool shouldCommitGpsMove({
   if (explicitCameraIntent) return false;
   return viewport != InitialViewportState.applied &&
       viewport != InitialViewportState.aborted;
+}
+
+/// Alinha filtros do mapa com a fazenda do produtor (mesma regra do context card).
+@visibleForTesting
+void syncProducerMapFarmSelection(
+  WidgetRef ref,
+  List<ProducerOwnFarm> farms,
+  String? selectedFarmId,
+) {
+  if (farms.isEmpty) return;
+  final selectedExists = farms.any((farm) => farm.id == selectedFarmId);
+  if (selectedFarmId != null && selectedExists) {
+    ref.read(selectedFarmIdProvider.notifier).state = selectedFarmId;
+    return;
+  }
+
+  final farm = farms.first;
+  ref.read(producerMapSelectedFarmIdProvider.notifier).state = farm.id;
+  ref.read(producerMapSelectedFieldIdProvider.notifier).state = null;
+  ref.read(selectedFarmIdProvider.notifier).state = farm.id;
+  ref.read(selectedTalhaoIdProvider.notifier).state = null;
 }
 
 class MapViewportController {
@@ -115,7 +144,62 @@ class MapViewportController {
 
     final user = Supabase.instance.client.auth.currentUser;
     final isProducer = viewportUsesProducerStrategy(user);
-    final fieldsState = ref.read(mapFieldsProvider);
+
+    var producerPropertyLoading = false;
+    if (isProducer) {
+      final dashboardAsync = ref.read(producerPropertyDashboardProvider);
+      producerPropertyLoading = dashboardAsync.isLoading;
+      if (dashboardAsync.isLoading) {
+        ref.read(viewportStateProvider.notifier).state =
+            InitialViewportState.waitingForData;
+        return;
+      }
+      if (dashboardAsync.hasValue) {
+        final dashboard = dashboardAsync.value!;
+        final farms = dashboard.ownProperty.farms;
+        syncProducerMapFarmSelection(
+          ref,
+          farms,
+          ref.read(producerMapSelectedFarmIdProvider),
+        );
+        if (farms.isNotEmpty) {
+          final farmId = ref.read(selectedFarmIdProvider);
+          final focusPoints = await resolveVisitCheckInMapFocusPoints(
+            ref: ref,
+            clientId: dashboard.ownProperty.clientId,
+            farmId: farmId,
+            talhaoId: null,
+          );
+          if (!isMounted) return;
+          if (ref.read(explicitMapCameraIntentProvider)) return;
+          final vpFocus = ref.read(viewportStateProvider);
+          if (vpFocus == InitialViewportState.applied ||
+              vpFocus == InitialViewportState.aborted) {
+            return;
+          }
+          if (focusPoints.isNotEmpty &&
+              fitVisitFocusPointsOnMap(mapController, focusPoints)) {
+            ref.read(viewportStateProvider.notifier).state =
+                InitialViewportState.applied;
+            return;
+          }
+        }
+      }
+    }
+
+    AsyncValue<List<Talhao>> fieldsState;
+    if (isProducer) {
+      try {
+        final fields = await ref.read(mapFieldsProvider.future);
+        if (!isMounted) return;
+        fieldsState = AsyncData(fields);
+      } catch (error, stackTrace) {
+        fieldsState = AsyncError(error, stackTrace);
+      }
+    } else {
+      fieldsState = ref.read(mapFieldsProvider);
+    }
+
     var farmPoints = polygonPointsFromFields(fieldsState.valueOrNull);
     if (farmPoints.isEmpty && !fieldsState.isLoading) {
       farmPoints = await _linkedConsultantCameraPoints(
@@ -135,7 +219,8 @@ class MapViewportController {
       isProducer: isProducer,
       hasStoredFarmPoints: farmPoints.isNotEmpty,
       fieldsLoading: fieldsState.isLoading,
-      gpsFixAvailable: true,
+      gpsFixAvailable: !isProducer || !producerPropertyLoading,
+      producerPropertyLoading: producerPropertyLoading,
     );
 
     if (choice == OfflineCameraChoice.storedFarm) {
