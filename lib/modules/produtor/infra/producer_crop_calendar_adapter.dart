@@ -4,7 +4,7 @@ import '../../../core/contracts/i_drawing_field_writer.dart';
 import '../../../core/contracts/i_producer_crop_calendar.dart';
 import '../../../core/session/local_session_identity.dart';
 
-/// Lê e, na propriedade própria, grava o plantio do talhão do mapa.
+/// Lê e grava o plantio dos talhões da conta (`user_id`, `tipo = talhao`).
 ///
 /// Não importa `drawing/` nem `consultoria/`. A escrita passa por
 /// [IDrawingFieldWriter]. ADR-062.
@@ -33,7 +33,6 @@ class ProducerCropCalendarAdapter implements IProducerCropCalendar {
         'id',
         'nome',
         'fazenda_id',
-        'cliente_id',
         'cultura',
         'safra',
         'data_plantio',
@@ -65,10 +64,7 @@ class ProducerCropCalendarAdapter implements IProducerCropCalendar {
             dataPlantio: _blankToNull(row['data_plantio'] as String?),
             dataEmergencia: _blankToNull(row['data_emergencia'] as String?),
             cicloDias: _cicloDias(row['ciclo_dias']),
-            canEdit: plantingIsOwn(
-              userId: userId,
-              clienteId: row['cliente_id'] as String?,
-            ),
+            canEdit: true,
           );
         })
         .whereType<ProducerCropPlanting>()
@@ -94,19 +90,13 @@ class ProducerCropCalendarAdapter implements IProducerCropCalendar {
     final db = await _openDatabase();
     final rows = await db.query(
       'drawings',
-      columns: const ['cliente_id'],
+      columns: const ['id'],
       where: 'id = ? AND user_id = ? AND deleted_at IS NULL AND ativo = 1',
       whereArgs: [id, userId],
       limit: 1,
     );
     if (rows.isEmpty) {
       throw StateError('Talhão não encontrado.');
-    }
-    if (!plantingIsOwn(
-      userId: userId,
-      clienteId: rows.first['cliente_id'] as String?,
-    )) {
-      throw StateError('Plantio do consultor é somente leitura.');
     }
 
     await _fieldWriter.updateFieldMetadata(
@@ -144,12 +134,6 @@ class ProducerCropCalendarAdapter implements IProducerCropCalendar {
     }
     return names;
   }
-}
-
-/// Talhão próprio: sem cliente ou com o cliente igual ao usuário atual.
-bool plantingIsOwn({required String userId, required String? clienteId}) {
-  final client = clienteId?.trim() ?? '';
-  return client.isEmpty || client == userId;
 }
 
 String? _blankToNull(String? value) {
