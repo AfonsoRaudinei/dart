@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/geo/geo_json_polygon_geometry.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
-import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
 import 'package:soloforte_app/modules/consultoria/fields/data/repositories/field_repository.dart';
@@ -101,7 +100,6 @@ final selectedFarmIdProvider = StateProvider<String?>((ref) => null);
 
 // Fields for Selected Farm
 final mapFieldsProvider = FutureProvider.autoDispose<List<Talhao>>((ref) async {
-  ref.watch(sessionControllerProvider);
   final farmId = ref.watch(selectedFarmIdProvider);
   final repo = ref.read(fieldRepositoryProvider);
   final isProdutor = ref.watch(currentUserRoleProvider).isProdutor;
