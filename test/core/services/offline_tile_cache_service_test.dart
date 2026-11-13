@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -345,5 +346,105 @@ void main() {
         expect(file.existsSync(), isFalse);
       },
     );
+  });
+
+  group('OfflineTileCacheService.persistedTileFile', () {
+    late Directory tempDir;
+
+    setUp(() async {
+      tempDir = await Directory.systemTemp.createTemp('tile_readthrough');
+    });
+
+    tearDown(() async {
+      if (tempDir.existsSync()) {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    test('pasta do usuário vazia serve o tile da pasta antiga', () {
+      final legacyRoot = Directory('${tempDir.path}/offline_tiles')
+        ..createSync(recursive: true);
+      final userRoot = Directory('${tempDir.path}/offline_tiles/users/user-a')
+        ..createSync(recursive: true);
+      const layer = 'layer-sat';
+      final legacyFile = File(
+        OfflineTileCacheService.tileFilePath(
+          rootPath: legacyRoot.path,
+          layerKey: layer,
+          z: 12,
+          x: 1500,
+          y: 2300,
+        ),
+      );
+      legacyFile.parent.createSync(recursive: true);
+      legacyFile.writeAsBytesSync(const [1, 2, 3, 4]);
+
+      expect(
+        OfflineTileCacheService.legacyRootBeside(userRoot.path),
+        legacyRoot.path,
+      );
+
+      final resolved = OfflineTileCacheService.persistedTileFile(
+        offlineRoot: userRoot.path,
+        legacyRoot: OfflineTileCacheService.legacyRootBeside(userRoot.path),
+        layerKey: layer,
+        z: 12,
+        x: 1500,
+        y: 2300,
+      );
+
+      expect(resolved?.path, legacyFile.path);
+      expect(legacyFile.existsSync(), isTrue);
+    });
+
+    test('arquivo do usuário vence a pasta antiga', () {
+      final legacyRoot = Directory('${tempDir.path}/offline_tiles')
+        ..createSync(recursive: true);
+      final userRoot = Directory('${tempDir.path}/offline_tiles/users/user-a')
+        ..createSync(recursive: true);
+      const layer = 'layer-sat';
+      final legacyFile = File(
+        OfflineTileCacheService.tileFilePath(
+          rootPath: legacyRoot.path,
+          layerKey: layer,
+          z: 12,
+          x: 1,
+          y: 2,
+        ),
+      );
+      final userFile = File(
+        OfflineTileCacheService.tileFilePath(
+          rootPath: userRoot.path,
+          layerKey: layer,
+          z: 12,
+          x: 1,
+          y: 2,
+        ),
+      );
+      legacyFile.parent.createSync(recursive: true);
+      userFile.parent.createSync(recursive: true);
+      legacyFile.writeAsBytesSync(const [1]);
+      userFile.writeAsBytesSync(const [9]);
+
+      final resolved = OfflineTileCacheService.persistedTileFile(
+        offlineRoot: userRoot.path,
+        legacyRoot: legacyRoot.path,
+        layerKey: layer,
+        z: 12,
+        x: 1,
+        y: 2,
+      );
+
+      expect(resolved?.path, userFile.path);
+    });
+
+    test('pasta sem usuário não aponta legado', () {
+      expect(
+        OfflineTileCacheService.legacyRootBeside(
+          '${tempDir.path}/offline_tiles',
+        ),
+        isNull,
+      );
+    });
   });
 }
