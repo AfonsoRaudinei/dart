@@ -4,7 +4,7 @@ import '../../../core/contracts/i_drawing_field_writer.dart';
 import '../../../core/contracts/i_producer_crop_calendar.dart';
 import '../../../core/session/local_session_identity.dart';
 
-/// Lê e grava o plantio dos talhões da conta (`user_id`, `tipo = talhao`).
+/// Lê e, na propriedade própria, grava o plantio do talhão do mapa.
 ///
 /// Não importa `drawing/` nem `consultoria/`. A escrita passa por
 /// [IDrawingFieldWriter]. ADR-062.
@@ -33,6 +33,7 @@ class ProducerCropCalendarAdapter implements IProducerCropCalendar {
         'id',
         'nome',
         'fazenda_id',
+        'cliente_id',
         'cultura',
         'safra',
         'data_plantio',
@@ -48,6 +49,7 @@ class ProducerCropCalendarAdapter implements IProducerCropCalendar {
       db,
       rows.map((row) => row['fazenda_id'] as String?).whereType<String>(),
     );
+    final ownClientIds = await _ownClientIds(db, userId);
 
     return rows
         .map((row) {
@@ -64,7 +66,11 @@ class ProducerCropCalendarAdapter implements IProducerCropCalendar {
             dataPlantio: _blankToNull(row['data_plantio'] as String?),
             dataEmergencia: _blankToNull(row['data_emergencia'] as String?),
             cicloDias: _cicloDias(row['ciclo_dias']),
-            canEdit: true,
+            canEdit: plantingIsOwn(
+              userId: userId,
+              clienteId: row['cliente_id'] as String?,
+              ownClientIds: ownClientIds,
+            ),
           );
         })
         .whereType<ProducerCropPlanting>()
@@ -90,13 +96,21 @@ class ProducerCropCalendarAdapter implements IProducerCropCalendar {
     final db = await _openDatabase();
     final rows = await db.query(
       'drawings',
-      columns: const ['id'],
+      columns: const ['cliente_id'],
       where: 'id = ? AND user_id = ? AND deleted_at IS NULL AND ativo = 1',
       whereArgs: [id, userId],
       limit: 1,
     );
     if (rows.isEmpty) {
       throw StateError('Talhão não encontrado.');
+    }
+    final ownClientIds = await _ownClientIds(db, userId);
+    if (!plantingIsOwn(
+      userId: userId,
+      clienteId: rows.first['cliente_id'] as String?,
+      ownClientIds: ownClientIds,
+    )) {
+      throw StateError('Plantio do consultor é somente leitura.');
     }
 
     await _fieldWriter.updateFieldMetadata(
@@ -134,6 +148,34 @@ class ProducerCropCalendarAdapter implements IProducerCropCalendar {
     }
     return names;
   }
+
+  Future<Set<String>> _ownClientIds(Database db, String userId) async {
+    final rows = await db.query(
+      'clients',
+      columns: const ['id'],
+      where:
+          'user_id = ? AND deleted_at IS NULL AND (id = ? OR observacoes = ?)',
+      whereArgs: [userId, userId, ownProducerClientObservation],
+    );
+    return rows
+        .map((row) => (row['id'] as String?)?.trim() ?? '')
+        .where((id) => id.isNotEmpty)
+        .toSet();
+  }
+}
+
+/// Marca do cadastro criado para a propriedade do produtor.
+const ownProducerClientObservation = 'Cadastro próprio do produtor';
+
+/// Talhão próprio: sem cliente, cliente da sessão, ou cadastro próprio.
+bool plantingIsOwn({
+  required String userId,
+  required String? clienteId,
+  Set<String> ownClientIds = const {},
+}) {
+  final client = clienteId?.trim() ?? '';
+  if (client.isEmpty || client == userId) return true;
+  return ownClientIds.contains(client);
 }
 
 String? _blankToNull(String? value) {
