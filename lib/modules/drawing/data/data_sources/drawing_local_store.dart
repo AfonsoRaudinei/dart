@@ -304,6 +304,29 @@ class DrawingLocalStore {
     }
   }
 
+  /// Atribui ao usuário logado só desenhos gravados sem sessão (`user_id` vazio).
+  ///
+  /// Linha de outro usuário não muda. Tombstone `deleted_local` ganha o id
+  /// e mantém o status, para o push não recriar o polígono.
+  Future<int> adoptOrphanDrawings(String userId) async {
+    final normalized = userId.trim();
+    if (normalized.isEmpty) return 0;
+    final db = await _dbHelper.database;
+    final claimed = await db.update(
+      'drawings',
+      {'user_id': normalized, 'sync_status': SyncStatus.pending_sync.toJson()},
+      where: "user_id = '' AND sync_status != ?",
+      whereArgs: [SyncStatus.deleted_local.toJson()],
+    );
+    final tombstones = await db.update(
+      'drawings',
+      {'user_id': normalized},
+      where: "user_id = '' AND sync_status = ?",
+      whereArgs: [SyncStatus.deleted_local.toJson()],
+    );
+    return claimed + tombstones;
+  }
+
   String _resolveScopedUserId() {
     // Fonte única: LocalSessionIdentity (prefs + lastKnown no bootstrap).
     return _identityStore.resolveScopedUserId(
