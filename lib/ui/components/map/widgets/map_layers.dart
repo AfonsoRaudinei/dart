@@ -68,7 +68,9 @@ class _MapLayersWidgetState extends ConsumerState<MapLayersWidget> {
     required String? offlineRoot,
     required String layerKey,
   }) {
-    if (offlineRoot == null) return _persistedTiles;
+    // Sem a pasta, o TileLayer gravaria um provider de rede e não o largaria
+    // mais. A tela ficaria branca esperando o satélite mesmo com tile no disco.
+    if (offlineRoot == null) return null;
     final legacyRoot = OfflineTileCacheService.legacyRootBeside(offlineRoot);
     if (_persistedTiles != null && _persistedTilesKey == layerKey) {
       _persistedTiles!.retarget(
@@ -123,26 +125,27 @@ class _MapLayersWidgetState extends ConsumerState<MapLayersWidget> {
 
     return Stack(
       children: [
-        TileLayer(
-          key: ValueKey('base-tiles-$layerKey'),
-          urlTemplate: tileConfig.urlTemplate,
-          fallbackUrl: tileConfig.fallbackUrl,
-          subdomains: tileConfig.subdomains,
-          tileProvider: persistedTiles,
-          userAgentPackageName: MapConfig.userAgent,
-          maxZoom: tileConfig.maxZoom,
-          maxNativeZoom: tileConfig.maxNativeZoom,
-          retinaMode:
-              tileConfig.retinaMode && RetinaMode.isHighDensity(context),
-          keepBuffer: 3,
-          panBuffer: 1,
-          errorTileCallback: (tile, error, stackTrace) {
-            MapLogger.logError(
-              'Tile error on $activeLayer: $error',
-              stackTrace,
-            );
-          },
-        ),
+        if (persistedTiles != null)
+          TileLayer(
+            key: ValueKey('base-tiles-$layerKey'),
+            urlTemplate: tileConfig.urlTemplate,
+            fallbackUrl: tileConfig.fallbackUrl,
+            subdomains: tileConfig.subdomains,
+            tileProvider: persistedTiles,
+            userAgentPackageName: MapConfig.userAgent,
+            maxZoom: tileConfig.maxZoom,
+            maxNativeZoom: tileConfig.maxNativeZoom,
+            retinaMode:
+                tileConfig.retinaMode && RetinaMode.isHighDensity(context),
+            keepBuffer: 1,
+            panBuffer: 0,
+            errorTileCallback: (tile, error, stackTrace) {
+              MapLogger.logError(
+                'Tile error on $activeLayer: $error',
+                stackTrace,
+              );
+            },
+          ),
         if (showCerradoOverlay)
           Opacity(
             opacity: CerradoSatelliteOverlay.defaultOpacity,
