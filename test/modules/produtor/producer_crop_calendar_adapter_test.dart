@@ -33,6 +33,19 @@ void main() {
       )
     ''');
     await db.execute('''
+      CREATE TABLE clients (
+        id TEXT PRIMARY KEY,
+        user_id TEXT,
+        observacoes TEXT,
+        deleted_at TEXT
+      )
+    ''');
+    await db.insert('clients', {
+      'id': 'property-client',
+      'user_id': 'produtor',
+      'observacoes': ownProducerClientObservation,
+    });
+    await db.execute('''
       CREATE TABLE farms (
         id TEXT PRIMARY KEY,
         nome TEXT,
@@ -61,6 +74,15 @@ void main() {
       'tipo': 'talhao',
       'fazenda_id': 'farm-1',
       'cliente_id': '',
+      'ativo': 1,
+    });
+    await db.insert('drawings', {
+      'id': 'property-1',
+      'user_id': 'produtor',
+      'nome': 'Talhão da propriedade',
+      'tipo': 'talhao',
+      'fazenda_id': 'farm-1',
+      'cliente_id': 'property-client',
       'ativo': 1,
     });
     await db.insert('drawings', {
@@ -99,6 +121,7 @@ void main() {
     expect(plantings.map((item) => item.fieldId), [
       'own-1',
       'own-empty',
+      'property-1',
       'linked-1',
     ]);
 
@@ -111,10 +134,11 @@ void main() {
 
     expect(plantings[1].canEdit, isTrue);
     expect(plantings[1].dataPlantio, isNull);
-    expect(plantings.last.canEdit, isTrue);
+    expect(plantings[2].canEdit, isTrue);
+    expect(plantings.last.canEdit, isFalse);
   });
 
-  test('grava plantio nos talhões da conta', () async {
+  test('grava plantio só no talhão próprio', () async {
     await adapter.saveOwnPlanting(
       fieldId: 'own-empty',
       dataPlantio: '2026-03-01',
@@ -127,13 +151,19 @@ void main() {
     expect(writer.cicloDias, '110');
 
     await adapter.saveOwnPlanting(
-      fieldId: 'linked-1',
+      fieldId: 'property-1',
       dataPlantio: '2026-04-02',
     );
-    expect(writer.fieldId, 'linked-1');
-    expect(writer.dataPlantio, '2026-04-02');
-    expect(writer.dataEmergencia, isNull);
-    expect(writer.cicloDias, isNull);
+    expect(writer.fieldId, 'property-1');
+
+    expect(
+      () => adapter.saveOwnPlanting(
+        fieldId: 'linked-1',
+        dataPlantio: '2026-04-02',
+      ),
+      throwsStateError,
+    );
+    expect(writer.fieldId, 'property-1');
   });
 
   test('sem usuário não lista plantio', () async {
