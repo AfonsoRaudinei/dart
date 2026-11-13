@@ -24,9 +24,7 @@ de Plantio (ADR-059). O produtor não pode importar `consultoria/` nem
 3. Contrato `IProducerCropCalendar` em `core/contracts/`. O adapter em
    `produtor/infra` lê `drawings` do usuário (`tipo = talhao`) e o nome da
    fazenda. A escrita usa `IDrawingFieldWriter.updateFieldMetadata`.
-4. Talhão cujo `cliente_id` está vazio ou é o do produtor pode receber
-   início, emergência e ciclo. Talhão de outro cliente (vínculo do
-   consultor) é somente leitura.
+4. O produtor grava início, emergência e ciclo nos talhões da própria conta (`user_id`).
 5. Colheita aproximada = emergência + `ciclo_dias`. Sem emergência,
    plantio + `ciclo_dias`. Sem ciclo, a tela diz que o ciclo não foi
    informado. Sem duração fixa de cultura.
