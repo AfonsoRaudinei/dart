@@ -191,6 +191,8 @@ void main() {
 
     expect(find.byType(DatePickerDialog), findsNothing);
     expect(calendar.saves, 0);
+    expect(find.text('Adicionar'), findsNothing);
+    expect(find.text('—'), findsNWidgets(3));
   });
 }
 
