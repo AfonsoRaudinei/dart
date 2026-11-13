@@ -70,6 +70,7 @@ import '../layers/field_ndvi_overlay_layer.dart';
 import '../layers/linked_consultant_field_layer.dart';
 import '../layers/talhao_polygon_layer.dart';
 import 'drawing_map_behavior_listener.dart';
+import 'map_session_data_reload.dart';
 import 'map_performance_hosts.dart';
 
 /// Orquestrador do build() de PrivateMapScreen.
@@ -543,6 +544,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
               onMapUserInteraction: onMapUserInteraction,
             ),
           ),
+          const MapSessionDataReload(),
           DrawingMapBehaviorListener(
             mapController: mapController,
             isMapReady: isMapReady,
