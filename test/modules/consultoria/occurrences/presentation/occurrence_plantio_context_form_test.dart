@@ -19,6 +19,7 @@ import 'package:soloforte_app/modules/consultoria/occurrences/domain/occurrence_
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/models/occurrence_talhao_prefill.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/providers/occurrence_location_provider.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/providers/occurrence_plantio_context_provider.dart';
+import 'package:soloforte_app/core/domain/soy_phenology.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
 

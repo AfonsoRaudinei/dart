@@ -6,9 +6,10 @@ import 'package:soloforte_app/core/widgets/photo/soloforte_photo_picker_sheet.da
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import 'package:soloforte_app/core/domain/occurrence_recomendacao_ordem.dart';
+import 'package:soloforte_app/core/domain/soy_phenology.dart';
 
 import '../../domain/occurrence.dart';
-import 'occurrence_fenologia_data.dart';
+import 'occurrence_fenologia_data.dart' hide EstadioData, kEstadios;
 
 // ════════════════════════════════════════════════════════════════════════════
 // WIDGETS AUXILIARES DE OccurrenceCreationSheet

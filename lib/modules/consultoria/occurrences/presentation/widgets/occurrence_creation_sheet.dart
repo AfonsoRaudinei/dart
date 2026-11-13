@@ -36,7 +36,8 @@ import '../models/occurrence_form_draft.dart';
 import 'occurrence_amostra_solo_section.dart';
 import 'occurrence_client_selector.dart';
 import 'occurrence_date_field.dart';
-import 'occurrence_fenologia_data.dart';
+import 'package:soloforte_app/core/domain/soy_phenology.dart';
+import 'occurrence_fenologia_data.dart' hide EstadioData, kEstadios;
 import 'occurrence_form_widgets.dart';
 import 'occurrence_ordem_aplicacao_controllers.dart';
 import 'occurrence_audio_field.dart';
@@ -535,9 +536,7 @@ class _OccurrenceCreationSheetState
                     const SizedBox(height: 20),
                   ],
 
-                  const OccurrenceSectionHeader(
-                    title: 'Estádio Fenológico',
-                  ),
+                  const OccurrenceSectionHeader(title: 'Estádio Fenológico'),
                   const SizedBox(height: 10),
                   OccurrenceEstadioDropdown(
                     selected: _estadio,
