@@ -15,7 +15,7 @@ import '../../occurrences/domain/occurrence_historico_talhao.dart';
 import '../../occurrences/domain/occurrence_soy_age.dart' as soy_age;
 import '../../occurrences/domain/occurrence_photo_paths.dart';
 import '../../occurrences/presentation/controllers/occurrence_controller.dart';
-import '../../occurrences/presentation/widgets/occurrence_fenologia_data.dart';
+import '../../../../core/domain/soy_phenology.dart';
 import '../../relatorio_visita/data/image_storage_service.dart';
 import '../presentation/relatorios_occurrence_location_resolver.dart';
 import 'relatorio_visit_html_builder.dart';

@@ -1,22 +1,5 @@
 part of 'occurrence_creation_sheet.dart';
 
-/// Estádio da soja pelos dias após a emergência (ADR-059).
-///
-/// `EstadioData.dap` conta a partir de VE = 0, ou seja, é DAE. O seed não é
-/// monotônico (R6/R7 abaixo de R5.5): vence o maior `dap` ≤ [dae]; empate
-/// fica com o primeiro da lista. Cultura informada que não seja soja → null.
-EstadioData? suggestedEstadioForDae({required int? dae, String? cultura}) {
-  if (dae == null || dae < 0) return null;
-  final crop = cultura?.trim().toLowerCase() ?? '';
-  if (crop.isNotEmpty && !crop.contains('soja')) return null;
-  EstadioData? best;
-  for (final estadio in kEstadios) {
-    if (estadio.dap > dae) continue;
-    if (best == null || estadio.dap > best.dap) best = estadio;
-  }
-  return best;
-}
-
 /// Valores de plantio que vão para a ocorrência ao salvar.
 typedef _PlantioSubmitValues = ({
   String? cultivar,
