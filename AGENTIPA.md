@@ -20,9 +20,9 @@ Quando o usuário colar um erro do App Store Connect, gravar na mesma leitura �
 | 1.34.0 | train fechada + versão já aprovada | IPA 320 | ASC **90186** + **90062** |
 | 1.35.0 | train fechada + versão já aprovada | IPA 328, 13/nov/2026 | ASC **90186** + **90062**, entrega `ZVZELTZQW5PCOYOVIYDV4BMVNQ` |
 
-Próximo envio legal: train **1.36.0** ativa — `CFBundleShortVersionString` **1.36.0** (ou maior) e `CFBundleVersion` **> 330** (após aceite do 330 no ASC).
+**Envio agora (ASC):** train **1.36.0** · `CFBundleShortVersionString` **1.36.0** · build **330** (`1.36.0+330`) — linha IPA 330 (**enviar este**). Versões **1.34.0** e **1.35.0** permanecem fechadas.
 
-Train aberta atual: **1.36.0** · build candidato **330** (`1.36.0+330`). Versões **1.34.0** e **1.35.0** permanecem fechadas.
+**Depois que o ASC aceitar o build 330:** próximo archive na mesma train com `CFBundleVersion` **> 330**.
 
 ### Bloqueio de conta Apple (não é o binário)
 
