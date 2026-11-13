@@ -2,9 +2,12 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:flutter/painting.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:soloforte_app/core/services/offline_tile_cache_service.dart';
+import 'package:soloforte_app/core/services/persistent_offline_tile_provider.dart';
 
 import '../../support/path_provider_test_bindings.dart';
 
@@ -446,5 +449,97 @@ void main() {
         isNull,
       );
     });
+
+    test(
+      'bytes baixados ficam no disco e a leitura seguinte acha o arquivo',
+      () async {
+        const layer = 'layer-sat';
+        final file = File(
+          OfflineTileCacheService.tileFilePath(
+            rootPath: tempDir.path,
+            layerKey: layer,
+            z: 14,
+            x: 8,
+            y: 9,
+          ),
+        );
+
+        expect(
+          await OfflineTileCacheService.storeDownloadedTile(
+            file: file,
+            bytes: const [],
+          ),
+          isFalse,
+        );
+        expect(file.existsSync(), isFalse);
+
+        expect(
+          await OfflineTileCacheService.storeDownloadedTile(
+            file: file,
+            bytes: const [9, 8, 7],
+          ),
+          isTrue,
+        );
+
+        final resolved = OfflineTileCacheService.persistedTileFile(
+          offlineRoot: tempDir.path,
+          legacyRoot: null,
+          layerKey: layer,
+          z: 14,
+          x: 8,
+          y: 9,
+        );
+        expect(resolved?.path, file.path);
+      },
+    );
+  });
+
+  test('TileFetchSlots segura o pedido que passa do limite', () async {
+    final slots = TileFetchSlots(limit: 1);
+    await slots.acquire();
+    var entered = false;
+    final waiting = slots.acquire().then((_) {
+      entered = true;
+    });
+    await Future<void>.delayed(Duration.zero);
+    expect(entered, isFalse);
+    slots.release();
+    await waiting;
+    expect(entered, isTrue);
+    slots.release();
+  });
+
+  test('tile já gravado volta como arquivo, sem ir à rede', () async {
+    final root = await Directory.systemTemp.createTemp('tile_provider_hit');
+    addTearDown(() async {
+      if (root.existsSync()) root.deleteSync(recursive: true);
+    });
+    const layer = 'layer-sat';
+    final file = File(
+      OfflineTileCacheService.tileFilePath(
+        rootPath: root.path,
+        layerKey: layer,
+        z: 13,
+        x: 4,
+        y: 5,
+      ),
+    );
+    await OfflineTileCacheService.storeDownloadedTile(
+      file: file,
+      bytes: const [1, 2, 3, 4],
+    );
+    final provider = PersistentOfflineTileProvider(
+      offlineRoot: root.path,
+      layerKey: layer,
+    );
+    addTearDown(provider.dispose);
+
+    final image = provider.getImage(
+      const TileCoordinates(4, 5, 13),
+      TileLayer(urlTemplate: 'https://tiles.example/{z}/{x}/{y}.jpg'),
+    );
+
+    expect(image, isA<FileImage>());
+    expect((image as FileImage).file.path, file.path);
   });
 }
