@@ -46,11 +46,15 @@ Future<List<Map<String, dynamic>>> enrichTalhoesWithNdviLookup(
   final stopwatch = Stopwatch()..start();
   for (var i = 0; i < talhoes.length; i++) {
     final remaining = totalBudget - stopwatch.elapsed;
-    if (remaining <= Duration.zero) break;
+    // Sobra menor que o timer não abre outro lookup: no CI o timeout de 1 ms
+    // ainda cabia uma 4ª chamada dentro do teto.
+    if (remaining < const Duration(milliseconds: 20)) break;
     final timeout = remaining < perFieldTimeout ? remaining : perFieldTimeout;
     try {
-      final ndvi = await _resolveTalhaoNdvi(lookup, talhoes[i].talhaoId)
-          .timeout(timeout);
+      final ndvi = await _resolveTalhaoNdvi(
+        lookup,
+        talhoes[i].talhaoId,
+      ).timeout(timeout);
       if (ndvi == null) continue;
       enriched[i]['ndviImageSrc'] = ndvi.src;
       if (ndvi.caption != null) enriched[i]['ndviCaption'] = ndvi.caption;
