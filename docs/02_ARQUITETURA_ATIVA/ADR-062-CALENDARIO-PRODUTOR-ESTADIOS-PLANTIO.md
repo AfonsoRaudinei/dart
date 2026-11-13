@@ -26,8 +26,8 @@ de Plantio (ADR-059). O produtor não pode importar `consultoria/` nem
    fazenda. A escrita usa `IDrawingFieldWriter.updateFieldMetadata`.
 4. O produtor grava início, emergência e ciclo nos talhões da própria conta (`user_id`).
 5. Colheita aproximada = emergência + `ciclo_dias`. Sem emergência,
-   plantio + `ciclo_dias`. Sem ciclo, a tela diz que o ciclo não foi
-   informado. Sem duração fixa de cultura.
+   plantio + `ciclo_dias`. Sem ciclo, a linha do ciclo oferece incluir os
+   dias. Sem duração fixa de cultura.
 6. Estádio de hoje = maior `dap` menor ou igual ao DAE, só para soja
    (cultura vazia conta como soja). Cultura diferente não sugere estádio.
 7. Sem tabela nova e sem migration.
