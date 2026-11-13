@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import '../../../../core/services/offline_tile_cache_service.dart';
 import '../../../../core/services/persistent_offline_tile_provider.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/state/map_ui_providers.dart';
@@ -67,21 +68,22 @@ class _MapLayersWidgetState extends ConsumerState<MapLayersWidget> {
     required String? offlineRoot,
     required String layerKey,
   }) {
-    if (offlineRoot == null) {
-      _persistedTiles = null;
-      _persistedTilesKey = null;
-      return null;
-    }
-    final key = '$offlineRoot|$layerKey';
-    if (_persistedTiles != null && _persistedTilesKey == key) {
+    if (offlineRoot == null) return _persistedTiles;
+    final legacyRoot = OfflineTileCacheService.legacyRootBeside(offlineRoot);
+    if (_persistedTiles != null && _persistedTilesKey == layerKey) {
+      _persistedTiles!.retarget(
+        offlineRoot: offlineRoot,
+        layerKey: layerKey,
+        legacyRoot: legacyRoot,
+      );
       return _persistedTiles;
     }
-    final headers = <String, String>{};
-    _persistedTilesKey = key;
+    // Camada trocou: o TileLayer anterior descarta o provider no dispose.
+    _persistedTilesKey = layerKey;
     _persistedTiles = PersistentOfflineTileProvider(
       offlineRoot: offlineRoot,
       layerKey: layerKey,
-      headers: headers,
+      legacyRoot: legacyRoot,
     );
     return _persistedTiles;
   }
@@ -122,7 +124,7 @@ class _MapLayersWidgetState extends ConsumerState<MapLayersWidget> {
     return Stack(
       children: [
         TileLayer(
-          key: ValueKey('base-tiles-$offlineRoot-$layerKey'),
+          key: ValueKey('base-tiles-$layerKey'),
           urlTemplate: tileConfig.urlTemplate,
           fallbackUrl: tileConfig.fallbackUrl,
           subdomains: tileConfig.subdomains,
