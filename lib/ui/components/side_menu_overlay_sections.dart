@@ -71,7 +71,7 @@ class _SideMenuContent extends StatelessWidget {
                   _MenuItem(
                     icon: Icons.calendar_today_outlined,
                     label: 'Calendário',
-                    subtitle: 'Visitas confirmadas',
+                    subtitle: 'Plantio, estádios e visitas',
                     route: AppRoutes.producerCalendar,
                   ),
                   _MenuItem(
