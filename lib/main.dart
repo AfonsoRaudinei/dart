@@ -18,6 +18,7 @@ import 'core/contracts/i_active_visit_context_lookup_provider.dart';
 import 'core/contracts/i_occurrence_read_provider.dart';
 import 'core/contracts/i_occurrence_access_reader_provider.dart';
 import 'core/contracts/i_producer_visit_calendar_provider.dart';
+import 'core/contracts/i_producer_crop_calendar_provider.dart';
 import 'core/contracts/i_visit_photo_read_provider.dart';
 import 'core/contracts/i_agenda_session_bridge_provider.dart';
 import 'core/contracts/i_drawing_field_writer_provider.dart';
@@ -63,6 +64,7 @@ import 'modules/agenda/data/producer_visit_confirmation_store.dart';
 import 'modules/agenda/data/repositories/agenda_repository.dart';
 import 'modules/agenda/data/services/producer_visit_confirmation_sync.dart';
 import 'modules/agenda/infra/producer_visit_calendar_adapter.dart';
+import 'modules/produtor/infra/producer_crop_calendar_adapter.dart';
 import 'modules/agenda/infra/agenda_session_bridge_adapter.dart';
 import 'modules/agenda/infra/agenda_domain_adapters.dart';
 import 'modules/agenda/infra/agenda_ai_visit_writer_adapter.dart';
@@ -236,6 +238,12 @@ Future<void> main() async {
               occurrenceAccessReaderProvider.overrideWith((ref) {
                 return OccurrenceAccessReaderAdapter(
                   ref.watch(producerLinkRepositoryProvider),
+                );
+              }),
+              producerCropCalendarProvider.overrideWith((ref) {
+                return ProducerCropCalendarAdapter(
+                  openDatabase: () => DatabaseHelper.instance.database,
+                  fieldWriter: ref.watch(iDrawingFieldWriterProvider),
                 );
               }),
               producerVisitCalendarProvider.overrideWith((ref) {

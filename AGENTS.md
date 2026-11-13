@@ -162,6 +162,7 @@ Comunicação cross-module **APENAS** via `lib/core/contracts/`:
 | `IProducerInviteWriter` | 039 | produtor | auth/settings |
 | `IProducerPropertyGateway` | 040 | consultoria | produtor |
 | `IOccurrenceAccessReader` | 041 | produtor | map |
+| `IProducerCropCalendar` | 062 | produtor (lê `drawings`, escreve via `IDrawingFieldWriter`) | produtor |
 
 **Dependências proibidas (diretas):**
 
@@ -286,7 +287,7 @@ lib/
 
 -----
 
-## ADRs ATIVOS (008–061)
+## ADRs ATIVOS (008–062)
 
 | ADR | Decisão |
 |---|---|
@@ -335,6 +336,7 @@ lib/
 | 059 | Dados do plantio por safra nas ocorrências do talhão (SQLite v52, Plantio mais recente substitui o talhão) |
 | 060 | Visita de campo no mapa entra na agenda (mesmo UUID) e gera relatório ao encerrar |
 | 061 | Calendário do produtor só após confirmação da visita pelo consultor |
+| 062 | Calendário do produtor: estádios da soja e plantio do talhão |
 
 Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 
