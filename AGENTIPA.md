@@ -1,11 +1,47 @@
 # AGENTIPA
 
+## Porteiro Apple — ler isto antes de gerar ou enviar qualquer IPA
+
+O AGENTIPA age como o revisor da Apple. Se o App Store Connect recusaria o binário, o IPA não sobe: não roda `./build_testflight.sh`, não copia para o Transporter, não escreve **enviar este**.
+
+Antes de qualquer bump ou archive:
+
+1. A seção **Train fechada** abaixo manda sobre o histórico.
+2. `CFBundleShortVersionString` do próximo IPA tem de ser **estritamente maior** que a última versão aprovada ou com train fechada.
+3. `CFBundleVersion` tem de ser **estritamente maior** que o maior build já publicado neste arquivo.
+4. Versão igual à train fechada é recusa antecipada, com os mesmos códigos que a Apple devolve. Parar e abrir train nova.
+
+Quando o usuário colar um erro do App Store Connect, gravar na mesma leitura — no topo desta seção e na linha do IPA — o texto integral, o código e o ID de entrega. A linha deixa de dizer **enviar este**.
+
+### Train fechada (fonte da verdade)
+
+| Versão | Estado | Desde | Evidência |
+|---|---|---|---|
+| 1.34.0 | train fechada + versão já aprovada | IPA 320 | ASC **90186** + **90062** |
+| 1.35.0 | train fechada + versão já aprovada | IPA 328, 13/nov/2026 | ASC **90186** + **90062**, entrega `ZVZELTZQW5PCOYOVIYDV4BMVNQ` |
+
+Próximo envio legal: train **1.36.0** ativa — `CFBundleShortVersionString` **1.36.0** (ou maior) e `CFBundleVersion` **> 329** (após aceite do 329 no ASC).
+
+Train aberta atual: **1.36.0** · build candidato **329** (`1.36.0+329`). Versões **1.34.0** e **1.35.0** permanecem fechadas.
+
+### Erros que fecharam a train 1.35.0
+
+IPA 328 · versão `1.35.0` · entrega `ZVZELTZQW5PCOYOVIYDV4BMVNQ` · 13/nov/2026:
+
+- Invalid Pre-Release Train. The train version '1.35.0' is closed for new build submissions (90186)
+- This bundle is invalid. The value for key CFBundleShortVersionString [1.35.0] in the Info.plist file must contain a higher version than that of the previously approved version [1.35.0]. Please find more information about CFBundleShortVersionString at https://developer.apple.com/documentation/bundleresources/information_property_list/cfbundleshortversionstring (90062)
+
+Mesmo padrão do IPA 320 na train 1.34.0.
+
 ## Regras de release
 
 - Sempre gerar o próximo IPA com `CFBundleVersion` maior que o maior IPA já publicado neste repositório.
 - Nunca gerar IPA com build number igual ou menor ao último IPA validado.
+- Nunca gerar IPA com `CFBundleShortVersionString` igual ou menor a uma train fechada ou a uma versão já aprovada na App Store (90186 / 90062). Hoje o piso é **maior que 1.35.0**.
+- Se a versão do `pubspec` cair nesse piso, recusar o build e dizer a train nova antes de tocar em Xcode.
 - Sempre embutir corretamente os dados locais necessários ao boot do app antes de fechar a release.
 - Atualizar este arquivo após cada IPA com o número gerado e a evidência de validação.
+- Erro colado pelo usuário entra aqui na mesma leitura: texto da Apple, código, ID de entrega, e a linha do IPA passa a **não enviar**.
 
 ## Histórico
 
@@ -134,4 +170,5 @@
 - IPA 324: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=324` | `CFBundleShortVersionString=1.35.0` | `MinimumOSVersion=15.0` Runner + App.framework | `SUPABASE_URL` confirmada no binário (`pyoejhhkjlrjijiviryq`) | produto **`main`** @ `bfa36c31` · bump `cursor/ipa-324-5510` @ `806f6433` | conteúdo do 323 + **NDVI refinado plano Ouro** (ADR-060 · edge `sentinel_refined` · pílulas/máscara · deploy secrets) · **mapa** ciclo camada unificado + toggle pinos · **desenho** ferramenta Teste (azul Samsung) · unir talhões no sheet compacto · NDVI fora do compacto · **produtor/convite** escopo liberado (SQLite v53) · **visita → agenda** (ADR-060 visita de campo) · escopo `user_id` consultoria/marketing/drawing · **relatório Enviar = PDF** (ADR-053 · não publica link) · chrome mapa (cards canto inferior · inset atribuição) | `./tool/arch_check.sh` Exit 0 | `./build_testflight.sh` Exit 0 (`1.35.0+324`) Mac 12/nov/2026 13:01 Araguaina · `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` | `./tool/release_store_check.sh` Exit 0 | cópia Transporter: `~/Desktop/soloforte_app_324.ipa` | **substituído por 327**
 - IPA 325/326: **pulados** — números gerados em sessões concorrentes no mesmo checkout `main` (325: train 1.36.0 proposta em PR #497, ainda aberta/conflitante; 326: build local 1.35.0 nunca mesclado, superado); nunca válidos para envio
 - IPA 327: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=327` | `CFBundleShortVersionString=1.35.0` | `MinimumOSVersion=15.0` Runner + App.framework | `SUPABASE_URL` confirmada no binário (`pyoejhhkjlrjijiviryq`) | produto **`main`** @ `29224fbb` | conteúdo do 324 + **login** teclado sem cortar header/tagline (PR #498, no-op — já incorporado via 323) · **mapa público** pill de zoom/localização no padrão `kMapActionColumnButtonSize` (48pt/12pt, antes 52×50pt/16pt) · testado manualmente: perfil produtor (login real, editar telefone, salvar) | `./tool/arch_check.sh` Exit 0 | `./build_testflight.sh` Exit 0 (`1.35.0+327`) Mac 12/nov/2026 14:49 Araguaina · `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` | `./tool/release_store_check.sh` Exit 0 | cópia Transporter: `~/Desktop/soloforte_app_327.ipa` | **substituído por 328**
-- IPA 328: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=328` | `CFBundleShortVersionString=1.35.0` | `MinimumOSVersion=15.0` Runner + App.framework | `SUPABASE_URL` confirmada no binário (`pyoejhhkjlrjijiviryq`) | produto **`main`** @ `ef2a4a29` · bump `cursor/ipa-328-bc20` @ `5bf6d790` | conteúdo do 327 + **produtor/vínculo** (mapa sem talhões de outros clientes #500 · digest token #501 · ocorrências/desenhos do convite #502–#503 · RLS Supabase field_id/drawings #504) + **mapa offline por conta** no aparelho (#505) + **viewport fazenda produtor** (#499) | `./tool/arch_check.sh` Exit 0 | `./build_testflight.sh` Exit 0 (`1.35.0+328`) Mac 12/nov/2026 20:05 Araguaina · `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` | `./tool/release_store_check.sh` Exit 0 | cópia Transporter: `~/Desktop/soloforte_app_328.ipa` | **enviar este** — ASC versão **1.35.0**, build **328**
+- IPA 328: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=328` | `CFBundleShortVersionString=1.35.0` | `MinimumOSVersion=15.0` Runner + App.framework | `SUPABASE_URL` confirmada no binário (`pyoejhhkjlrjijiviryq`) | produto **`main`** @ `ef2a4a29` · bump `cursor/ipa-328-bc20` @ `5bf6d790` | conteúdo do 327 + **produtor/vínculo** (mapa sem talhões de outros clientes #500 · digest token #501 · ocorrências/desenhos do convite #502–#503 · RLS Supabase field_id/drawings #504) + **mapa offline por conta** no aparelho (#505) + **viewport fazenda produtor** (#499) | `./tool/arch_check.sh` Exit 0 | `./build_testflight.sh` Exit 0 (`1.35.0+328`) Mac 12/nov/2026 20:05 Araguaina · `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` | `./tool/release_store_check.sh` Exit 0 | cópia Transporter: `~/Desktop/soloforte_app_328.ipa` | **não enviar** — ASC **90186** (train 1.35.0 fechada para novos builds) + **90062** (`CFBundleShortVersionString` 1.35.0 não é maior que a versão já aprovada 1.35.0) · entrega `ZVZELTZQW5PCOYOVIYDV4BMVNQ` · 13/nov/2026 · substituído por **329** (train **1.36.0**)
+- IPA 329: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=329` | `CFBundleShortVersionString=1.36.0` | `MinimumOSVersion=15.0` Runner + App.framework | `SUPABASE_URL` confirmada no binário (`pyoejhhkjlrjijiviryq`) | produto **`main`** @ `2abdc2a7` · bump `cursor/ipa-329-1360` | mesmo conteúdo do 328 (train **1.36.0** — porteiro ASC: Short **>** 1.35.0, Build **>** 328; PR #497 obsoleto com build 325) | `./tool/arch_check.sh` Exit 0 | `./build_testflight.sh` Exit 0 (`1.36.0+329`) Mac 13/nov/2026 07:32 Araguaina · `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` | `./tool/release_store_check.sh` Exit 0 | `Info.plist` Runner: Short=1.36.0 Build=329 | cópia Transporter: `~/Desktop/soloforte_app_329.ipa` | **enviar este** — ASC versão **1.36.0**, build **329** (criar versão 1.36.0 no ASC se ainda não existir)
