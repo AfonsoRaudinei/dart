@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/painting.dart';
 import 'package:flutter_map/flutter_map.dart';
 
@@ -11,39 +9,49 @@ class PersistentOfflineTileProvider extends TileProvider {
   PersistentOfflineTileProvider({
     required String offlineRoot,
     required String layerKey,
+    String? legacyRoot,
     Map<String, String>? headers,
   }) : this._(
          offlineRoot: offlineRoot,
          layerKey: layerKey,
+         legacyRoot: legacyRoot,
          headers: headers ?? <String, String>{},
        );
 
   PersistentOfflineTileProvider._({
     required this.offlineRoot,
     required this.layerKey,
+    required this.legacyRoot,
     super.headers,
   }) : _network = NetworkTileProvider(headers: headers);
 
-  final String offlineRoot;
-  final String layerKey;
+  String offlineRoot;
+  String layerKey;
+  String? legacyRoot;
   final NetworkTileProvider _network;
+
+  /// Troca a pasta sem descartar a instância que o TileLayer já segura.
+  void retarget({
+    required String offlineRoot,
+    required String layerKey,
+    String? legacyRoot,
+  }) {
+    this.offlineRoot = offlineRoot;
+    this.layerKey = layerKey;
+    this.legacyRoot = legacyRoot;
+  }
 
   @override
   ImageProvider getImage(TileCoordinates coordinates, TileLayer options) {
-    final file = File(
-      OfflineTileCacheService.tileFilePath(
-        rootPath: offlineRoot,
-        layerKey: layerKey,
-        z: coordinates.z,
-        x: coordinates.x,
-        y: coordinates.y,
-      ),
+    final file = OfflineTileCacheService.persistedTileFile(
+      offlineRoot: offlineRoot,
+      legacyRoot: legacyRoot,
+      layerKey: layerKey,
+      z: coordinates.z,
+      x: coordinates.x,
+      y: coordinates.y,
     );
-    if (OfflineTileCacheService.shouldServePersistedOfflineTile(
-      localTileExists: OfflineTileCacheService.persistedTileFileExists(file),
-    )) {
-      return FileImage(file);
-    }
+    if (file != null) return FileImage(file);
     return _network.getImage(coordinates, options);
   }
 
