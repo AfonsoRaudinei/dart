@@ -147,6 +147,17 @@ class OfflineTileCacheService {
     }
   }
 
+  /// Grava o JPEG/PNG baixado. Bytes vazios não criam arquivo.
+  static Future<bool> storeDownloadedTile({
+    required File file,
+    required List<int> bytes,
+  }) async {
+    if (bytes.isEmpty) return false;
+    await file.parent.create(recursive: true);
+    await file.writeAsBytes(bytes, flush: true);
+    return persistedTileFileExists(file);
+  }
+
   /// Retorna `true` quando a área offline excedeu o [kOfflineTileCacheTtl].
   static bool isAreaExpired(DateTime createdAt) {
     return DateTime.now().difference(createdAt) > kOfflineTileCacheTtl;
