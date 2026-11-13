@@ -5,58 +5,98 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:http/http.dart' as http;
 
+import '../network/network_policy.dart';
 import 'offline_tile_cache_service.dart';
 
 /// Limita quantos tiles saem ao mesmo tempo.
 ///
 /// No rádio lento, dezenas de pedidos juntos deixam a tela branca até o
 /// primeiro JPEG voltar. Os primeiros pedidos (o que está na tela) passam;
-/// o restante espera vaga.
+/// o restante espera vaga. Se o tile sai da tela enquanto espera, sai da fila
+/// sem ocupar vaga.
 class TileFetchSlots {
   TileFetchSlots({this.limit = 4});
 
   final int limit;
   int _used = 0;
-  final List<Completer<void>> _queue = [];
+  final List<Completer<bool>> _queue = [];
 
-  Future<void> acquire() {
+  /// `true` quando a vaga foi concedida. `false` quando [cancel] disparou
+  /// antes disso — nesse caso nenhuma vaga foi ocupada.
+  Future<bool> acquire({Future<void>? cancel}) {
     if (_used < limit) {
       _used++;
-      return Future<void>.value();
+      return Future<bool>.value(true);
     }
-    final waiter = Completer<void>();
+    final waiter = Completer<bool>();
     _queue.add(waiter);
+    cancel?.then((_) {
+      if (waiter.isCompleted) return;
+      _queue.remove(waiter);
+      waiter.complete(false);
+    });
     return waiter.future;
   }
 
   void release() {
-    if (_queue.isNotEmpty) {
-      _queue.removeAt(0).complete();
-      return;
+    while (_queue.isNotEmpty) {
+      final next = _queue.removeAt(0);
+      if (!next.isCompleted) {
+        next.complete(true);
+        return;
+      }
     }
     if (_used > 0) _used--;
   }
 }
 
+/// Primeira leitura, uma nova tentativa da mesma URL e, se ainda falhar, o
+/// fallback. [NetworkPolicy.kMaxRetries] já conta a primeira ida.
+///
+/// Cancelado no meio não abre outro pedido.
+Future<List<int>?> readTileWithRetry({
+  required Future<List<int>?> Function(String url) read,
+  required String url,
+  required String? fallbackUrl,
+  required bool Function() isCancelled,
+  int maxAttempts = NetworkPolicy.kMaxRetries,
+}) async {
+  for (var attempt = 0; attempt < maxAttempts; attempt++) {
+    if (isCancelled()) return null;
+    final bytes = await read(url);
+    if (isCancelled()) return null;
+    if (bytes != null && bytes.isNotEmpty) return bytes;
+  }
+  if (isCancelled()) return null;
+  if (fallbackUrl == null || fallbackUrl.isEmpty) return null;
+  final fallback = await read(fallbackUrl);
+  if (isCancelled() || fallback == null || fallback.isEmpty) return null;
+  return fallback;
+}
+
 /// Serve o tile gravado em Documents/offline_tiles sempre que o arquivo existe.
-/// O que falta vai à rede e fica no disco da conta. Nada aqui apaga arquivo.
+/// O que falta vai à rede, com prazo e uma nova tentativa, e fica no disco da
+/// conta. Nada aqui apaga arquivo.
 class PersistentOfflineTileProvider extends TileProvider {
   PersistentOfflineTileProvider({
     required String offlineRoot,
     required String layerKey,
     String? legacyRoot,
     TileFetchSlots? slots,
-    http.Client? httpClient,
+    HttpClient? httpClient,
+    Duration requestTimeout = NetworkPolicy.kTimeout,
+    int maxAttempts = NetworkPolicy.kMaxRetries,
     Map<String, String>? headers,
   }) : this._(
          offlineRoot: offlineRoot,
          layerKey: layerKey,
          legacyRoot: legacyRoot,
          slots: slots ?? TileFetchSlots(),
-         httpClient: httpClient ?? http.Client(),
+         httpClient: httpClient ?? HttpClient(),
          ownsClient: httpClient == null,
+         requestTimeout: requestTimeout,
+         maxAttempts: maxAttempts,
          headers: headers ?? <String, String>{},
        );
 
@@ -65,18 +105,24 @@ class PersistentOfflineTileProvider extends TileProvider {
     required this.layerKey,
     required this.legacyRoot,
     required TileFetchSlots slots,
-    required http.Client httpClient,
+    required HttpClient httpClient,
     required bool ownsClient,
+    required this.requestTimeout,
+    required this.maxAttempts,
     super.headers,
   }) : _slots = slots,
        _httpClient = httpClient,
-       _ownsClient = ownsClient;
+       _ownsClient = ownsClient {
+    _httpClient.connectionTimeout = requestTimeout;
+  }
 
   String offlineRoot;
   String layerKey;
   String? legacyRoot;
+  final Duration requestTimeout;
+  final int maxAttempts;
   final TileFetchSlots _slots;
-  final http.Client _httpClient;
+  final HttpClient _httpClient;
   final bool _ownsClient;
 
   /// Troca a pasta sem descartar a instância que o TileLayer já segura.
@@ -91,7 +137,27 @@ class PersistentOfflineTileProvider extends TileProvider {
   }
 
   @override
+  bool get supportsCancelLoading => true;
+
+  @override
   ImageProvider getImage(TileCoordinates coordinates, TileLayer options) {
+    return _resolve(coordinates, options, Completer<void>().future);
+  }
+
+  @override
+  ImageProvider getImageWithCancelLoadingSupport(
+    TileCoordinates coordinates,
+    TileLayer options,
+    Future<void> cancelLoading,
+  ) {
+    return _resolve(coordinates, options, cancelLoading);
+  }
+
+  ImageProvider _resolve(
+    TileCoordinates coordinates,
+    TileLayer options,
+    Future<void> cancelLoading,
+  ) {
     if (offlineRoot.isNotEmpty) {
       final file = OfflineTileCacheService.persistedTileFile(
         offlineRoot: offlineRoot,
@@ -114,44 +180,126 @@ class PersistentOfflineTileProvider extends TileProvider {
               y: coordinates.y,
             ),
           );
+    final headers = Map<String, String>.from(this.headers);
     return PersistingTileImage(
       url: getTileUrl(coordinates, options),
       fallbackUrl: options.fallbackUrl == null
           ? null
           : getTileFallbackUrl(coordinates, options),
-      headers: Map<String, String>.from(headers),
       destination: destination,
-      client: _httpClient,
       slots: _slots,
+      cancel: cancelLoading,
+      maxAttempts: maxAttempts,
+      read: (target, cancel) => fetchTileBody(
+        uri: Uri.parse(target),
+        headers: headers,
+        cancel: cancel,
+      ),
     );
   }
 
+  /// Uma ida à rede. Estoura em [requestTimeout] e para se [cancel] completar.
+  @visibleForTesting
+  Future<List<int>?> fetchTileBody({
+    required Uri uri,
+    required Map<String, String> headers,
+    required Future<void> cancel,
+    Duration? timeout,
+  }) async {
+    final limit = timeout ?? requestTimeout;
+    _httpClient.connectionTimeout = limit;
+    late final HttpClientRequest request;
+    try {
+      request = await _httpClient.getUrl(uri).timeout(limit);
+    } on TimeoutException {
+      return null;
+    } on SocketException {
+      return null;
+    } on HttpException {
+      return null;
+    }
+
+    for (final entry in headers.entries) {
+      request.headers.set(entry.key, entry.value);
+    }
+
+    var aborted = false;
+    void abort() {
+      if (aborted) return;
+      aborted = true;
+      try {
+        request.abort();
+      } catch (_) {}
+    }
+
+    final subscription = cancel.asStream().listen((_) => abort());
+    try {
+      final response = await request.close().timeout(
+        limit,
+        onTimeout: () {
+          abort();
+          throw TimeoutException('tile');
+        },
+      );
+      if (aborted || response.statusCode != 200) {
+        abort();
+        try {
+          await response.drain<void>().timeout(limit);
+        } catch (_) {}
+        return null;
+      }
+      final chunks = <int>[];
+      await for (final chunk in response.timeout(
+        limit,
+        onTimeout: (sink) {
+          abort();
+          sink.close();
+        },
+      )) {
+        if (aborted) return null;
+        chunks.addAll(chunk);
+      }
+      if (aborted || chunks.isEmpty) return null;
+      return chunks;
+    } on TimeoutException {
+      return null;
+    } on SocketException {
+      return null;
+    } on HttpException {
+      return null;
+    } finally {
+      await subscription.cancel();
+    }
+  }
+
   @override
-  Future<void> dispose() async {
+  void dispose() {
     if (_ownsClient) {
-      _httpClient.close();
+      _httpClient.close(force: true);
     }
     super.dispose();
   }
 }
 
-/// Baixa o tile uma vez, grava no disco e decodifica esses mesmos bytes.
+/// Baixa o tile, tenta de novo uma vez e decodifica sem esperar o disco.
 class PersistingTileImage extends ImageProvider<PersistingTileImage> {
   PersistingTileImage({
     required this.url,
     required this.fallbackUrl,
-    required this.headers,
     required this.destination,
-    required this.client,
     required this.slots,
+    required this.cancel,
+    required this.maxAttempts,
+    required this.read,
   });
 
   final String url;
   final String? fallbackUrl;
-  final Map<String, String> headers;
   final File? destination;
-  final http.Client client;
   final TileFetchSlots slots;
+  final Future<void> cancel;
+  final int maxAttempts;
+  final Future<List<int>?> Function(String url, Future<void> cancel) read;
 
   @override
   Future<PersistingTileImage> obtainKey(ImageConfiguration configuration) {
@@ -171,43 +319,69 @@ class PersistingTileImage extends ImageProvider<PersistingTileImage> {
   }
 
   Future<ui.Codec> _load(ImageDecoderCallback decode) async {
-    await slots.acquire();
+    final gate = _TileCancel(cancel);
+    final gotSlot = await slots.acquire(cancel: cancel);
+    if (!gotSlot) {
+      _dropCache();
+      return _transparent(decode);
+    }
     try {
-      final bytes = await _read(url) ?? await _read(fallbackUrl);
+      await Future<void>.value();
+      if (gate.cancelled) {
+        _dropCache();
+        return _transparent(decode);
+      }
+      final bytes = await readTileWithRetry(
+        read: (target) => read(target, cancel),
+        url: url,
+        fallbackUrl: fallbackUrl,
+        isCancelled: () => gate.cancelled,
+        maxAttempts: maxAttempts,
+      );
+      if (gate.cancelled) {
+        _dropCache();
+        return _transparent(decode);
+      }
       if (bytes == null || bytes.isEmpty) {
         throw StateError('Tile vazio: $url');
-      }
-      final file = destination;
-      if (file != null) {
-        try {
-          await OfflineTileCacheService.storeDownloadedTile(
-            file: file,
-            bytes: bytes,
-          );
-        } catch (_) {
-          // A imagem desta sessão segue mesmo se o disco falhar.
-        }
       }
       final buffer = await ui.ImmutableBuffer.fromUint8List(
         Uint8List.fromList(bytes),
       );
-      return decode(buffer);
+      final codec = await decode(buffer);
+      if (gate.cancelled) {
+        _dropCache();
+        return _transparent(decode);
+      }
+      final file = destination;
+      if (file != null) {
+        unawaited(
+          OfflineTileCacheService.storeDownloadedTile(
+            file: file,
+            bytes: bytes,
+          ).then<void>((_) {}, onError: (Object _, StackTrace _) {}),
+        );
+      }
+      return codec;
+    } catch (_) {
+      _dropCache();
+      rethrow;
     } finally {
       slots.release();
     }
   }
 
-  Future<List<int>?> _read(String? target) async {
-    if (target == null || target.isEmpty) return null;
-    try {
-      final response = await client.get(Uri.parse(target), headers: headers);
-      if (response.statusCode != 200 || response.bodyBytes.isEmpty) {
-        return null;
-      }
-      return response.bodyBytes;
-    } catch (_) {
-      return null;
-    }
+  Future<ui.Codec> _transparent(ImageDecoderCallback decode) async {
+    final buffer = await ui.ImmutableBuffer.fromUint8List(
+      TileProvider.transparentImage,
+    );
+    return decode(buffer);
+  }
+
+  void _dropCache() {
+    scheduleMicrotask(() {
+      PaintingBinding.instance.imageCache.evict(this);
+    });
   }
 
   @override
@@ -217,4 +391,12 @@ class PersistingTileImage extends ImageProvider<PersistingTileImage> {
 
   @override
   int get hashCode => url.hashCode;
+}
+
+class _TileCancel {
+  _TileCancel(Future<void> signal) {
+    signal.then((_) => cancelled = true);
+  }
+
+  bool cancelled = false;
 }
