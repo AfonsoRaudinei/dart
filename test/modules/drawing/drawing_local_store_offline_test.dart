@@ -129,6 +129,54 @@ void main() {
       expect(reread!.properties.syncStatus, SyncStatus.local_only);
     },
   );
+
+  test('login adota só desenho com user_id vazio', () async {
+    final prefs = PreferencesService(await SharedPreferences.getInstance());
+    final store = DrawingLocalStore(
+      identityStore: DrawingLocalIdentityStore(preferences: prefs),
+    );
+    await store.insert(_feature('drawing-orphan'));
+    await store.insert(_feature('drawing-other'));
+    await store.insert(_feature('drawing-tomb'));
+    await db.update(
+      'drawings',
+      {'user_id': 'user-other'},
+      where: 'id = ?',
+      whereArgs: ['drawing-other'],
+    );
+    await db.update(
+      'drawings',
+      {'sync_status': SyncStatus.deleted_local.toJson()},
+      where: 'id = ?',
+      whereArgs: ['drawing-tomb'],
+    );
+
+    final adopted = await store.adoptOrphanDrawings('user-me');
+
+    final orphan = await db.query(
+      'drawings',
+      where: 'id = ?',
+      whereArgs: ['drawing-orphan'],
+    );
+    final other = await db.query(
+      'drawings',
+      where: 'id = ?',
+      whereArgs: ['drawing-other'],
+    );
+    final tomb = await db.query(
+      'drawings',
+      where: 'id = ?',
+      whereArgs: ['drawing-tomb'],
+    );
+
+    expect(adopted, 2);
+    expect(orphan.single['user_id'], 'user-me');
+    expect(orphan.single['sync_status'], SyncStatus.pending_sync.toJson());
+    expect(other.single['user_id'], 'user-other');
+    expect(other.single['sync_status'], SyncStatus.local_only.toJson());
+    expect(tomb.single['user_id'], 'user-me');
+    expect(tomb.single['sync_status'], SyncStatus.deleted_local.toJson());
+  });
 }
 
 DrawingFeature _feature(
