@@ -111,10 +111,10 @@ void main() {
 
     expect(plantings[1].canEdit, isTrue);
     expect(plantings[1].dataPlantio, isNull);
-    expect(plantings.last.canEdit, isFalse);
+    expect(plantings.last.canEdit, isTrue);
   });
 
-  test('grava plantio só no talhão próprio', () async {
+  test('grava plantio nos talhões da conta', () async {
     await adapter.saveOwnPlanting(
       fieldId: 'own-empty',
       dataPlantio: '2026-03-01',
@@ -126,14 +126,14 @@ void main() {
     expect(writer.dataEmergencia, '2026-03-08');
     expect(writer.cicloDias, '110');
 
-    expect(
-      () => adapter.saveOwnPlanting(
-        fieldId: 'linked-1',
-        dataPlantio: '2026-03-01',
-      ),
-      throwsStateError,
+    await adapter.saveOwnPlanting(
+      fieldId: 'linked-1',
+      dataPlantio: '2026-04-02',
     );
-    expect(writer.fieldId, 'own-empty');
+    expect(writer.fieldId, 'linked-1');
+    expect(writer.dataPlantio, '2026-04-02');
+    expect(writer.dataEmergencia, isNull);
+    expect(writer.cicloDias, isNull);
   });
 
   test('sem usuário não lista plantio', () async {
