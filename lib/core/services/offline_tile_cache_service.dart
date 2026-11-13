@@ -102,6 +102,38 @@ class OfflineTileCacheService {
     required int y,
   }) => '$rootPath/$layerKey/$z/$x/$y.tile';
 
+  /// Pasta `offline_tiles/` ao lado de `offline_tiles/users/<id>/`.
+  ///
+  /// Login passa a ler a pasta do usuário. Tiles baixados antes do JWT
+  /// continuam na pasta antiga e ainda são servidos.
+  static String? legacyRootBeside(String offlineRoot) {
+    const usersSegment = '/offline_tiles/users/';
+    final index = offlineRoot.indexOf(usersSegment);
+    if (index < 0) return null;
+    return offlineRoot.substring(0, index + '/offline_tiles'.length);
+  }
+
+  /// Arquivo do usuário, senão o mesmo tile na pasta antiga. Não cria nem apaga.
+  static File? persistedTileFile({
+    required String offlineRoot,
+    required String? legacyRoot,
+    required String layerKey,
+    required int z,
+    required int x,
+    required int y,
+  }) {
+    final primary = File(
+      tileFilePath(rootPath: offlineRoot, layerKey: layerKey, z: z, x: x, y: y),
+    );
+    if (persistedTileFileExists(primary)) return primary;
+    if (legacyRoot == null || legacyRoot == offlineRoot) return null;
+    final legacy = File(
+      tileFilePath(rootPath: legacyRoot, layerKey: layerKey, z: z, x: x, y: y),
+    );
+    if (persistedTileFileExists(legacy)) return legacy;
+    return null;
+  }
+
   /// Tile gravado em disco é servido mesmo online. Some só se o arquivo sair.
   static bool shouldServePersistedOfflineTile({required bool localTileExists}) {
     return localTileExists;
