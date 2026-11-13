@@ -37,7 +37,7 @@ abstract interface class IProducerCropCalendar {
   /// Grava início, emergência e ciclo nas colunas que o talhão já tem.
   ///
   /// Null mantém o valor atual. String vazia em data não grava. [cicloDias]
-  /// aceita dígitos; vazio não altera. Talhão de outra conta lança [StateError].
+  /// aceita dígitos; vazio não altera. Vínculo do consultor lança [StateError].
   Future<void> saveOwnPlanting({
     required String fieldId,
     String? dataPlantio,
