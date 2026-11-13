@@ -117,7 +117,9 @@ class _PlantingCardState extends ConsumerState<_PlantingCard> {
             _PlantingLine(
               fieldKey: Key('producer-planting-plantio-${planting.fieldId}'),
               label: 'Plantio',
-              value: plantio == null ? 'Adicionar' : dateFormat.format(plantio),
+              value: plantio == null
+                  ? _emptyValue(planting.canEdit)
+                  : dateFormat.format(plantio),
               filled: plantio != null,
               enabled: planting.canEdit && !_busy,
               onTap: _editPlantio,
@@ -127,7 +129,7 @@ class _PlantingCardState extends ConsumerState<_PlantingCard> {
               fieldKey: Key('producer-planting-emergencia-${planting.fieldId}'),
               label: 'Emergência',
               value: emergencia == null
-                  ? 'Adicionar'
+                  ? _emptyValue(planting.canEdit)
                   : dateFormat.format(emergencia),
               filled: emergencia != null,
               enabled: planting.canEdit && !_busy,
@@ -138,7 +140,7 @@ class _PlantingCardState extends ConsumerState<_PlantingCard> {
               fieldKey: Key('producer-planting-ciclo-${planting.fieldId}'),
               label: 'Ciclo',
               value: planting.cicloDias == null
-                  ? 'Adicionar'
+                  ? _emptyValue(planting.canEdit)
                   : '${planting.cicloDias} dias',
               filled: planting.cicloDias != null,
               enabled: planting.canEdit && !_busy,
@@ -352,32 +354,53 @@ class _CicloDialogState extends State<_CicloDialog> {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-        child: TextField(
-          key: const Key('producer-planting-ciclo-input'),
-          controller: _controller,
-          autofocus: true,
-          keyboardType: TextInputType.number,
-          textInputAction: TextInputAction.done,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.4,
-            color: context.premiumTextPrimary,
-          ),
-          cursorColor: context.themeAccent,
-          decoration: InputDecoration(
-            hintText: 'Dias',
-            hintStyle: TextStyle(color: context.premiumTextTertiary),
-            border: InputBorder.none,
-          ),
-          onSubmitted: _submit,
+        padding: const EdgeInsets.fromLTRB(20, 8, 12, 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              key: const Key('producer-planting-ciclo-input'),
+              controller: _controller,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.done,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.4,
+                color: context.premiumTextPrimary,
+              ),
+              cursorColor: context.themeAccent,
+              decoration: InputDecoration(
+                hintText: 'Dias',
+                hintStyle: TextStyle(color: context.premiumTextTertiary),
+                border: InputBorder.none,
+              ),
+              onSubmitted: _submit,
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                key: const Key('producer-planting-ciclo-ok'),
+                onPressed: () => _submit(_controller.text),
+                child: Text(
+                  'OK',
+                  style: TextStyle(
+                    color: context.themeAccent,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
+
+String _emptyValue(bool canEdit) => canEdit ? 'Adicionar' : '—';
 
 String _subtitle(ProducerCropPlanting planting) {
   return [
