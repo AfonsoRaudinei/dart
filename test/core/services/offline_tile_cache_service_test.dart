@@ -542,4 +542,187 @@ void main() {
     expect(image, isA<FileImage>());
     expect((image as FileImage).file.path, file.path);
   });
+
+  test('TileFetchSlots tira da fila o tile que saiu da tela', () async {
+    final slots = TileFetchSlots(limit: 1);
+    expect(await slots.acquire(), isTrue);
+    final cancel = Completer<void>();
+    final waiting = slots.acquire(cancel: cancel.future);
+    cancel.complete();
+    expect(await waiting, isFalse);
+
+    var entered = false;
+    final next = slots.acquire().then((got) {
+      entered = got;
+    });
+    await Future<void>.delayed(Duration.zero);
+    expect(entered, isFalse);
+    slots.release();
+    await next;
+    expect(entered, isTrue);
+    slots.release();
+  });
+
+  test(
+    'readTileWithRetry tenta a mesma URL de novo e depois o fallback',
+    () async {
+      final calls = <String>[];
+      final bytes = await readTileWithRetry(
+        read: (url) async {
+          calls.add(url);
+          if (url == 'fallback') return [9];
+          return null;
+        },
+        url: 'primary',
+        fallbackUrl: 'fallback',
+        isCancelled: () => false,
+        maxAttempts: 2,
+      );
+      expect(calls, ['primary', 'primary', 'fallback']);
+      expect(bytes, [9]);
+    },
+  );
+
+  test('readTileWithRetry a segunda tentativa da mesma URL vale', () async {
+    var calls = 0;
+    final bytes = await readTileWithRetry(
+      read: (_) async {
+        calls++;
+        return calls == 1 ? null : [1, 2];
+      },
+      url: 'primary',
+      fallbackUrl: 'fallback',
+      isCancelled: () => false,
+      maxAttempts: 2,
+    );
+    expect(calls, 2);
+    expect(bytes, [1, 2]);
+  });
+
+  test('readTileWithRetry cancelado não abre outra tentativa', () async {
+    var calls = 0;
+    var cancelled = false;
+    final bytes = await readTileWithRetry(
+      read: (_) async {
+        calls++;
+        cancelled = true;
+        return null;
+      },
+      url: 'primary',
+      fallbackUrl: 'fallback',
+      isCancelled: () => cancelled,
+      maxAttempts: 2,
+    );
+    expect(calls, 1);
+    expect(bytes, isNull);
+  });
+
+  test('fetchTileBody devolve o corpo 200 e ignora status vazio', () async {
+    await _withRealHttpClient(() async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(() => server.close(force: true));
+      server.listen((request) async {
+        final path = request.uri.path;
+        if (path.endsWith('/ok.jpg')) {
+          request.response.statusCode = 200;
+          request.response.add([7, 8, 9]);
+        } else {
+          request.response.statusCode = 500;
+        }
+        await request.response.close();
+      });
+      final provider = PersistentOfflineTileProvider(
+        offlineRoot: '/tmp/unused-tile-root',
+        layerKey: 'layer',
+        requestTimeout: const Duration(seconds: 2),
+      );
+      addTearDown(provider.dispose);
+
+      final ok = await provider.fetchTileBody(
+        uri: Uri.parse('http://127.0.0.1:${server.port}/ok.jpg'),
+        headers: const {},
+        cancel: Completer<void>().future,
+      );
+      final failed = await provider.fetchTileBody(
+        uri: Uri.parse('http://127.0.0.1:${server.port}/fail.jpg'),
+        headers: const {},
+        cancel: Completer<void>().future,
+      );
+      expect(ok, [7, 8, 9]);
+      expect(failed, isNull);
+    });
+  });
+
+  test(
+    'fetchTileBody estoura no prazo quando o servidor não responde',
+    () async {
+      await _withRealHttpClient(() async {
+        final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+        addTearDown(() => server.close(force: true));
+        server.listen((_) {});
+        final provider = PersistentOfflineTileProvider(
+          offlineRoot: '/tmp/unused-tile-root',
+          layerKey: 'layer',
+          requestTimeout: const Duration(milliseconds: 200),
+        );
+        addTearDown(provider.dispose);
+
+        final elapsed = Stopwatch()..start();
+        final bytes = await provider.fetchTileBody(
+          uri: Uri.parse('http://127.0.0.1:${server.port}/hang.jpg'),
+          headers: const {},
+          cancel: Completer<void>().future,
+        );
+        elapsed.stop();
+        expect(bytes, isNull);
+        expect(elapsed.elapsed, lessThan(const Duration(seconds: 3)));
+      });
+    },
+  );
+
+  test('fetchTileBody para quando o tile sai da tela', () async {
+    await _withRealHttpClient(() async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(() => server.close(force: true));
+      final gotRequest = Completer<void>();
+      server.listen((_) {
+        if (!gotRequest.isCompleted) gotRequest.complete();
+      });
+      final provider = PersistentOfflineTileProvider(
+        offlineRoot: '/tmp/unused-tile-root',
+        layerKey: 'layer',
+        requestTimeout: const Duration(seconds: 15),
+      );
+      addTearDown(provider.dispose);
+      final cancel = Completer<void>();
+      final pending = provider.fetchTileBody(
+        uri: Uri.parse('http://127.0.0.1:${server.port}/hang.jpg'),
+        headers: const {},
+        cancel: cancel.future,
+      );
+      await gotRequest.future.timeout(const Duration(seconds: 2));
+      final elapsed = Stopwatch()..start();
+      cancel.complete();
+      final bytes = await pending;
+      elapsed.stop();
+      expect(bytes, isNull);
+      expect(elapsed.elapsed, lessThan(const Duration(seconds: 2)));
+    });
+  });
+}
+
+/// O binding de teste troca o HttpClient por um que responde 400 sem rede.
+/// `super.createHttpClient` devolve o cliente real, sem voltar ao mock.
+Future<T> _withRealHttpClient<T>(Future<T> Function() body) {
+  return HttpOverrides.runZoned(
+    body,
+    createHttpClient: _DirectHttpOverrides().createHttpClient,
+  );
+}
+
+class _DirectHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context);
+  }
 }
