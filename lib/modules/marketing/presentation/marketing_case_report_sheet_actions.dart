@@ -4,6 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/contracts/i_marketing_case_reports_lookup_provider.dart';
+import '../../../core/contracts/i_occurrence_access_reader_provider.dart';
+import '../../../core/session/local_session_identity.dart';
+import '../../../core/session/user_role.dart';
+import '../domain/marketing_producer_republicacao.dart';
+import 'providers/marketing_providers.dart';
 import '../../../core/contracts/marketing_case_report_snapshot.dart';
 import '../../../core/html_templates/html_report_viewer.dart';
 import '../../../core/html_templates/report_export_service.dart';
@@ -248,31 +253,93 @@ class MarketingCaseReportActionsRow extends ConsumerWidget {
           )
         : null;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              onPressed: () => openMarketingCaseReportHtml(
-                context,
-                ref,
-                marketingCase,
-                closeParentSheetOnAction: closeParentSheetOnAction,
-                parentSheetContext: context,
-              ),
-              style: iosButtonStyle,
-              child: const Text('Abrir relatório'),
+    final role = ref.watch(currentUserRoleProvider);
+    final currentUserId = LocalSessionIdentity.resolveUserId();
+    final allCases = ref.watch(marketingCasesProvider).valueOrNull ?? const [];
+    final authorized = ref.watch(authorizedClientIdsProvider).valueOrNull ??
+        const <String>{};
+    final showRepublicar = producerRepublicacaoDisponivel(
+      fonte: marketingCase,
+      currentUserId: currentUserId,
+      authorizedClientIds: authorized,
+      allCases: allCases,
+      isProdutor: role.isProdutor,
+    );
+
+  Future<void> onRepublicar() async {
+      final messenger = ScaffoldMessenger.of(context);
+      try {
+        final draft = await ref
+            .read(marketingCasesProvider.notifier)
+            .republicarComoProdutor(
+              marketingCase,
+              authorizedClientIds: authorized,
+            );
+        if (!context.mounted) return;
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Rascunho criado. Escolha o metal e publique com seu plano.',
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: OutlinedButton(
-              onPressed: () =>
-                  exportMarketingCaseReportHtml(context, ref, marketingCase),
-              style: iosButtonStyle,
-              child: const Text('Exportar HTML'),
+        );
+        await ref
+            .read(marketingCaseReportsLookupProvider)
+            .showEditSheet(context, draft.id);
+      } catch (e) {
+        if (!context.mounted) return;
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(userFacingError(e, action: 'Erro ao republicar')),
+          ),
+        );
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (showRepublicar) ...[
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: onRepublicar,
+                style: iosButtonStyle,
+                child: const Text('Republicar com meu plano'),
+              ),
             ),
+            const SizedBox(height: 12),
+          ],
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => openMarketingCaseReportHtml(
+                    context,
+                    ref,
+                    marketingCase,
+                    closeParentSheetOnAction: closeParentSheetOnAction,
+                    parentSheetContext: context,
+                  ),
+                  style: iosButtonStyle,
+                  child: const Text('Abrir relatório'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => exportMarketingCaseReportHtml(
+                    context,
+                    ref,
+                    marketingCase,
+                  ),
+                  style: iosButtonStyle,
+                  child: const Text('Exportar HTML'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
