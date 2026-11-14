@@ -278,7 +278,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
   String _label(MapMarkKind kind) {
     return switch (kind) {
       MapMarkKind.resultado => 'Resultado',
-      MapMarkKind.antesDepois => 'Antes/Depois',
+      MapMarkKind.antesDepois => 'Avaliação',
       MapMarkKind.avaliacao => 'Avaliação',
       MapMarkKind.ocorrencia => 'Ocorrência',
     };
