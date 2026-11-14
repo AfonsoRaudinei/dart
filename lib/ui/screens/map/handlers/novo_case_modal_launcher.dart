@@ -136,7 +136,8 @@ class NovoCaseModalLauncher {
       plano = await _resolvePlanoAtivo(ref);
     } catch (error) {
       if (!context.mounted) return;
-      Navigator.of(context).pop();
+      final messenger = ScaffoldMessenger.of(context);
+      _closeSheetIfPossible(context);
       var savedDraft = false;
       var draftSaveFailed = false;
       try {
@@ -151,9 +152,9 @@ class NovoCaseModalLauncher {
           stackTrace: stackTrace,
         );
       }
-      if (!context.mounted) return;
+      if (!messenger.mounted) return;
       _showPlanoLookupError(
-        context,
+        messenger,
         ref,
         error,
         savedAsDraft: savedDraft,
@@ -164,9 +165,10 @@ class NovoCaseModalLauncher {
 
     if (plano.isAdmin) {
       if (!context.mounted) return;
-      Navigator.of(context).pop();
+      final messenger = ScaffoldMessenger.of(context);
+      _closeSheetIfPossible(context);
       await _publishFromMap(
-        context: context,
+        messenger: messenger,
         ref: ref,
         newCase: _asPublishedCase(newCase),
       );
@@ -184,12 +186,14 @@ class NovoCaseModalLauncher {
       visibilidade: newCase.visibilidade,
     )) {
       if (!context.mounted) return;
-      Navigator.of(context).pop();
+      final messenger = ScaffoldMessenger.of(context);
+      final sheetHost = _sheetHost(context);
+      _closeSheetIfPossible(context);
       try {
         await ref.read(marketingCasesProvider.notifier).saveAsDraft(newCase);
       } catch (_) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        if (!messenger.mounted) return;
+        messenger.showSnackBar(
           const SnackBar(
             content: Text(
               'Não foi possível salvar o rascunho. Tente novamente.',
@@ -198,8 +202,8 @@ class NovoCaseModalLauncher {
         );
         return;
       }
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (!messenger.mounted) return;
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             limite <= 0
@@ -211,30 +215,46 @@ class NovoCaseModalLauncher {
           duration: const Duration(seconds: 5),
         ),
       );
-      await DraftSavedSheet.show(context);
+      if (sheetHost.mounted) await DraftSavedSheet.show(sheetHost);
       return;
     }
 
     if (!context.mounted) return;
-    Navigator.of(context).pop();
+    final messenger = ScaffoldMessenger.of(context);
+    _closeSheetIfPossible(context);
     await _publishFromMap(
-      context: context,
+      messenger: messenger,
       ref: ref,
       newCase: _asPublishedCase(newCase),
     );
   }
 
+  /// Fecha a folha do case. Na raiz do teste (e fora de sheet) não há o que fechar.
+  static void _closeSheetIfPossible(BuildContext context) {
+    final navigator = Navigator.maybeOf(context);
+    if (navigator != null && navigator.canPop()) navigator.pop();
+  }
+
+  /// Contexto que ainda tem Navigator depois de fechar a folha.
+  /// O contexto do [ScaffoldMessenger] fica acima do Navigator.
+  static BuildContext _sheetHost(BuildContext context) {
+    final overlay = Navigator.maybeOf(context)?.overlay;
+    final host = overlay?.context;
+    if (host != null && host.mounted) return host;
+    return context;
+  }
+
   static Future<void> _publishFromMap({
-    required BuildContext context,
+    required ScaffoldMessengerState messenger,
     required WidgetRef ref,
     required MarketingCase newCase,
   }) async {
     final outcome = await ref
         .read(marketingCasesProvider.notifier)
         .publishCaseDetailed(newCase);
-    if (!context.mounted) return;
+    if (!messenger.mounted) return;
     _showPublishOutcome(
-      context: context,
+      messenger: messenger,
       ref: ref,
       outcome: outcome,
       caseToRetry: newCase,
@@ -309,7 +329,7 @@ class NovoCaseModalLauncher {
   }
 
   static void _showPlanoLookupError(
-    BuildContext context,
+    ScaffoldMessengerState messenger,
     WidgetRef ref,
     Object error, {
     bool savedAsDraft = false,
@@ -322,7 +342,7 @@ class NovoCaseModalLauncher {
             : '';
     if (error is PlanoCacheUnavailableException) {
       _showSnackBar(
-        context: context,
+        messenger: messenger,
         message: '${error.toString()}$draftSuffix',
         backgroundColor: Colors.orange,
         icon: Icons.wifi_off,
@@ -337,19 +357,22 @@ class NovoCaseModalLauncher {
     final isOnline = ref.read(connectivityStateProvider).valueOrNull;
     if (isSessionOrRlsError(error)) {
       _showSnackBar(
-        context: context,
+        messenger: messenger,
         message: 'Sessão expirada. Entre novamente para publicar.$draftSuffix',
         backgroundColor: Colors.red,
         icon: Icons.lock_outline,
         actionLabel: 'Entrar',
-        onAction: () => context.go('/login'),
+        onAction: () {
+          final host = messenger.context;
+          if (host.mounted) host.go('/login');
+        },
       );
       return;
     }
 
     if (isNetworkError(error, isOnline: isOnline)) {
       _showSnackBar(
-        context: context,
+        messenger: messenger,
         message:
             'Sem conexão. Não foi possível verificar seu plano.$draftSuffix',
         backgroundColor: Colors.orange,
@@ -363,7 +386,7 @@ class NovoCaseModalLauncher {
     }
 
     _showSnackBar(
-      context: context,
+      messenger: messenger,
       message:
           'Não foi possível verificar seu plano. Tente novamente.$draftSuffix',
       backgroundColor: Colors.orange,
@@ -376,7 +399,7 @@ class NovoCaseModalLauncher {
   }
 
   static void _showPublishOutcome({
-    required BuildContext context,
+    required ScaffoldMessengerState messenger,
     required WidgetRef ref,
     required PublishOutcome outcome,
     required MarketingCase caseToRetry,
@@ -384,7 +407,7 @@ class NovoCaseModalLauncher {
     if (outcome.isSuccess) {
       HapticFeedback.heavyImpact();
       _showSnackBar(
-        context: context,
+        messenger: messenger,
         message: 'Case publicado com sucesso! 📈',
         backgroundColor: const Color(0xFF34C759),
         icon: Icons.check_circle,
@@ -396,7 +419,7 @@ class NovoCaseModalLauncher {
 
     if (outcome.savedForOfflineSync) {
       _showSnackBar(
-        context: context,
+        messenger: messenger,
         message: 'Sem conexão — case salvo localmente e será sincronizado.',
         backgroundColor: Colors.orange,
         icon: Icons.cloud_off,
@@ -406,19 +429,22 @@ class NovoCaseModalLauncher {
 
     if (isSessionOrRlsError(error)) {
       _showSnackBar(
-        context: context,
+        messenger: messenger,
         message: 'Sessão expirada. Entre novamente para publicar.',
         backgroundColor: Colors.red,
         icon: Icons.lock_outline,
         actionLabel: 'Entrar',
-        onAction: () => context.go('/login'),
+        onAction: () {
+          final host = messenger.context;
+          if (host.mounted) host.go('/login');
+        },
       );
       return;
     }
 
     if (outcome.revertedToDraft) {
       _showSnackBar(
-        context: context,
+        messenger: messenger,
         message:
             'Não foi possível publicar o case. Salvo como rascunho em Relatórios → Marketing.',
         backgroundColor: Colors.orange,
@@ -428,28 +454,28 @@ class NovoCaseModalLauncher {
     }
 
     _showSnackBar(
-      context: context,
+      messenger: messenger,
       message: 'Não foi possível publicar o case. Tente novamente.',
       backgroundColor: Colors.orange,
       icon: Icons.error_outline,
       actionLabel: 'Tentar novamente',
       onAction: () {
         unawaited(
-          _publishFromMap(context: context, ref: ref, newCase: caseToRetry),
+          _publishFromMap(messenger: messenger, ref: ref, newCase: caseToRetry),
         );
       },
     );
   }
 
   static void _showSnackBar({
-    required BuildContext context,
+    required ScaffoldMessengerState messenger,
     required String message,
     required Color backgroundColor,
     required IconData icon,
     String? actionLabel,
     VoidCallback? onAction,
   }) {
-    ScaffoldMessenger.of(context).showSnackBar(
+    messenger.showSnackBar(
       SnackBar(
         content: Row(
           children: [
