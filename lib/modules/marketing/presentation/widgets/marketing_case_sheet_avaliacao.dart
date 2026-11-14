@@ -142,22 +142,6 @@ class _AvaliacaoLivreReadOnlyCardState
   }
 }
 
-/// Cases antigos gravaram só comparações extras em avaliacoesJson.
-/// A Comparação 1 seguia em fotoAntesUrl/fotoDepoisUrl.
-bool _fotosLegadasNoPrimeiroBloco(MarketingCase marketingCase) {
-  final blocos = marketingCase.avaliacoesLivres;
-  if (blocos.isEmpty) return false;
-  final primeiro = blocos.first;
-  final paths = {
-    primeiro.fotoLadoAPath,
-    primeiro.fotoLadoBPath,
-    primeiro.fotoLadoCPath,
-  };
-  bool cobre(String? url) => url == null || url.isEmpty || paths.contains(url);
-  return cobre(marketingCase.fotoAntesUrl) &&
-      cobre(marketingCase.fotoDepoisUrl);
-}
-
 class _ComparacaoBlocosReadOnly extends StatelessWidget {
   final List<AvaliacaoItem> avaliacoes;
   final Color titleColor;
