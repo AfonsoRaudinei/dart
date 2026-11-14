@@ -46,15 +46,6 @@ class NovoCaseAntesDepoisSection extends StatelessWidget {
     required this.onRemoveConclusao,
   });
 
-  List<ParametroComparativo> get _todosParametros {
-    return comparacoes.expand((c) => c.parametros).toList();
-  }
-
-  String get _testeLabel {
-    final trimmed = produtoUtilizado.trim();
-    return trimmed.isEmpty ? 'Produto' : trimmed;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -76,7 +67,6 @@ class NovoCaseAntesDepoisSection extends StatelessWidget {
               onChanged: (updated) => onComparacaoChanged(index, updated),
               parametros: comparacao.parametros,
               parametroSelecionadoId: comparacao.parametroSelecionadoId,
-              testeLabel: _testeLabel,
               onAddParametroForBloco: () => onAddParametro(index),
               onSelectParametro: (id) => onSelectParametro(index, id),
               onParametroChanged: (p) => onParametroChanged(index, p),
@@ -91,17 +81,6 @@ class NovoCaseAntesDepoisSection extends StatelessWidget {
           style: novoCaseGhostOutlinedButtonStyle(context),
         ),
         const SizedBox(height: 16),
-        if (_todosParametros.isNotEmpty) ...[
-          novoCaseSectionLabel('Resultado Geral'),
-          const SizedBox(height: 8),
-          ComparativoChart(
-            parametros: _todosParametros,
-            selecionadoId: null,
-            onSelect: (_) {},
-            testeLabel: _testeLabel,
-          ),
-          const SizedBox(height: 16),
-        ],
         if (!hasConclusao)
           OutlinedButton.icon(
             onPressed: () {
@@ -131,7 +110,6 @@ class _ComparacaoBloco extends StatefulWidget {
   final ValueChanged<NovoCaseComparacao> onChanged;
   final List<ParametroComparativo> parametros;
   final String? parametroSelecionadoId;
-  final String testeLabel;
   final VoidCallback onAddParametroForBloco;
   final ValueChanged<String?> onSelectParametro;
   final ValueChanged<ParametroComparativo> onParametroChanged;
@@ -146,7 +124,6 @@ class _ComparacaoBloco extends StatefulWidget {
     required this.onChanged,
     required this.parametros,
     required this.parametroSelecionadoId,
-    required this.testeLabel,
     required this.onAddParametroForBloco,
     required this.onSelectParametro,
     required this.onParametroChanged,
@@ -320,7 +297,6 @@ class _ComparacaoBlocoState extends State<_ComparacaoBloco> {
           parametros: widget.parametros,
           selecionadoId: widget.parametroSelecionadoId,
           onSelect: widget.onSelectParametro,
-          testeLabel: widget.testeLabel,
         ),
         const SizedBox(height: 12),
         novoCaseSectionLabel('Fotos'),
