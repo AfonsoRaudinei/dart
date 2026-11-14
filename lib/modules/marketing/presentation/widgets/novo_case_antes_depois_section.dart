@@ -17,12 +17,15 @@ class NovoCaseAntesDepoisSection extends StatelessWidget {
   final TextEditingController conclusaoCtrl;
   final VoidCallback onAddComparacao;
   final ValueChanged<int> onRemoveComparacao;
-  final void Function(int index, NovoCaseComparacao comparacao) onComparacaoChanged;
+  final void Function(int index, NovoCaseComparacao comparacao)
+  onComparacaoChanged;
   final ValueChanged<int> onAddParametro;
   final void Function(int comparacaoIndex, ParametroComparativo parametro)
-      onParametroChanged;
-  final void Function(int comparacaoIndex, String parametroId) onDeleteParametro;
-  final void Function(int comparacaoIndex, String? parametroId) onSelectParametro;
+  onParametroChanged;
+  final void Function(int comparacaoIndex, String parametroId)
+  onDeleteParametro;
+  final void Function(int comparacaoIndex, String? parametroId)
+  onSelectParametro;
   final VoidCallback onAddConclusao;
   final VoidCallback onRemoveConclusao;
 
@@ -61,23 +64,16 @@ class NovoCaseAntesDepoisSection extends StatelessWidget {
           final comparacao = comparacoes[index];
           final titulo = 'Comparação ${index + 1}';
           return Padding(
-            padding: EdgeInsets.only(bottom: index < comparacoes.length - 1 ? 8 : 0),
+            padding: EdgeInsets.only(
+              bottom: index < comparacoes.length - 1 ? 8 : 0,
+            ),
             child: _ComparacaoBloco(
+              key: ValueKey(comparacao.id),
               titulo: titulo,
               showRemove: index > 0,
               comparacao: comparacao,
               onRemove: () => onRemoveComparacao(index),
-              onFotoAntesChanged: (url) => onComparacaoChanged(
-                index,
-                comparacao.copyWith(fotoAntesUrl: url, clearFotoAntes: url == null),
-              ),
-              onFotoDepoisChanged: (url) => onComparacaoChanged(
-                index,
-                comparacao.copyWith(
-                  fotoDepoisUrl: url,
-                  clearFotoDepois: url == null,
-                ),
-              ),
+              onChanged: (updated) => onComparacaoChanged(index, updated),
               parametros: comparacao.parametros,
               parametroSelecionadoId: comparacao.parametroSelecionadoId,
               testeLabel: _testeLabel,
@@ -127,13 +123,12 @@ class NovoCaseAntesDepoisSection extends StatelessWidget {
   }
 }
 
-class _ComparacaoBloco extends StatelessWidget {
+class _ComparacaoBloco extends StatefulWidget {
   final String titulo;
   final bool showRemove;
   final NovoCaseComparacao comparacao;
   final VoidCallback onRemove;
-  final void Function(String?) onFotoAntesChanged;
-  final void Function(String?) onFotoDepoisChanged;
+  final ValueChanged<NovoCaseComparacao> onChanged;
   final List<ParametroComparativo> parametros;
   final String? parametroSelecionadoId;
   final String testeLabel;
@@ -143,12 +138,12 @@ class _ComparacaoBloco extends StatelessWidget {
   final ValueChanged<String> onDeleteParametro;
 
   const _ComparacaoBloco({
+    super.key,
     required this.titulo,
     required this.showRemove,
     required this.comparacao,
     required this.onRemove,
-    required this.onFotoAntesChanged,
-    required this.onFotoDepoisChanged,
+    required this.onChanged,
     required this.parametros,
     required this.parametroSelecionadoId,
     required this.testeLabel,
@@ -159,7 +154,120 @@ class _ComparacaoBloco extends StatelessWidget {
   });
 
   @override
+  State<_ComparacaoBloco> createState() => _ComparacaoBlocoState();
+}
+
+class _ComparacaoBlocoState extends State<_ComparacaoBloco> {
+  final Map<String, TextEditingController> _rotulos = {};
+  late final TextEditingController _textoCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _textoCtrl = TextEditingController(text: widget.comparacao.texto);
+    for (final slot in widget.comparacao.fotos) {
+      _rotulos[slot.id] = TextEditingController(text: slot.rotulo);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _ComparacaoBloco oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _dropUnusedRotulos();
+    for (final slot in widget.comparacao.fotos) {
+      final controller = _rotulos[slot.id];
+      if (controller == null) {
+        _rotulos[slot.id] = TextEditingController(text: slot.rotulo);
+      } else {
+        _align(controller, slot.rotulo);
+      }
+    }
+    _align(_textoCtrl, widget.comparacao.texto);
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _rotulos.values) {
+      controller.dispose();
+    }
+    _textoCtrl.dispose();
+    super.dispose();
+  }
+
+  void _dropUnusedRotulos() {
+    final vivos = widget.comparacao.fotos.map((slot) => slot.id).toSet();
+    final mortos = _rotulos.keys.where((id) => !vivos.contains(id)).toList();
+    for (final id in mortos) {
+      final controller = _rotulos.remove(id);
+      if (controller == null) continue;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.dispose();
+      });
+    }
+  }
+
+  void _align(TextEditingController controller, String value) {
+    if (controller.text == value) return;
+    controller.value = TextEditingValue(
+      text: value,
+      selection: TextSelection.collapsed(offset: value.length),
+    );
+  }
+
+  void _setRotulo(int index, String rotulo) {
+    final fotos = [
+      for (var i = 0; i < widget.comparacao.fotos.length; i++)
+        if (i == index)
+          widget.comparacao.fotos[i].copyWith(rotulo: rotulo)
+        else
+          widget.comparacao.fotos[i],
+    ];
+    widget.onChanged(widget.comparacao.copyWith(fotos: fotos));
+  }
+
+  void _setUrl(int index, String? url) {
+    final fotos = [
+      for (var i = 0; i < widget.comparacao.fotos.length; i++)
+        if (i == index)
+          widget.comparacao.fotos[i].copyWith(url: url, clearUrl: url == null)
+        else
+          widget.comparacao.fotos[i],
+    ];
+    widget.onChanged(widget.comparacao.copyWith(fotos: fotos));
+  }
+
+  void _addFoto() {
+    final fotos = widget.comparacao.fotos;
+    if (fotos.length >= 3) return;
+    final rotulo = fotos.length == 1 ? 'Depois' : '';
+    HapticFeedback.selectionClick();
+    widget.onChanged(
+      widget.comparacao.copyWith(
+        fotos: [
+          ...fotos,
+          NovoCaseFotoSlot(rotulo: rotulo),
+        ],
+      ),
+    );
+  }
+
+  void _removeFoto(int index) {
+    final fotos = widget.comparacao.fotos;
+    if (fotos.length <= 1 || index < 0 || index >= fotos.length) return;
+    HapticFeedback.selectionClick();
+    widget.onChanged(
+      widget.comparacao.copyWith(
+        fotos: [
+          for (var i = 0; i < fotos.length; i++)
+            if (i != index) fotos[i],
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final comparacao = widget.comparacao;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -167,7 +275,7 @@ class _ComparacaoBloco extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                titulo,
+                widget.titulo,
                 style: TextStyle(
                   color: novoCasePrimaryTextColor(context),
                   fontWeight: FontWeight.w700,
@@ -175,11 +283,11 @@ class _ComparacaoBloco extends StatelessWidget {
                 ),
               ),
             ),
-            if (showRemove)
+            if (widget.showRemove)
               IconButton(
                 onPressed: () {
                   HapticFeedback.selectionClick();
-                  onRemove();
+                  widget.onRemove();
                 },
                 icon: const Icon(Icons.delete_outline),
                 tooltip: 'Remover comparação',
@@ -187,88 +295,140 @@ class _ComparacaoBloco extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        ...parametros.map(
+        ...widget.parametros.map(
           (parametro) => ParametroCard(
             key: ValueKey('${comparacao.id}-${parametro.id}'),
             parametro: parametro,
-            selected: parametroSelecionadoId == parametro.id,
-            onChanged: onParametroChanged,
-            onDelete: () => onDeleteParametro(parametro.id),
-            onTap: () => onSelectParametro(
-              parametroSelecionadoId == parametro.id ? null : parametro.id,
+            selected: widget.parametroSelecionadoId == parametro.id,
+            onChanged: widget.onParametroChanged,
+            onDelete: () => widget.onDeleteParametro(parametro.id),
+            onTap: () => widget.onSelectParametro(
+              widget.parametroSelecionadoId == parametro.id
+                  ? null
+                  : parametro.id,
             ),
           ),
         ),
         OutlinedButton.icon(
-          onPressed: onAddParametroForBloco,
+          onPressed: widget.onAddParametroForBloco,
           icon: const Icon(Icons.add_rounded),
           label: const Text('Adicionar Parâmetro'),
           style: novoCaseGhostOutlinedButtonStyle(context),
         ),
         const SizedBox(height: 12),
         ComparativoChart(
-          parametros: parametros,
-          selecionadoId: parametroSelecionadoId,
-          onSelect: onSelectParametro,
-          testeLabel: testeLabel,
+          parametros: widget.parametros,
+          selecionadoId: widget.parametroSelecionadoId,
+          onSelect: widget.onSelectParametro,
+          testeLabel: widget.testeLabel,
         ),
         const SizedBox(height: 12),
         novoCaseSectionLabel('Fotos'),
         const SizedBox(height: 8),
+        _gradeFotos(context),
+        if (comparacao.fotos.length < 3) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _addFoto,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Adicionar foto'),
+            style: novoCaseGhostOutlinedButtonStyle(context),
+          ),
+        ],
+        const SizedBox(height: 12),
+        Text(
+          'Texto',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+            color: novoCaseSecondaryTextColor(context),
+          ),
+        ),
+        const SizedBox(height: 6),
+        novoCaseFieldBox(
+          child: novoCaseTextInput(
+            _textoCtrl,
+            'Nota livre (opcional)',
+            maxLines: 3,
+            onChanged: (value) {
+              widget.onChanged(comparacao.copyWith(texto: value));
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _gradeFotos(BuildContext context) {
+    final n = widget.comparacao.fotos.length;
+    if (n <= 1) return _slot(context, 0);
+    if (n == 2) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: _slot(context, 0)),
+          const SizedBox(width: 12),
+          Expanded(child: _slot(context, 1)),
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _slot(context, 0)),
+            const SizedBox(width: 12),
+            Expanded(child: _slot(context, 1)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _slot(context, 2),
+      ],
+    );
+  }
+
+  Widget _slot(BuildContext context, int index) {
+    final slot = widget.comparacao.fotos[index];
+    final controller = _rotulos[slot.id];
+    final canRemove = widget.comparacao.fotos.length > 1;
+    final rotulo = slot.rotulo.trim();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Antes *',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                      color: novoCaseSecondaryTextColor(context),
+              child: controller == null
+                  ? const SizedBox.shrink()
+                  : novoCaseFieldBox(
+                      child: novoCaseTextInput(
+                        controller,
+                        'Rótulo',
+                        onChanged: (value) => _setRotulo(index, value),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  FotoPickerWidget(
-                    label: 'Foto Antes',
-                    url: comparacao.fotoAntesUrl,
-                    folder: 'antes_depois',
-                    height: 140,
-                    required: comparacao.fotoAntesUrl == null,
-                    includeVegetalInversion: true,
-                    onChanged: onFotoAntesChanged,
-                  ),
-                ],
-              ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Depois *',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                      color: novoCaseSecondaryTextColor(context),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  FotoPickerWidget(
-                    label: 'Foto Depois',
-                    url: comparacao.fotoDepoisUrl,
-                    folder: 'antes_depois',
-                    height: 140,
-                    required: comparacao.fotoDepoisUrl == null,
-                    includeVegetalInversion: true,
-                    onChanged: onFotoDepoisChanged,
-                  ),
-                ],
+            if (canRemove)
+              IconButton(
+                onPressed: () => _removeFoto(index),
+                icon: const Icon(Icons.close_rounded),
+                tooltip: 'Remover foto',
+                visualDensity: VisualDensity.compact,
               ),
-            ),
           ],
+        ),
+        const SizedBox(height: 6),
+        FotoPickerWidget(
+          label: rotulo.isEmpty ? 'Foto' : rotulo,
+          url: slot.url,
+          folder: 'antes_depois',
+          height: 140,
+          required: false,
+          includeVegetalInversion: true,
+          onChanged: (url) => _setUrl(index, url),
         ),
       ],
     );
