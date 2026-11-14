@@ -123,8 +123,8 @@ Fonte: `ndviRefinedEnabledForUserPlan`.
 Isto ainda não é a regra acima.
 
 - `UserPlan.free` (`id = free`) aparece como “Sem plano pago” e, por dentro, está marcado como Bronze sem expiração. A tela mostra “5 cases” e “0/5 para Prata”.
-- O seletor aceita toque nos três metais sem olhar a cota. O sheet novo começa em Prata.
 - Cota por metal na publicação (Bronze 5 / Prata 5+5 / Ouro 5+5+10 conforme plano pago; free e expirado = 0 em todos; admin ilimitado).
+- Seletor **Visibilidade** travado sem plano pago; com plano, só metais permitidos pela conta são tocáveis; caso novo inicia no primeiro metal permitido.
 - Publicar case não exige compra. O bloqueio aplica a cota do metal escolhido (`visibilidade`), não um teto único somando metais.
 - O produtor vê case do cliente vinculado e qualquer Ouro público. Não há segunda publicação do produtor nem regra de ficar só o pin mais alto.
 - Mapa sem login lê Ouro com `publico_ate` ainda válido. Prata não aparece para todo usuário logado.
