@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import 'package:http/http.dart' show ClientException;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/services/connectivity_service.dart';
@@ -14,7 +15,10 @@ import '../../data/services/marketing_sync_service.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/marketing_case_status.dart';
 import '../../domain/enums/plano_marketing.dart';
+import '../../domain/marketing_producer_republicacao.dart';
 import '../../domain/marketing_visibility_policy.dart';
+import 'package:soloforte_app/core/access/producer_content_visibility.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 
 // ── Repositório ────────────────────────────────────────────────
@@ -348,6 +352,75 @@ class MarketingCasesNotifier
   Future<MarketingCase?> publishCase(MarketingCase newCase) async {
     final outcome = await publishCaseDetailed(newCase);
     return outcome.publishedCase;
+  }
+
+  /// Clone em rascunho para o produtor publicar com o plano dele (`source_case_id`).
+  Future<MarketingCase> republicarComoProdutor(
+    MarketingCase fonte, {
+    required Set<String> authorizedClientIds,
+  }) async {
+    final currentUserId = LocalSessionIdentity.resolveUserId();
+    if (currentUserId.isEmpty) {
+      throw StateError('Usuario nao autenticado.');
+    }
+
+    final owner = fonte.ownerUserId;
+    if (owner == null || owner.isEmpty || owner == currentUserId) {
+      throw StateError('Republicacao apenas de case de outro autor.');
+    }
+    if (fonte.liberadoEm == null) {
+      throw StateError('Case ainda nao liberado para republicacao.');
+    }
+    if (!ProducerContentVisibility.ownsOrLinkedClient(
+      currentUserId: currentUserId,
+      ownerUserId: owner,
+      clientId: fonte.clientId,
+      authorizedClientIds: authorizedClientIds,
+    )) {
+      throw StateError('Sem vinculo no cliente do case.');
+    }
+
+    final cases = state.valueOrNull ?? [];
+    if (producerJaRepublicouFonte(
+      cases: cases,
+      fonteId: fonte.id,
+      currentUserId: currentUserId,
+    )) {
+      throw StateError('Ja existe republicacao sua deste case.');
+    }
+
+    PlanoMarketing visibilidade = PlanoMarketing.bronze;
+    if (_ref != null) {
+      try {
+        final plan = await _ref.read(planoAtivoProvider.future);
+        visibilidade =
+            MarketingVisibilityPolicy.metalInicialNovoCase(plan) ??
+            PlanoMarketing.bronze;
+      } catch (e, st) {
+        AppLogger.error(
+          'Erro ao ler plano para metal inicial da republicacao',
+          tag: 'MarketingProvider',
+          error: e,
+          stackTrace: st,
+        );
+      }
+    }
+
+    final now = DateTime.now().toUtc();
+    final clone = fonte.copyWith(
+      id: const Uuid().v4(),
+      ownerUserId: currentUserId,
+      sourceCaseId: fonte.id,
+      visibilidade: visibilidade,
+      status: MarketingCaseStatus.draft,
+      syncStatus: 'local_only',
+      clearLiberadoEm: true,
+      clearPublicoAte: true,
+      criadoEm: now,
+      atualizadoEm: now,
+    );
+
+    return saveAsDraft(clone);
   }
 
   /// Salva o case como rascunho (apenas local, não sincroniza)
