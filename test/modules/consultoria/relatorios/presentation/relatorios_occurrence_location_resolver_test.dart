@@ -251,6 +251,196 @@ void main() {
       expect(names.talhao, isEmpty);
     });
   });
+
+  group('resolveOccurrencePlace', () {
+    final catalog = _twoFieldCatalog();
+
+    test('fieldId persistido no catálogo vence a geometria', () {
+      final place = resolveOccurrencePlace(
+        query: const OccurrencePlaceQuery(
+          id: 'occ',
+          persistedFieldId: 'field-b',
+          lat: -10.2,
+          lng: -48.2,
+        ),
+        catalog: catalog,
+      );
+      expect(place.fieldId, 'field-b');
+      expect(place.farmId, 'farm-b');
+      expect(place.isKnown, isTrue);
+    });
+
+    test('fieldId persistido ausente do catálogo fica desconhecido', () {
+      final place = resolveOccurrencePlace(
+        query: const OccurrencePlaceQuery(
+          id: 'occ',
+          persistedFieldId: 'nao-existe',
+          lat: -10.2,
+          lng: -48.2,
+          visitSessionId: 'sess-1',
+        ),
+        catalog: catalog,
+        session: VisitSessionSummary(
+          id: 'sess-1',
+          producerId: 'cli-1',
+          status: 'finished',
+          startTime: DateTime.utc(2026, 6, 1),
+          areaId: 'field-a',
+        ),
+      );
+      expect(place.fieldId, isNull);
+      expect(place.farmId, isNull);
+      expect(place.isKnown, isFalse);
+    });
+
+    test('sem fieldId, ponto dentro do polígono resolve talhão e fazenda', () {
+      final place = resolveOccurrencePlace(
+        query: const OccurrencePlaceQuery(id: 'occ', lat: -10.2, lng: -48.2),
+        catalog: catalog,
+      );
+      expect(place.fieldId, 'field-a');
+      expect(place.farmId, 'farm-a');
+    });
+
+    test('sem fieldId e sem ponto, areaId da sessão resolve', () {
+      final place = resolveOccurrencePlace(
+        query: const OccurrencePlaceQuery(id: 'occ', visitSessionId: 'sess-1'),
+        catalog: catalog,
+        session: VisitSessionSummary(
+          id: 'sess-1',
+          producerId: 'cli-1',
+          status: 'finished',
+          startTime: DateTime.utc(2026, 6, 1),
+          areaId: 'field-b',
+        ),
+      );
+      expect(place.fieldId, 'field-b');
+      expect(place.farmId, 'farm-b');
+    });
+
+    test('sem fieldId, ponto e sessão fica desconhecido', () {
+      final place = resolveOccurrencePlace(
+        query: const OccurrencePlaceQuery(id: 'occ'),
+        catalog: catalog,
+      );
+      expect(place.isKnown, isFalse);
+      expect(place.fieldId, isNull);
+      expect(place.farmId, isNull);
+    });
+
+    test('indexOccurrencePlaces só consulta a sessão quando precisa', () async {
+      final lookup = _CountingVisitSessionLookup({
+        'sess-1': VisitSessionSummary(
+          id: 'sess-1',
+          producerId: 'cli-1',
+          status: 'finished',
+          startTime: DateTime.utc(2026, 6, 1),
+          areaId: 'field-b',
+        ),
+      });
+      final places = await indexOccurrencePlaces(
+        catalog: catalog,
+        visitSessionLookup: lookup,
+        queries: const [
+          OccurrencePlaceQuery(
+            id: 'persisted',
+            persistedFieldId: 'field-b',
+            lat: -10.2,
+            lng: -48.2,
+            visitSessionId: 'sess-1',
+          ),
+          OccurrencePlaceQuery(
+            id: 'point',
+            lat: -10.2,
+            lng: -48.2,
+            visitSessionId: 'sess-1',
+          ),
+          OccurrencePlaceQuery(
+            id: 'missing-field',
+            persistedFieldId: 'nao-existe',
+            lat: -10.2,
+            lng: -48.2,
+            visitSessionId: 'sess-other',
+          ),
+          OccurrencePlaceQuery(id: 'session-a', visitSessionId: 'sess-1'),
+          OccurrencePlaceQuery(id: 'session-b', visitSessionId: 'sess-1'),
+        ],
+      );
+
+      expect(lookup.findByIdCount, 1);
+      expect(places['persisted']?.fieldId, 'field-b');
+      expect(places['persisted']?.farmId, 'farm-b');
+      expect(places['point']?.fieldId, 'field-a');
+      expect(places['point']?.farmId, 'farm-a');
+      expect(places['missing-field']?.isKnown, isFalse);
+      expect(places['session-a']?.fieldId, 'field-b');
+      expect(places['session-b']?.fieldId, 'field-b');
+    });
+
+    test('erro ao carregar fazendas devolve catálogo vazio', () async {
+      final catalog = await loadOccurrencePlaceCatalog(
+        clientId: 'cli-1',
+        farmLookup: _ThrowingFarmLookup(),
+        fieldLookup: _FakeFieldLookup(const <FieldSummary>[]),
+      );
+      expect(catalog.farms, isEmpty);
+      expect(catalog.fields, isEmpty);
+    });
+  });
+}
+
+OccurrencePlaceCatalog _twoFieldCatalog() {
+  return OccurrencePlaceCatalog(
+    farms: const [
+      FarmSummary(id: 'farm-a', clientId: 'cli-1', name: 'Fazenda A'),
+      FarmSummary(id: 'farm-b', clientId: 'cli-1', name: 'Fazenda B'),
+    ],
+    fieldsByFarm: {
+      'farm-a': [
+        FieldSummary(
+          id: 'field-a',
+          name: 'Talhão A',
+          farmId: 'farm-a',
+          geometry: _polygon([_squareRing]),
+        ),
+      ],
+      'farm-b': [
+        FieldSummary(
+          id: 'field-b',
+          name: 'Talhão B',
+          farmId: 'farm-b',
+          geometry: _polygon([
+            [
+              [10.0, 50.0],
+              [11.0, 50.0],
+              [11.0, 51.0],
+              [10.0, 51.0],
+              [10.0, 50.0],
+            ],
+          ]),
+        ),
+      ],
+    },
+  );
+}
+
+class _CountingVisitSessionLookup implements IVisitSessionLookup {
+  _CountingVisitSessionLookup(this.sessions);
+
+  final Map<String, VisitSessionSummary> sessions;
+  int findByIdCount = 0;
+
+  @override
+  Future<VisitSessionSummary?> findById(String sessionId) async {
+    findByIdCount += 1;
+    return sessions[sessionId];
+  }
+
+  @override
+  Future<VisitSessionSummary?> getActiveSession() async => null;
+
+  @override
+  Future<List<VisitSessionSummary>> listFinished() async => const [];
 }
 
 class _FakeFarmLookup implements IFarmLookup {
