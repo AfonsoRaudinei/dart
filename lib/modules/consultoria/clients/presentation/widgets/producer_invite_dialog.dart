@@ -5,6 +5,8 @@ import 'package:soloforte_app/core/contracts/i_producer_invite_writer.dart';
 import 'package:soloforte_app/core/contracts/i_producer_invite_writer_provider.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 import 'package:soloforte_app/modules/consultoria/services/agronomic_sync_service.dart';
+import 'package:soloforte_app/modules/planos/domain/plano_occurrence_share.dart';
+import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 typedef EnsureClientRemoteFn = Future<void> Function(String clientId);
@@ -92,10 +94,13 @@ class _ProducerInviteDialogState extends ConsumerState<ProducerInviteDialog> {
       final injectedWriter = widget.inviteWriter;
       final IProducerInviteWriter writer =
           injectedWriter ?? ref.read(producerInviteWriterProvider);
+      final plan = ref.read(planoAtivoProvider).valueOrNull;
+      final podeOcorrencias =
+          plan?.consultorPodeCompartilharOcorrenciaNoVinculo ?? false;
       final share = ProducerShareSelection(
         farms: _shareFarms,
         fields: _shareFields,
-        occurrences: _shareOccurrences,
+        occurrences: podeOcorrencias && _shareOccurrences,
         reports: _shareReports,
       );
       if (!share.hasAny) {
@@ -120,6 +125,10 @@ class _ProducerInviteDialogState extends ConsumerState<ProducerInviteDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final plan = ref.watch(planoAtivoProvider).valueOrNull;
+    final podeOcorrencias =
+        plan?.consultorPodeCompartilharOcorrenciaNoVinculo ?? false;
+
     return AlertDialog(
       title: const Text('Convite do produtor'),
       content: SingleChildScrollView(
@@ -153,8 +162,11 @@ class _ProducerInviteDialogState extends ConsumerState<ProducerInviteDialog> {
               contentPadding: EdgeInsets.zero,
               visualDensity: VisualDensity.compact,
               title: const Text('Ocorrências'),
-              value: _shareOccurrences,
-              onChanged: _token == null
+              subtitle: podeOcorrencias
+                  ? null
+                  : const Text('Requer plano Bronze ou superior'),
+              value: podeOcorrencias ? _shareOccurrences : false,
+              onChanged: _token == null && podeOcorrencias
                   ? (value) =>
                         setState(() => _shareOccurrences = value ?? false)
                   : null,
