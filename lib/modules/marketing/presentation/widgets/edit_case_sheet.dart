@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
@@ -6,6 +8,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/contracts/i_client_lookup.dart';
 import '../../../../core/contracts/i_client_lookup_provider.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
+import '../../domain/entities/avaliacao_item.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
@@ -112,8 +115,9 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
       return;
     }
     if (_tipo == CaseTipo.antesDepois &&
-        (_fotoAntesUrl == null || _fotoDepoisUrl == null)) {
-      _showError('Adicione as fotos Antes e Depois.');
+        !_temUrl(_fotoAntesUrl) &&
+        !_temUrl(_fotoDepoisUrl)) {
+      _showError('Adicione pelo menos uma foto.');
       return;
     }
 
@@ -162,7 +166,9 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
       nomeTalhao: _trimmedOrNull(_nomeTalhaoCtrl.text),
       tamanhoHa: tamanhoHa,
       avaliacoes: casoOriginal.avaliacoes,
-      avaliacoesJson: casoOriginal.avaliacoesJson,
+      avaliacoesJson: _tipo == CaseTipo.antesDepois
+          ? _avaliacoesJsonComFotosDaEdicao(casoOriginal.avaliacoesJson)
+          : casoOriginal.avaliacoesJson,
       roi: casoOriginal.roi,
       conclusao: _trimmedOrNull(_conclusaoCtrl.text),
       conclusaoTecnica: _trimmedOrNull(_conclusaoTecnicaCtrl.text),
@@ -193,7 +199,9 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
     final json = <String, dynamic>{
       ...marketingCase.toJson(),
       'user_id': marketingCase.ownerUserId,
-      'avaliacoes': marketingCase.avaliacoes.map((item) => item.toJson()).toList(),
+      'avaliacoes': marketingCase.avaliacoes
+          .map((item) => item.toJson())
+          .toList(),
     };
 
     switch (marketingCase.tipo) {
@@ -218,7 +226,6 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
         json['roi_retorno'] = null;
         json['roi_calculado'] = null;
         json['avaliacoes'] = <Map<String, dynamic>>[];
-        json['avaliacoes_json'] = null;
         break;
       case CaseTipo.avaliacao:
         json['foto_principal_url'] = null;
@@ -245,6 +252,34 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
   String? _trimmedOrNull(String value) {
     final trimmed = value.trim();
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  bool _temUrl(String? url) => url != null && url.trim().isNotEmpty;
+
+  /// Atualiza só as duas fotos do primeiro bloco. O terceiro lado, o texto,
+  /// os parâmetros e os blocos seguintes permanecem.
+  String? _avaliacoesJsonComFotosDaEdicao(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return raw;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List || decoded.isEmpty) return raw;
+      final itens = decoded
+          .whereType<Map>()
+          .map(
+            (item) => AvaliacaoItem.fromJson(Map<String, dynamic>.from(item)),
+          )
+          .toList();
+      if (itens.isEmpty) return raw;
+      itens[0] = itens[0].copyWith(
+        fotoLadoAPath: _fotoAntesUrl,
+        fotoLadoBPath: _fotoDepoisUrl,
+        clearFotoLadoA: !_temUrl(_fotoAntesUrl),
+        clearFotoLadoB: !_temUrl(_fotoDepoisUrl),
+      );
+      return jsonEncode(itens.map((item) => item.toJson()).toList());
+    } catch (_) {
+      return raw;
+    }
   }
 
   double? _parseDouble(String raw) {
@@ -331,7 +366,7 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
                         url: _fotoAntesUrl,
                         folder: 'antes_depois',
                         height: 140,
-                        required: _fotoAntesUrl == null,
+                        required: false,
                         includeVegetalInversion: true,
                         onChanged: (url) => setState(() => _fotoAntesUrl = url),
                       ),
@@ -357,9 +392,10 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
                         url: _fotoDepoisUrl,
                         folder: 'antes_depois',
                         height: 140,
-                        required: _fotoDepoisUrl == null,
+                        required: false,
                         includeVegetalInversion: true,
-                        onChanged: (url) => setState(() => _fotoDepoisUrl = url),
+                        onChanged: (url) =>
+                            setState(() => _fotoDepoisUrl = url),
                       ),
                     ],
                   ),
@@ -375,7 +411,7 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
 
   @override
   Widget build(BuildContext context) {
-        final v = SoloForteSheetVisuals.of(context);
+    final v = SoloForteSheetVisuals.of(context);
     final isIos = v.isIos;
     // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final sheetBg = v.sheetBackground;
@@ -383,14 +419,10 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
     final handleColor = v.handleColor;
     final titleColor = v.titleColor;
     final hintColor = v.subtitleColor;
-    final lockAccent = isIos
-        ? v.iconStroke
-        : context.themeAccent;
+    final lockAccent = isIos ? v.iconStroke : context.themeAccent;
     final dropdownBg = v.cardBackground;
     final fieldText = v.titleColor;
-    final ctaBg = isIos
-        ? v.ctaBackground
-        : context.themeAccent;
+    final ctaBg = isIos ? v.ctaBackground : context.themeAccent;
     final ghostBorder = v.ghostBorder;
     final ghostFg = v.ghostText;
     final fotoSection = _buildFotoSection();
@@ -402,11 +434,11 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
         child: Container(
           decoration: BoxDecoration(
             color: sheetBg,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(sheetRadius),
+            ),
             border: isIos
-                ? Border(
-                    top: BorderSide(color: v.sheetBorder),
-                  )
+                ? Border(top: BorderSide(color: v.sheetBorder))
                 : null,
           ),
           child: SingleChildScrollView(
@@ -437,10 +469,11 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
                       Expanded(
                         child: Text(
                           'Editar case',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: titleColor,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                color: titleColor,
+                                fontWeight: FontWeight.w700,
+                              ),
                         ),
                       ),
                       IconButton(
@@ -452,9 +485,9 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
                   const SizedBox(height: 8),
                   Text(
                     widget.caso.localizacaoTexto,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: hintColor,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: hintColor),
                   ),
                   const SizedBox(height: 20),
                   novoCaseSectionLabel('Tipo do case'),
@@ -481,10 +514,11 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
                         const SizedBox(width: 10),
                         Text(
                           _tipoLabel,
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: titleColor,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: titleColor,
+                                fontWeight: FontWeight.w700,
+                              ),
                         ),
                       ],
                     ),
@@ -570,9 +604,8 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
                                 ),
                               )
                               .toList(),
-                          onChanged: (value) => setState(
-                            () => _produtividadeUnidade = value,
-                          ),
+                          onChanged: (value) =>
+                              setState(() => _produtividadeUnidade = value),
                         ),
                       ],
                     ),
@@ -635,9 +668,7 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(
-                                isIos
-                                    ? v.ghostRadius
-                                    : 8,
+                                isIos ? v.ghostRadius : 8,
                               ),
                             ),
                           ),
@@ -653,9 +684,7 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
                             foregroundColor: v.ctaText,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                v.ctaRadius,
-                              ),
+                              borderRadius: BorderRadius.circular(v.ctaRadius),
                             ),
                           ),
                           child: Text(_isSaving ? 'Salvando...' : 'Salvar'),
