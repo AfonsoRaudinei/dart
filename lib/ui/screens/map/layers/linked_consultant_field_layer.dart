@@ -48,6 +48,7 @@ class LinkedConsultantFieldLayer extends ConsumerWidget {
     for (final client in clients) {
       for (final farm in client.farms) {
         for (final field in farm.fields) {
+          if (field.fromDrawing) continue;
           polygons.addAll(
             _polygonsFor(
               field,

@@ -33,16 +33,14 @@ class ProducerMapContextCard extends ConsumerWidget {
       error: (_, __) => const SizedBox.shrink(),
       data: (dashboard) {
         final property = dashboard.ownProperty;
-        final farms = property.farms;
+        final farms = producerFarmsForProducer(
+          own: property,
+          linkedClients: dashboard.linkedClients,
+        );
         final selectedFarmId = ref.watch(producerMapSelectedFarmIdProvider);
         final selectedFieldId = ref.watch(producerMapSelectedFieldIdProvider);
         final selectedFarm = _selectedFarm(farms, selectedFarmId);
         final selectedField = _selectedField(selectedFarm, selectedFieldId);
-        final linkedFields = _linkedFieldOptions(dashboard.linkedClients);
-        final focusedLinkedId = ref.watch(linkedConsultantFocusFieldIdProvider);
-        final focusedLinked = linkedFields
-            .where((field) => field.id == focusedLinkedId)
-            .firstOrNull;
 
         _syncMapFarmSelection(ref, farms, selectedFarmId);
 
@@ -100,21 +98,6 @@ class ProducerMapContextCard extends ConsumerWidget {
                           ),
                         ),
                 ),
-                if (linkedFields.isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  _PickerLine<_LinkedConsultantField>(
-                    icon: Icons.account_balance_outlined,
-                    label: focusedLinked?.label ?? 'Áreas do consultor',
-                    enabled: true,
-                    items: linkedFields,
-                    itemLabel: (field) => field.label,
-                    trailing: focusedLinked?.hasGeometry == true
-                        ? Icons.center_focus_strong_rounded
-                        : null,
-                    onSelected: (field) =>
-                        unawaited(_selectLinkedField(context, ref, field)),
-                  ),
-                ],
               ],
             ),
           ),
@@ -155,31 +138,20 @@ class ProducerMapContextCard extends ConsumerWidget {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final farm = farms.first;
+      final fieldId = _defaultFieldId(farm);
       ref.read(producerMapSelectedFarmIdProvider.notifier).state = farm.id;
-      ref.read(producerMapSelectedFieldIdProvider.notifier).state = null;
+      ref.read(producerMapSelectedFieldIdProvider.notifier).state = fieldId;
       ref.read(selectedFarmIdProvider.notifier).state = farm.id;
-      ref.read(selectedTalhaoIdProvider.notifier).state = null;
+      ref.read(selectedTalhaoIdProvider.notifier).state = fieldId;
+      ref.read(linkedConsultantFocusFieldIdProvider.notifier).state =
+          farm.sharedByConsultant ? fieldId : null;
     });
   }
 
-  List<_LinkedConsultantField> _linkedFieldOptions(
-    List<ProducerLinkedClient> clients,
-  ) {
-    final options = <_LinkedConsultantField>[];
-    for (final client in clients) {
-      for (final farm in client.farms) {
-        for (final field in farm.fields) {
-          options.add(
-            _LinkedConsultantField(
-              id: field.id,
-              label: '${farm.name} · ${field.name}',
-              geometryJson: field.geometryJson,
-            ),
-          );
-        }
-      }
-    }
-    return options;
+  /// Fazenda do consultor já chega com talhão. A própria espera o toque.
+  String? _defaultFieldId(ProducerOwnFarm farm) {
+    if (!farm.sharedByConsultant || farm.fields.isEmpty) return null;
+    return farm.fields.first.id;
   }
 
   void _clearLinkedFocus(WidgetRef ref) {
@@ -194,11 +166,10 @@ class ProducerMapContextCard extends ConsumerWidget {
   ) async {
     HapticFeedback.selectionClick();
     _clearLinkedFocus(ref);
-    final points = await resolveVisitCheckInMapFocusPoints(
-      ref: ref,
-      clientId: property.clientId,
-      farmId: selectedFarm?.id,
-      talhaoId: null,
+    final points = await _focusPoints(
+      ref,
+      property: property,
+      farm: selectedFarm,
     );
     if (!context.mounted) return;
 
@@ -217,18 +188,15 @@ class ProducerMapContextCard extends ConsumerWidget {
     ProducerOwnFarm farm,
   ) async {
     HapticFeedback.selectionClick();
-    _clearLinkedFocus(ref);
+    final fieldId = _defaultFieldId(farm);
     ref.read(producerMapSelectedFarmIdProvider.notifier).state = farm.id;
-    ref.read(producerMapSelectedFieldIdProvider.notifier).state = null;
+    ref.read(producerMapSelectedFieldIdProvider.notifier).state = fieldId;
     ref.read(selectedFarmIdProvider.notifier).state = farm.id;
-    ref.read(selectedTalhaoIdProvider.notifier).state = null;
+    ref.read(selectedTalhaoIdProvider.notifier).state = fieldId;
+    ref.read(linkedConsultantFocusFieldIdProvider.notifier).state =
+        farm.sharedByConsultant ? fieldId : null;
 
-    final points = await resolveVisitCheckInMapFocusPoints(
-      ref: ref,
-      clientId: property.clientId,
-      farmId: farm.id,
-      talhaoId: null,
-    );
+    final points = await _focusPoints(ref, property: property, farm: farm);
     if (!context.mounted) return;
 
     if (onFocusPoints(points)) return;
@@ -247,15 +215,16 @@ class ProducerMapContextCard extends ConsumerWidget {
     ProducerOwnField field,
   ) async {
     HapticFeedback.selectionClick();
-    _clearLinkedFocus(ref);
     ref.read(producerMapSelectedFieldIdProvider.notifier).state = field.id;
     ref.read(selectedTalhaoIdProvider.notifier).state = field.id;
+    ref.read(linkedConsultantFocusFieldIdProvider.notifier).state =
+        farm.sharedByConsultant ? field.id : null;
 
-    final points = await resolveVisitCheckInMapFocusPoints(
-      ref: ref,
-      clientId: property.clientId,
-      farmId: farm.id,
-      talhaoId: field.id,
+    final points = await _focusPoints(
+      ref,
+      property: property,
+      farm: farm,
+      fieldId: field.id,
     );
     if (!context.mounted) return;
 
@@ -267,17 +236,30 @@ class ProducerMapContextCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _selectLinkedField(
-    BuildContext context,
-    WidgetRef ref,
-    _LinkedConsultantField field,
-  ) async {
-    HapticFeedback.selectionClick();
-    ref.read(linkedConsultantFocusFieldIdProvider.notifier).state = field.id;
-    final points = geoJsonVerticesForBounds(field.geometryJson);
-    if (!context.mounted) return;
-    if (onFocusPoints(points)) return;
-    _showMapMessage(context, '${field.label} ainda sem contorno no mapa.');
+  Future<List<LatLng>> _focusPoints(
+    WidgetRef ref, {
+    required ProducerOwnProperty property,
+    required ProducerOwnFarm? farm,
+    String? fieldId,
+  }) async {
+    final fromGeometry = _geometryPoints(farm, fieldId);
+    if (fromGeometry.isNotEmpty) return fromGeometry;
+    return resolveVisitCheckInMapFocusPoints(
+      ref: ref,
+      clientId: farm?.sourceClientId ?? property.clientId,
+      farmId: farm?.id,
+      talhaoId: fieldId,
+    );
+  }
+
+  List<LatLng> _geometryPoints(ProducerOwnFarm? farm, String? fieldId) {
+    if (farm == null) return const [];
+    final fields = fieldId == null
+        ? farm.fields
+        : farm.fields.where((field) => field.id == fieldId);
+    return fields
+        .expand((field) => geoJsonVerticesForBounds(field.geometryJson))
+        .toList(growable: false);
   }
 
   void _showMapMessage(BuildContext context, String message) {
@@ -289,23 +271,6 @@ class ProducerMapContextCard extends ConsumerWidget {
         duration: const Duration(seconds: 2),
       ),
     );
-  }
-}
-
-class _LinkedConsultantField {
-  const _LinkedConsultantField({
-    required this.id,
-    required this.label,
-    required this.geometryJson,
-  });
-
-  final String id;
-  final String label;
-  final String? geometryJson;
-
-  bool get hasGeometry {
-    final raw = geometryJson?.trim() ?? '';
-    return raw.isNotEmpty;
   }
 }
 

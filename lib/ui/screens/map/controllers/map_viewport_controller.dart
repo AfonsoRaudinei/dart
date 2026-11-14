@@ -103,10 +103,13 @@ void syncProducerMapFarmSelection(
   }
 
   final farm = farms.first;
+  final fieldId = farm.sharedByConsultant && farm.fields.isNotEmpty
+      ? farm.fields.first.id
+      : null;
   ref.read(producerMapSelectedFarmIdProvider.notifier).state = farm.id;
-  ref.read(producerMapSelectedFieldIdProvider.notifier).state = null;
+  ref.read(producerMapSelectedFieldIdProvider.notifier).state = fieldId;
   ref.read(selectedFarmIdProvider.notifier).state = farm.id;
-  ref.read(selectedTalhaoIdProvider.notifier).state = null;
+  ref.read(selectedTalhaoIdProvider.notifier).state = fieldId;
 }
 
 class MapViewportController {
@@ -156,7 +159,10 @@ class MapViewportController {
       }
       if (dashboardAsync.hasValue) {
         final dashboard = dashboardAsync.value!;
-        final farms = dashboard.ownProperty.farms;
+        final farms = producerFarmsForProducer(
+          own: dashboard.ownProperty,
+          linkedClients: dashboard.linkedClients,
+        );
         syncProducerMapFarmSelection(
           ref,
           farms,
@@ -164,10 +170,13 @@ class MapViewportController {
         );
         if (farms.isNotEmpty) {
           final farmId = ref.read(selectedFarmIdProvider);
+          final farm =
+              farms.where((item) => item.id == farmId).firstOrNull ??
+              farms.first;
           final focusPoints = await resolveVisitCheckInMapFocusPoints(
             ref: ref,
-            clientId: dashboard.ownProperty.clientId,
-            farmId: farmId,
+            clientId: farm.sourceClientId ?? dashboard.ownProperty.clientId,
+            farmId: farm.id,
             talhaoId: null,
           );
           if (!isMounted) return;
