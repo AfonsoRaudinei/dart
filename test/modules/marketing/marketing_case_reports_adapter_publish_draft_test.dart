@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/modules/marketing/data/repositories/i_marketing_case_repository.dart';
-import 'package:soloforte_app/modules/marketing/data/services/marketing_sync_service.dart';
 import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.dart';
 import 'package:soloforte_app/modules/marketing/domain/enums/marketing_case_status.dart';
 import 'package:soloforte_app/modules/marketing/infra/marketing_case_reports_lookup_adapter.dart';
@@ -101,11 +100,11 @@ MarketingCase _draftCase(String id) {
 
 class _SeedNotifier extends MarketingCasesNotifier {
   _SeedNotifier(
-    IMarketingCaseRepository repository,
-    MarketingSyncService syncService,
-    Ref ref,
+    super._repository,
+    super._syncService,
+    super._ref,
     List<MarketingCase> seed,
-  ) : super(repository, syncService, ref) {
+  ) {
     state = AsyncData(seed);
   }
 
