@@ -393,13 +393,13 @@ PUBLIC_MAP_SCREEN="lib/ui/screens/public_map_screen.dart"
 NOVO_CASE_SHEET="lib/modules/marketing/presentation/screens/novo_case_sheet.dart"
 
 if [ -f "$MARKETING_CASE_MARKER" ] \
-  && grep -q "PlanoMarketing.ouro => 10.0" "$MARKETING_CASE_MARKER" \
+  && grep -q "PlanoMarketing.ouro => 8.0" "$MARKETING_CASE_MARKER" \
   && grep -q "PlanoMarketing.prata => 12.0" "$MARKETING_CASE_MARKER" \
   && grep -q "PlanoMarketing.bronze => 14.0" "$MARKETING_CASE_MARKER" \
   && grep -q "isVisibleAtZoom" "$MARKETING_CASE_MARKER"; then
   pass "REGRA-MARKETING-1: marker define visibilidade por zoom/plano"
 else
-  fail "REGRA-MARKETING-1: MarketingCaseMarker deve manter minZoom ouro=10, prata=12, bronze=14 e isVisibleAtZoom()"
+  fail "REGRA-MARKETING-1: MarketingCaseMarker deve manter minZoom ouro=8, prata=12, bronze=14 e isVisibleAtZoom()"
 fi
 
 MARKETING_ZOOM_CONSUMERS=0
