@@ -433,3 +433,274 @@ class _OccurrenceFiltersPanel extends StatelessWidget {
     );
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SEÇÃO — Ocorrências Registradas
+// ══════════════════════════════════════════════════════════════════════════════
+
+class _OccurrenciasSection extends ConsumerStatefulWidget {
+  final DateFormat dateFormat;
+  final String? selectedProducerClientId;
+  final ValueChanged<String> onProducerSelected;
+
+  const _OccurrenciasSection({
+    required this.dateFormat,
+    required this.selectedProducerClientId,
+    required this.onProducerSelected,
+  });
+
+  @override
+  ConsumerState<_OccurrenciasSection> createState() =>
+      _OccurrenciasSectionState();
+}
+
+class _OccurrenciasSectionState extends ConsumerState<_OccurrenciasSection> {
+  OccurrenceFilters _filters = const OccurrenceFilters();
+  String? _farmId;
+  String? _fieldId;
+  bool _oldestFirst = false;
+  String? _boundProducerClientId;
+
+  void _syncProducerClient(String? clientId) {
+    if (_boundProducerClientId == clientId) return;
+    _boundProducerClientId = clientId;
+    _farmId = null;
+    _fieldId = null;
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _filters = const OccurrenceFilters();
+      _farmId = null;
+      _fieldId = null;
+      _oldestFirst = false;
+    });
+  }
+
+  void _toggleCategory(OccurrenceCategory category, bool selected) {
+    final next = {..._filters.categories};
+    if (selected) {
+      next.add(category);
+    } else {
+      next.remove(category);
+    }
+    setState(() => _filters = _filters.copyWith(categories: next));
+  }
+
+  void _toggleStatus(String status, bool selected) {
+    final next = {..._filters.statuses};
+    if (selected) {
+      next.add(status);
+    } else {
+      next.remove(status);
+    }
+    setState(() => _filters = _filters.copyWith(statuses: next));
+  }
+
+  void _toggleAndamento(String storageValue, bool selected) {
+    final next = {..._filters.andamentos};
+    if (selected) {
+      next.add(storageValue);
+    } else {
+      next.remove(storageValue);
+    }
+    setState(() => _filters = _filters.copyWith(andamentos: next));
+  }
+
+  void _selectFarm(String? farmId, OccurrencePlaceCatalog catalog) {
+    setState(() {
+      _farmId = farmId;
+      if (farmId == null) {
+        _fieldId = null;
+        return;
+      }
+      final fields = catalog.fieldsByFarm[farmId] ?? const <FieldSummary>[];
+      if (_fieldId != null && !fields.any((field) => field.id == _fieldId)) {
+        _fieldId = null;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final producerScope = _watchRelatoriosProducerScope(ref);
+    final occAsync = ref.watch(occurrencesListProvider);
+
+    return occAsync.when(
+      data: (raw) {
+        final list = _scopeRelatoriosOccurrences(producerScope, raw);
+        final nowLabel = widget.dateFormat.format(DateTime.now());
+        final producerCounts = _producerCountsFromIds(
+          list.map((o) => o.clientId),
+        );
+        final producerIds = producerCounts.keys.toList()..sort();
+        final effectiveClientId = resolveRelatoriosProducerClientId(
+          selectedClientId: widget.selectedProducerClientId,
+          routeClientId: _relatoriosRouteClienteId(context),
+          producerIds: producerIds,
+        );
+        _syncProducerClient(effectiveClientId);
+        final scoped = producerIds.isEmpty
+            ? list
+            : effectiveClientId == null
+            ? const <Occurrence>[]
+            : list
+                  .where(
+                    (occurrence) => occurrence.clientId == effectiveClientId,
+                  )
+                  .toList();
+        final needsProducerPick =
+            producerIds.length > 1 && effectiveClientId == null;
+        final placeRequest = effectiveClientId == null || scoped.isEmpty
+            ? null
+            : _occurrencePlaceRequest(effectiveClientId, scoped);
+        final indexAsync = placeRequest == null
+            ? const AsyncData<_OccurrencePlaceIndex>(
+                _OccurrencePlaceIndex.empty,
+              )
+            : ref.watch(_occurrencePlaceIndexProvider(placeRequest));
+        final catalog =
+            indexAsync.valueOrNull?.catalog ?? const OccurrencePlaceCatalog();
+        final places =
+            indexAsync.valueOrNull?.places ?? const <String, OccurrencePlace>{};
+        final placesLoading =
+            placeRequest != null &&
+            indexAsync.isLoading &&
+            !indexAsync.hasValue;
+        final placeIndexReady =
+            placeRequest == null || indexAsync.hasValue || indexAsync.hasError;
+        final catalogReady = placeIndexReady && !placesLoading;
+        final farmId = _acceptedOccurrenceFarmId(
+          catalog,
+          catalogReady,
+          _farmId,
+        );
+        final fieldId = _acceptedOccurrenceFieldId(catalog, farmId, _fieldId);
+        final filtered = _filterRelatorioOccurrences(
+          occurrences: needsProducerPick ? const <Occurrence>[] : scoped,
+          filters: _filters,
+          farmId: farmId,
+          fieldId: fieldId,
+          placeIndexReady: placeIndexReady,
+          places: places,
+        );
+        final displayList = _sortOccurrencesByCreatedAt(
+          filtered,
+          oldestFirst: _oldestFirst,
+        );
+        final exportClientId = effectiveClientId;
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          children: [
+            _InsetGroupHeader(
+              title: 'Ocorrências Registradas',
+              count: needsProducerPick ? 0 : displayList.length,
+            ),
+            if (list.isNotEmpty && producerIds.isNotEmpty)
+              _relatoriosProducerSelectorBlock(
+                context: context,
+                producerIds: producerIds,
+                itemCounts: producerCounts,
+                effectiveClientId: effectiveClientId,
+                onSelected: widget.onProducerSelected,
+              ),
+            if (exportClientId != null && displayList.isNotEmpty) ...[
+              _GeneratedReportCard(
+                leading: _relatoriosReportIconBadge(
+                  icon: SFIcons.assignment,
+                  accent: const Color(0xFF2C5564),
+                ),
+                eyebrow: 'Exportar lista',
+                title: 'Lista de Ocorrências',
+                subtitle: '${displayList.length} ocorrência(s)',
+                date: nowLabel,
+                enabled: true,
+                buildPayload: () => _buildOccurrenceListPayload(
+                  ref,
+                  displayList,
+                  exportClientId,
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (scoped.isNotEmpty) ...[
+              _OccurrenceFiltersPanel(
+                categories: _occurrenceCategoriesPresent(scoped),
+                filters: _filters,
+                oldestFirst: _oldestFirst,
+                showPlaceFilters: effectiveClientId != null,
+                placesLoading: placesLoading,
+                farms: catalog.farms,
+                fields: farmId == null
+                    ? const <FieldSummary>[]
+                    : (catalog.fieldsByFarm[farmId] ?? const <FieldSummary>[]),
+                farmId: farmId,
+                fieldId: fieldId,
+                onClear: _clearFilters,
+                onToggleCategory: _toggleCategory,
+                onClearCategories: () => setState(
+                  () => _filters = _filters.copyWith(categories: const {}),
+                ),
+                onToggleStatus: _toggleStatus,
+                onToggleAndamento: _toggleAndamento,
+                onOldestFirst: (value) {
+                  if (_oldestFirst == value) return;
+                  setState(() => _oldestFirst = value);
+                },
+                onFarmChanged: (value) => _selectFarm(value, catalog),
+                onFieldChanged: (value) => setState(() => _fieldId = value),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (list.isEmpty)
+              _PremiumEmptyState(
+                message: 'Nenhuma ocorrência ainda.',
+                ctaLabel: 'Abrir mapa',
+                onCta: () => context.go(AppRoutes.map),
+              )
+            else if (needsProducerPick)
+              const _PremiumEmptyState(message: 'Escolha o produtor.')
+            else if (scoped.isNotEmpty && displayList.isEmpty)
+              const _PremiumEmptyState(
+                message: 'Nenhuma ocorrência neste filtro.',
+              )
+            else if (displayList.isEmpty)
+              _PremiumEmptyState(
+                message: 'Nenhuma ocorrência para este produtor.',
+                ctaLabel: 'Abrir mapa',
+                onCta: () => context.go(AppRoutes.map),
+              )
+            else
+              ...displayList.map(
+                (occurrence) => _OccurrenciaCard(
+                  occurrence: occurrence,
+                  dateFormat: widget.dateFormat,
+                ),
+              ),
+            const SizedBox(height: kFabSafeArea),
+          ],
+        );
+      },
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16),
+        child: _SectionLoading(title: 'Ocorrências Registradas'),
+      ),
+      error: (e, stack) {
+        AppLogger.error(
+          'occurrencesListProvider ERROR',
+          tag: 'RelatoriosScreen',
+          error: e,
+          stackTrace: stack,
+        );
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: _SectionError(
+            title: 'Ocorrências Registradas',
+            onRetry: () => ref.refresh(occurrencesListProvider),
+          ),
+        );
+      },
+    );
+  }
+}
