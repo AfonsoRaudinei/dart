@@ -457,11 +457,13 @@ Usuário com plano verificado online nas últimas 24h pode publicar pin de marke
 - Prazo fixo, sem renovação automática. A validade continua em `user_plans.expira_em`.
 - Catálogo publicado (o preço cobrado é o cadastrado na loja, não um número fixo no app). Prazos 5 e 8 meses não existem em assinatura não renovável da Apple; a ficha usa 3, 6 e 12 meses:
 
-| Plano | Prazo | Referência | ID do produto |
+| Plano | Prazo | Referência BRL (cadastro loja) | ID do produto |
 |---|---|---|---|
-| Bronze | 3 meses | R$ 49,90 | `soloforte_plano_bronze` |
-| Prata | 6 meses | R$ 79,90 | `soloforte_plano_prata` |
-| Ouro | 12 meses | R$ 119,90 | `soloforte_plano_ouro` |
+| Bronze | 3 meses | R$ 90,00 | `soloforte_plano_bronze` |
+| Prata | 6 meses | R$ 300,00 | `soloforte_plano_prata` |
+| Ouro | 12 meses | R$ 960,00 | `soloforte_plano_ouro` |
+
+Valores detalhados e legado Mercado Pago: `docs/case.md` · operacional IAP: `docs/store/PRODUTOS_IAP_LOJAS.md`.
 
 - Apple: assinatura não renovável, no app `com.soloforte.soloforteApp`. Google: produto único consumível, no app `com.soloforte.app`, para permitir nova compra quando o prazo acabar.
 - `origem = pagamento` e o id da transação da loja só entram em `user_plans` depois que a Edge `loja-verificar-compra` validar o recibo com service role. O cliente não concede plano. A mesma transação não gera segundo insert.

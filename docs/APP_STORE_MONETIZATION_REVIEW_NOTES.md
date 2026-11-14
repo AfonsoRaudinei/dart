@@ -7,7 +7,7 @@ Escopo: compra nativa nas lojas (ADR-012, Adendo 2).
 
 O app não inicia compra por Mercado Pago e não abre checkout externo. O meio de pagamento é o da loja: StoreKit no iOS e Play Billing no Android. A taxa é a da loja.
 
-Prazos publicados: Bronze 3 meses, Prata 6 meses, Ouro 12 meses. A Apple não oferece 5 nem 8 meses em assinatura não renovável. O preço exibido é o que a loja devolver. Referência de cadastro: R$ 49,90, R$ 79,90 e R$ 119,90.
+Prazos publicados: Bronze 3 meses, Prata 6 meses, Ouro 12 meses. A Apple não oferece 5 nem 8 meses em assinatura não renovável. O preço exibido é o que a loja devolver. Referência de cadastro (pagamento único BRL): R$ 90,00, R$ 300,00 e R$ 960,00 (`docs/case.md`).
 
 IDs iguais nas duas lojas: `soloforte_plano_bronze`, `soloforte_plano_prata`, `soloforte_plano_ouro`.
 
