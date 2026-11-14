@@ -118,29 +118,38 @@ class MarketingCaseReportsLookupAdapter implements IMarketingCaseReportsLookup {
       return false;
     }
 
-    final plano = _ref.read(planoAtivoProvider).valueOrNull;
-    if (plano?.isAdmin != true) {
-      final plan = plano ?? UserPlan.free(userId: '');
+    UserPlan? plano = _ref.read(planoAtivoProvider).valueOrNull;
+    var skipPlanLimit = false;
+
+    if (plano == null) {
+      try {
+        plano = await _ref.read(planoAtivoProvider.future);
+      } catch (_) {
+        skipPlanLimit = true;
+      }
+    }
+
+    if (!skipPlanLimit && plano != null && !plano.isAdmin) {
       final metal = draft.visibilidade.name;
-      final limite = plan.cotaPublicacaoPorMetal(metal);
+      final limite = plano.cotaPublicacaoPorMetal(metal);
       if (marketingPublishBlockedByPlan(
-        plano: plan,
+        plano: plano,
         cases: cases,
         publishingCaseId: caseId,
         visibilidade: draft.visibilidade,
       )) {
         if (!context.mounted) return false;
-        final planoLabel = plano?.plano.label;
+        final planoLabel = plano.plano.label;
         final metalLabel = metal.toUpperCase();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               limite <= 0
                   ? 'Seu plano não permite cases $metalLabel'
-                      '${planoLabel != null ? ' (plano $planoLabel)' : ''}. '
+                      ' (plano $planoLabel). '
                       'Mantenha como Não gerado ou ajuste o metal.'
                   : 'Limite de $limite cases $metalLabel publicados'
-                      '${planoLabel != null ? ' no plano $planoLabel' : ''}. '
+                      ' no plano $planoLabel. '
                       'Mantenha como Não gerado ou exclua um case publicado.',
             ),
             duration: const Duration(seconds: 5),
