@@ -66,10 +66,10 @@ class MarketingCaseMarker extends StatelessWidget {
     };
   }
 
-  // Zoom mínimo por tier. Ouro aparece antes; Prata e Bronze exigem
+  // Zoom mínimo por tier. Ouro aparece de mais longe; Prata e Bronze exigem
   // aproximação progressiva para não poluir o mapa em visão regional.
   static double minZoomForTier(PlanoMarketing tier) => switch (tier) {
-    PlanoMarketing.ouro => 10.0,
+    PlanoMarketing.ouro => 8.0,
     PlanoMarketing.prata => 12.0,
     PlanoMarketing.bronze => 14.0,
   };
