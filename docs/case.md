@@ -66,7 +66,7 @@ Direção do vínculo: perfil consultor para perfil produtor.
 
 | Metal da publicação | Quem vê | Zoom mínimo no mapa |
 |---|---|---|
-| Ouro | Todos, inclusive quem não está logado | 10 |
+| Ouro | Todos, inclusive quem não está logado | 8 |
 | Prata | Todos os usuários logados | 12 |
 | Bronze | O autor e o produtor do vínculo | 14 |
 | Sem metal | Só o autor | — |
