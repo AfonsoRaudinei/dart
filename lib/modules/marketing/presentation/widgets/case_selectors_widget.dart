@@ -71,12 +71,14 @@ class CaseTipoSelector extends StatelessWidget {
 }
 
 class PlanoMarketingSelector extends StatelessWidget {
-  final PlanoMarketing selectedPlano;
+  final PlanoMarketing? selectedPlano;
+  final Set<PlanoMarketing> enabledMetals;
   final ValueChanged<PlanoMarketing> onChanged;
 
   const PlanoMarketingSelector({
     super.key,
     required this.selectedPlano,
+    required this.enabledMetals,
     required this.onChanged,
   });
 
@@ -92,38 +94,47 @@ class PlanoMarketingSelector extends StatelessWidget {
     };
     return Row(
       children: PlanoMarketing.values.map((p) {
-        final isSelected = selectedPlano == p;
+        final isEnabled = enabledMetals.contains(p);
+        final isSelected = selectedPlano != null && selectedPlano == p;
         final color = colors[p]!;
+        final displayColor = isEnabled
+            ? color
+            : color.withValues(alpha: isSelected ? 0.65 : 0.4);
         return Expanded(
-          child: GestureDetector(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              onChanged(p);
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? color.withValues(alpha: 0.15)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(
-                  v.ctaRadius,
+          child: Opacity(
+            opacity: isEnabled ? 1 : 0.55,
+            child: GestureDetector(
+              onTap: isEnabled
+                  ? () {
+                      HapticFeedback.selectionClick();
+                      onChanged(p);
+                    }
+                  : null,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? color.withValues(alpha: 0.15)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(
+                    v.ctaRadius,
+                  ),
+                  border: Border.all(
+                    color: isSelected ? color : inactiveBorder,
+                    width: isSelected ? 2.0 : 1.0,
+                  ),
                 ),
-                border: Border.all(
-                  color: isSelected ? color : inactiveBorder,
-                  width: isSelected ? 2.0 : 1.0,
-                ),
-              ),
-              child: Text(
-                p.name.toUpperCase(),
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: color,
-                  fontWeight: isSelected
-                      ? FontWeight.w700
-                      : FontWeight.normal,
+                child: Text(
+                  p.name.toUpperCase(),
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: displayColor,
+                    fontWeight: isSelected
+                        ? FontWeight.w700
+                        : FontWeight.normal,
+                  ),
                 ),
               ),
             ),
