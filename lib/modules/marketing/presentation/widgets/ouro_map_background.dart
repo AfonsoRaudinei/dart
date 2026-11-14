@@ -6,6 +6,7 @@ import '../../../../core/config/map_config.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/plano_marketing.dart';
+import '../../domain/marketing_visibility_policy.dart';
 import '../../presentation/providers/marketing_providers.dart';
 import '../../presentation/widgets/marketing_case_marker.dart';
 import '../../presentation/widgets/marketing_case_sheet.dart';
@@ -72,7 +73,12 @@ class _OuroMapBackgroundState extends ConsumerState<OuroMapBackground>
     final casesAsync = ref.watch(marketingCasesProvider);
     final ouros =
         casesAsync.valueOrNull
-            ?.where((c) => c.visibilidade == PlanoMarketing.ouro)
+            ?.where(
+              (c) =>
+                  c.visibilidade == PlanoMarketing.ouro &&
+                  c.liberadoEm != null &&
+                  MarketingVisibilityPolicy.janelaPublicaAtiva(c),
+            )
             .toList() ??
         [];
 
