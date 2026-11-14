@@ -190,7 +190,12 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
                       authorizedClientIds: authorized,
                     ),
                   )
-                : publishedCases)
+                : publishedCases.where(
+                    (c) => MarketingCaseVisibility.isVisibleOnMapForConsultant(
+                      marketingCase: c,
+                      currentUserId: currentUserId,
+                    ),
+                  ))
             .toList()
           ..sort(
             (a, b) => b.visibilidade.index.compareTo(a.visibilidade.index),
