@@ -7,6 +7,8 @@ import 'package:soloforte_app/modules/marketing/data/repositories/i_marketing_ca
 import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.dart';
 import 'package:soloforte_app/modules/marketing/presentation/providers/marketing_providers.dart';
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
+import 'package:soloforte_app/modules/planos/domain/enums/plano_origem.dart';
+import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
 import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
 import 'package:soloforte_app/ui/screens/map/handlers/novo_case_modal_launcher.dart';
 
@@ -58,7 +60,7 @@ void main() {
               );
             }),
             planoAtivoProvider.overrideWith(
-              (ref) async => UserPlan.free(userId: 'test-user'),
+              (ref) async => _paidBronze('test-user'),
             ),
           ],
           child: const MaterialApp(
@@ -76,7 +78,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 250));
 
       expect(
-        find.textContaining('Salvo como Não gerado em Relatórios → Marketing'),
+        find.textContaining('Limite de 5 cases BRONZE publicados'),
         findsOneWidget,
       );
       expect(repo.cases.length, 6);
@@ -119,7 +121,7 @@ void main() {
               );
             }),
             planoAtivoProvider.overrideWith(
-              (ref) async => UserPlan.free(userId: 'test-user'),
+              (ref) async => _paidBronze('test-user'),
             ),
           ],
           child: const MaterialApp(
@@ -182,11 +184,24 @@ class _LauncherHarness extends ConsumerWidget {
   }
 }
 
+UserPlan _paidBronze(String userId) {
+  return UserPlan(
+    id: 'plan-bronze',
+    userId: userId,
+    plano: PlanoTipo.bronze,
+    origem: PlanoOrigem.pagamento,
+    ativo: true,
+    iniciouEm: DateTime.now(),
+    expiraEm: DateTime.now().add(const Duration(days: 90)),
+    criadoEm: DateTime.now(),
+  );
+}
+
 MarketingCase _publishedCase(String id) {
   return MarketingCase.fromJson({
     'id': id,
     'tipo': 'resultado',
-    'visibilidade': 'ouro',
+    'visibilidade': 'bronze',
     'lat': -10.1,
     'lng': -48.2,
     'localizacao_texto': 'Palmas, TO',
@@ -204,7 +219,7 @@ MarketingCase _newDraftCase() {
   return MarketingCase.fromJson({
     'id': 'mkt-new',
     'tipo': 'resultado',
-    'visibilidade': 'ouro',
+    'visibilidade': 'bronze',
     'lat': -10.2,
     'lng': -48.3,
     'localizacao_texto': 'Palmas, TO',
