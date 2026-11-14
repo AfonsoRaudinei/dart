@@ -63,7 +63,7 @@ void main() {
   });
 
   testWidgets(
-    'após pré-preenchimento da visita, trocar cliente atualiza produtor',
+    'após pré-preenchimento da visita, trocar cliente não duplica produtor',
     (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -100,7 +100,7 @@ void main() {
       expect(
         tester
             .widget<TextFormField>(
-              find.widgetWithText(TextFormField, 'Produtor / Fazenda *'),
+              find.widgetWithText(TextFormField, 'Produtor / Fazenda'),
             )
             .controller!
             .text,
@@ -115,11 +115,11 @@ void main() {
       expect(
         tester
             .widget<TextFormField>(
-              find.widgetWithText(TextFormField, 'Produtor / Fazenda *'),
+              find.widgetWithText(TextFormField, 'Produtor / Fazenda'),
             )
             .controller!
             .text,
-        'Cliente Selecionável',
+        'José Augusto Miranda / Fazenda Boa Vista',
       );
     },
   );
@@ -196,7 +196,7 @@ void main() {
     expect(find.byType(DropdownButton<String>), findsNothing);
   });
 
-  testWidgets('selecionar cliente preenche produtor e propaga clientId', (
+  testWidgets('selecionar cliente não preenche produtor e propaga clientId', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -229,11 +229,11 @@ void main() {
     expect(
       tester
           .widget<TextFormField>(
-            find.widgetWithText(TextFormField, 'Produtor / Fazenda *'),
+            find.widgetWithText(TextFormField, 'Produtor / Fazenda'),
           )
           .controller!
           .text,
-      'Cliente Selecionável',
+      '',
     );
 
     final dropdown =
@@ -241,7 +241,7 @@ void main() {
     expect(dropdown.value, 'client-2');
   });
 
-  testWidgets('Antes/Depois: selecionar cliente preenche Produtor/Fazenda', (
+  testWidgets('Antes/Depois: selecionar cliente não duplica Produtor/Fazenda', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -272,11 +272,11 @@ void main() {
     expect(
       tester
           .widget<TextFormField>(
-            find.widgetWithText(TextFormField, 'Produtor / Fazenda *'),
+            find.widgetWithText(TextFormField, 'Produtor / Fazenda'),
           )
           .controller!
           .text,
-      'Cliente Selecionável',
+      '',
     );
   });
 
@@ -307,6 +307,8 @@ void main() {
         TextFormField,
         'Produtor / Fazenda *',
       );
+      final produtorController =
+          tester.widget<TextFormField>(produtorField).controller!;
       await tester.enterText(produtorField, 'Nome manual do produtor');
       await tester.pump();
 
@@ -315,10 +317,7 @@ void main() {
       await tester.tap(find.text('Cliente Selecionável').last);
       await tester.pumpAndSettle();
 
-      expect(
-        tester.widget<TextFormField>(produtorField).controller!.text,
-        'Nome manual do produtor',
-      );
+      expect(produtorController.text, 'Nome manual do produtor');
     },
   );
 }
