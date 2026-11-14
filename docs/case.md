@@ -15,9 +15,11 @@ O valor cobrado é o cadastrado na App Store ou na Google Play. Estes são os pr
 
 | Plano | Preço | Prazo | Produto |
 |---|---|---|---|
-| Bronze | R$ 20 | 3 meses | `soloforte_plano_bronze` |
-| Prata | R$ 50 | 6 meses | `soloforte_plano_prata` |
-| Ouro | R$ 100 | 12 meses | `soloforte_plano_ouro` |
+| Bronze | R$ 30 por mês (R$ 90 à vista, 3 meses) | 3 meses | `soloforte_plano_bronze` |
+| Prata | R$ 50 por mês (R$ 300 à vista, 6 meses) | 6 meses | `soloforte_plano_prata` |
+| Ouro | R$ 80 por mês (R$ 960 à vista, 12 meses) | 12 meses | `soloforte_plano_ouro` |
+
+A tela Meu Plano mostra essas vantagens no menu Grátis, Bronze, Prata e Ouro. O valor cobrado continua sendo o da loja.
 
 Compra no binário: StoreKit no iOS e Play Billing no Android. A Edge `loja-verificar-compra` grava `user_plans` depois de validar o recibo. O aparelho não concede plano.
 
