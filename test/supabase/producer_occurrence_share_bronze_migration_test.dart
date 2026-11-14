@@ -3,16 +3,20 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  final migration = File(
+  final consultorMigration = File(
     'supabase/migrations/20261114163000_producer_occurrence_share_bronze_plan.sql',
   ).readAsStringSync();
 
+  final producerViewMigration = File(
+    'supabase/migrations/20261114174500_producer_view_occurrence_bronze_plan.sql',
+  ).readAsStringSync();
+
   test('policy exige consultor Bronze+ no ramo vínculo', () {
-    expect(migration, contains('consultor_pode_compartilhar_ocorrencias'));
-    expect(migration, contains('create policy occurrences_select_authorized'));
-    expect(migration, contains('link.share_occurrences'));
+    expect(consultorMigration, contains('consultor_pode_compartilhar_ocorrencias'));
+    expect(consultorMigration, contains('create policy occurrences_select_authorized'));
+    expect(consultorMigration, contains('link.share_occurrences'));
     expect(
-      migration,
+      consultorMigration,
       contains(
         'consultor_pode_compartilhar_ocorrencias(link.consultor_user_id)',
       ),
@@ -21,9 +25,25 @@ void main() {
 
   test('RPC retorna client_id elegíveis para o produtor', () {
     expect(
-      migration,
+      consultorMigration,
       contains('list_occurrence_share_client_ids_for_producer'),
     );
-    expect(migration, contains('grant execute'));
+    expect(consultorMigration, contains('grant execute'));
+  });
+
+  test('migration produtor exige Bronze+ do produtor no RPC e na policy', () {
+    expect(
+      producerViewMigration,
+      contains('consultor_pode_compartilhar_ocorrencias(auth.uid())'),
+    );
+    expect(
+      producerViewMigration,
+      contains('consultor_pode_compartilhar_ocorrencias(link.consultor_user_id)'),
+    );
+    expect(producerViewMigration, contains('create policy occurrences_select_authorized'));
+    expect(
+      producerViewMigration,
+      contains('list_occurrence_share_client_ids_for_producer'),
+    );
   });
 }
