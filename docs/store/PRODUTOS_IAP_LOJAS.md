@@ -2,13 +2,19 @@
 
 Use os **mesmos Product IDs** na App Store e na Play Console.
 
-| ID | Plano | Prazo na conta | Referência BRL |
+**Fonte canônica dos valores de cadastro:** [`docs/case.md`](../case.md) (seção Preço). O app não grava esses números — só exibe o que a loja devolver.
+
+| ID | Plano | Prazo na conta | Referência BRL (pagamento único) |
 |---|---|---|---|
-| `soloforte_plano_bronze` | Bronze | 3 meses | R$ 49,90 |
-| `soloforte_plano_prata` | Prata | 6 meses | R$ 79,90 |
-| `soloforte_plano_ouro` | Ouro | 12 meses | R$ 119,90 |
+| `soloforte_plano_bronze` | Bronze | 3 meses | R$ 90,00 |
+| `soloforte_plano_prata` | Prata | 6 meses | R$ 300,00 |
+| `soloforte_plano_ouro` | Ouro | 12 meses | R$ 960,00 |
+
+Equivalente mensal de produto (copy interna): Bronze R$ 30/mês, Prata R$ 50/mês, Ouro R$ 80/mês — ver `docs/case.md`.
 
 O preço cobrado é o cadastrado na loja. O app mostra o texto devolvido pela loja (`ProductDetails.price`).
+
+**Legado (não usar na loja):** Mercado Pago fora do app — Bronze R$ 49,90 (3 meses), Prata R$ 79,90 (5 meses), Ouro R$ 119,90 (8 meses).
 
 ---
 

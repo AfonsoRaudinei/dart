@@ -133,7 +133,7 @@ Parcial em relação à regra acima (atualizado 14/11/2026).
 - O convite oferece Fazendas, Talhões e mapa, Ocorrências e Relatórios; Fazendas/Talhões/Relatórios ligados por padrão. **Ocorrências** só pode ser marcada com plano Bronze+ ativo (checkbox desligado e desabilitado sem plano; `createInvite` valida no app; RLS + RPC no Supabase).
 - Produtor lê ocorrências compartilhadas só quando `consultor_pode_compartilhar_ocorrencias` (Bronze+/admin ativo) — vínculos antigos com `share_occurrences=true` sem plano do consultor não expõem dados.
 - NDVI refinado já segue Ouro pago.
-- **Meu Plano** (`/planos/meu-plano`) e **Planos** (`/planos`) mostram preço só quando a loja devolve o produto (`LojaProduto.preco`). Sem produto na vitrine, o menu de vantagens usa só o prazo do catálogo (`store_plan_catalog.dart`) e o texto «preço na loja ao comprar» — sem BRL fictício no app. Valores de referência para cadastro na App Store / Play Console ficam só na documentação de loja.
+- **Meu Plano** (`/planos/meu-plano`) e **Planos** (`/planos`) mostram preço só quando a loja devolve o produto (`LojaProduto.preco`). Sem produto na vitrine, o menu de vantagens usa só o prazo do catálogo (`store_plan_catalog.dart`) e o texto «preço na loja ao comprar» — sem BRL fictício no app. Valores de referência para cadastro na App Store / Play Console: **R$ 90 / R$ 300 / R$ 960** (`docs/store/PRODUTOS_IAP_LOJAS.md`, alinhado à tabela Preço acima).
 
 ---
 

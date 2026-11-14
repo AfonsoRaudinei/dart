@@ -69,7 +69,7 @@ curl -s -o /dev/null -w "%{http_code}" \
 - [ ] Acordo **Paid Applications** ativo
 - [ ] Banco e fiscal preenchidos
 - [ ] Três assinaturas **não renováveis** (Subscription → Non-Renewing), IDs e prazos em [`PRODUTOS_IAP_LOJAS.md`](PRODUTOS_IAP_LOJAS.md)
-- [ ] Preços em BRL (referência R$ 49,90 / 79,90 / 119,90)
+- [ ] Preços em BRL (referência **R$ 90,00 / R$ 300,00 / R$ 960,00** — ver `docs/case.md` e `PRODUTOS_IAP_LOJAS.md`)
 - [ ] Associar os três produtos à **versão** que vai para revisão (obrigatório se o app oferece compra)
 
 ### C.2 Build e TestFlight
