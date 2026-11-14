@@ -152,9 +152,7 @@ void main() {
       expect(find.text('Depois'), findsOneWidget);
     });
 
-    testWidgets('mantém tipo resultado fixo ao salvar edição', (
-      tester,
-    ) async {
+    testWidgets('mantém tipo resultado fixo ao salvar edição', (tester) async {
       MarketingCase? savedCase;
 
       await tester.pumpWidget(
@@ -189,9 +187,7 @@ void main() {
       expect(savedCase!.prodComProduto, 68);
     });
 
-    testWidgets('bloqueia salvar resultado sem foto principal', (
-      tester,
-    ) async {
+    testWidgets('bloqueia salvar resultado sem foto principal', (tester) async {
       var saveCalled = false;
 
       await tester.pumpWidget(
@@ -235,7 +231,7 @@ void main() {
       );
     });
 
-    testWidgets('bloqueia salvar antes/depois sem ambas as fotos', (
+    testWidgets('bloqueia salvar antes/depois sem nenhuma foto', (
       tester,
     ) async {
       var saveCalled = false;
@@ -262,7 +258,9 @@ void main() {
       final pickers = tester.widgetList<FotoPickerWidget>(
         find.byType(FotoPickerWidget),
       );
-      pickers.first.onChanged(null);
+      for (final picker in pickers) {
+        picker.onChanged(null);
+      }
       await tester.pump();
 
       await tester.scrollUntilVisible(
@@ -275,8 +273,118 @@ void main() {
       await tester.pump();
 
       expect(saveCalled, isFalse);
-      expect(find.text('Adicione as fotos Antes e Depois.'), findsOneWidget);
+      expect(find.text('Adicione pelo menos uma foto.'), findsOneWidget);
     });
+
+    testWidgets('salva antes/depois com só a foto antes', (tester) async {
+      MarketingCase? savedCase;
+
+      await tester.pumpWidget(
+        _wrap(
+          EditCaseSheet(
+            caso: _caseAntesDepois(fotoDepoisUrl: null),
+            onClose: () {},
+            onSalvar: (updatedCase) async {
+              savedCase = updatedCase;
+            },
+          ),
+        ),
+      );
+
+      await tester.scrollUntilVisible(
+        find.text('Salvar'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+      await tester.tap(find.text('Salvar'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(savedCase, isNotNull);
+      expect(savedCase!.fotoAntesUrl, 'https://example.com/antes.jpg');
+      expect(savedCase!.fotoDepoisUrl, isNull);
+    });
+
+    testWidgets(
+      'trocar a foto antes atualiza o primeiro bloco e mantém o lado C',
+      (tester) async {
+        MarketingCase? savedCase;
+        const ladoC = 'https://example.com/lado-c.jpg';
+        const antesNovo = 'https://example.com/antes-novo.jpg';
+        final avaliacoesJson = jsonEncode([
+          {
+            'id': 'av-1',
+            'titulo': 'Comparação 1',
+            'nome_lado_a': 'Antes',
+            'nome_lado_b': 'Depois',
+            'nome_lado_c': 'Concorrente',
+            'foto_lado_a_path': 'https://example.com/antes.jpg',
+            'foto_lado_b_path': 'https://example.com/depois.jpg',
+            'foto_lado_c_path': ladoC,
+            'observacoes': 'nota do bloco',
+            'parametros': [
+              {'id': 'p1', 'titulo': 'Vagens', 'testemunha': 10, 'teste': 12},
+            ],
+          },
+          {
+            'id': 'av-2',
+            'titulo': 'Comparação 2',
+            'nome_lado_a': 'A',
+            'nome_lado_b': 'B',
+            'foto_lado_a_path': 'https://example.com/extra-a.jpg',
+          },
+        ]);
+
+        await tester.pumpWidget(
+          _wrap(
+            EditCaseSheet(
+              caso: _caseAntesDepois(avaliacoesJson: avaliacoesJson),
+              onClose: () {},
+              onSalvar: (updatedCase) async {
+                savedCase = updatedCase;
+              },
+            ),
+          ),
+        );
+
+        await tester.scrollUntilVisible(
+          find.byType(FotoPickerWidget).first,
+          500,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pump();
+        tester
+            .widgetList<FotoPickerWidget>(find.byType(FotoPickerWidget))
+            .first
+            .onChanged(antesNovo);
+        await tester.pump();
+
+        await tester.scrollUntilVisible(
+          find.text('Salvar'),
+          500,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pump();
+        await tester.tap(find.text('Salvar'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(savedCase, isNotNull);
+        final raw = jsonDecode(savedCase!.avaliacoesJson!) as List;
+        final primeiro = Map<String, dynamic>.from(raw.first as Map);
+        final segundo = Map<String, dynamic>.from(raw[1] as Map);
+        expect(primeiro['foto_lado_a_path'], antesNovo);
+        expect(primeiro['foto_lado_c_path'], ladoC);
+        expect(primeiro['nome_lado_c'], 'Concorrente');
+        expect(primeiro['observacoes'], 'nota do bloco');
+        expect(primeiro['titulo'], 'Comparação 1');
+        expect(primeiro['parametros'], hasLength(1));
+        expect(segundo['id'], 'av-2');
+        expect(segundo['foto_lado_a_path'], 'https://example.com/extra-a.jpg');
+        expect(savedCase!.fotoAntesUrl, antesNovo);
+      },
+    );
 
     testWidgets(
       'com clientId, limpar produtor ao salvar usa fallback do nome do cliente',
@@ -360,9 +468,7 @@ void main() {
 
 Widget _wrap(Widget child) {
   return ProviderScope(
-    overrides: [
-      clientLookupProvider.overrideWithValue(_FakeClientLookup()),
-    ],
+    overrides: [clientLookupProvider.overrideWithValue(_FakeClientLookup())],
     child: MaterialApp(
       home: MediaQuery(
         data: const MediaQueryData(size: Size(800, 1400)),
@@ -405,7 +511,11 @@ MarketingCase _caseAvaliacao() {
   );
 }
 
-MarketingCase _caseAntesDepois() {
+MarketingCase _caseAntesDepois({
+  String? fotoAntesUrl = 'https://example.com/antes.jpg',
+  String? fotoDepoisUrl = 'https://example.com/depois.jpg',
+  String? avaliacoesJson,
+}) {
   final now = DateTime.utc(2026, 8, 15, 12);
   return MarketingCase(
     id: 'case-antes-depois',
@@ -417,8 +527,9 @@ MarketingCase _caseAntesDepois() {
     produtorFazenda: 'Produtor B',
     produtoUtilizado: 'Produto Y',
     dataCase: now,
-    fotoAntesUrl: 'https://example.com/antes.jpg',
-    fotoDepoisUrl: 'https://example.com/depois.jpg',
+    fotoAntesUrl: fotoAntesUrl,
+    fotoDepoisUrl: fotoDepoisUrl,
+    avaliacoesJson: avaliacoesJson,
     criadoEm: now,
     atualizadoEm: now,
   );
