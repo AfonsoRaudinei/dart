@@ -16,6 +16,7 @@ import '../../data/producer_link_repository.dart';
 import '../../data/producer_property_repository.dart';
 
 part 'producer_property_forms.dart';
+part 'producer_property_linked_farm.dart';
 
 String _tokenAcceptErrorMessage(Object error) {
   if (error is FormatException) {
@@ -290,6 +291,10 @@ class _DashboardContent extends StatelessWidget {
       children: [
         _OwnPropertySection(
           property: dashboard.ownProperty,
+          linkedFarms: producerFarmsForProducer(
+            own: dashboard.ownProperty,
+            linkedClients: dashboard.linkedClients,
+          ).where((farm) => farm.sharedByConsultant).toList(growable: false),
           onAddFarm: onAddFarm,
           onEditFarm: onEditFarm,
           onDeleteFarm: onDeleteFarm,
@@ -313,6 +318,7 @@ class _DashboardContent extends StatelessWidget {
 class _OwnPropertySection extends StatelessWidget {
   const _OwnPropertySection({
     required this.property,
+    required this.linkedFarms,
     required this.onAddFarm,
     required this.onEditFarm,
     required this.onDeleteFarm,
@@ -323,6 +329,7 @@ class _OwnPropertySection extends StatelessWidget {
   });
 
   final ProducerOwnProperty property;
+  final List<ProducerOwnFarm> linkedFarms;
   final VoidCallback onAddFarm;
   final ValueChanged<ProducerOwnFarm> onEditFarm;
   final ValueChanged<ProducerOwnFarm> onDeleteFarm;
@@ -352,9 +359,9 @@ class _OwnPropertySection extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 14),
-          if (!property.hasFarms)
+          if (!property.hasFarms && linkedFarms.isEmpty)
             const _MutedText('Nenhuma fazenda cadastrada ainda.')
-          else
+          else ...[
             ...property.farms.map(
               (farm) => _OwnFarmTile(
                 farm: farm,
@@ -366,6 +373,8 @@ class _OwnPropertySection extends StatelessWidget {
                 onDeleteField: (field) => onDeleteField(farm, field),
               ),
             ),
+            ...linkedFarms.map((farm) => _LinkedFarmTile(farm: farm)),
+          ],
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
