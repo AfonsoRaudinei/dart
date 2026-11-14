@@ -801,12 +801,15 @@ class _InfoRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: context.premiumTextPrimary,
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: context.premiumTextPrimary,
+              ),
             ),
           ),
         ],
