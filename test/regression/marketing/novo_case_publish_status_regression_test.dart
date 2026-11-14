@@ -6,6 +6,7 @@ import 'package:soloforte_app/modules/marketing/data/services/marketing_sync_ser
 import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.dart';
 import 'package:soloforte_app/modules/marketing/presentation/providers/marketing_providers.dart';
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
+import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
 import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
 import 'package:soloforte_app/ui/screens/map/handlers/novo_case_modal_launcher.dart';
 
@@ -27,7 +28,10 @@ void main() {
               return _StubMarketingCasesNotifier(repo, sync, const []);
             }),
             planoAtivoProvider.overrideWith(
-              (ref) async => UserPlan.free(userId: 'test-user'),
+              (ref) async => UserPlan.free(userId: 'test-user').copyWith(
+                id: 'plan-ouro',
+                plano: PlanoTipo.ouro,
+              ),
             ),
           ],
           child: const MaterialApp(home: _PublishHarness()),
