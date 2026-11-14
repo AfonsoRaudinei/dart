@@ -15,6 +15,7 @@ import '../../data/services/marketing_sync_service.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/marketing_case_status.dart';
 import '../../domain/enums/plano_marketing.dart';
+import '../../domain/marketing_map_pin_dedup.dart';
 import '../../domain/marketing_producer_republicacao.dart';
 import '../../domain/marketing_visibility_policy.dart';
 import 'package:soloforte_app/core/access/producer_content_visibility.dart';
@@ -381,9 +382,10 @@ class MarketingCasesNotifier
     }
 
     final cases = state.valueOrNull ?? [];
+    final groupRootId = marketingCaseGroupRootId(fonte);
     if (producerJaRepublicouFonte(
       cases: cases,
-      fonteId: fonte.id,
+      groupRootId: groupRootId,
       currentUserId: currentUserId,
     )) {
       throw StateError('Ja existe republicacao sua deste case.');
@@ -410,7 +412,7 @@ class MarketingCasesNotifier
     final clone = fonte.copyWith(
       id: const Uuid().v4(),
       ownerUserId: currentUserId,
-      sourceCaseId: fonte.id,
+      sourceCaseId: groupRootId,
       visibilidade: visibilidade,
       status: MarketingCaseStatus.draft,
       syncStatus: 'local_only',
