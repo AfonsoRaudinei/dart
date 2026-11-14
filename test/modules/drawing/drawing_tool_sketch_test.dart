@@ -124,13 +124,17 @@ void main() {
         controller.pivotEdgePoint!.longitude,
         closeTo(expectedEdge.longitude, 1e-8),
       );
+
+      expect(controller.pivotAdjustUiVisible, isFalse);
+      controller.handlePivotTap(newCenter);
+      expect(controller.pivotAdjustUiVisible, isTrue);
       expect(
         controller.instructionText,
-        'Arraste o centro para posicionar ou a borda para o raio',
+        'Arraste a cruz para mover o centro ou o ponto na borda para o raio',
       );
       expect(
         controller.finishDrawingHint,
-        'Arraste o centro para posicionar ou a borda para o raio',
+        'Arraste a cruz para mover o centro ou o ponto na borda para o raio',
       );
 
       final ring =

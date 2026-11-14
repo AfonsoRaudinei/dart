@@ -11,14 +11,13 @@ import '../../domain/drawing_utils.dart';
 import '../../domain/models/drawing_models.dart';
 import '../controllers/drawing_controller.dart';
 import 'drawing_edit_layer.dart';
+import 'pivot_adjust_handles.dart';
 import 'vertex_handle_drag_preview.dart';
 
 /// Igual a [_VertexGotaMetrics] em drawing_edit_layer.dart (ponta no LatLng).
 const double _kHandleWidth = 56;
 const double _kHandleHeight = 78;
 
-/// Alça do pivô: quadrado centrado no LatLng, sem o offset da gota.
-const double _kPivotHandleSize = 44;
 
 /// Alças de vértice acima do [FlutterMap].
 ///
@@ -189,7 +188,8 @@ class _DrawingVertexHandleOverlayState
     final sketch =
         controller.currentTool == DrawingTool.pivot &&
         controller.currentState == DrawingState.drawing &&
-        controller.pivotRadiusFinalized;
+        controller.pivotRadiusFinalized &&
+        controller.pivotAdjustUiVisible;
     final editing = controller.isEditingPivot;
     if (!sketch && !editing) return null;
 
@@ -227,11 +227,17 @@ class _DrawingVertexHandleOverlayState
     final screen = _screenOf(handle.point);
     if (screen == null) return const SizedBox.shrink();
     if (handle.centered) {
+      final isCenter = handle.pivotRole == _PivotHandleRole.center;
+      final visualSize =
+          isCenter ? PivotMoveCrossHandle.size : PivotRadiusEdgeHandle.size;
+      final visual = isCenter
+          ? const IgnorePointer(child: PivotMoveCrossHandle())
+          : const IgnorePointer(child: PivotRadiusEdgeHandle());
       return Positioned(
-        left: screen.x - _kPivotHandleSize / 2,
-        top: screen.y - _kPivotHandleSize / 2,
-        width: _kPivotHandleSize,
-        height: _kPivotHandleSize,
+        left: screen.x - visualSize / 2,
+        top: screen.y - visualSize / 2,
+        width: visualSize,
+        height: visualSize,
         child: _VertexHandleHitScope(
           showGota: false,
           centeredHit: true,
@@ -242,7 +248,13 @@ class _DrawingVertexHandleOverlayState
             onPanUpdate: (details) => _onPanUpdate(details, handle),
             onPanEnd: (_) => _onPanEnd(handle),
             onPanCancel: _onPanCancel,
-            child: const SizedBox.expand(),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Center(child: visual),
+                const SizedBox.expand(),
+              ],
+            ),
           ),
         ),
       );
@@ -308,6 +320,7 @@ class _DrawingVertexHandleOverlayState
 
   void _onPanStart(_VertexHandleTarget handle) {
     if (handle.pivotRole != null) {
+      widget.controller.beginPivotHandleDrag();
       _activePivotRole = handle.pivotRole;
       _activePivotSketch = handle.isSketch;
       _active = VertexHandleDrag(
@@ -380,6 +393,7 @@ class _DrawingVertexHandleOverlayState
       } else if (!handle.isSketch) {
         controller.finishEditPivotGesture();
       }
+      controller.endPivotHandleDrag();
       controller.vertexDragPreview.clear();
       return;
     }
@@ -437,6 +451,7 @@ class _DrawingVertexHandleOverlayState
     _active = null;
     if (pivotRole != null) {
       if (!pivotSketch) widget.controller.finishEditPivotGesture();
+      widget.controller.endPivotHandleDrag();
       widget.controller.vertexDragPreview.clear();
       return;
     }
