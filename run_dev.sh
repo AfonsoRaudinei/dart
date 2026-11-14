@@ -23,6 +23,11 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/tool/load_local_env.sh"
 soloforte_load_local_env "$SCRIPT_DIR"
 
+# Chave recusada = satélite branco. Sem rede (exit 2) só avisa e segue.
+"$SCRIPT_DIR/tool/check_maptiler_key.sh" "$MAPTILER_API_KEY" || {
+  [ $? -eq 2 ] || exit 1
+}
+
 flutter run \
   -d "$DEVICE_ID" \
   --dart-define=GOOGLE_WEATHER_API_KEY="$GOOGLE_WEATHER_API_KEY" \
