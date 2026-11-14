@@ -133,7 +133,7 @@ class _MeuPlanoScreenState extends ConsumerState<MeuPlanoScreen> {
   }
 }
 
-class _PlanoAtivoContent extends ConsumerWidget {
+class _PlanoAtivoContent extends ConsumerStatefulWidget {
   final UserPlan plano;
   final LojaVitrine? vitrine;
   final String? aviso;
@@ -150,10 +150,48 @@ class _PlanoAtivoContent extends ConsumerWidget {
     required this.onRestaurar,
   });
 
-  bool get _semPlanoPago => plano.id == 'free';
+  @override
+  ConsumerState<_PlanoAtivoContent> createState() => _PlanoAtivoContentState();
+}
+
+class _PlanoAtivoContentState extends ConsumerState<_PlanoAtivoContent> {
+  late _PlanoMenu _menu;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    _menu = _PlanoMenu.doPlano(widget.plano);
+  }
+
+  @override
+  void didUpdateWidget(covariant _PlanoAtivoContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final plano = widget.plano;
+    final anterior = oldWidget.plano;
+    if (anterior.id != plano.id || anterior.plano != plano.plano) {
+      _menu = _PlanoMenu.doPlano(plano);
+    }
+  }
+
+  bool get _semPlanoPago => widget.plano.id == 'free';
+
+  LojaProduto? _produtoDoMenu(LojaVitrine vitrine) {
+    final sufixo = _menu.sufixoProduto;
+    if (sufixo == null) return null;
+    for (final produto in vitrine.produtos) {
+      if (produto.productId.endsWith(sufixo)) return produto;
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final plano = widget.plano;
+    final vitrine = widget.vitrine;
+    final aviso = widget.aviso;
+    final ocupado = widget.ocupado;
+    final onComprar = widget.onComprar;
+    final onRestaurar = widget.onRestaurar;
     final expiraEmBreve = plano.expiraEmBreve;
     final codigoAsync = ref.watch(meuCodigoIndicacaoProvider);
     final primary = Theme.of(context).colorScheme.primary;
@@ -195,15 +233,11 @@ class _PlanoAtivoContent extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                _semPlanoPago
-                    ? 'Sem plano pago'
-                    : 'Plano ${plano.plano.label}',
+                _semPlanoPago ? 'Sem plano pago' : 'Plano ${plano.plano.label}',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
-                  color: _semPlanoPago
-                      ? context.premiumTextPrimary
-                      : metal,
+                  color: _semPlanoPago ? context.premiumTextPrimary : metal,
                   letterSpacing: -0.4,
                 ),
               ),
@@ -310,25 +344,37 @@ class _PlanoAtivoContent extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 12),
-          if (vitrineLocal.produtos.isEmpty)
+          _MenuPlanos(
+            selecionado: _menu,
+            primaria: primary,
+            onSelecionar: (menu) {
+              if (menu == _menu) return;
+              HapticFeedback.lightImpact();
+              setState(() => _menu = menu);
+            },
+          ),
+          const SizedBox(height: 12),
+          _VantagensPlano(menu: _menu, primaria: primary),
+          if (_produtoDoMenu(vitrineLocal) case final produto?) ...[
+            const SizedBox(height: 12),
+            _ProdutoLojaRow(
+              produto: produto,
+              plano: plano,
+              semPlanoPago: _semPlanoPago,
+              ocupado: ocupado,
+              onComprar: () => onComprar(produto.productId),
+            ),
+          ],
+          if (vitrineLocal.produtos.isEmpty) ...[
+            const SizedBox(height: 12),
             Text(
               'A loja não tem planos disponíveis para compra neste momento.',
               style: TextStyle(
                 fontSize: 15,
                 color: context.premiumTextSecondary,
               ),
-            )
-          else
-            for (final produto in vitrineLocal.produtos) ...[
-              _ProdutoLojaRow(
-                produto: produto,
-                plano: plano,
-                semPlanoPago: _semPlanoPago,
-                ocupado: ocupado,
-                onComprar: () => onComprar(produto.productId),
-              ),
-              const SizedBox(height: 12),
-            ],
+            ),
+          ],
           const SizedBox(height: 8),
           Text(
             'O valor é definido pela App Store ou Google Play, cobrado à vista '
@@ -343,7 +389,7 @@ class _PlanoAtivoContent extends ConsumerWidget {
           if (aviso != null) ...[
             const SizedBox(height: 12),
             Text(
-              aviso!,
+              aviso,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -385,6 +431,178 @@ class _PlanoAtivoContent extends ConsumerWidget {
       case PlanoTipo.ouro:
         return '';
     }
+  }
+}
+
+enum _PlanoMenu {
+  gratis,
+  bronze,
+  prata,
+  ouro;
+
+  static const _titulos = ['Grátis', 'Bronze', 'Prata', 'Ouro'];
+
+  static _PlanoMenu doPlano(UserPlan plano) {
+    if (plano.id == 'free') return gratis;
+    return switch (plano.plano) {
+      PlanoTipo.bronze => bronze,
+      PlanoTipo.prata => prata,
+      PlanoTipo.ouro => ouro,
+    };
+  }
+
+  String get titulo => _titulos[index];
+
+  /// Sufixo do productId da loja. Grátis não tem compra.
+  String? get sufixoProduto => switch (this) {
+    gratis => null,
+    bronze => '_bronze',
+    prata => '_prata',
+    ouro => '_ouro',
+  };
+
+  Color cor(Color primaria) => switch (this) {
+    gratis => primaria,
+    bronze => PlanoTipoMetalColors.bronze,
+    prata => PlanoTipoMetalColors.prata,
+    ouro => PlanoTipoMetalColors.ouro,
+  };
+
+  List<String> get vantagens => switch (this) {
+    gratis => const [
+      'Seu case fica no mapa. Só você vê.',
+      'O seletor de metal aparece travado.',
+      'Você cria ocorrência. Ela não vai para o produtor.',
+      'O vínculo leva fazenda, talhões, mapa e desenhos.',
+    ],
+    bronze => const [
+      'R\$ 30 por mês, por 3 meses.',
+      '5 cases no metal Bronze.',
+      'O pin aparece para você e para o produtor do vínculo, a partir do zoom 14.',
+      'Você compartilha ocorrência.',
+      '5 indicações sobem para Prata.',
+    ],
+    prata => const [
+      'R\$ 50 por mês, por 6 meses.',
+      '5 cases Bronze e 5 cases Prata.',
+      'O pin Prata aparece para quem está logado, a partir do zoom 12.',
+      'Você compartilha o case no vínculo.',
+      '10 indicações sobem para Ouro.',
+    ],
+    ouro => const [
+      'R\$ 80 por mês, por 12 meses.',
+      '5 cases Bronze, 5 Prata e 10 Ouro.',
+      'O pin Ouro aparece para todos, mesmo sem login, a partir do zoom 10.',
+      'O produtor pode publicar o mesmo case. No mapa fica o pin mais alto.',
+      'NDVI refinado.',
+    ],
+  };
+}
+
+class _MenuPlanos extends StatelessWidget {
+  const _MenuPlanos({
+    required this.selecionado,
+    required this.primaria,
+    required this.onSelecionar,
+  });
+
+  final _PlanoMenu selecionado;
+  final Color primaria;
+  final ValueChanged<_PlanoMenu> onSelecionar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: context.premiumSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.premiumHairline),
+      ),
+      child: Row(
+        children: [
+          for (final item in _PlanoMenu.values)
+            Expanded(child: _item(context, item)),
+        ],
+      ),
+    );
+  }
+
+  Widget _item(BuildContext context, _PlanoMenu item) {
+    final ativo = item == selecionado;
+    final cor = item.cor(primaria);
+    return Material(
+      color: ativo
+          ? PlanoTipoMetalColors.badgeBackground(cor)
+          : Colors.transparent,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: () => onSelecionar(item),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+          child: Text(
+            item.titulo,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: ativo ? FontWeight.w700 : FontWeight.w500,
+              color: ativo ? cor : context.premiumTextSecondary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VantagensPlano extends StatelessWidget {
+  const _VantagensPlano({required this.menu, required this.primaria});
+
+  final _PlanoMenu menu;
+  final Color primaria;
+
+  @override
+  Widget build(BuildContext context) {
+    final cor = menu.cor(primaria);
+    final frases = menu.vantagens;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: context.premiumSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cor.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            menu.titulo,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: cor,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          for (var i = 0; i < frases.length; i++) ...[
+            Text(
+              frases[i],
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.35,
+                color: context.premiumTextPrimary,
+              ),
+            ),
+            if (i < frases.length - 1) const SizedBox(height: 8),
+          ],
+        ],
+      ),
+    );
   }
 }
 
@@ -577,10 +795,7 @@ class _InfoRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(
-                fontSize: 15,
-                color: context.premiumTextPrimary,
-              ),
+              style: TextStyle(fontSize: 15, color: context.premiumTextPrimary),
             ),
           ),
           const SizedBox(width: 8),
