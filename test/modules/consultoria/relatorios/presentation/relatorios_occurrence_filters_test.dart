@@ -231,8 +231,13 @@ void main() {
       repo.remove('occ-extra');
       final context = tester.element(find.byType(RelatoriosScreen));
       ProviderScope.containerOf(context).invalidate(occurrencesListProvider);
-      await tester.pump();
-      await tester.pump();
+      for (
+        var i = 0;
+        i < 20 && find.text('01/01/2026').evaluate().isNotEmpty;
+        i++
+      ) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
 
       expect(find.text('01/01/2026'), findsNothing);
       expect(find.text('02/03/2026'), findsOneWidget);
