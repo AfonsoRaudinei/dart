@@ -6,9 +6,9 @@ final occurrenceAccessReaderProvider = Provider<IOccurrenceAccessReader>((ref) {
   return const _NoOccurrenceAccessReader();
 });
 
-/// Vínculo ativo, sem gate de plano (pin Bronze, visita, fazenda).
+/// Pin Bronze do consultor: vínculo ativo e consultor Bronze+ (produtor sem plano ok).
 final authorizedClientIdsProvider = FutureProvider<Set<String>>((ref) async {
-  return ref.watch(occurrenceAccessReaderProvider).loadLinkedClientIds();
+  return ref.watch(occurrenceAccessReaderProvider).loadBronzePinClientIds();
 });
 
 /// Ocorrências compartilhadas: Bronze+ do consultor e do produtor.
@@ -39,6 +39,9 @@ class _NoOccurrenceAccessReader implements IOccurrenceAccessReader {
 
   @override
   Future<Set<String>> loadLinkedClientIds() async => const {};
+
+  @override
+  Future<Set<String>> loadBronzePinClientIds() async => const {};
 
   @override
   Future<Set<String>> loadReportClientIds() async => const {};

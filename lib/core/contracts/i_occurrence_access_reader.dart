@@ -6,8 +6,11 @@ abstract interface class IOccurrenceAccessReader {
   /// Ocorrências: vínculo ativo, `share_occurrences` e Bronze+ dos dois lados.
   Future<Set<String>> loadActiveClientIds();
 
-  /// Vínculo ativo, sem plano. Pin Bronze, visita e fazenda.
+  /// Vínculo ativo: visita confirmada e fazenda, sem plano do produtor.
   Future<Set<String>> loadLinkedClientIds();
+
+  /// Pin Bronze e cases Bronze do consultor: vínculo ativo e consultor Bronze+.
+  Future<Set<String>> loadBronzePinClientIds();
 
   /// Vínculo ativo com relatórios marcados no convite. Sem plano.
   Future<Set<String>> loadReportClientIds();

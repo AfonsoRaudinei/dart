@@ -410,6 +410,29 @@ void main() {
     expect(client.link.expiresAt.isBefore(DateTime.utc(2026, 1, 1)), isTrue);
   });
 
+  test('pin Bronze do consultor exige consultor Bronze+ no vínculo', () {
+    final when = DateTime.utc(2026, 11, 14);
+    ProducerClientLink link(String consultorId) => ProducerClientLink(
+      id: 'link-$consultorId',
+      consultorUserId: consultorId,
+      clientId: 'client-$consultorId',
+      producerUserId: 'produtor-1',
+      status: 'active',
+      expiresAt: when,
+      usedAt: when,
+      createdAt: when,
+      updatedAt: when,
+    );
+
+    expect(
+      bronzePinClientIdsOf(
+        [link('com-plano'), link('sem-plano')],
+        const {'com-plano'},
+      ),
+      ['client-com-plano'],
+    );
+  });
+
   test('relatório do convite não exige a flag de ocorrência', () {
     final when = DateTime.utc(2026, 11, 14);
     ProducerClientLink link({required String id, required bool reports}) {
