@@ -7,10 +7,12 @@ import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 
 import '../../domain/drawing_state.dart';
+import '../../domain/drawing_utils.dart';
+import '../../domain/models/drawing_models.dart';
 import '../providers/drawing_provider.dart';
 
-/// Captura gestos contínuos para freehand e preview de raio do pivô.
-class DrawingMapGestureOverlay extends ConsumerWidget {
+/// Captura gestos contínuos para freehand, raio do pivô e arraste do círculo.
+class DrawingMapGestureOverlay extends ConsumerStatefulWidget {
   const DrawingMapGestureOverlay({
     super.key,
     required this.mapController,
@@ -20,11 +22,20 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
   final MapController mapController;
   final bool isMapReady;
 
+  @override
+  ConsumerState<DrawingMapGestureOverlay> createState() =>
+      _DrawingMapGestureOverlayState();
+}
+
+class _DrawingMapGestureOverlayState
+    extends ConsumerState<DrawingMapGestureOverlay> {
+  bool _pivotBodyDrag = false;
+
   /// Altura reservada para toolbar de desenho + chips de medição (safe area extra).
   static const double _bottomChromeReserve = kDrawingBottomToolbarHeight + 56;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final controller = ref.watch(drawingControllerProvider);
     final captureFreehand =
         controller.currentTool == DrawingTool.freehand &&
@@ -35,8 +46,12 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
         controller.currentState == DrawingState.drawing &&
         controller.pivotCenter != null &&
         !controller.pivotRadiusFinalized;
+    final capturePivotBodyMove =
+        controller.currentTool == DrawingTool.pivot &&
+        controller.currentState == DrawingState.drawing &&
+        controller.pivotAdjustUiVisible;
 
-    if (!captureFreehand && !capturePivotRadius) {
+    if (!captureFreehand && !capturePivotRadius && !capturePivotBodyMove) {
       return const SizedBox.shrink();
     }
 
@@ -49,7 +64,7 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
           return Listener(
             behavior: HitTestBehavior.translucent,
             onPointerDown: (event) {
-              if (!isMapReady) return;
+              if (!widget.isMapReady) return;
               if (_isMapChromePointer(
                 event.localPosition,
                 size,
@@ -63,10 +78,16 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
 
               if (captureFreehand) {
                 controller.beginFreehandStroke(point);
+                return;
+              }
+              if (capturePivotBodyMove &&
+                  _isInsidePivotSketch(controller, point)) {
+                setState(() => _pivotBodyDrag = true);
+                controller.beginPivotHandleDrag();
               }
             },
             onPointerMove: (event) {
-              if (!isMapReady) return;
+              if (!widget.isMapReady) return;
               final point = _toLatLng(event.localPosition);
               if (point == null) return;
 
@@ -74,10 +95,12 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
                 controller.extendFreehandStroke(point);
               } else if (capturePivotRadius) {
                 controller.updatePivotEdge(point);
+              } else if (_pivotBodyDrag) {
+                controller.movePivotCenter(point);
               }
             },
             onPointerUp: (event) {
-              if (!isMapReady) return;
+              if (!widget.isMapReady) return;
               if (captureFreehand && controller.isFreehandStrokeActive) {
                 controller.endFreehandStroke();
                 return;
@@ -88,6 +111,7 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
                   controller.finalizePivotEdge(point);
                 }
               }
+              _endPivotBodyDrag(controller);
             },
             onPointerCancel: (event) {
               if (captureFreehand && controller.isFreehandStrokeActive) {
@@ -100,11 +124,25 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
                   controller.finalizePivotEdge(point);
                 }
               }
+              _endPivotBodyDrag(controller);
             },
           );
         },
       ),
     );
+  }
+
+  void _endPivotBodyDrag(DrawingController controller) {
+    if (!_pivotBodyDrag) return;
+    setState(() => _pivotBodyDrag = false);
+    controller.endPivotHandleDrag();
+  }
+
+  static bool _isInsidePivotSketch(DrawingController controller, LatLng point) {
+    final geometry = controller.liveGeometry;
+    if (geometry is! DrawingPolygon) return false;
+    if (geometry.coordinates.isEmpty) return false;
+    return DrawingUtils.isPointInPolygon(point, geometry.coordinates.first);
   }
 
   @visibleForTesting
@@ -113,12 +151,13 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
     Size size, {
     required double safeBottom,
     DrawingState drawingState = DrawingState.drawing,
-  }) => _isMapChromePointer(
-    local,
-    size,
-    safeBottom: safeBottom,
-    drawingState: drawingState,
-  );
+  }) =>
+      _isMapChromePointer(
+        local,
+        size,
+        safeBottom: safeBottom,
+        drawingState: drawingState,
+      );
 
   /// Evita que toques na toolbar inferior ou na coluna direita iniciem freehand.
   static bool _isMapChromePointer(
@@ -153,8 +192,8 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
     final columnStackHeight = drawModeColumn
         ? kMapActionColumnButtonSize
         : kMapActionColumnButtonSize +
-              kMapActionColumnSpacingAboveCheckIn +
-              kMapActionColumnButtonSize;
+            kMapActionColumnSpacingAboveCheckIn +
+            kMapActionColumnButtonSize;
     final columnBottom = safeBottom + kMapActionColumnBottomInset;
     if (fromBottom <= columnBottom + columnStackHeight + 8) {
       return true;
@@ -165,7 +204,7 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
 
   LatLng? _toLatLng(Offset localPosition) {
     try {
-      return mapController.camera.pointToLatLng(
+      return widget.mapController.camera.pointToLatLng(
         math.Point<double>(localPosition.dx, localPosition.dy),
       );
     } catch (_) {

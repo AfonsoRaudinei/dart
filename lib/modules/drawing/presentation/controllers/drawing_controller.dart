@@ -325,6 +325,10 @@ class DrawingController extends ChangeNotifier {
   bool _pivotRadiusFinalized = false;
   double? _pivotRadiusMeters;
 
+  /// Exibe a cruz de mover pivô após toque dentro do círculo em sketch.
+  bool _pivotAdjustUiVisible = false;
+  bool _isPivotHandleDragging = false;
+
   /// Pivô em edição. Separado do sketch para não vazar no próximo desenho.
   LatLng? _editPivotCenter;
   LatLng? _editPivotEdge;
@@ -2208,8 +2212,10 @@ class DrawingController extends ChangeNotifier {
           _pivotPreviewEdge = null;
           _pivotRadiusMeters = null;
           _pivotRadiusFinalized = false;
+          _pivotAdjustUiVisible = false;
         } else if (_pivotCenter != null) {
           _pivotCenter = null;
+          _pivotAdjustUiVisible = false;
         } else {
           return;
         }

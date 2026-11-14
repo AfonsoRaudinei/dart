@@ -23,6 +23,21 @@ extension DrawingControllerSketch on DrawingController {
   double? get pivotRadiusMeters =>
       isEditingPivot ? _editPivotRadiusMeters : _pivotRadiusMeters;
 
+  /// Cruz de ajuste: sempre na edição de pivô salvo; no sketch após toque no círculo.
+  bool get pivotAdjustUiVisible =>
+      isEditingPivot || _pivotAdjustUiVisible;
+
+  bool get isPivotHandleDragging => _isPivotHandleDragging;
+
+  /// Trava o pan do mapa enquanto o pivô está sendo ajustado (não arrasta o mapa).
+  bool get locksMapDragForPivot =>
+      isEditingPivot ||
+      (_stateMachine.currentTool == DrawingTool.pivot &&
+          _stateMachine.currentState == DrawingState.drawing &&
+          _pivotCenter != null &&
+          ((_pivotRadiusFinalized && pivotAdjustUiVisible) ||
+              _isPivotHandleDragging));
+
   int get polygonVertexCount => _currentPoints.length;
 
   int get freehandPointCount => _freehandPoints.length;
@@ -66,10 +81,13 @@ extension DrawingControllerSketch on DrawingController {
         if (_pivotCenter == null) {
           return 'Toque no mapa para definir o centro do pivô';
         }
-        if (_pivotPreviewEdge == null || (_pivotRadiusMeters ?? 0) <= 0) {
-          return 'Toque novamente para definir o raio';
+        if (!_pivotRadiusFinalized || (_pivotRadiusMeters ?? 0) <= 0) {
+          return 'Toque ou arraste para definir o raio';
         }
-        return 'Arraste o centro para posicionar ou a borda para o raio';
+        if (!_pivotAdjustUiVisible) {
+          return 'Toque dentro do pivô para exibir a cruz de ajuste';
+        }
+        return 'Arraste a cruz para mover o centro ou o ponto na borda para o raio';
       default:
         return 'Geometria inválida para finalizar';
     }
@@ -83,6 +101,8 @@ extension DrawingControllerSketch on DrawingController {
     _pivotPreviewEdge = null;
     _pivotRadiusFinalized = false;
     _pivotRadiusMeters = null;
+    _pivotAdjustUiVisible = false;
+    _isPivotHandleDragging = false;
     _selectedSketchVertexIndex = null;
     _isDraggingSketchVertex = false;
     _sketchAsTest = false;
@@ -374,10 +394,13 @@ extension DrawingControllerSketch on DrawingController {
         if (_pivotCenter == null) {
           return 'Toque no mapa para definir o centro do pivô';
         }
-        if (_pivotPreviewEdge == null || (_pivotRadiusMeters ?? 0) <= 0) {
+        if (!_pivotRadiusFinalized || (_pivotRadiusMeters ?? 0) <= 0) {
           return 'Toque ou arraste para definir o raio';
         }
-        return 'Arraste o centro para posicionar ou a borda para o raio';
+        if (!_pivotAdjustUiVisible) {
+          return 'Toque dentro do pivô para exibir a cruz de ajuste';
+        }
+        return 'Arraste a cruz para mover o centro ou o ponto na borda para o raio';
       default:
         return 'Toque no mapa para iniciar o desenho';
     }
@@ -408,11 +431,40 @@ extension DrawingControllerSketch on DrawingController {
     if (_pivotCenter == null) {
       if (!_ensureDrawingStarted()) return;
       _pivotCenter = point;
+      _pivotAdjustUiVisible = false;
       _notify();
       return;
     }
 
+    if (_pivotRadiusFinalized) {
+      if (_isTapInsidePivotSketch(point)) {
+        _pivotAdjustUiVisible = true;
+        _notify();
+      }
+      return;
+    }
+
     _setPivotPreview(point, finalize: true);
+  }
+
+  bool _isTapInsidePivotSketch(LatLng point) {
+    final geometry = liveGeometry;
+    if (geometry is! DrawingPolygon) return false;
+    if (geometry.coordinates.isEmpty) return false;
+    return DrawingUtils.isPointInPolygon(point, geometry.coordinates.first);
+  }
+
+  void beginPivotHandleDrag() {
+    if (_isDisposed) return;
+    _isPivotHandleDragging = true;
+    _notify();
+  }
+
+  void endPivotHandleDrag() {
+    if (_isDisposed) return;
+    if (!_isPivotHandleDragging) return;
+    _isPivotHandleDragging = false;
+    _notify();
   }
 
   /// Move o centro do pivô em sketch.

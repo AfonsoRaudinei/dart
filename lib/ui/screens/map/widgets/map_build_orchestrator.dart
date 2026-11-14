@@ -149,11 +149,15 @@ class MapBuildOrchestrator extends ConsumerWidget {
         (c) => (c.currentTool, c.currentState, c.isFreehandStrokeActive),
       ),
     );
+    final pivotLocksDrag = ref.watch(
+      drawingControllerProvider.select((c) => c.locksMapDragForPivot),
+    );
     final pinCorrectionActive = ref.watch(
       pinPositionCorrectionProvider.select((s) => s != null),
     );
     final disableMapDrag =
         pinCorrectionActive ||
+        pivotLocksDrag ||
         (freehandInteraction.$1 == DrawingTool.freehand &&
             (freehandInteraction.$2 == DrawingState.armed ||
                 freehandInteraction.$2 == DrawingState.drawing ||
