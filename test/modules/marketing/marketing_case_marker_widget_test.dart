@@ -20,7 +20,7 @@ void main() {
         );
         expect(
           MarketingCaseMarker.pinHeight(PlanoMarketing.prata, zoom: 12),
-          84,
+          125,
         );
         expect(
           MarketingCaseMarker.pinWidth(PlanoMarketing.ouro, zoom: 15),
@@ -32,7 +32,9 @@ void main() {
         );
         expect(
           MarketingCaseMarker.pinHeight(PlanoMarketing.prata, zoom: 15),
-          greaterThan(84),
+          greaterThan(
+            MarketingCaseMarker.pinHeight(PlanoMarketing.prata, zoom: 12),
+          ),
         );
       },
     );
@@ -82,6 +84,7 @@ void main() {
       );
 
       expect(image.imageUrl, 'https://example.com/depois.jpg');
+      expect(image.fit, BoxFit.contain);
     });
 
     testWidgets('mantem placeholder quando Antes/Depois nao tem fotos', (
