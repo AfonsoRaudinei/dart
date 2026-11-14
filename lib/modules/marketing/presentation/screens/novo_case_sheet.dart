@@ -100,9 +100,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
     _tipo = widget.tipo == CaseTipo.avaliacao
         ? CaseTipo.antesDepois
         : widget.tipo;
-    _comparacoes = [
-      NovoCaseComparacao(id: _uuid.v4()),
-    ];
+    _comparacoes = [NovoCaseComparacao(id: _uuid.v4())];
     _dataCase = DateTime.now();
     final initialContext = widget.initialVisitContext;
     if (initialContext == null) return;
@@ -208,8 +206,8 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
     }
     if (_tipo == CaseTipo.antesDepois) {
       final primeira = _comparacoes.first;
-      if (primeira.fotoAntesUrl == null || primeira.fotoDepoisUrl == null) {
-        _showError('Adicione as fotos Antes e Depois na Comparação 1.');
+      if (!primeira.temAlgumaFoto) {
+        _showError('Adicione pelo menos uma foto na Comparação 1.');
         return null;
       }
       if (!_validateComparacoesParametros()) return null;
@@ -227,22 +225,16 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
     final caseId = _uuid.v4();
     final now = DateTime.now();
     final primeira = _comparacoes.first;
-  final cultura = _culturaCtrl.text.trim();
-  final produtoLabel = _produtoCtrl.text.trim();
-  final extras = _comparacoes.length > 1 ? _comparacoes.sublist(1) : [];
-  final avaliacoesExtras = <AvaliacaoItem>[
-    for (var i = 0; i < extras.length; i++)
-      AvaliacaoItem(
-        id: extras[i].id,
-        titulo: 'Comparação ${i + 2}',
-        nomeLadoA: 'Testemunha',
-        nomeLadoB: produtoLabel.isEmpty ? 'Produto' : produtoLabel,
-        fotoLadoAPath: extras[i].fotoAntesUrl,
-        fotoLadoBPath: extras[i].fotoDepoisUrl,
-        cultura: cultura.isEmpty ? null : cultura,
-        parametros: extras[i].parametros,
-      ),
-  ];
+    final cultura = _culturaCtrl.text.trim();
+    final avaliacoes = _tipo == CaseTipo.antesDepois
+        ? [
+            for (var i = 0; i < _comparacoes.length; i++)
+              _avaliacaoDaComparacao(_comparacoes[i], i, cultura),
+          ]
+        : const <AvaliacaoItem>[];
+    final fotosLegadas = _tipo == CaseTipo.antesDepois
+        ? _urlsPreenchidas(primeira)
+        : const <String>[];
 
     return MarketingCase(
       id: caseId,
@@ -260,8 +252,9 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
       produtividadeValor: _tipo == CaseTipo.antesDepois
           ? _parseDouble(_produtividadeCtrl.text)
           : null,
-      produtividadeUnidade:
-          _tipo == CaseTipo.antesDepois ? _produtividadeUnidade : null,
+      produtividadeUnidade: _tipo == CaseTipo.antesDepois
+          ? _produtividadeUnidade
+          : null,
       nomeVendedor: _nomeVendedorCtrl.text.trim().isEmpty
           ? null
           : _nomeVendedorCtrl.text.trim(),
@@ -289,13 +282,12 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
           ? _parseDouble(_valorGraoCtrl.text)
           : null,
       clientId: _clientId,
-      fotoAntesUrl: _tipo == CaseTipo.antesDepois ? primeira.fotoAntesUrl : null,
-      fotoDepoisUrl:
-          _tipo == CaseTipo.antesDepois ? primeira.fotoDepoisUrl : null,
+      fotoAntesUrl: fotosLegadas.isNotEmpty ? fotosLegadas.first : null,
+      fotoDepoisUrl: fotosLegadas.length > 1 ? fotosLegadas[1] : null,
       economiaGerada: null,
       ganhoProdutividade: null,
-      parametrosJson: _tipo == CaseTipo.antesDepois &&
-              primeira.parametros.isNotEmpty
+      parametrosJson:
+          _tipo == CaseTipo.antesDepois && primeira.parametros.isNotEmpty
           ? jsonEncode(primeira.parametros.map((p) => p.toJson()).toList())
           : null,
       nomeTalhao: _tipo == CaseTipo.antesDepois
@@ -305,8 +297,8 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
           ? _parseDouble(_tamanhoHaCtrl.text)
           : null,
       avaliacoes: const [],
-      avaliacoesJson: _tipo == CaseTipo.antesDepois && avaliacoesExtras.isNotEmpty
-          ? jsonEncode(avaliacoesExtras.map((item) => item.toJson()).toList())
+      avaliacoesJson: avaliacoes.isNotEmpty
+          ? jsonEncode(avaliacoes.map((item) => item.toJson()).toList())
           : null,
       roi: null,
       conclusao: null,
@@ -346,6 +338,43 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
   String? _optionalText(String value) {
     final trimmed = value.trim();
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  String? _urlOuNull(String? url) {
+    final trimmed = url?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed;
+  }
+
+  List<String> _urlsPreenchidas(NovoCaseComparacao comparacao) {
+    final urls = <String>[];
+    for (final slot in comparacao.fotos) {
+      final url = _urlOuNull(slot.url);
+      if (url != null) urls.add(url);
+    }
+    return urls;
+  }
+
+  AvaliacaoItem _avaliacaoDaComparacao(
+    NovoCaseComparacao comparacao,
+    int index,
+    String cultura,
+  ) {
+    final fotos = comparacao.fotos;
+    final texto = comparacao.texto.trim();
+    return AvaliacaoItem(
+      id: comparacao.id,
+      titulo: 'Comparação ${index + 1}',
+      nomeLadoA: fotos.isNotEmpty ? fotos[0].rotulo.trim() : '',
+      nomeLadoB: fotos.length > 1 ? fotos[1].rotulo.trim() : '',
+      nomeLadoC: fotos.length > 2 ? fotos[2].rotulo.trim() : null,
+      fotoLadoAPath: fotos.isNotEmpty ? _urlOuNull(fotos[0].url) : null,
+      fotoLadoBPath: fotos.length > 1 ? _urlOuNull(fotos[1].url) : null,
+      fotoLadoCPath: fotos.length > 2 ? _urlOuNull(fotos[2].url) : null,
+      cultura: cultura.isEmpty ? null : cultura,
+      parametros: comparacao.parametros,
+      observacoes: texto.isEmpty ? null : texto,
+    );
   }
 
   double? _parseDouble(String value) {
@@ -421,8 +450,9 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
     setState(() {
       _comparacoes[comparacaoIndex] = comparacao.copyWith(
         parametros: updated,
-        parametroSelecionadoId:
-            comparacao.parametroSelecionadoId == id ? null : comparacao.parametroSelecionadoId,
+        parametroSelecionadoId: comparacao.parametroSelecionadoId == id
+            ? null
+            : comparacao.parametroSelecionadoId,
         clearParametroSelecionado: comparacao.parametroSelecionadoId == id,
       );
     });
@@ -461,194 +491,194 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: keyboard > 0 ? keyboard : fabClearance),
       child: Form(
-      key: _formKey,
-      child: SingleChildScrollView(
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            NovoCaseHeader(
-              lat: widget.lat,
-              lng: widget.lng,
-              tipoLabel: _tipoLabel,
-              onClose: widget.onClose,
-              showTitle: !widget.compactHeader,
-            ),
-            SizedBox(height: widget.compactHeader ? 12 : 24),
-            novoCaseSectionLabel('Visibilidade'),
-            const SizedBox(height: 8),
-            PlanoMarketingSelector(
-              selectedPlano: _visibilidade,
-              onChanged: (p) => setState(() => _visibilidade = p),
-            ),
-            const SizedBox(height: 20),
-            novoCaseSectionLabel('Identificação'),
-            const SizedBox(height: 8),
-            MarketingClientSelector(
-              selectedClientId: _clientId,
-              onChanged: _handleClientChanged,
-            ),
-            const SizedBox(height: 4),
-            novoCaseFieldBox(
-              child: Column(
-                children: [
-                  novoCaseTextInput(
-                    _produtorCtrl,
-                    marketingProdutorFieldRequired(clientId: _clientId)
-                        ? 'Produtor / Fazenda *'
-                        : 'Produtor / Fazenda',
-                    required: marketingProdutorFieldRequired(clientId: _clientId),
-                  ),
-                  const NovoCaseFDivider(),
-                  novoCaseTextInput(
-                    _produtoCtrl,
-                    'Produto Utilizado *',
-                    required: true,
-                  ),
-                  const NovoCaseFDivider(),
-                  novoCaseTextInput(
-                    _localizacaoCtrl,
-                    'Localização (ex: Jataizinho - PR) *',
-                    required: true,
-                  ),
-                  if (_tipo == CaseTipo.antesDepois) ...[
-                    const NovoCaseFDivider(),
-                    novoCaseTextInput(
-                      _nomeTalhaoCtrl,
-                      'Nome do Talhão (opcional)',
-                    ),
-                    const NovoCaseFDivider(),
-                    novoCaseTextInput(
-                      _tamanhoHaCtrl,
-                      'Tamanho (ha) (opcional)',
-                      keyboardType: TextInputType.number,
-                    ),
-                    const NovoCaseFDivider(),
-                    novoCaseTextInput(
-                      _culturaCtrl,
-                      'Cultura (opcional)',
-                    ),
-                  ],
-                ],
+        key: _formKey,
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              NovoCaseHeader(
+                lat: widget.lat,
+                lng: widget.lng,
+                tipoLabel: _tipoLabel,
+                onClose: widget.onClose,
+                showTitle: !widget.compactHeader,
               ),
-            ),
-            const SizedBox(height: 20),
-            novoCaseSectionLabel('Data do Case'),
-            const SizedBox(height: 8),
-            _buildDataCasePicker(),
-            const SizedBox(height: 20),
-            if (_tipo == CaseTipo.antesDepois) ...[
-              novoCaseSectionLabel('Produtividade'),
+              SizedBox(height: widget.compactHeader ? 12 : 24),
+              novoCaseSectionLabel('Visibilidade'),
               const SizedBox(height: 8),
+              PlanoMarketingSelector(
+                selectedPlano: _visibilidade,
+                onChanged: (p) => setState(() => _visibilidade = p),
+              ),
+              const SizedBox(height: 20),
+              novoCaseSectionLabel('Identificação'),
+              const SizedBox(height: 8),
+              MarketingClientSelector(
+                selectedClientId: _clientId,
+                onChanged: _handleClientChanged,
+              ),
+              const SizedBox(height: 4),
               novoCaseFieldBox(
-                child: Row(
+                child: Column(
                   children: [
-                    Expanded(
-                      child: novoCaseTextInput(
-                        _produtividadeCtrl,
-                        'Valor *',
-                        keyboardType: TextInputType.number,
-                        required: true,
+                    novoCaseTextInput(
+                      _produtorCtrl,
+                      marketingProdutorFieldRequired(clientId: _clientId)
+                          ? 'Produtor / Fazenda *'
+                          : 'Produtor / Fazenda',
+                      required: marketingProdutorFieldRequired(
+                        clientId: _clientId,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    _buildUnidadeDropdown(),
+                    const NovoCaseFDivider(),
+                    novoCaseTextInput(
+                      _produtoCtrl,
+                      'Produto Utilizado *',
+                      required: true,
+                    ),
+                    const NovoCaseFDivider(),
+                    novoCaseTextInput(
+                      _localizacaoCtrl,
+                      'Localização (ex: Jataizinho - PR) *',
+                      required: true,
+                    ),
+                    if (_tipo == CaseTipo.antesDepois) ...[
+                      const NovoCaseFDivider(),
+                      novoCaseTextInput(
+                        _nomeTalhaoCtrl,
+                        'Nome do Talhão (opcional)',
+                      ),
+                      const NovoCaseFDivider(),
+                      novoCaseTextInput(
+                        _tamanhoHaCtrl,
+                        'Tamanho (ha) (opcional)',
+                        keyboardType: TextInputType.number,
+                      ),
+                      const NovoCaseFDivider(),
+                      novoCaseTextInput(_culturaCtrl, 'Cultura (opcional)'),
+                    ],
                   ],
                 ),
               ),
               const SizedBox(height: 20),
-            ],
-            if (_tipo == CaseTipo.resultado)
-              NovoCaseResultadoSection(
-                fotoPrincipalUrl: _fotoPrincipalUrl,
-                onFotoChanged: (url) => setState(() => _fotoPrincipalUrl = url),
-                prodSemProdutoCtrl: _prodSemProdutoCtrl,
-                prodComProdutoCtrl: _prodComProdutoCtrl,
-                custoProdutoPorHaCtrl: _custoProdutoPorHaCtrl,
-                valorGraoCtrl: _valorGraoCtrl,
-                unidade: _produtividadeUnidade,
-                tamanhoHa: _parseDouble(_tamanhoHaCtrl.text),
-                areaTotal: null,
-                onUnidadeChanged: (unidade) =>
-                    setState(() => _produtividadeUnidade = unidade),
-                onRoiChanged: () => setState(() {}),
-              ),
-            if (_tipo == CaseTipo.antesDepois)
-              NovoCaseAntesDepoisSection(
-                comparacoes: _comparacoes,
-                produtoUtilizado: _produtoCtrl.text,
-                hasConclusao: _hasConclusao,
-                conclusaoCtrl: _conclusaoCtrl,
-                onAddComparacao: _addComparacao,
-                onRemoveComparacao: _removeComparacao,
-                onComparacaoChanged: _updateComparacao,
-                onAddParametro: _addParametroComparativo,
-                onParametroChanged: _updateParametroComparativo,
-                onDeleteParametro: _deleteParametroComparativo,
-                onSelectParametro: _selectParametroComparativo,
-                onAddConclusao: () => setState(() => _hasConclusao = true),
-                onRemoveConclusao: () => setState(() {
-                  _hasConclusao = false;
-                  _conclusaoCtrl.clear();
-                }),
-              ),
-            novoCaseSectionLabel('Vendedor (opcional)'),
-            const SizedBox(height: 8),
-            novoCaseFieldBox(
-              child: Column(
-                children: [
-                  novoCaseTextInput(_nomeVendedorCtrl, 'Nome do Vendedor'),
-                  const NovoCaseFDivider(),
-                  novoCaseTextInput(
-                    _telefoneCtrl,
-                    'Telefone',
-                    keyboardType: TextInputType.phone,
+              novoCaseSectionLabel('Data do Case'),
+              const SizedBox(height: 8),
+              _buildDataCasePicker(),
+              const SizedBox(height: 20),
+              if (_tipo == CaseTipo.antesDepois) ...[
+                novoCaseSectionLabel('Produtividade'),
+                const SizedBox(height: 8),
+                novoCaseFieldBox(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: novoCaseTextInput(
+                          _produtividadeCtrl,
+                          'Valor *',
+                          keyboardType: TextInputType.number,
+                          required: true,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      _buildUnidadeDropdown(),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            novoCaseFieldBox(
-              child: novoCaseTextInput(
-                _descricaoCtrl,
-                'Descrição (opcional)',
-                maxLines: 3,
-              ),
-            ),
-            const SizedBox(height: 32),
-            NovoCasePublicarButton(
-              isLoading: _isLoading,
-              onPressed: _handlePublicar,
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: _isLoading ? null : _handleSalvarRascunho,
-              icon: const Icon(Icons.save_outlined, size: 20),
-              label: Text(
-                _isLoading ? 'Salvando...' : 'Salvar rascunho (Relatórios)',
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: context.themeAccent,
-                side: BorderSide(color: context.themeAccent),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                ),
+                const SizedBox(height: 20),
+              ],
+              if (_tipo == CaseTipo.resultado)
+                NovoCaseResultadoSection(
+                  fotoPrincipalUrl: _fotoPrincipalUrl,
+                  onFotoChanged: (url) =>
+                      setState(() => _fotoPrincipalUrl = url),
+                  prodSemProdutoCtrl: _prodSemProdutoCtrl,
+                  prodComProdutoCtrl: _prodComProdutoCtrl,
+                  custoProdutoPorHaCtrl: _custoProdutoPorHaCtrl,
+                  valorGraoCtrl: _valorGraoCtrl,
+                  unidade: _produtividadeUnidade,
+                  tamanhoHa: _parseDouble(_tamanhoHaCtrl.text),
+                  areaTotal: null,
+                  onUnidadeChanged: (unidade) =>
+                      setState(() => _produtividadeUnidade = unidade),
+                  onRoiChanged: () => setState(() {}),
+                ),
+              if (_tipo == CaseTipo.antesDepois)
+                NovoCaseAntesDepoisSection(
+                  comparacoes: _comparacoes,
+                  produtoUtilizado: _produtoCtrl.text,
+                  hasConclusao: _hasConclusao,
+                  conclusaoCtrl: _conclusaoCtrl,
+                  onAddComparacao: _addComparacao,
+                  onRemoveComparacao: _removeComparacao,
+                  onComparacaoChanged: _updateComparacao,
+                  onAddParametro: _addParametroComparativo,
+                  onParametroChanged: _updateParametroComparativo,
+                  onDeleteParametro: _deleteParametroComparativo,
+                  onSelectParametro: _selectParametroComparativo,
+                  onAddConclusao: () => setState(() => _hasConclusao = true),
+                  onRemoveConclusao: () => setState(() {
+                    _hasConclusao = false;
+                    _conclusaoCtrl.clear();
+                  }),
+                ),
+              novoCaseSectionLabel('Vendedor (opcional)'),
+              const SizedBox(height: 8),
+              novoCaseFieldBox(
+                child: Column(
+                  children: [
+                    novoCaseTextInput(_nomeVendedorCtrl, 'Nome do Vendedor'),
+                    const NovoCaseFDivider(),
+                    novoCaseTextInput(
+                      _telefoneCtrl,
+                      'Telefone',
+                      keyboardType: TextInputType.phone,
+                    ),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: widget.onClose,
-              child: Text(
-                'Cancelar',
-                style: TextStyle(color: context.premiumTextSecondary),
+              const SizedBox(height: 20),
+              novoCaseFieldBox(
+                child: novoCaseTextInput(
+                  _descricaoCtrl,
+                  'Descrição (opcional)',
+                  maxLines: 3,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 32),
+              NovoCasePublicarButton(
+                isLoading: _isLoading,
+                onPressed: _handlePublicar,
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: _isLoading ? null : _handleSalvarRascunho,
+                icon: const Icon(Icons.save_outlined, size: 20),
+                label: Text(
+                  _isLoading ? 'Salvando...' : 'Salvar rascunho (Relatórios)',
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: context.themeAccent,
+                  side: BorderSide(color: context.themeAccent),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: widget.onClose,
+                child: Text(
+                  'Cancelar',
+                  style: TextStyle(color: context.premiumTextSecondary),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
@@ -709,10 +739,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                   ),
                 ),
               ),
-              Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: hintColor,
-              ),
+              Icon(Icons.keyboard_arrow_down_rounded, color: hintColor),
             ],
           ),
         ),
