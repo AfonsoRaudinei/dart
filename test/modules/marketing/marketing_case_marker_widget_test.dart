@@ -39,11 +39,11 @@ void main() {
 
     test('aplica zoom mínimo progressivo por plano', () {
       expect(
-        MarketingCaseMarker.isVisibleAtZoom(PlanoMarketing.ouro, 9.9),
+        MarketingCaseMarker.isVisibleAtZoom(PlanoMarketing.ouro, 7.9),
         isFalse,
       );
       expect(
-        MarketingCaseMarker.isVisibleAtZoom(PlanoMarketing.ouro, 10.0),
+        MarketingCaseMarker.isVisibleAtZoom(PlanoMarketing.ouro, 8.0),
         isTrue,
       );
       expect(
