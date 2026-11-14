@@ -66,7 +66,7 @@ Direção do vínculo: perfil consultor para perfil produtor.
 |---|---|---|
 | Ouro | Todos, inclusive quem não está logado | 8 |
 | Prata | Todos os usuários logados | 12 |
-| Bronze | O autor e o produtor do vínculo | 14 |
+| Bronze | O autor e o produtor do vínculo, se o **consultor** do vínculo tem Bronze+ ativo (o produtor não precisa de plano pago) | 14 |
 | Sem metal | Só o autor | — |
 
 Ouro e Prata podem ser compartilhados no vínculo. No Ouro, o produtor vinculado também pode publicar o case com o pin dele.
@@ -89,7 +89,9 @@ Exemplo: o consultor Prata compartilhou um case com um produtor Ouro. O produtor
 
 A regra vale para todos os vínculos, inclusive os já aceitos.
 
-O vínculo leva fazenda, talhões, mapa e desenhos no mapa.
+O vínculo leva fazenda, talhões, mapa e desenhos no mapa (sem plano do produtor).
+
+Pin Bronze do consultor no mapa: produtor com vínculo ativo vê se o **consultor** que gerou o convite tem Bronze+ ativo; consultor sem plano pago ou expirado não compartilha pin Bronze com o produtor.
 
 Ocorrência entra no vínculo só com plano Bronze ou superior ativo em **consultor e produtor**. O consultor cria ocorrência sem plano pago; **compartilhar** no convite exige Bronze+ do consultor. O produtor **vê** ocorrências compartilhadas só com Bronze+ próprio — vínculo com `share_occurrences` não basta sem plano do produtor.
 
@@ -126,7 +128,7 @@ Parcial em relação à regra acima (atualizado 14/11/2026).
 - Publicar case não exige compra. O bloqueio aplica a cota do metal escolhido (`visibilidade`), não um teto único somando metais.
 - **`liberado_em` nulo:** pin só do autor (`ownerUserId`); produtor vinculado e mapa anônimo não veem, mesmo com metal Ouro. Rascunho ou publish bloqueado mantém `liberado_em` nulo. Fail-open de plano no notifier (`skipPlanLimit`) não grava `liberado_em` localmente.
 - Ao publicar com plano pago, metal válido e cota ok: o app grava `liberado_em` (UTC) e `publico_ate` (Ouro 6m, Prata 4m, Bronze 2m), alinhado à migration Supabase.
-- Pin no mapa (`MarketingCaseVisibility`): dono sempre vê o próprio `published`; sem `liberado_em` só o autor. Ouro liberado + janela ativa → todos (anônimo só Ouro via `isVisibleOnMapForAnonymous`). Prata + janela ativa → consultor e produtor logados; expirada só autor. Bronze + janela ativa → autor ou produtor com vínculo no `client_id`; consultor não vê bronze de terceiros. Grupos por `source_case_id`: no mapa só o pin do metal mais alto (`deduplicateHighestMetalPerGroup`).
+- Pin no mapa (`MarketingCaseVisibility`): dono sempre vê o próprio `published`; sem `liberado_em` só o autor. Ouro liberado + janela ativa → todos (anônimo só Ouro via `isVisibleOnMapForAnonymous`). Prata + janela ativa → consultor e produtor logados; expirada só autor. Bronze + janela ativa → autor ou produtor com vínculo no `client_id` **e** consultor do vínculo Bronze+ (`list_bronze_pin_client_ids_for_producer`); consultor não vê bronze de terceiros. Grupos por `source_case_id`: no mapa só o pin do metal mais alto (`deduplicateHighestMetalPerGroup`).
 - Mapa sem login: `isVisibleOnMapForAnonymous` (Ouro liberado, janela ativa). Prata exige login.
 - O convite oferece Fazendas, Talhões e mapa, Ocorrências e Relatórios; Fazendas/Talhões/Relatórios ligados por padrão. **Ocorrências** só pode ser marcada com plano Bronze+ ativo (checkbox desligado e desabilitado sem plano; `createInvite` valida no app; RLS + RPC no Supabase).
 - Produtor lê ocorrências compartilhadas quando consultor **e** produtor passam `consultor_pode_compartilhar_ocorrencias` (Bronze+/admin ativo) — app checa plano do produtor antes do RPC; Supabase repete no RPC e na policy `occurrences_select_authorized`.

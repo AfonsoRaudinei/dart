@@ -20,6 +20,12 @@ class OccurrenceAccessReaderAdapter implements IOccurrenceAccessReader {
   }
 
   @override
+  Future<Set<String>> loadBronzePinClientIds() async {
+    final ids = await _repository.loadBronzePinClientIds();
+    return ids.toSet();
+  }
+
+  @override
   Future<Set<String>> loadReportClientIds() async {
     final ids = await _repository.loadReportShareClientIds();
     return ids.toSet();

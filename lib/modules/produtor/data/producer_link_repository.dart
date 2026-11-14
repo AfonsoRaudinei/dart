@@ -44,8 +44,7 @@ class ProducerLinkRepository implements ProducerLinkReader {
     if (!share.hasAny) {
       throw Exception('Escolha ao menos um tipo de dado para compartilhar.');
     }
-    // Convite exige JWT autenticado: LocalSessionIdentity.lastKnown não
-    // basta — a RLS de insert compara auth.uid() com consultor_user_id.
+    // Convite exige JWT; RLS compara auth.uid() com consultor_user_id.
     final userId = _authenticatedUserId();
     await _assertConsultorCanInvite(userId, clientId);
     if (share.occurrences) {
@@ -80,7 +79,6 @@ class ProducerLinkRepository implements ProducerLinkReader {
     }
   }
 
-  /// Garante sessão JWT + papel consultor + cliente remoto do próprio usuário.
   Future<void> _assertConsultorCanInvite(String userId, String clientId) async {
     final perfil = await _client
         .from('perfis')
@@ -302,13 +300,21 @@ class ProducerLinkRepository implements ProducerLinkReader {
     return links.map((link) => link.clientId).toList(growable: false);
   }
 
-  /// Ocorrências: `share_occurrences` e Bronze+ dos dois lados.
+  Future<List<String>> loadBronzePinClientIds() async {
+    await _loadActiveLinks();
+    try {
+      final rows = await _client.rpc('list_bronze_pin_client_ids_for_producer');
+      return clientIdsFromOccurrenceShareRpc(rows).toList(growable: false);
+    } catch (_) {
+      return const [];
+    }
+  }
+
   Future<List<String>> loadAuthorizedClientIds() async {
     await _loadActiveLinks();
     return (await _loadOccurrenceEligibleClientIds()).toList(growable: false);
   }
 
-  /// Relatórios marcados no convite. Sem gate de plano.
   Future<List<String>> loadReportShareClientIds() async {
     final links = await _loadActiveLinks();
     return reportClientIdsOf(links);
@@ -322,7 +328,6 @@ class ProducerLinkRepository implements ProducerLinkReader {
     ];
   }
 
-  /// `client_id` com `share_fields` — desenhos/talhões no mapa.
   Future<List<String>> loadAuthorizedClientIdsForDrawings() async {
     final links = await _loadActiveLinks();
     return links
@@ -331,7 +336,6 @@ class ProducerLinkRepository implements ProducerLinkReader {
         .toList(growable: false);
   }
 
-  /// Talhões liberados para leitura de ocorrências via vínculo.
   Future<List<String>> loadAuthorizedOccurrenceFieldIds() async {
     final eligible = await _loadOccurrenceEligibleClientIds();
     if (eligible.isEmpty) return const [];

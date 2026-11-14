@@ -74,6 +74,9 @@ class _Access implements IOccurrenceAccessReader {
   Future<Set<String>> loadLinkedClientIds() async => linked;
 
   @override
+  Future<Set<String>> loadBronzePinClientIds() async => const {};
+
+  @override
   Future<Set<String>> loadReportClientIds() async => const {};
 
   @override

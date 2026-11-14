@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../../../core/contracts/i_producer_invite_writer.dart';
 
 class ProducerClientLink {
@@ -93,6 +95,15 @@ class ProducerInvite {
 
   const ProducerInvite({required this.token, required this.expiresAt});
 }
+
+@visibleForTesting
+List<String> bronzePinClientIdsOf(
+  Iterable<ProducerClientLink> links,
+  Set<String> consultorsWithBronzePlus,
+) => [
+  for (final link in links)
+    if (consultorsWithBronzePlus.contains(link.consultorUserId)) link.clientId,
+];
 
 class ProducerPropertyDashboard {
   final ProducerOwnProperty ownProperty;
