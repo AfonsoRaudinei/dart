@@ -14,6 +14,7 @@ import '../../data/services/marketing_sync_service.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/marketing_case_status.dart';
 import '../../domain/enums/plano_marketing.dart';
+import '../../domain/marketing_visibility_policy.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 
 // ── Repositório ────────────────────────────────────────────────
@@ -95,6 +96,38 @@ bool marketingPublishBlockedByPlan({
     excludeCaseId: publishingCaseId,
   );
   return publicados >= limite;
+}
+
+/// Grava `liberado_em` / `publico_ate` ao publicar com plano pago e gate ok.
+MarketingCase marketingCaseComLiberacaoSeElegivel({
+  required MarketingCase marketingCase,
+  required UserPlan plano,
+  required bool skipPlanLimit,
+}) {
+  if (skipPlanLimit) return marketingCase;
+  if (marketingCase.status != MarketingCaseStatus.published) {
+    return marketingCase;
+  }
+  if (MarketingVisibilityPolicy.seletorTotalmenteTravado(plano)) {
+    return marketingCase;
+  }
+  if (!MarketingVisibilityPolicy.metaisSelecionaveis(plano)
+      .contains(marketingCase.visibilidade)) {
+    return marketingCase;
+  }
+  if (marketingCase.liberadoEm != null) {
+    return marketingCase;
+  }
+
+  final liberadoEm = DateTime.now().toUtc();
+  final publicoAte = MarketingVisibilityPolicy.publicoAteParaMetal(
+    marketingCase.visibilidade,
+    liberadoEm,
+  );
+  return marketingCase.copyWith(
+    liberadoEm: liberadoEm,
+    publicoAte: publicoAte,
+  );
 }
 
 /// Resultado detalhado de [MarketingCasesNotifier.publishCaseDetailed].
@@ -196,9 +229,9 @@ class MarketingCasesNotifier
   /// Envia o case ao Supabase, atualiza a lista imediatamente (optimistic).
   /// Em falha, preserva o erro original para a UI classificar a causa.
   Future<PublishOutcome> publishCaseDetailed(MarketingCase newCase) async {
+    var skipPlanLimit = false;
+    UserPlan plano = UserPlan.free(userId: '');
     if (newCase.status == MarketingCaseStatus.published && _ref != null) {
-      var skipPlanLimit = false;
-      UserPlan plano;
       try {
         plano = await _ref.read(planoAtivoProvider.future);
       } catch (e, st) {
@@ -236,20 +269,26 @@ class MarketingCasesNotifier
       }
     }
 
+    final caseToPublish = marketingCaseComLiberacaoSeElegivel(
+      marketingCase: newCase,
+      plano: plano,
+      skipPlanLimit: skipPlanLimit,
+    );
+
     // 1. Optimistic update idempotente por id (retry não duplica)
     final previousCases = state.valueOrNull ?? [];
     final withoutDuplicate =
-        previousCases.where((c) => c.id != newCase.id).toList(growable: false);
-    state = AsyncData([...withoutDuplicate, newCase]);
+        previousCases.where((c) => c.id != caseToPublish.id).toList(growable: false);
+    state = AsyncData([...withoutDuplicate, caseToPublish]);
 
     try {
       // 2. Enviar ao Supabase
-      final savedCase = await _repository.saveCase(newCase);
+      final savedCase = await _repository.saveCase(caseToPublish);
 
       // 3. Substituir o case temporário pelo definitivo (syncStatus=synced)
       final updatedCases = state.valueOrNull ?? [];
       state = AsyncData(
-        updatedCases.map((c) => c.id == newCase.id ? savedCase : c).toList(),
+        updatedCases.map((c) => c.id == caseToPublish.id ? savedCase : c).toList(),
       );
 
       return PublishOutcome.success(savedCase);
@@ -264,9 +303,9 @@ class MarketingCasesNotifier
         state = AsyncData(
           updatedCases
               .map(
-                (c) => c.id == newCase.id
+                (c) => c.id == caseToPublish.id
                     ? MarketingCase.fromJson({
-                        ...newCase.toJson(),
+                        ...caseToPublish.toJson(),
                         'sync_status': 'pending_sync',
                       })
                     : c,
@@ -276,13 +315,13 @@ class MarketingCasesNotifier
       } else {
         // Erro permanente (sessão, RLS, schema): reverte para draft recuperável
         final draftCase = MarketingCase.fromJson({
-          ...newCase.toJson(),
+          ...caseToPublish.toJson(),
           'status': MarketingCaseStatus.draft.toValue(),
           'sync_status': 'local_only',
         });
         state = AsyncData(
           updatedCases
-              .map((c) => c.id == newCase.id ? draftCase : c)
+              .map((c) => c.id == caseToPublish.id ? draftCase : c)
               .toList(),
         );
         try {
