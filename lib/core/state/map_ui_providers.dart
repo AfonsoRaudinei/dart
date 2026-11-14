@@ -47,6 +47,10 @@ final explicitMapCameraIntentProvider = StateProvider.autoDispose<bool>(
   (ref) => false,
 );
 
+/// O provedor de tiles recusou a chave (HTTP 401/403).
+/// Sem este sinal o mapa fica branco sem nenhuma explicação.
+final mapTileKeyRejectedProvider = StateProvider<bool>((ref) => false);
+
 // ── ADR-031 F1: migrados de setState em private_map_screen.dart ──────────────
 
 /// Guard de modal aberto — impede abertura simultânea de dois modais.
