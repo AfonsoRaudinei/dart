@@ -18,6 +18,7 @@ import '../../modules/public/providers/public_location_provider.dart';
 import '../../modules/public/providers/public_publications_provider.dart';
 import '../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../../modules/marketing/domain/marketing_case_visibility.dart';
+import '../../modules/marketing/domain/marketing_map_pin_dedup.dart';
 import '../../modules/marketing/presentation/widgets/marketing_case_marker.dart';
 import '../../modules/marketing/presentation/widgets/marketing_case_sheet.dart';
 import '../../core/config/map_config.dart';
@@ -232,18 +233,24 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
               if (ref.watch(marketingCasesProvider).hasValue)
                 MarkerLayer(
                   rotate: true,
-                  markers: ref
-                      .watch(marketingCasesProvider)
-                      .value!
+                  markers: deduplicateHighestMetalPerGroup(
+                    ref
+                        .watch(marketingCasesProvider)
+                        .value!
+                        .where(
+                          (mCase) =>
+                              MarketingCaseVisibility
+                                  .isVisibleOnMapForAnonymous(
+                                marketingCase: mCase,
+                              ),
+                        )
+                        .toList(growable: false),
+                  )
                       .where(
-                        (mCase) =>
-                            MarketingCaseVisibility.isVisibleOnMapForAnonymous(
-                              marketingCase: mCase,
-                            ) &&
-                            MarketingCaseMarker.isVisibleAtZoom(
-                              mCase.visibilidade,
-                              _currentZoom,
-                            ),
+                        (mCase) => MarketingCaseMarker.isVisibleAtZoom(
+                          mCase.visibilidade,
+                          _currentZoom,
+                        ),
                       )
                       .map((mCase) {
                         return Marker(

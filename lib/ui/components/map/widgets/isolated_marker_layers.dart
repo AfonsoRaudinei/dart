@@ -14,6 +14,7 @@ import '../../../../core/domain/publicacao.dart';
 import '../../../../modules/consultoria/occurrences/domain/occurrence.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/marketing/domain/marketing_case_visibility.dart';
+import '../../../../modules/marketing/domain/marketing_map_pin_dedup.dart';
 import '../../../../modules/marketing/domain/marketing_visibility_policy.dart';
 import '../../../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../../../../modules/marketing/presentation/widgets/marketing_case_marker.dart';
@@ -196,15 +197,17 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
                       currentUserId: currentUserId,
                     ),
                   ))
-            .toList()
-          ..sort(
-            (a, b) => b.visibilidade.index.compareTo(a.visibilidade.index),
-          );
+            .toList();
 
-    if (cases.isEmpty) return const SizedBox.shrink();
+    final deduped = deduplicateHighestMetalPerGroup(cases)
+      ..sort(
+        (a, b) => b.visibilidade.index.compareTo(a.visibilidade.index),
+      );
+
+    if (deduped.isEmpty) return const SizedBox.shrink();
 
     // Filtro por zoom: cada tier tem um raio mínimo de visibilidade
-    final visibleCases = cases
+    final visibleCases = deduped
         .where((c) {
           final tier = c.visibilidade;
           return MarketingCaseMarker.isVisibleAtZoom(tier, currentZoom);

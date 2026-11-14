@@ -6,6 +6,7 @@ import '../../../../core/config/map_config.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/marketing_case_visibility.dart';
+import '../../domain/marketing_map_pin_dedup.dart';
 import '../../presentation/providers/marketing_providers.dart';
 import '../../presentation/widgets/marketing_case_marker.dart';
 import '../../presentation/widgets/marketing_case_sheet.dart';
@@ -70,15 +71,15 @@ class _OuroMapBackgroundState extends ConsumerState<OuroMapBackground>
   @override
   Widget build(BuildContext context) {
     final casesAsync = ref.watch(marketingCasesProvider);
-    final ouros =
-        casesAsync.valueOrNull
+    final visibleAnonymous = casesAsync.valueOrNull
             ?.where(
               (c) => MarketingCaseVisibility.isVisibleOnMapForAnonymous(
                 marketingCase: c,
               ),
             )
-            .toList() ??
-        [];
+            .toList(growable: false) ??
+        const <MarketingCase>[];
+    final ouros = deduplicateHighestMetalPerGroup(visibleAnonymous);
 
     return FlutterMap(
       mapController: _mapController,
