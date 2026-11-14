@@ -15,6 +15,9 @@ import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/marketing_case_status.dart';
 import '../../domain/enums/plano_marketing.dart';
 import '../../domain/enums/produtividade_unidade.dart';
+import '../../domain/marketing_visibility_policy.dart';
+import '../../../planos/domain/entities/user_plan.dart';
+import '../../../planos/presentation/providers/plano_providers.dart';
 import '../providers/marketing_providers.dart';
 import '../widgets/case_selectors_widget.dart';
 import '../models/novo_case_comparacao.dart';
@@ -56,7 +59,8 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
 
   // ── Campos Comuns ──────────────────────────────────────────────
   late final CaseTipo _tipo;
-  PlanoMarketing _visibilidade = PlanoMarketing.prata;
+  PlanoMarketing? _visibilidade;
+  bool _visibilidadeInicializada = false;
   final _produtorCtrl = TextEditingController();
   final _produtoCtrl = TextEditingController();
   final _localizacaoCtrl = TextEditingController();
@@ -239,7 +243,8 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
     return MarketingCase(
       id: caseId,
       tipo: _tipo,
-      visibilidade: _visibilidade,
+      visibilidade:
+          _visibilidade ?? MarketingVisibilityPolicy.valorTecnicoSemSelecaoUi(),
       lat: widget.lat,
       lng: widget.lng,
       localizacaoTexto: _localizacaoCtrl.text.trim(),
@@ -486,6 +491,25 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
   // ── Build ──────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final planAsync = ref.watch(planoAtivoProvider);
+    final plan =
+        planAsync.valueOrNull ?? UserPlan.free(userId: '');
+    if (planAsync.hasValue && !_visibilidadeInicializada) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _visibilidadeInicializada) return;
+        setState(() {
+          _visibilidadeInicializada = true;
+          _visibilidade =
+              MarketingVisibilityPolicy.metalInicialNovoCase(plan);
+        });
+      });
+    }
+    final enabledMetals = MarketingVisibilityPolicy.metaisSelecionaveis(plan);
+    final seletorTravado =
+        MarketingVisibilityPolicy.seletorTotalmenteTravado(plan);
+    final PlanoMarketing? selectedVisibilidadeUi =
+        seletorTravado ? null : _visibilidade;
+
     final keyboard = MediaQuery.of(context).viewInsets.bottom;
     final fabClearance = MediaQuery.paddingOf(context).bottom + kFabSafeArea;
     return Padding(
@@ -509,9 +533,19 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
               novoCaseSectionLabel('Visibilidade'),
               const SizedBox(height: 8),
               PlanoMarketingSelector(
-                selectedPlano: _visibilidade,
+                selectedPlano: selectedVisibilidadeUi,
+                enabledMetals: enabledMetals,
                 onChanged: (p) => setState(() => _visibilidade = p),
               ),
+              if (seletorTravado) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Disponível com plano pago',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: SoloForteSheetVisuals.of(context).subtitleColor,
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
               novoCaseSectionLabel('Identificação'),
               const SizedBox(height: 8),
