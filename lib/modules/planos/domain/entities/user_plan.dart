@@ -80,18 +80,43 @@ class UserPlan {
   bool get ocultaPinsMarketingNoMapa =>
       !isAdmin && (expirado || !ativo);
 
-  /// Limite de cases ativos no mapa conforme o plano.
+  /// Soma das cotas por metal (legado para telas com um número único).
   ///
   /// Admin sempre tem acesso ilimitado, independente do plano.
+  /// Contas free / expiradas / inativas retornam 0.
   int get limiteCases {
     if (isAdmin) return 999999;
+    if (id == 'free' || ocultaPinsMarketingNoMapa) return 0;
     return plano.limiteCases;
   }
 
-  /// Rótulo seguro para UI (evita "999999 cases" do admin/plano ilimitado).
+  /// Cota de publicações ativas para o metal do case (`bronze` | `prata` | `ouro`).
+  int cotaPublicacaoPorMetal(String metal) {
+    if (isAdmin) return 999999;
+    if (id == 'free' || ocultaPinsMarketingNoMapa) return 0;
+    switch (metal.toLowerCase()) {
+      case 'bronze':
+        return plano.cotaCasesBronze;
+      case 'prata':
+        return plano.cotaCasesPrata;
+      case 'ouro':
+        return plano.cotaCasesOuro;
+      default:
+        throw ArgumentError('Metal de marketing inválido: $metal');
+    }
+  }
+
+  /// Rótulo seguro para UI (cotas reais por metal, não soma genérica).
   String get limiteCasesLabel {
-    if (limiteCases >= 999999) return 'Cases ilimitados';
-    return '$limiteCases case${limiteCases > 1 ? 's' : ''}';
+    if (isAdmin) return 'Cases ilimitados';
+    if (id == 'free' || ocultaPinsMarketingNoMapa) {
+      return 'Sem cota de metal pago';
+    }
+    return switch (plano) {
+      PlanoTipo.bronze => '5 cases Bronze',
+      PlanoTipo.prata => '5 Bronze · 5 Prata',
+      PlanoTipo.ouro => '5 Bronze · 5 Prata · 10 Ouro',
+    };
   }
 
   UserPlan copyWith({
