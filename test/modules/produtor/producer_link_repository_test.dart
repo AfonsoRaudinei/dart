@@ -7,6 +7,7 @@ import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/p
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
 import 'package:soloforte_app/modules/planos/domain/enums/plano_origem.dart';
 import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
+import 'package:soloforte_app/modules/planos/domain/plano_occurrence_share.dart';
 import 'package:soloforte_app/modules/produtor/data/producer_link_models.dart';
 import 'package:soloforte_app/modules/produtor/data/producer_link_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -53,6 +54,43 @@ void main() {
         () => ProducerLinkRepository.assertConsultorPodeCompartilharOcorrencias(
           paid,
           const ProducerShareSelection(occurrences: true),
+        ),
+        returnsNormally,
+      );
+    });
+
+    test('produtor free não pode ver ocorrências compartilhadas', () {
+      final free = UserPlan.free(userId: 'produtor-1');
+      expect(free.produtorPodeVerOcorrenciaCompartilhadaNoVinculo, isFalse);
+      expect(
+        () => ProducerLinkRepository.assertProdutorPodeVerOcorrenciasCompartilhadas(
+          free,
+        ),
+        throwsA(
+          predicate(
+            (e) =>
+                e is Exception &&
+                e.toString().contains('Ver ocorrências compartilhadas'),
+          ),
+        ),
+      );
+    });
+
+    test('produtor bronze ativo pode ver', () {
+      final paid = UserPlan(
+        id: 'p2',
+        userId: 'produtor-1',
+        plano: PlanoTipo.bronze,
+        origem: PlanoOrigem.pagamento,
+        ativo: true,
+        iniciouEm: DateTime.utc(2026, 1, 1),
+        expiraEm: DateTime.utc(2027, 1, 1),
+        criadoEm: DateTime.utc(2026, 1, 1),
+      );
+      expect(paid.produtorPodeVerOcorrenciaCompartilhadaNoVinculo, isTrue);
+      expect(
+        () => ProducerLinkRepository.assertProdutorPodeVerOcorrenciasCompartilhadas(
+          paid,
         ),
         returnsNormally,
       );
