@@ -130,6 +130,13 @@ class ProducerOwnFarm {
   final double areaHa;
   final List<ProducerOwnField> fields;
 
+  /// Fazenda do consultor liberada pelo vínculo. O produtor vê e foca no
+  /// mapa; a edição continua na conta do consultor.
+  final bool sharedByConsultant;
+
+  /// `client_id` do consultor quando [sharedByConsultant] é verdadeiro.
+  final String? sourceClientId;
+
   const ProducerOwnFarm({
     required this.id,
     required this.name,
@@ -137,6 +144,8 @@ class ProducerOwnFarm {
     required this.state,
     required this.areaHa,
     required this.fields,
+    this.sharedByConsultant = false,
+    this.sourceClientId,
   });
 }
 
@@ -146,11 +155,15 @@ class ProducerOwnField {
   final double areaHa;
   final bool hasGeometry;
 
+  /// GeoJSON do contorno, quando o vínculo já trouxe a geometria.
+  final String? geometryJson;
+
   const ProducerOwnField({
     required this.id,
     required this.name,
     required this.areaHa,
     this.hasGeometry = false,
+    this.geometryJson,
   });
 }
 
@@ -225,15 +238,20 @@ class ProducerLinkedField {
   final String name;
   final double areaHa;
 
-  /// GeoJSON do contorno (`fields.bordadura_geo`). Leitura. O produtor
-  /// não grava de volta na conta do consultor.
+  /// GeoJSON do contorno (`fields.bordadura_geo` ou desenho do vínculo).
+  /// Leitura. O produtor não grava de volta na conta do consultor.
   final String? geometryJson;
+
+  /// Desenho já baixado para o mapa. A camada de vínculo não redesenha
+  /// esse contorno — quem desenha é a camada de drawings.
+  final bool fromDrawing;
 
   const ProducerLinkedField({
     required this.id,
     required this.name,
     required this.areaHa,
     this.geometryJson,
+    this.fromDrawing = false,
   });
 
   bool get hasGeometry {
@@ -255,3 +273,177 @@ class ProducerLinkedReport {
     required this.createdAt,
   });
 }
+
+/// Desenho do consultor (tabela `drawings`) para entrar no talhão da fazenda.
+class ProducerLinkedDrawing {
+  final String id;
+  final String name;
+  final double areaHa;
+  final String? farmId;
+  final String? groupName;
+  final String? geometryJson;
+
+  const ProducerLinkedDrawing({
+    required this.id,
+    required this.name,
+    required this.areaHa,
+    this.farmId,
+    this.groupName,
+    this.geometryJson,
+  });
+}
+
+/// Fazendas que o produtor enxerga no card e em Minha área.
+///
+/// A propriedade própria vem primeiro. Fazendas do vínculo entram em seguida,
+/// sem duplicar id e sem virar cadastro editável.
+List<ProducerOwnFarm> producerFarmsForProducer({
+  required ProducerOwnProperty own,
+  required List<ProducerLinkedClient> linkedClients,
+}) {
+  final ownIds = own.farms.map((farm) => farm.id).toSet();
+  final linked = <ProducerOwnFarm>[];
+  for (final client in linkedClients) {
+    if (!client.link.share.farms && !client.link.share.fields) continue;
+    for (final farm in client.farms) {
+      if (farm.id.isEmpty || ownIds.contains(farm.id)) continue;
+      ownIds.add(farm.id);
+      linked.add(
+        ProducerOwnFarm(
+          id: farm.id,
+          name: farm.name,
+          city: (farm.city ?? '').trim(),
+          state: (farm.state ?? '').trim(),
+          areaHa: farm.areaHa,
+          sharedByConsultant: true,
+          sourceClientId: client.link.clientId,
+          fields: farm.fields
+              .map(
+                (field) => ProducerOwnField(
+                  id: field.id,
+                  name: field.name,
+                  areaHa: field.areaHa,
+                  hasGeometry: field.hasGeometry,
+                  geometryJson: field.geometryJson,
+                ),
+              )
+              .toList(growable: false),
+        ),
+      );
+    }
+  }
+  return [...own.farms, ...linked];
+}
+
+/// Encaixa desenhos do vínculo nos talhões da fazenda.
+///
+/// `fazenda_id` manda. Sem id, o grupo igual ao nome da fazenda manda.
+/// O que sobrar sem dono vai para a única fazenda, ou para a primeira
+/// quando nenhum desenho casou com fazenda nenhuma.
+List<ProducerLinkedFarm> attachDrawingsToLinkedFarms({
+  required List<ProducerLinkedFarm> farms,
+  required List<ProducerLinkedDrawing> drawings,
+}) {
+  if (farms.isEmpty || drawings.isEmpty) return farms;
+  final usable = drawings.where((drawing) => drawing.id.trim().isNotEmpty);
+  if (usable.isEmpty) return farms;
+
+  final assigned = <String, List<ProducerLinkedDrawing>>{
+    for (final farm in farms) farm.id: <ProducerLinkedDrawing>[],
+  };
+  final orphans = <ProducerLinkedDrawing>[];
+
+  for (final drawing in usable) {
+    final farmId = drawing.farmId?.trim() ?? '';
+    if (farmId.isNotEmpty && assigned.containsKey(farmId)) {
+      assigned[farmId]!.add(drawing);
+      continue;
+    }
+    final group = _normalizeFarmLabel(drawing.groupName ?? '');
+    if (group.isNotEmpty) {
+      final matches = farms
+          .where((farm) => _normalizeFarmLabel(farm.name) == group)
+          .toList(growable: false);
+      if (matches.length == 1) {
+        assigned[matches.single.id]!.add(drawing);
+        continue;
+      }
+    }
+    orphans.add(drawing);
+  }
+
+  final anyAssigned = assigned.values.any((list) => list.isNotEmpty);
+  if (orphans.isNotEmpty && farms.length == 1) {
+    assigned[farms.single.id]!.addAll(orphans);
+  } else if (orphans.isNotEmpty && !anyAssigned) {
+    assigned[farms.first.id]!.addAll(orphans);
+  }
+
+  return farms
+      .map(
+        (farm) => _mergeDrawingsIntoFarm(farm, assigned[farm.id] ?? const []),
+      )
+      .toList(growable: false);
+}
+
+ProducerLinkedFarm _mergeDrawingsIntoFarm(
+  ProducerLinkedFarm farm,
+  List<ProducerLinkedDrawing> drawings,
+) {
+  if (drawings.isEmpty) return farm;
+  final byId = <String, ProducerLinkedDrawing>{
+    for (final drawing in drawings) drawing.id: drawing,
+  };
+  final fields = <ProducerLinkedField>[];
+  final seen = <String>{};
+
+  for (final field in farm.fields) {
+    seen.add(field.id);
+    final drawing = byId[field.id];
+    if (drawing == null || field.hasGeometry) {
+      fields.add(field);
+      continue;
+    }
+    final geometry = drawing.geometryJson?.trim() ?? '';
+    if (geometry.isEmpty) {
+      fields.add(field);
+      continue;
+    }
+    fields.add(
+      ProducerLinkedField(
+        id: field.id,
+        name: field.name,
+        areaHa: field.areaHa,
+        geometryJson: geometry,
+        fromDrawing: true,
+      ),
+    );
+  }
+
+  for (final drawing in drawings) {
+    if (seen.contains(drawing.id)) continue;
+    seen.add(drawing.id);
+    final name = drawing.name.trim();
+    fields.add(
+      ProducerLinkedField(
+        id: drawing.id,
+        name: name.isEmpty ? 'Talhão' : name,
+        areaHa: drawing.areaHa,
+        geometryJson: drawing.geometryJson,
+        fromDrawing: true,
+      ),
+    );
+  }
+
+  return ProducerLinkedFarm(
+    id: farm.id,
+    name: farm.name,
+    city: farm.city,
+    state: farm.state,
+    areaHa: farm.areaHa,
+    fields: fields,
+  );
+}
+
+String _normalizeFarmLabel(String value) =>
+    value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
