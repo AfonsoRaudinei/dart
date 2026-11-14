@@ -71,5 +71,31 @@ void main() {
       final b = _case(id: 'g2', visibilidade: PlanoMarketing.prata);
       expect(deduplicateHighestMetalPerGroup([a, b]), hasLength(2));
     });
+
+    test('R consultor + clone A + republicação B (source=R) → um pin', () {
+      const r = 'case-R';
+      final consultor = _case(id: r, visibilidade: PlanoMarketing.prata);
+      final cloneA = _case(
+        id: 'A',
+        visibilidade: PlanoMarketing.prata,
+        sourceCaseId: r,
+      );
+      final republicacaoB = _case(
+        id: 'B',
+        visibilidade: PlanoMarketing.ouro,
+        sourceCaseId: r,
+        atualizadoEm: DateTime.utc(2026, 9, 1),
+      );
+
+      final out = deduplicateHighestMetalPerGroup([
+        consultor,
+        cloneA,
+        republicacaoB,
+      ]);
+
+      expect(out, hasLength(1));
+      expect(out.single.id, 'B');
+      expect(out.single.visibilidade, PlanoMarketing.ouro);
+    });
   });
 }
