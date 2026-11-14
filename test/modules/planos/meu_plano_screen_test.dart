@@ -259,23 +259,41 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Seu case fica no mapa. Só você vê.'), findsOneWidget);
+    expect(
+      find.text(
+        'Você cria ocorrência. Compartilhar no vínculo só a partir do Bronze.',
+      ),
+      findsOneWidget,
+    );
     expect(find.text('R\$ 30 por mês, por 3 meses.'), findsNothing);
 
     await tester.tap(find.text('Bronze'));
     await tester.pump();
     expect(find.text('R\$ 30 por mês, por 3 meses.'), findsOneWidget);
     expect(find.text('5 indicações sobem para Prata.'), findsOneWidget);
+    expect(
+      find.text('Você compartilha ocorrência no vínculo.'),
+      findsOneWidget,
+    );
     expect(find.text('Restaurar compras'), findsNothing);
 
     await tester.tap(find.text('Prata'));
     await tester.pump();
     expect(find.text('R\$ 50 por mês, por 6 meses.'), findsOneWidget);
     expect(find.text('10 indicações sobem para Ouro.'), findsOneWidget);
+    expect(
+      find.text('Você compartilha ocorrência no vínculo.'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('Ouro'));
     await tester.pump();
     expect(find.text('R\$ 80 por mês, por 12 meses.'), findsOneWidget);
     expect(find.text('NDVI refinado.'), findsOneWidget);
+    expect(
+      find.text('Você compartilha ocorrência no vínculo.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('conta prata começa em Prata e esconde os outros preços', (
