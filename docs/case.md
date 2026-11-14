@@ -3,7 +3,7 @@
 **Status:** regra de produto fechada em 14/11/2026, 13:37 (America/Araguaina)  
 **Este arquivo é o lugar único dos dados pagos:** preço, cota, metal da publicação, quem vê o pin, vínculo e ocorrência.  
 **Bounded contexts:** `planos/` · `marketing/` · vínculo do produtor · ocorrências  
-A arquitetura continua em ADR-012 e ADR-011. O app ainda não aplica esta regra.
+A arquitetura continua em ADR-012 e ADR-011. Ocorrência no vínculo (Bronze+) entrou no app em 14/11/2026.
 
 Um ponto segue em aberto, no final: se o produtor também precisa de plano para ver a ocorrência compartilhada.
 
@@ -130,8 +130,8 @@ Parcial em relação à regra acima (atualizado 14/11/2026).
 - Ao publicar com plano pago, metal válido e cota ok: o app grava `liberado_em` (UTC) e `publico_ate` (Ouro 6m, Prata 4m, Bronze 2m), alinhado à migration Supabase.
 - Pin no mapa (`MarketingCaseVisibility`): dono sempre vê o próprio `published`; sem `liberado_em` só o autor. Ouro liberado + janela ativa → todos (anônimo só Ouro via `isVisibleOnMapForAnonymous`). Prata + janela ativa → consultor e produtor logados; expirada só autor. Bronze + janela ativa → autor ou produtor com vínculo no `client_id`; consultor não vê bronze de terceiros. Grupos por `source_case_id`: no mapa só o pin do metal mais alto (`deduplicateHighestMetalPerGroup`).
 - Mapa sem login: `isVisibleOnMapForAnonymous` (Ouro liberado, janela ativa). Prata exige login.
-- O convite oferece Fazendas, Talhões e mapa, Ocorrências e Relatórios, todos ligados por padrão, código válido por 7 dias.
-- Ocorrência não consulta plano.
+- O convite oferece Fazendas, Talhões e mapa, Ocorrências e Relatórios; Fazendas/Talhões/Relatórios ligados por padrão. **Ocorrências** só pode ser marcada com plano Bronze+ ativo (checkbox desligado e desabilitado sem plano; `createInvite` valida no app; RLS + RPC no Supabase).
+- Produtor lê ocorrências compartilhadas só quando `consultor_pode_compartilhar_ocorrencias` (Bronze+/admin ativo) — vínculos antigos com `share_occurrences=true` sem plano do consultor não expõem dados.
 - NDVI refinado já segue Ouro pago.
 - A loja, na captura de 14/11/2026, não devolveu produto. O app não tem R$ 20, R$ 50 e R$ 100 gravados.
 
