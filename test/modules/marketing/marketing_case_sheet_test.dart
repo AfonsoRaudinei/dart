@@ -3,7 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/core/contracts/i_marketing_case_reports_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_marketing_case_reports_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/i_occurrence_access_reader_provider.dart';
 import 'package:soloforte_app/core/contracts/marketing_case_report_snapshot.dart';
+import 'package:soloforte_app/core/session/user_role.dart';
+import 'package:soloforte_app/modules/marketing/data/repositories/i_marketing_case_repository.dart';
+import 'package:soloforte_app/modules/marketing/data/services/marketing_sync_service.dart';
+import 'package:soloforte_app/modules/marketing/presentation/providers/marketing_providers.dart';
+import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.dart';
 import 'package:soloforte_app/modules/marketing/domain/enums/case_tipo.dart';
@@ -100,6 +106,16 @@ Widget _wrapSheet({
       marketingCaseReportsLookupProvider.overrideWithValue(
         _FakeMarketingLookup(),
       ),
+      marketingCaseRepositoryProvider.overrideWithValue(_NoopMarketingRepo()),
+      marketingCasesProvider.overrideWith((ref) {
+        final repo = ref.watch(marketingCaseRepositoryProvider);
+        final sync = ref.watch(marketingSyncServiceProvider);
+        return _EmptyCasesNotifier(repo, sync);
+      }),
+      authorizedClientIdsProvider.overrideWith(
+        (ref) async => const <String>{},
+      ),
+      currentUserRoleProvider.overrideWith((ref) => UserRole.consultor),
     ],
     child: MaterialApp(
       theme: ThemeData(extensions: extensions),
@@ -162,4 +178,48 @@ class _FakeMarketingLookup implements IMarketingCaseReportsLookup {
 
   @override
   Future<void> showEditSheet(BuildContext context, String caseId) async {}
+}
+
+class _EmptyCasesNotifier extends MarketingCasesNotifier {
+  _EmptyCasesNotifier(
+    IMarketingCaseRepository repository,
+    MarketingSyncService syncService,
+  ) : super(repository, syncService, null) {
+    state = const AsyncData([]);
+  }
+
+  @override
+  Future<void> load({bool forceSync = false}) async {}
+}
+
+class _NoopMarketingRepo implements IMarketingCaseRepository {
+  @override
+  Future<List<MarketingCase>> fetchMarketingCases() async => const [];
+
+  @override
+  Future<List<MarketingCase>> getLocalCases() async => const [];
+
+  @override
+  Future<void> saveToCache(List<MarketingCase> cases) async {}
+
+  @override
+  Future<void> saveSingleToCache(MarketingCase marketingCase) async {}
+
+  @override
+  Future<MarketingCase> saveCase(MarketingCase marketingCase) async =>
+      marketingCase;
+
+  @override
+  Future<MarketingCase> saveAsDraft(MarketingCase marketingCase) async =>
+      marketingCase;
+
+  @override
+  Future<MarketingCase> getById(String id) async => throw UnimplementedError();
+
+  @override
+  Future<void> updateCase(MarketingCase marketingCase) async {}
+
+  @override
+  Future<MarketingCase> softDelete(String id) async =>
+      throw UnimplementedError();
 }
