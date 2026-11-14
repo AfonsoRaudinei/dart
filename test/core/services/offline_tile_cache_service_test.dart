@@ -712,7 +712,9 @@ void main() {
 }
 
 /// O binding de teste troca o HttpClient por um que responde 400 sem rede.
-/// `super.createHttpClient` devolve o cliente real, sem voltar ao mock.
+/// O `createHttpClient` padrão de [HttpOverrides] devolve o cliente real,
+/// sem voltar ao mock. A classe base é abstrata, então a subclasse vazia
+/// só expõe esse default.
 Future<T> _withRealHttpClient<T>(Future<T> Function() body) {
   return HttpOverrides.runZoned(
     body,
@@ -720,9 +722,4 @@ Future<T> _withRealHttpClient<T>(Future<T> Function() body) {
   );
 }
 
-class _DirectHttpOverrides extends HttpOverrides {
-  @override
-  HttpClient createHttpClient(SecurityContext? context) {
-    return super.createHttpClient(context);
-  }
-}
+class _DirectHttpOverrides extends HttpOverrides {}
