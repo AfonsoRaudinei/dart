@@ -171,9 +171,7 @@ class MarketingCaseSheet extends ConsumerWidget {
               top: Radius.circular(sheetRadius),
             ),
             border: isIos
-                ? Border(
-                    top: BorderSide(color: v.sheetBorder),
-                  )
+                ? Border(top: BorderSide(color: v.sheetBorder))
                 : null,
           ),
           child: Column(
@@ -238,18 +236,14 @@ class MarketingCaseSheet extends ConsumerWidget {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: (isIos
-                                    ? v.iconStroke
-                                    : context.themeAccent)
+                            color: (isIos ? v.iconStroke : context.themeAccent)
                                 .withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             _tipoLabel,
                             style: TextStyle(
-                              color: isIos
-                                  ? v.iconStroke
-                                  : context.themeAccent,
+                              color: isIos ? v.iconStroke : context.themeAccent,
                               fontWeight: FontWeight.w600,
                               fontSize: 11,
                             ),
@@ -280,8 +274,9 @@ class MarketingCaseSheet extends ConsumerWidget {
                         Expanded(
                           child: Text(
                             marketingCase.localizacaoTexto,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: hintColor),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodySmall?.copyWith(color: hintColor),
                           ),
                         ),
                       ],
@@ -298,8 +293,9 @@ class MarketingCaseSheet extends ConsumerWidget {
                           const SizedBox(width: 4),
                           Text(
                             _formatDatePtBr(marketingCase.dataCase!),
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: hintColor),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodySmall?.copyWith(color: hintColor),
                           ),
                         ],
                       ),
@@ -366,7 +362,22 @@ class MarketingCaseSheet extends ConsumerWidget {
                             hintColor: hintColor,
                           ),
                       ],
-                      if (marketingCase.fotoAntesUrl != null ||
+                      if (marketingCase.avaliacoesLivres.isNotEmpty) ...[
+                        if (!_fotosLegadasNoPrimeiroBloco(marketingCase) &&
+                            (marketingCase.fotoAntesUrl != null ||
+                                marketingCase.fotoDepoisUrl != null)) ...[
+                          _buildAntesDepoisFotos(
+                            context,
+                            titleColor: titleColor,
+                            isIos: isIos,
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        _ComparacaoBlocosReadOnly(
+                          avaliacoes: marketingCase.avaliacoesLivres,
+                          titleColor: titleColor,
+                        ),
+                      ] else if (marketingCase.fotoAntesUrl != null ||
                           marketingCase.fotoDepoisUrl != null)
                         _buildAntesDepoisFotos(
                           context,
@@ -430,10 +441,8 @@ class MarketingCaseSheet extends ConsumerWidget {
                           onPressed: () => _startPinCorrection(context, ref),
                           style: isIos
                               ? OutlinedButton.styleFrom(
-                                  foregroundColor:
-                                      v.ghostText,
-                                  side: BorderSide(color: v.ghostBorder,
-                                  ),
+                                  foregroundColor: v.ghostText,
+                                  side: BorderSide(color: v.ghostBorder),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(
                                       v.ghostRadius,
@@ -444,9 +453,7 @@ class MarketingCaseSheet extends ConsumerWidget {
                           icon: Icon(
                             Icons.open_with_rounded,
                             size: 18,
-                            color: isIos
-                                ? v.iconStroke
-                                : context.themeAccent,
+                            color: isIos ? v.iconStroke : context.themeAccent,
                           ),
                           label: const Text('Corrigir posição'),
                         ),
@@ -500,9 +507,7 @@ class MarketingCaseSheet extends ConsumerWidget {
   Widget _buildMetricasRow(BuildContext context, {required bool isIos}) {
     final v = SoloForteSheetVisuals.of(context);
     final items = <_MetricaItem>[];
-    final roiAccent = isIos
-        ? v.iconStroke
-        : const Color(0xFF34C759);
+    final roiAccent = isIos ? v.iconStroke : const Color(0xFF34C759);
 
     final resultadoRoi = marketingCase.computeRoi();
     if (resultadoRoi != null) {
@@ -539,63 +544,55 @@ class MarketingCaseSheet extends ConsumerWidget {
     if (items.isEmpty) return const SizedBox.shrink();
 
     return Row(
-      children: items
-          .map(
-            (item) {
-              final chipBg = isIos
-                  ? v.cardBackground
-                  : item.color.withValues(alpha: 0.08);
-              final chipBorder = isIos
-                  ? v.cardBorder
-                  : item.color.withValues(alpha: 0.2);
-              final labelColor = isIos
-                  ? v.subtitleColor
-                  : item.color.withValues(alpha: 0.85);
-              final valueColor =
-                  isIos ? v.iconStroke : item.color;
-              final iconColor =
-                  isIos ? v.iconStroke : item.color;
+      children: items.map((item) {
+        final chipBg = isIos
+            ? v.cardBackground
+            : item.color.withValues(alpha: 0.08);
+        final chipBorder = isIos
+            ? v.cardBorder
+            : item.color.withValues(alpha: 0.2);
+        final labelColor = isIos
+            ? v.subtitleColor
+            : item.color.withValues(alpha: 0.85);
+        final valueColor = isIos ? v.iconStroke : item.color;
+        final iconColor = isIos ? v.iconStroke : item.color;
 
-              return Expanded(
-              child: Container(
-                margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: chipBg,
-                  borderRadius: BorderRadius.circular(
-                    v.cardRadius,
+        return Expanded(
+          child: Container(
+            margin: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: chipBg,
+              borderRadius: BorderRadius.circular(v.cardRadius),
+              border: Border.all(color: chipBorder),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(item.icon, color: iconColor, size: 20),
+                const SizedBox(height: 8),
+                Text(
+                  item.label,
+                  style: TextStyle(
+                    color: labelColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
-                  border: Border.all(color: chipBorder),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(item.icon, color: iconColor, size: 20),
-                    const SizedBox(height: 8),
-                    Text(
-                      item.label,
-                      style: TextStyle(
-                        color: labelColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.value,
-                      style: TextStyle(
-                        color: valueColor,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 4),
+                Text(
+                  item.value,
+                  style: TextStyle(
+                    color: valueColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
                 ),
-              ),
-            );
-            },
-          )
-          .toList(),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -671,9 +668,7 @@ class MarketingCaseSheet extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: isIos
-                        ? v.iconStroke
-                        : context.themeAccent,
+                    color: isIos ? v.iconStroke : context.themeAccent,
                   ),
                 ),
               ],
@@ -740,10 +735,9 @@ class MarketingCaseSheet extends ConsumerWidget {
           const SizedBox(height: 10),
           Text(
             marketingCase.conclusaoTecnica!,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: titleColor,
-              height: 1.5,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: titleColor, height: 1.5),
           ),
         ],
       ),
@@ -797,9 +791,9 @@ class MarketingCaseSheet extends ConsumerWidget {
                 if (marketingCase.telefoneVendedor != null)
                   Text(
                     marketingCase.telefoneVendedor!,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: hintColor,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: hintColor),
                   ),
               ],
             ),
@@ -807,9 +801,7 @@ class MarketingCaseSheet extends ConsumerWidget {
           if (marketingCase.telefoneVendedor != null)
             IconButton(
               icon: const Icon(Icons.phone_outlined),
-              color: isIos
-                  ? v.iconStroke
-                  : context.themeAccent,
+              color: isIos ? v.iconStroke : context.themeAccent,
               onPressed: () => HapticFeedback.lightImpact(),
             ),
         ],
