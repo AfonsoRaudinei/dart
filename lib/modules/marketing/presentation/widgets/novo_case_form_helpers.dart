@@ -4,6 +4,34 @@ import '../../../../core/contracts/i_client_lookup.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 
+/// Valor persistido em [MarketingCase.produtorFazenda]: texto manual ou fallback do cliente.
+String marketingEffectiveProdutorFazenda({
+  required String manualProdutor,
+  required String? selectedClientName,
+}) {
+  final manual = manualProdutor.trim();
+  if (manual.isNotEmpty) return manual;
+  final clientName = selectedClientName?.trim() ?? '';
+  return clientName;
+}
+
+/// Campo Produtor/Fazenda obrigatório somente sem cliente no dropdown.
+bool marketingProdutorFieldRequired({required String? clientId}) {
+  return clientId == null;
+}
+
+/// Pré-preenchimento da visita: evita duplicar só o nome do cliente no campo.
+String marketingVisitInitialProdutorFieldText({
+  required String? producerFarmLabel,
+  required String? clientName,
+}) {
+  final label = producerFarmLabel?.trim() ?? '';
+  if (label.isEmpty) return '';
+  final client = clientName?.trim() ?? '';
+  if (client.isNotEmpty && label == client) return '';
+  return label;
+}
+
 /// Autofill de Produtor/Fazenda ao escolher cliente (seção Identificação).
 bool marketingProdutorShouldAutofillFromClient({
   required String currentProdutor,
