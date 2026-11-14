@@ -102,7 +102,8 @@ class _GeneratedReportCardState extends ConsumerState<_GeneratedReportCard> {
       date: widget.date,
       statusLabel:
           widget.statusLabel ?? (widget.enabled ? 'Disponível' : 'Vazio'),
-      statusColor: widget.statusColor ??
+      statusColor:
+          widget.statusColor ??
           (widget.enabled ? context.themeAccent : Colors.grey),
       onTapAsync: widget.enabled ? () => _openPreview(context) : null,
     );
@@ -114,9 +115,8 @@ Future<_GeneratedReportPayload> _buildOccurrenceListPayload(
   List<Occurrence> occurrences,
   String clientId,
 ) async {
-  final sorted = _sortOccurrencesByCreatedAt(occurrences);
   final rows = <Map<String, dynamic>>[];
-  for (final occurrence in sorted) {
+  for (final occurrence in occurrences) {
     final data = occurrence.toMap();
     data['foto_base64'] =
         await RelatorioHtmlRenderer.photoPathToBase64(occurrence.photoPath) ??
@@ -162,7 +162,7 @@ Future<_GeneratedReportPayload> _buildOccurrenceListPayload(
         'lat',
         'long',
       ],
-      ...sorted.map(
+      ...occurrences.map(
         (item) => [
           item.id,
           item.type,
@@ -368,15 +368,17 @@ Future<_GeneratedReportPayload> _buildMarketingPayload(
     fallbackConsultantName: item.nomeVendedor ?? 'Equipe técnica',
     fallbackConsultantRole: 'Consultoria',
   );
-  final bundle = await ref.read(marketingCaseReportsLookupProvider).buildExportBundle(
-    item.id,
-    fallbackConsultantName: item.nomeVendedor ?? 'Equipe técnica',
-    fallbackConsultantRole: 'Consultoria',
-    reportBrandName: branding.brandName,
-    reportLogoPath: branding.logoPath,
-    consultantName: branding.consultantName,
-    consultantRole: branding.consultantRole,
-  );
+  final bundle = await ref
+      .read(marketingCaseReportsLookupProvider)
+      .buildExportBundle(
+        item.id,
+        fallbackConsultantName: item.nomeVendedor ?? 'Equipe técnica',
+        fallbackConsultantRole: 'Consultoria',
+        reportBrandName: branding.brandName,
+        reportLogoPath: branding.logoPath,
+        consultantName: branding.consultantName,
+        consultantRole: branding.consultantRole,
+      );
   return _GeneratedReportPayload(
     title: bundle.title,
     fileBaseName: bundle.fileBaseName,
@@ -391,11 +393,7 @@ Future<String> _buildOccurrenceReportHtml(
   Occurrence occurrence, {
   bool asFragment = false,
 }) {
-  return buildOccurrenceReportHtml(
-    ref,
-    occurrence,
-    asFragment: asFragment,
-  );
+  return buildOccurrenceReportHtml(ref, occurrence, asFragment: asFragment);
 }
 
 List<_CombinedReportEvent> _sortCombinedReportEvents(
