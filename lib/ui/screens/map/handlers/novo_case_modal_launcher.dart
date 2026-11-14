@@ -174,12 +174,14 @@ class NovoCaseModalLauncher {
     }
 
     final cases = ref.read(marketingCasesProvider).valueOrNull ?? [];
-    final limite = plano.limiteCases;
+    final metal = newCase.visibilidade.name;
+    final limite = plano.cotaPublicacaoPorMetal(metal);
 
     if (marketingPublishBlockedByPlan(
       plano: plano,
       cases: cases,
       publishingCaseId: newCase.id,
+      visibilidade: newCase.visibilidade,
     )) {
       if (!context.mounted) return;
       Navigator.of(context).pop();
@@ -200,8 +202,11 @@ class NovoCaseModalLauncher {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Limite de $limite cases publicados. Salvo como Não gerado em '
-            'Relatórios → Marketing.',
+            limite <= 0
+                ? 'Seu plano não permite cases ${metal.toUpperCase()}. '
+                    'Salvo como Não gerado em Relatórios → Marketing.'
+                : 'Limite de $limite cases ${metal.toUpperCase()} publicados. '
+                    'Salvo como Não gerado em Relatórios → Marketing.',
           ),
           duration: const Duration(seconds: 5),
         ),
