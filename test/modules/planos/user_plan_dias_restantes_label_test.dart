@@ -74,7 +74,7 @@ void main() {
       expect(plan.limiteCasesLabel, 'Cases ilimitados');
     });
 
-    test('plano ouro (sentinela 999999) não mostra "999999 cases"', () {
+    test('plano ouro mostra cotas por metal', () {
       final plan = UserPlan(
         id: 'p1',
         userId: 'u1',
@@ -85,10 +85,11 @@ void main() {
         expiraEm: DateTime.now().add(const Duration(days: 30)),
         criadoEm: DateTime.now(),
       );
-      expect(plan.limiteCasesLabel, 'Cases ilimitados');
+      expect(plan.limiteCases, 20);
+      expect(plan.limiteCasesLabel, '5 Bronze · 5 Prata · 10 Ouro');
     });
 
-    test('plano bronze mostra limite numérico real', () {
+    test('plano bronze mostra cota bronze', () {
       final plan = UserPlan(
         id: 'p1',
         userId: 'u1',
@@ -99,7 +100,7 @@ void main() {
         expiraEm: DateTime.now().add(const Duration(days: 30)),
         criadoEm: DateTime.now(),
       );
-      expect(plan.limiteCasesLabel, '5 cases');
+      expect(plan.limiteCasesLabel, '5 cases Bronze');
     });
   });
 }
