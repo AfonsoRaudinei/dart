@@ -302,29 +302,24 @@ class ProducerLinkRepository implements ProducerLinkReader {
     return links.map((link) => link.clientId).toList(growable: false);
   }
 
-  /// Vínculo `active` libera leitura enquanto não for revogado.
-  /// `expires_at` vale só para aceitar o token pendente.
+  /// Ocorrências: `share_occurrences` e Bronze+ dos dois lados.
   Future<List<String>> loadAuthorizedClientIds() async {
-    final userId = _currentUserId();
-    try {
-      final rows = await _client
-          .from(_linkTable)
-          .select()
-          .eq('producer_user_id', userId)
-          .eq('status', 'active')
-          .order('updated_at', ascending: false);
-      final links = (rows as List)
-          .map((row) => ProducerClientLink.fromRemote(row))
-          .toList();
-      for (final link in links) {
-        await _cacheLink(link, syncStatus: 0);
-      }
-      await _removeStaleCachedProducerLinks(userId, links);
-    } catch (_) {
-      // Cache local pode ficar desatualizado; elegibilidade vem só do RPC.
-    }
-    final eligible = await _loadOccurrenceEligibleClientIds();
-    return eligible.toList(growable: false);
+    await _loadActiveLinks();
+    return (await _loadOccurrenceEligibleClientIds()).toList(growable: false);
+  }
+
+  /// Relatórios marcados no convite. Sem gate de plano.
+  Future<List<String>> loadReportShareClientIds() async {
+    final links = await _loadActiveLinks();
+    return reportClientIdsOf(links);
+  }
+
+  @visibleForTesting
+  static List<String> reportClientIdsOf(Iterable<ProducerClientLink> links) {
+    return [
+      for (final link in links)
+        if (link.share.reports) link.clientId,
+    ];
   }
 
   /// `client_id` com `share_fields` — desenhos/talhões no mapa.
