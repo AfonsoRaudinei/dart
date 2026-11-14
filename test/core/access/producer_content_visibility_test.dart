@@ -71,6 +71,8 @@ void main() {
       PlanoMarketing visibilidade = PlanoMarketing.prata,
       MarketingCaseStatus status = MarketingCaseStatus.published,
       bool ativo = true,
+      DateTime? liberadoEm,
+      DateTime? publicoAte,
     }) {
       return MarketingCase(
         id: 'c1',
@@ -83,6 +85,8 @@ void main() {
         produtoUtilizado: 'Produto',
         clientId: clientId,
         ownerUserId: ownerUserId,
+        liberadoEm: liberadoEm,
+        publicoAte: publicoAte,
         ativo: ativo,
         status: status,
         criadoEm: now,
@@ -129,10 +133,13 @@ void main() {
     });
 
     test('mapa produtor: inclui Ouro público de terceiro', () {
+      final liberado = DateTime.utc(2026, 6, 1);
       final publicOuro = buildCase(
         ownerUserId: 'outro',
         clientId: 'client-z',
         visibilidade: PlanoMarketing.ouro,
+        liberadoEm: liberado,
+        publicoAte: liberado.add(const Duration(days: 200)),
       );
       final prataOther = buildCase(
         ownerUserId: 'outro',
