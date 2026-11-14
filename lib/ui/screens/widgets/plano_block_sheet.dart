@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
-import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
 
 class PlanoBlockSheet extends StatelessWidget {
   final String motivo;
@@ -34,16 +33,16 @@ class PlanoBlockSheet extends StatelessWidget {
     );
   }
 
-  int _limiteDoPlano(String? label) {
+  String _limiteTextoDoPlano(String? label) {
     switch (label) {
       case 'Bronze':
-        return PlanoTipo.bronze.limiteCases;
+        return '5 cases Bronze';
       case 'Prata':
-        return PlanoTipo.prata.limiteCases;
+        return '5 Bronze · 5 Prata';
       case 'Ouro':
-        return PlanoTipo.ouro.limiteCases;
+        return '5 Bronze · 5 Prata · 10 Ouro';
       default:
-        return PlanoTipo.bronze.limiteCases;
+        return 'cota por metal do plano';
     }
   }
 
@@ -95,7 +94,7 @@ class PlanoBlockSheet extends StatelessWidget {
             Text(
               motivo == 'sem_plano'
                   ? 'Seu plano atual não permite publicar novos cases no mapa.'
-                  : 'Seu plano ${planoLabel ?? 'atual'} permite apenas ${limite ?? _limiteDoPlano(planoLabel)} case(s) ativo(s). Exclua um case publicado ou mantenha como Não gerado.',
+                  : 'Seu plano ${planoLabel ?? 'atual'} permite ${limite != null ? 'até $limite case(s) ativo(s)' : _limiteTextoDoPlano(planoLabel)} por metal. Exclua um case publicado ou mantenha como Não gerado.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
