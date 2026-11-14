@@ -104,14 +104,14 @@ void main() {
       expect(config.fallbackUrl, isNull);
     });
 
-    test('standard com MapTiler key usa streets-v2', () {
+    test('standard com MapTiler key usa outdoor-v2', () {
       final config = MapConfig.tileConfigForLayer(
         LayerType.standard,
         mapTilerApiKey: 'test-key',
       );
 
       expect(config.requiresApiKey, isTrue);
-      expect(config.urlTemplate, contains('/maps/streets-v2/256/'));
+      expect(config.urlTemplate, contains('/maps/outdoor-v2/256/'));
       expect(config.urlTemplate, contains('{y}{r}.png'));
       expect(config.urlTemplate, contains('key=test-key'));
       expect(config.fallbackUrl, isNull);
