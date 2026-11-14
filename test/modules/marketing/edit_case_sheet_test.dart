@@ -278,6 +278,47 @@ void main() {
       expect(find.text('Adicione as fotos Antes e Depois.'), findsOneWidget);
     });
 
+    testWidgets(
+      'com clientId, limpar produtor ao salvar usa fallback do nome do cliente',
+      (tester) async {
+        MarketingCase? savedCase;
+
+        await tester.pumpWidget(
+          _wrap(
+            EditCaseSheet(
+              caso: _caseResultadoComClienteLegado(),
+              onClose: () {},
+              onSalvar: (updatedCase) async {
+                savedCase = updatedCase;
+              },
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        final produtorField = find.widgetWithText(
+          TextFormField,
+          'Produtor / Fazenda',
+        );
+        await tester.enterText(produtorField, '');
+        await tester.pump();
+
+        await tester.scrollUntilVisible(
+          find.text('Salvar'),
+          500,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pump();
+        await tester.tap(find.text('Salvar'));
+        await tester.pump();
+
+        expect(savedCase, isNotNull);
+        expect(savedCase!.clientId, 'client-1');
+        expect(savedCase!.produtorFazenda, 'Cliente Teste');
+      },
+    );
+
     testWidgets('mantém loading até o save terminar e mostra erro em falha', (
       tester,
     ) async {
@@ -378,6 +419,25 @@ MarketingCase _caseAntesDepois() {
     dataCase: now,
     fotoAntesUrl: 'https://example.com/antes.jpg',
     fotoDepoisUrl: 'https://example.com/depois.jpg',
+    criadoEm: now,
+    atualizadoEm: now,
+  );
+}
+
+MarketingCase _caseResultadoComClienteLegado() {
+  final now = DateTime.utc(2026, 7, 28, 12);
+  return MarketingCase(
+    id: 'case-resultado-cliente',
+    tipo: CaseTipo.resultado,
+    visibilidade: PlanoMarketing.ouro,
+    lat: -12.345,
+    lng: -47.89,
+    localizacaoTexto: 'Fazenda Central',
+    produtorFazenda: 'Cliente Teste',
+    produtoUtilizado: 'Produto X',
+    dataCase: now,
+    clientId: 'client-1',
+    fotoPrincipalUrl: 'https://example.com/resultado.jpg',
     criadoEm: now,
     atualizadoEm: now,
   );
