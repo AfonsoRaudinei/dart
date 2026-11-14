@@ -25,18 +25,13 @@ class _RelatoriosProducerSelector extends ConsumerWidget {
         padding: EdgeInsets.symmetric(vertical: 8),
         child: LinearProgressIndicator(minHeight: 2),
       ),
-      error: (_, __) => _producerDropdown(
-        context,
-        {for (final id in producerIds) id: id},
-      ),
+      error: (_, __) =>
+          _producerDropdown(context, {for (final id in producerIds) id: id}),
       data: (labels) => _producerDropdown(context, labels),
     );
   }
 
-  Widget _producerDropdown(
-    BuildContext context,
-    Map<String, String> labels,
-  ) {
+  Widget _producerDropdown(BuildContext context, Map<String, String> labels) {
     final effectiveValue =
         selectedClientId != null && producerIds.contains(selectedClientId)
         ? selectedClientId
@@ -73,19 +68,14 @@ class _RelatoriosProducerSelector extends ConsumerWidget {
             fontWeight: FontWeight.w600,
             color: context.premiumTextPrimary,
           ),
-          items: producerIds
-              .map((id) {
-                final label = labels[id] ?? id;
-                final count = itemCounts[id] ?? 0;
-                return DropdownMenuItem<String>(
-                  value: id,
-                  child: Text(
-                    '$label · $count',
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                );
-              })
-              .toList(),
+          items: producerIds.map((id) {
+            final label = labels[id] ?? id;
+            final count = itemCounts[id] ?? 0;
+            return DropdownMenuItem<String>(
+              value: id,
+              child: Text('$label · $count', overflow: TextOverflow.ellipsis),
+            );
+          }).toList(),
           onChanged: (id) {
             if (id != null) onSelected(id);
           },
@@ -133,9 +123,16 @@ List<RelatorioTecnico> _sortRelatoriosByPeriodStart(
   return sorted;
 }
 
-List<Occurrence> _sortOccurrencesByCreatedAt(List<Occurrence> occurrences) {
+List<Occurrence> _sortOccurrencesByCreatedAt(
+  List<Occurrence> occurrences, {
+  bool oldestFirst = false,
+}) {
   final sorted = [...occurrences]
-    ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    ..sort(
+      (a, b) => oldestFirst
+          ? a.createdAt.compareTo(b.createdAt)
+          : b.createdAt.compareTo(a.createdAt),
+    );
   return sorted;
 }
 
