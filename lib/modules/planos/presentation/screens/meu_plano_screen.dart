@@ -472,14 +472,14 @@ enum _PlanoMenu {
     gratis => const [
       'Seu case fica no mapa. Só você vê.',
       'O seletor de metal aparece travado.',
-      'Você cria ocorrência. Ela não vai para o produtor.',
+      'Você cria ocorrência. Compartilhar no vínculo só a partir do Bronze.',
       'O vínculo leva fazenda, talhões, mapa e desenhos.',
     ],
     bronze => const [
       'R\$ 30 por mês, por 3 meses.',
       '5 cases no metal Bronze.',
       'O pin aparece para você e para o produtor do vínculo, a partir do zoom 14.',
-      'Você compartilha ocorrência.',
+      'Você compartilha ocorrência no vínculo.',
       '5 indicações sobem para Prata.',
     ],
     prata => const [
@@ -487,6 +487,7 @@ enum _PlanoMenu {
       '5 cases Bronze e 5 cases Prata.',
       'O pin Prata aparece para quem está logado, a partir do zoom 12.',
       'Você compartilha o case no vínculo.',
+      'Você compartilha ocorrência no vínculo.',
       '10 indicações sobem para Ouro.',
     ],
     ouro => const [
@@ -494,6 +495,7 @@ enum _PlanoMenu {
       '5 cases Bronze, 5 Prata e 10 Ouro.',
       'O pin Ouro aparece para todos, mesmo sem login, a partir do zoom 10.',
       'O produtor pode publicar o mesmo case. No mapa fica o pin mais alto.',
+      'Você compartilha ocorrência no vínculo.',
       'NDVI refinado.',
     ],
   };
