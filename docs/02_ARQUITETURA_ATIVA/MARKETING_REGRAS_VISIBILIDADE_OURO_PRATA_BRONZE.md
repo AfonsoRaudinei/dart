@@ -51,7 +51,7 @@ ponteiro 10
 ### 2.2 Alcance (zoom mínimo no mapa)
 
 ```
-Ouro   → zoom ≥ 10   (visível mais cedo / de mais longe)
+Ouro   → zoom ≥ 8   (visível mais cedo / de mais longe)
 Prata  → zoom ≥ 12
 Bronze → zoom ≥ 14   (precisa aproximar mais)
 Leitura → zoom ≥ 15  (nome e resultado maiores; o pin não cresce antes disso)
