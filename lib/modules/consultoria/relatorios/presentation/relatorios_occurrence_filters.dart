@@ -61,25 +61,34 @@ _OccurrencePlaceRequest _occurrencePlaceRequest(
   );
 }
 
+/// Catálogo do produtor. A chave é só o cliente: criar ou apagar ocorrência
+/// não recarrega fazendas e talhões.
+final _occurrencePlaceCatalogProvider = FutureProvider.autoDispose
+    .family<OccurrencePlaceCatalog, String>((ref, clientId) async {
+      final farmLookup = _tryReadContract(() => ref.read(iFarmLookupProvider));
+      final fieldLookup = _tryReadContract(
+        () => ref.read(iFieldLookupProvider),
+      );
+      if (farmLookup == null || fieldLookup == null) {
+        return const OccurrencePlaceCatalog();
+      }
+      return loadOccurrencePlaceCatalog(
+        clientId: clientId,
+        farmLookup: farmLookup,
+        fieldLookup: fieldLookup,
+      );
+    });
+
 final _occurrencePlaceIndexProvider = FutureProvider.autoDispose
     .family<_OccurrencePlaceIndex, _OccurrencePlaceRequest>((
       ref,
       request,
     ) async {
-      final farmLookup = _tryReadContract(() => ref.read(iFarmLookupProvider));
-      final fieldLookup = _tryReadContract(
-        () => ref.read(iFieldLookupProvider),
+      final catalog = await ref.watch(
+        _occurrencePlaceCatalogProvider(request.clientId).future,
       );
       final visitLookup = _tryReadContract(
         () => ref.read(visitSessionLookupProvider),
-      );
-      if (farmLookup == null || fieldLookup == null) {
-        return _OccurrencePlaceIndex.empty;
-      }
-      final catalog = await loadOccurrencePlaceCatalog(
-        clientId: request.clientId,
-        farmLookup: farmLookup,
-        fieldLookup: fieldLookup,
       );
       final places = await indexOccurrencePlaces(
         queries: request.queries,
@@ -102,7 +111,7 @@ List<OccurrenceCategory> _occurrenceCategoriesPresent(
   ];
 }
 
-/// Fazenda só vale depois do índice e se ainda existir no catálogo.
+/// Fazenda só vale depois do catálogo e se ainda existir nele.
 String? _acceptedOccurrenceFarmId(
   OccurrencePlaceCatalog catalog,
   bool catalogReady,
@@ -132,7 +141,9 @@ bool _occurrenceMatchesPlace(
   required Map<String, OccurrencePlace> places,
 }) {
   if (farmId == null && fieldId == null) return true;
-  if (!placeIndexReady) return true;
+  // Com fazenda ou talhão escolhido, não solta a lista inteira enquanto o
+  // índice novo ainda não chegou.
+  if (!placeIndexReady) return false;
   final place = places[occurrence.id];
   if (place == null || !place.isKnown) return false;
   if (farmId != null && place.farmId != farmId) return false;
@@ -460,12 +471,22 @@ class _OccurrenciasSectionState extends ConsumerState<_OccurrenciasSection> {
   String? _fieldId;
   bool _oldestFirst = false;
   String? _boundProducerClientId;
+  String? _retainedPlacesClientId;
+  Map<String, OccurrencePlace>? _retainedPlaces;
 
   void _syncProducerClient(String? clientId) {
     if (_boundProducerClientId == clientId) return;
     _boundProducerClientId = clientId;
     _farmId = null;
     _fieldId = null;
+    _retainedPlacesClientId = null;
+    _retainedPlaces = null;
+  }
+
+  void _keepPlaces(String? clientId, Map<String, OccurrencePlace>? places) {
+    if (clientId == null || places == null) return;
+    _retainedPlacesClientId = clientId;
+    _retainedPlaces = places;
   }
 
   void _clearFilters() {
@@ -554,22 +575,42 @@ class _OccurrenciasSectionState extends ConsumerState<_OccurrenciasSection> {
         final placeRequest = effectiveClientId == null || scoped.isEmpty
             ? null
             : _occurrencePlaceRequest(effectiveClientId, scoped);
+        final catalogAsync = effectiveClientId == null
+            ? const AsyncData<OccurrencePlaceCatalog>(OccurrencePlaceCatalog())
+            : ref.watch(_occurrencePlaceCatalogProvider(effectiveClientId));
         final indexAsync = placeRequest == null
             ? const AsyncData<_OccurrencePlaceIndex>(
                 _OccurrencePlaceIndex.empty,
               )
             : ref.watch(_occurrencePlaceIndexProvider(placeRequest));
-        final catalog =
-            indexAsync.valueOrNull?.catalog ?? const OccurrencePlaceCatalog();
+        if (indexAsync.hasValue) {
+          _keepPlaces(effectiveClientId, indexAsync.requireValue.places);
+        }
+        final livePlaces = indexAsync.hasValue
+            ? indexAsync.requireValue.places
+            : null;
+        final retainedPlaces =
+            !indexAsync.hasError && _retainedPlacesClientId == effectiveClientId
+            ? _retainedPlaces
+            : null;
         final places =
-            indexAsync.valueOrNull?.places ?? const <String, OccurrencePlace>{};
+            livePlaces ?? retainedPlaces ?? const <String, OccurrencePlace>{};
+        final catalog =
+            catalogAsync.valueOrNull ?? const OccurrencePlaceCatalog();
+        final catalogReady = catalogAsync.hasValue;
         final placesLoading =
-            placeRequest != null &&
-            indexAsync.isLoading &&
-            !indexAsync.hasValue;
+            (effectiveClientId != null &&
+                catalogAsync.isLoading &&
+                !catalogAsync.hasValue) ||
+            (placeRequest != null &&
+                indexAsync.isLoading &&
+                !indexAsync.hasValue);
+        final placeFilterActive = _farmId != null || _fieldId != null;
         final placeIndexReady =
-            placeRequest == null || indexAsync.hasValue || indexAsync.hasError;
-        final catalogReady = placeIndexReady && !placesLoading;
+            placeRequest == null ||
+            livePlaces != null ||
+            indexAsync.hasError ||
+            (placeFilterActive && retainedPlaces != null);
         final farmId = _acceptedOccurrenceFarmId(
           catalog,
           catalogReady,

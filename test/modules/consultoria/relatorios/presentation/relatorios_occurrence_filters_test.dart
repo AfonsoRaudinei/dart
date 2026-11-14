@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +12,8 @@ import 'package:soloforte_app/core/contracts/i_farm_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_farm_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/i_field_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_field_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/i_visit_session_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_visit_session_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/i_marketing_case_reports_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/marketing_case_reports_list_provider.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
@@ -172,6 +176,70 @@ void main() {
     expect(find.text('03/05/2026'), findsNothing);
     expect(find.text('Lista de Ocorrências'), findsOneWidget);
   });
+
+  testWidgets(
+    'filtro de fazenda segue ocultando a outra fazenda enquanto o índice recarrega',
+    (tester) async {
+      final repo = _MemoryOccurrenceRepository([
+        _occurrence(
+          id: 'occ-sul',
+          category: 'nutricional',
+          fieldId: 'field-sul',
+          createdAt: DateTime(2026, 3, 2, 12),
+        ),
+        _occurrence(
+          id: 'occ-extra',
+          category: 'nutricional',
+          fieldId: 'field-sul',
+          createdAt: DateTime(2026, 1, 1, 12),
+        ),
+        _occurrence(
+          id: 'occ-norte',
+          category: 'daninhas',
+          visitSessionId: 'sess-norte',
+          createdAt: DateTime(2026, 5, 3, 12),
+        ),
+      ]);
+      final visits = _GatedVisitLookup();
+      addTearDown(() {
+        if (!visits.pending.isCompleted) visits.pending.complete(null);
+      });
+
+      await _pumpOccurrences(
+        tester,
+        const [],
+        repository: repo,
+        extraOverrides: [
+          iFarmLookupProvider.overrideWithValue(_TwoFarmLookup()),
+          iFieldLookupProvider.overrideWithValue(_TwoFieldLookup()),
+          visitSessionLookupProvider.overrideWithValue(visits),
+        ],
+      );
+
+      expect(find.text('02/03/2026'), findsOneWidget);
+      expect(find.text('01/01/2026'), findsOneWidget);
+      expect(find.text('03/05/2026'), findsOneWidget);
+
+      await _openDropdown(tester, 0);
+      await tester.tap(find.text('Fazenda Sul').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('02/03/2026'), findsOneWidget);
+      expect(find.text('01/01/2026'), findsOneWidget);
+      expect(find.text('03/05/2026'), findsNothing);
+
+      repo.remove('occ-extra');
+      final context = tester.element(find.byType(RelatoriosScreen));
+      ProviderScope.containerOf(context).invalidate(occurrencesListProvider);
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('01/01/2026'), findsNothing);
+      expect(find.text('02/03/2026'), findsOneWidget);
+      expect(find.text('03/05/2026'), findsNothing);
+      expect(visits.calls, greaterThan(1));
+    },
+  );
 }
 
 Occurrence _occurrence({
@@ -179,6 +247,7 @@ Occurrence _occurrence({
   required String category,
   required DateTime createdAt,
   String? fieldId,
+  String? visitSessionId,
 }) {
   return Occurrence(
     id: id,
@@ -188,6 +257,7 @@ Occurrence _occurrence({
     status: 'draft',
     clientId: 'cli-test-1',
     fieldId: fieldId,
+    visitSessionId: visitSessionId,
     createdAt: createdAt,
   );
 }
@@ -232,6 +302,7 @@ Future<void> _ensureTapped(WidgetTester tester, Finder target) async {
 Future<void> _pumpOccurrences(
   WidgetTester tester,
   List<Occurrence> occurrences, {
+  OccurrenceRepository? repository,
   List<Override> extraOverrides = const [],
 }) async {
   await tester.binding.setSurfaceSize(const Size(800, 1600));
@@ -249,7 +320,7 @@ Future<void> _pumpOccurrences(
           relatorioRepository,
         ),
         occurrenceRepositoryProvider.overrideWithValue(
-          _MemoryOccurrenceRepository(occurrences),
+          repository ?? _MemoryOccurrenceRepository(occurrences),
         ),
         marketingCaseRepositoryProvider.overrideWithValue(
           _EmptyMarketingRepository(),
@@ -286,8 +357,38 @@ class _MemoryOccurrenceRepository extends OccurrenceRepository {
 
   final Map<String, Occurrence> _store = {};
 
+  void remove(String id) => _store.remove(id);
+
   @override
   Future<List<Occurrence>> getAllOccurrences() async => _store.values.toList();
+}
+
+class _GatedVisitLookup implements IVisitSessionLookup {
+  final Completer<VisitSessionSummary?> pending = Completer();
+  int calls = 0;
+
+  @override
+  Future<VisitSessionSummary?> findById(String sessionId) {
+    calls += 1;
+    if (calls == 1) {
+      return Future.value(
+        VisitSessionSummary(
+          id: sessionId,
+          producerId: 'cli-test-1',
+          status: 'finished',
+          startTime: DateTime.utc(2026, 5, 3),
+          areaId: 'field-norte',
+        ),
+      );
+    }
+    return pending.future;
+  }
+
+  @override
+  Future<VisitSessionSummary?> getActiveSession() async => null;
+
+  @override
+  Future<List<VisitSessionSummary>> listFinished() async => const [];
 }
 
 class _FilterClientLookup implements IClientLookup {
