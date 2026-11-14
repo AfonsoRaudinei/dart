@@ -7,9 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/access/producer_link_occurrence_policy.dart';
 import '../../../core/contracts/i_producer_invite_writer.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/session/local_session_identity.dart';
+import '../../planos/domain/entities/user_plan.dart';
 import 'linked_consultant_geometry.dart';
 import 'producer_link_models.dart';
 
@@ -29,6 +31,8 @@ class ProducerLinkRepository implements ProducerLinkReader {
   static const _linkTable = 'producer_client_links';
   static const linkedReportsTable = 'relatorios_v2';
   static const _tokenBytes = 6;
+  static const _occurrenceSharePlanMessage =
+      'Compartilhar ocorrências exige plano Bronze ou superior ativo.';
 
   Future<ProducerInvite> createInvite(
     String clientId, {
@@ -41,6 +45,10 @@ class ProducerLinkRepository implements ProducerLinkReader {
     // basta — a RLS de insert compara auth.uid() com consultor_user_id.
     final userId = _authenticatedUserId();
     await _assertConsultorCanInvite(userId, clientId);
+    if (share.occurrences) {
+      final plan = await _loadConsultorPlanForOccurrenceShare(userId);
+      assertConsultorPodeCompartilharOcorrencias(plan, share);
+    }
 
     final token = generateInviteToken();
     final expiresAt = DateTime.now().toUtc().add(const Duration(days: 7));
@@ -105,6 +113,84 @@ class ProducerLinkRepository implements ProducerLinkReader {
       );
     }
     return userId;
+  }
+
+  Future<UserPlan> _loadConsultorPlanForOccurrenceShare(String userId) async {
+    final row = await _client
+        .from('user_plans')
+        .select()
+        .eq('user_id', userId)
+        .eq('ativo', true)
+        .order('criado_em', ascending: false)
+        .limit(1)
+        .maybeSingle();
+
+    var plan = row == null
+        ? UserPlan.free(userId: userId)
+        : UserPlan.fromJson(Map<String, dynamic>.from(row));
+
+    final user = _client.auth.currentUser;
+    final sessionRole =
+        (user?.appMetadata['role'] as String?)?.trim().toLowerCase() ??
+        (user?.userMetadata?['role'] as String?)?.trim().toLowerCase();
+    if (sessionRole == 'admin') {
+      plan = plan.copyWith(isAdmin: true);
+      return plan;
+    }
+
+    final perfil = await _client
+        .from('perfis')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle();
+    final perfilRole = (perfil?['role'] as String?)?.trim().toLowerCase();
+    if (perfilRole == 'admin') {
+      plan = plan.copyWith(isAdmin: true);
+    }
+    return plan;
+  }
+
+  @visibleForTesting
+  static void assertConsultorPodeCompartilharOcorrencias(
+    UserPlan plan,
+    ProducerShareSelection share,
+  ) {
+    if (!share.occurrences) return;
+    final ok = ProducerLinkOccurrencePolicy.consultorPodeCompartilharOcorrencia(
+      isAdmin: plan.isAdmin,
+      planId: plan.id,
+      ocultaPinsMarketingNoMapa: plan.ocultaPinsMarketingNoMapa,
+    );
+    if (!ok) {
+      throw Exception(_occurrenceSharePlanMessage);
+    }
+  }
+
+  /// IDs de cliente cuja ocorrência o produtor pode ler (Bronze+ do consultor).
+  ///
+  /// Sem RPC (offline): retorna vazio — vínculos locais antigos podem existir
+  /// no cache até o próximo sync, mas não entram na lista autorizada.
+  Future<Set<String>> _loadOccurrenceEligibleClientIds() async {
+    try {
+      final rows = await _client.rpc(
+        'list_occurrence_share_client_ids_for_producer',
+      );
+      return clientIdsFromOccurrenceShareRpc(rows);
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  @visibleForTesting
+  static Set<String> clientIdsFromOccurrenceShareRpc(Object? rows) {
+    final ids = <String>{};
+    final list = rows is List ? rows : const [];
+    for (final row in list) {
+      if (row is! Map) continue;
+      final id = (row['client_id'] as String?)?.trim();
+      if (id != null && id.isNotEmpty) ids.add(id);
+    }
+    return ids;
   }
 
   @visibleForTesting
@@ -183,10 +269,11 @@ class ProducerLinkRepository implements ProducerLinkReader {
   @override
   Future<List<ProducerLinkedClient>> loadLinkedConsultantData() async {
     final links = await _loadActiveLinks();
+    final eligible = await _loadOccurrenceEligibleClientIds();
     final clients = <ProducerLinkedClient>[];
 
     for (final link in links) {
-      final client = await _loadLinkedClient(link);
+      final client = await _loadLinkedClient(link, eligibleClientIds: eligible);
       if (client != null) clients.add(client);
     }
 
@@ -216,17 +303,11 @@ class ProducerLinkRepository implements ProducerLinkReader {
         await _cacheLink(link, syncStatus: 0);
       }
       await _removeStaleCachedProducerLinks(userId, links);
-      return links
-          .where((link) => link.share.occurrences)
-          .map((link) => link.clientId)
-          .toList(growable: false);
     } catch (_) {
-      final cached = await _loadCachedActiveLinks(userId);
-      return cached
-          .where((link) => link.share.occurrences)
-          .map((link) => link.clientId)
-          .toList(growable: false);
+      // Cache local pode ficar desatualizado; elegibilidade vem só do RPC.
     }
+    final eligible = await _loadOccurrenceEligibleClientIds();
+    return eligible.toList(growable: false);
   }
 
   /// `client_id` com `share_fields` — desenhos/talhões no mapa.
@@ -240,11 +321,11 @@ class ProducerLinkRepository implements ProducerLinkReader {
 
   /// Talhões liberados para leitura de ocorrências via vínculo.
   Future<List<String>> loadAuthorizedOccurrenceFieldIds() async {
-    final links = await _loadActiveLinks();
+    final eligible = await _loadOccurrenceEligibleClientIds();
+    if (eligible.isEmpty) return const [];
     final fieldIds = <String>{};
-    for (final link in links) {
-      if (!link.share.occurrences) continue;
-      final ids = await _fieldIdsForLinkedClient(link.clientId);
+    for (final clientId in eligible) {
+      final ids = await _fieldIdsForLinkedClient(clientId);
       fieldIds.addAll(ids);
     }
     return fieldIds.toList(growable: false);
@@ -252,25 +333,32 @@ class ProducerLinkRepository implements ProducerLinkReader {
 
   /// Nome da ficha do consultor para cada `client_id` ativo.
   Future<Map<String, String>> loadLinkedClientNames() async {
-    final links = await _loadActiveLinks();
+    final eligible = await _loadOccurrenceEligibleClientIds();
+    if (eligible.isEmpty) return const {};
     final names = <String, String>{};
-    for (final link in links) {
-      if (!link.share.occurrences) continue;
+    for (final clientId in eligible) {
       try {
         final rows = await _client
             .from('clients')
             .select('nome, name')
-            .eq('id', link.clientId)
+            .eq('id', clientId)
             .limit(1);
         if ((rows as List).isEmpty) continue;
         final row = Map<String, dynamic>.from(rows.first as Map);
         final name = ((row['nome'] ?? row['name']) as String?)?.trim() ?? '';
-        if (name.isNotEmpty) names[link.clientId] = name;
+        if (name.isNotEmpty) names[clientId] = name;
       } catch (_) {
         continue;
       }
     }
     return names;
+  }
+
+  bool _linkGrantsOccurrences(
+    ProducerClientLink link,
+    Set<String> eligibleClientIds,
+  ) {
+    return link.share.occurrences && eligibleClientIds.contains(link.clientId);
   }
 
   Future<List<ProducerClientLink>> _loadActiveLinks() async {
@@ -296,27 +384,36 @@ class ProducerLinkRepository implements ProducerLinkReader {
   }
 
   Future<ProducerLinkedClient?> _loadLinkedClient(
-    ProducerClientLink link,
-  ) async {
+    ProducerClientLink link, {
+    Set<String> eligibleClientIds = const {},
+  }) async {
     ProducerLinkedClient? client;
     try {
-      client = await _loadLinkedClientRemote(link);
+      client = await _loadLinkedClientRemote(
+        link,
+        eligibleClientIds: eligibleClientIds,
+      );
     } catch (_) {
       client = await _loadLinkedClientLocal(link);
     }
     if (client == null) return null;
-    return _enrichLinkedClientFromRemote(client, link);
+    return _enrichLinkedClientFromRemote(
+      client,
+      link,
+      eligibleClientIds: eligibleClientIds,
+    );
   }
 
   Future<ProducerLinkedClient> _enrichLinkedClientFromRemote(
     ProducerLinkedClient client,
-    ProducerClientLink link,
-  ) async {
+    ProducerClientLink link, {
+    Set<String> eligibleClientIds = const {},
+  }) async {
     var occurrences = client.occurrences;
     var reports = client.reports;
   // Painel do produtor relê o Supabase: tenta de novo se o primeiro
   // caminho (v. g. cache local) não trouxe dados compartilhados.
-    if (link.share.occurrences && occurrences.isEmpty) {
+    if (_linkGrantsOccurrences(link, eligibleClientIds) && occurrences.isEmpty) {
       occurrences = await _loadOccurrences(link.clientId);
     }
     if (link.share.reports && reports.isEmpty) {
@@ -340,8 +437,9 @@ class ProducerLinkRepository implements ProducerLinkReader {
   }
 
   Future<ProducerLinkedClient?> _loadLinkedClientRemote(
-    ProducerClientLink link,
-  ) async {
+    ProducerClientLink link, {
+    Set<String> eligibleClientIds = const {},
+  }) async {
     final clientRows = await _client
         .from('clients')
         .select()
@@ -356,7 +454,7 @@ class ProducerLinkRepository implements ProducerLinkReader {
     final reports = link.share.reports
         ? await _loadReports(link.clientId)
         : const <ProducerLinkedReport>[];
-    final occurrences = link.share.occurrences
+    final occurrences = _linkGrantsOccurrences(link, eligibleClientIds)
         ? await _loadOccurrences(link.clientId)
         : const <ProducerLinkedOccurrence>[];
 
