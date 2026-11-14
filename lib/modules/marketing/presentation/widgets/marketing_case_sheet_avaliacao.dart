@@ -30,9 +30,7 @@ class _AvaliacaoLivreReadOnlyCardState
   Widget build(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
     final avaliacao = widget.avaliacao;
-    final accent = widget.isIos
-        ? v.iconStroke
-        : context.themeAccent;
+    final accent = widget.isIos ? v.iconStroke : context.themeAccent;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -66,10 +64,7 @@ class _AvaliacaoLivreReadOnlyCardState
             const SizedBox(height: 4),
             Text(
               'Cultura: ${avaliacao.cultura}',
-              style: TextStyle(
-                color: widget.hintColor,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: widget.hintColor, fontSize: 12),
             ),
           ],
           const SizedBox(height: 10),
@@ -91,10 +86,7 @@ class _AvaliacaoLivreReadOnlyCardState
                   ),
                   Text(
                     '${_formatValue(parametro.testemunha)} -> ${_formatValue(parametro.teste)}',
-                    style: TextStyle(
-                      color: widget.titleColor,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: widget.titleColor, fontSize: 12),
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -148,6 +140,166 @@ class _AvaliacaoLivreReadOnlyCardState
     final formatted = value.toStringAsFixed(1).replaceAll('.', ',');
     return value >= 0 ? '+$formatted' : formatted;
   }
+}
+
+/// Cases antigos gravaram só comparações extras em avaliacoesJson.
+/// A Comparação 1 seguia em fotoAntesUrl/fotoDepoisUrl.
+bool _fotosLegadasNoPrimeiroBloco(MarketingCase marketingCase) {
+  final blocos = marketingCase.avaliacoesLivres;
+  if (blocos.isEmpty) return false;
+  final primeiro = blocos.first;
+  final paths = {
+    primeiro.fotoLadoAPath,
+    primeiro.fotoLadoBPath,
+    primeiro.fotoLadoCPath,
+  };
+  bool cobre(String? url) => url == null || url.isEmpty || paths.contains(url);
+  return cobre(marketingCase.fotoAntesUrl) &&
+      cobre(marketingCase.fotoDepoisUrl);
+}
+
+class _ComparacaoBlocosReadOnly extends StatelessWidget {
+  final List<AvaliacaoItem> avaliacoes;
+  final Color titleColor;
+
+  const _ComparacaoBlocosReadOnly({
+    required this.avaliacoes,
+    required this.titleColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final item in avaliacoes) ...[
+          if (item.titulo.trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                item.titulo.trim(),
+                style: TextStyle(
+                  color: titleColor,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          _FotosGrade(
+            fotos: _fotosDoBloco(item),
+            visuals: v,
+            titleColor: titleColor,
+          ),
+          if (item.observacoes != null &&
+              item.observacoes!.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              item.observacoes!.trim(),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: titleColor, height: 1.4),
+            ),
+          ],
+          const SizedBox(height: 16),
+        ],
+      ],
+    );
+  }
+
+  List<_FotoComRotulo> _fotosDoBloco(AvaliacaoItem item) {
+    final fotos = <_FotoComRotulo>[];
+    void add(String? url, String? rotulo) {
+      final path = url?.trim() ?? '';
+      if (path.isEmpty) return;
+      fotos.add(_FotoComRotulo(path, rotulo?.trim() ?? ''));
+    }
+
+    add(item.fotoLadoAPath, item.nomeLadoA);
+    add(item.fotoLadoBPath, item.nomeLadoB);
+    add(item.fotoLadoCPath, item.nomeLadoC);
+    if (fotos.length <= 3) return fotos;
+    return fotos.sublist(0, 3);
+  }
+}
+
+class _FotosGrade extends StatelessWidget {
+  final List<_FotoComRotulo> fotos;
+  final SoloForteSheetVisuals visuals;
+  final Color titleColor;
+
+  const _FotosGrade({
+    required this.fotos,
+    required this.visuals,
+    required this.titleColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (fotos.isEmpty) return const SizedBox.shrink();
+    if (fotos.length == 1) return _coluna(fotos.first);
+    final linha = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: _coluna(fotos[0])),
+        const SizedBox(width: 8),
+        Expanded(child: _coluna(fotos[1])),
+      ],
+    );
+    if (fotos.length == 2) return linha;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [linha, const SizedBox(height: 8), _coluna(fotos[2])],
+    );
+  }
+
+  Widget _coluna(_FotoComRotulo foto) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _mini(foto.url),
+        if (foto.rotulo.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            foto.rotulo,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: titleColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _mini(String url) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: CachedNetworkImage(
+        imageUrl: url,
+        height: 130,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorWidget: (_, __, ___) => Container(
+          height: 130,
+          color: visuals.cardBackground,
+          child: Icon(
+            Icons.image_not_supported_outlined,
+            color: visuals.subtitleColor,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FotoComRotulo {
+  final String url;
+  final String rotulo;
+
+  const _FotoComRotulo(this.url, this.rotulo);
 }
 
 class _MetricaItem {
