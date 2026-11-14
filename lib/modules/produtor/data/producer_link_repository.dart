@@ -33,6 +33,8 @@ class ProducerLinkRepository implements ProducerLinkReader {
   static const _tokenBytes = 6;
   static const _occurrenceSharePlanMessage =
       'Compartilhar ocorrências exige plano Bronze ou superior ativo.';
+  static const _occurrenceViewPlanMessage =
+      'Ver ocorrências compartilhadas exige plano Bronze ou superior ativo.';
 
   Future<ProducerInvite> createInvite(
     String clientId, {
@@ -46,7 +48,7 @@ class ProducerLinkRepository implements ProducerLinkReader {
     final userId = _authenticatedUserId();
     await _assertConsultorCanInvite(userId, clientId);
     if (share.occurrences) {
-      final plan = await _loadConsultorPlanForOccurrenceShare(userId);
+      final plan = await _loadUserPlanForOccurrenceGate(userId);
       assertConsultorPodeCompartilharOcorrencias(plan, share);
     }
 
@@ -115,7 +117,7 @@ class ProducerLinkRepository implements ProducerLinkReader {
     return userId;
   }
 
-  Future<UserPlan> _loadConsultorPlanForOccurrenceShare(String userId) async {
+  Future<UserPlan> _loadUserPlanForOccurrenceGate(String userId) async {
     final row = await _client
         .from('user_plans')
         .select()
@@ -166,12 +168,26 @@ class ProducerLinkRepository implements ProducerLinkReader {
     }
   }
 
-  /// IDs de cliente cuja ocorrência o produtor pode ler (Bronze+ do consultor).
-  ///
-  /// Sem RPC (offline): retorna vazio — vínculos locais antigos podem existir
-  /// no cache até o próximo sync, mas não entram na lista autorizada.
+  static bool _planoElegivelOcorrenciaNoVinculo(UserPlan plan) =>
+      ProducerLinkOccurrencePolicy.usuarioPodeAcessarOcorrenciasNoVinculo(
+        isAdmin: plan.isAdmin,
+        planId: plan.id,
+        ocultaPinsMarketingNoMapa: plan.ocultaPinsMarketingNoMapa,
+      );
+
+  @visibleForTesting
+  static void assertProdutorPodeVerOcorrenciasCompartilhadas(UserPlan plan) {
+    if (!_planoElegivelOcorrenciaNoVinculo(plan)) {
+      throw Exception(_occurrenceViewPlanMessage);
+    }
+  }
+
+  /// Bronze+ consultor e produtor; sem plano do produtor ou offline → vazio.
   Future<Set<String>> _loadOccurrenceEligibleClientIds() async {
     try {
+      final userId = _currentUserId();
+      final plan = await _loadUserPlanForOccurrenceGate(userId);
+      if (!_planoElegivelOcorrenciaNoVinculo(plan)) return const {};
       final rows = await _client.rpc(
         'list_occurrence_share_client_ids_for_producer',
       );
