@@ -207,15 +207,15 @@ Future<void> _pump(
         producerCropPlantingsProvider.overrideWith((ref) async => plantings),
         producerCropCalendarProvider.overrideWithValue(calendar),
       ],
-      child: MaterialApp(
-        locale: const Locale('pt', 'BR'),
-        localizationsDelegates: const [
+      child: const MaterialApp(
+        locale: Locale('pt', 'BR'),
+        localizationsDelegates: [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        supportedLocales: const [Locale('pt', 'BR')],
-        home: const Scaffold(body: ProducerCalendarPlantios()),
+        supportedLocales: [Locale('pt', 'BR')],
+        home: Scaffold(body: ProducerCalendarPlantios()),
       ),
     ),
   );
