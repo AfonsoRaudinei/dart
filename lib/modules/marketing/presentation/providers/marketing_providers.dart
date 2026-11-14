@@ -13,6 +13,7 @@ import '../../data/repositories/marketing_case_repository_impl.dart';
 import '../../data/services/marketing_sync_service.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/marketing_case_status.dart';
+import '../../domain/enums/plano_marketing.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 
 // ── Repositório ────────────────────────────────────────────────
@@ -30,14 +31,19 @@ final marketingSyncServiceProvider = Provider<MarketingSyncService>((ref) {
 
 /// Falha de limite do plano ao publicar (cases ativos no mapa).
 class MarketingPlanLimitException implements Exception {
-  MarketingPlanLimitException({required this.limite, required this.publicados});
+  MarketingPlanLimitException({
+    required this.metal,
+    required this.limite,
+    required this.publicados,
+  });
 
+  final String metal;
   final int limite;
   final int publicados;
 
   @override
   String toString() =>
-      'MarketingPlanLimitException(limite: $limite, publicados: $publicados)';
+      'MarketingPlanLimitException(metal: $metal, limite: $limite, publicados: $publicados)';
 }
 
 int marketingPublishedActiveCount(
@@ -55,17 +61,40 @@ int marketingPublishedActiveCount(
       .length;
 }
 
+int marketingPublishedActiveCountForMetal(
+  List<MarketingCase> cases, {
+  required String metal,
+  String? excludeCaseId,
+}) {
+  final normalized = metal.toLowerCase();
+  return cases
+      .where(
+        (c) =>
+            c.id != excludeCaseId &&
+            c.status == MarketingCaseStatus.published &&
+            c.ativo &&
+            c.deletadoEm == null &&
+            c.visibilidade.name == normalized,
+      )
+      .length;
+}
+
 bool marketingPublishBlockedByPlan({
   required UserPlan plano,
   required List<MarketingCase> cases,
   required String publishingCaseId,
+  required PlanoMarketing visibilidade,
 }) {
   if (plano.isAdmin) return false;
-  final publicados = marketingPublishedActiveCount(
+  final metal = visibilidade.name;
+  final limite = plano.cotaPublicacaoPorMetal(metal);
+  if (limite <= 0) return true;
+  final publicados = marketingPublishedActiveCountForMetal(
     cases,
+    metal: metal,
     excludeCaseId: publishingCaseId,
   );
-  return publicados >= plano.limiteCases;
+  return publicados >= limite;
 }
 
 /// Resultado detalhado de [MarketingCasesNotifier.publishCaseDetailed].
@@ -168,6 +197,7 @@ class MarketingCasesNotifier
   /// Em falha, preserva o erro original para a UI classificar a causa.
   Future<PublishOutcome> publishCaseDetailed(MarketingCase newCase) async {
     if (newCase.status == MarketingCaseStatus.published && _ref != null) {
+      var skipPlanLimit = false;
       UserPlan plano;
       try {
         plano = await _ref.read(planoAtivoProvider.future);
@@ -178,21 +208,27 @@ class MarketingCasesNotifier
           error: e,
           stackTrace: st,
         );
-        // Fail-open bronze só para o teto local de limite (não persiste userId no case).
-        // Alinhado ao adapter; servidor continua sendo a fonte na sync.
+        // Fail-open: sem plano em cache não aplica teto local; servidor na sync.
+        skipPlanLimit = true;
         plano = UserPlan.free(userId: '');
       }
       final cases = state.valueOrNull ?? [];
-      if (marketingPublishBlockedByPlan(
-        plano: plano,
-        cases: cases,
-        publishingCaseId: newCase.id,
-      )) {
+      final metal = newCase.visibilidade.name;
+      if (!skipPlanLimit &&
+          marketingPublishBlockedByPlan(
+            plano: plano,
+            cases: cases,
+            publishingCaseId: newCase.id,
+            visibilidade: newCase.visibilidade,
+          )) {
+        final limite = plano.cotaPublicacaoPorMetal(metal);
         return PublishOutcome.failure(
           MarketingPlanLimitException(
-            limite: plano.limiteCases,
-            publicados: marketingPublishedActiveCount(
+            metal: metal,
+            limite: limite,
+            publicados: marketingPublishedActiveCountForMetal(
               cases,
+              metal: metal,
               excludeCaseId: newCase.id,
             ),
           ),
@@ -314,31 +350,40 @@ class MarketingCasesNotifier
       return;
     }
 
-    final published = currentCases
-        .where(
-          (c) =>
-              c.status == MarketingCaseStatus.published &&
-              c.ativo &&
-              c.deletadoEm == null,
-        )
-        .toList();
+    if (plano.isAdmin) return;
 
-    final overflow = published.length - plano.limiteCases;
-    if (overflow <= 0) return;
+    for (final visibilidade in PlanoMarketing.values) {
+      final metal = visibilidade.name;
+      final limite = plano.cotaPublicacaoPorMetal(metal);
+      if (limite >= 999999) continue;
 
-    final pendingNewest = published.where(isPendingPublished).toList()
-      ..sort((a, b) => b.atualizadoEm.compareTo(a.atualizadoEm));
+      final publishedMetal = currentCases
+          .where(
+            (c) =>
+                c.status == MarketingCaseStatus.published &&
+                c.ativo &&
+                c.deletadoEm == null &&
+                c.visibilidade == visibilidade,
+          )
+          .toList();
 
-    for (final c in pendingNewest.take(overflow)) {
-      try {
-        await saveAsDraft(c);
-      } catch (e, st) {
-        AppLogger.error(
-          'Falha ao rebaixar case ${c.id} acima do limite do plano',
-          tag: 'MarketingProvider',
-          error: e,
-          stackTrace: st,
-        );
+      final overflow = publishedMetal.length - limite;
+      if (overflow <= 0) continue;
+
+      final pendingNewest = publishedMetal.where(isPendingPublished).toList()
+        ..sort((a, b) => b.atualizadoEm.compareTo(a.atualizadoEm));
+
+      for (final c in pendingNewest.take(overflow)) {
+        try {
+          await saveAsDraft(c);
+        } catch (e, st) {
+          AppLogger.error(
+            'Falha ao rebaixar case ${c.id} acima da cota $metal do plano',
+            tag: 'MarketingProvider',
+            error: e,
+            stackTrace: st,
+          );
+        }
       }
     }
   }
