@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/contracts/i_client_lookup.dart';
+import '../../../../core/contracts/i_client_lookup_provider.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/case_tipo.dart';
@@ -13,7 +15,7 @@ import 'foto_picker_widget.dart';
 import 'marketing_client_selector.dart';
 import 'novo_case_form_helpers.dart';
 
-class EditCaseSheet extends StatefulWidget {
+class EditCaseSheet extends ConsumerStatefulWidget {
   final MarketingCase caso;
   final VoidCallback onClose;
   final Future<void> Function(MarketingCase) onSalvar;
@@ -26,10 +28,10 @@ class EditCaseSheet extends StatefulWidget {
   });
 
   @override
-  State<EditCaseSheet> createState() => _EditCaseSheetState();
+  ConsumerState<EditCaseSheet> createState() => _EditCaseSheetState();
 }
 
-class _EditCaseSheetState extends State<EditCaseSheet> {
+class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
   final _formKey = GlobalKey<FormState>();
   final _produtorCtrl = TextEditingController();
   final _produtoCtrl = TextEditingController();
@@ -71,6 +73,15 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
     _fotoPrincipalUrl = caso.fotoPrincipalUrl;
     _fotoAntesUrl = caso.fotoAntesUrl;
     _fotoDepoisUrl = caso.fotoDepoisUrl;
+    _hydrateSelectedClientNameFallback();
+  }
+
+  Future<void> _hydrateSelectedClientNameFallback() async {
+    final clientId = _clientId;
+    if (clientId == null) return;
+    final client = await ref.read(clientLookupProvider).findById(clientId);
+    if (!mounted || client == null) return;
+    setState(() => _selectedClientNameForFallback = client.name.trim());
   }
 
   @override
