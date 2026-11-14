@@ -13,6 +13,9 @@ import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
 import '../../domain/enums/produtividade_unidade.dart';
+import '../../domain/marketing_visibility_policy.dart';
+import '../../../planos/domain/entities/user_plan.dart';
+import '../../../planos/presentation/providers/plano_providers.dart';
 import 'case_selectors_widget.dart';
 import 'foto_picker_widget.dart';
 import 'marketing_client_selector.dart';
@@ -411,6 +414,16 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final plan =
+        ref.watch(planoAtivoProvider).valueOrNull ??
+        UserPlan.free(userId: '');
+    final enabledMetals = MarketingVisibilityPolicy.metaisSelecionaveis(plan);
+    final seletorTravado =
+        MarketingVisibilityPolicy.seletorTotalmenteTravado(plan);
+    final PlanoMarketing? selectedVisibilidadeUi = seletorTravado
+        ? null
+        : _visibilidade;
+
     final v = SoloForteSheetVisuals.of(context);
     final isIos = v.isIos;
     // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
@@ -527,9 +540,19 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
                   novoCaseSectionLabel('Visibilidade'),
                   const SizedBox(height: 10),
                   PlanoMarketingSelector(
-                    selectedPlano: _visibilidade,
+                    selectedPlano: selectedVisibilidadeUi,
+                    enabledMetals: enabledMetals,
                     onChanged: (value) => setState(() => _visibilidade = value),
                   ),
+                  if (seletorTravado) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Disponível com plano pago',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: v.subtitleColor,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 20),
                   novoCaseSectionLabel('Dados principais'),
                   const SizedBox(height: 10),
