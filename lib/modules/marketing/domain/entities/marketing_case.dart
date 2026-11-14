@@ -41,6 +41,12 @@ class MarketingCase {
   /// Autoria remota (`marketing_cases.user_id`). Usado no ACL do produtor.
   final String? ownerUserId;
 
+  /// Início da janela pública (`liberado_em`). Nulo = pin só do autor.
+  final DateTime? liberadoEm;
+
+  /// Fim da janela pública (`publico_ate`).
+  final DateTime? publicoAte;
+
   // Campos de Antes/Depois
   final String? fotoAntesUrl;
   final String? fotoDepoisUrl;
@@ -89,6 +95,8 @@ class MarketingCase {
     this.valorGrao,
     this.clientId,
     this.ownerUserId,
+    this.liberadoEm,
+    this.publicoAte,
     this.fotoAntesUrl,
     this.fotoDepoisUrl,
     this.ganhoProdutividade,
@@ -140,6 +148,12 @@ class MarketingCase {
       valorGrao: (json['valor_grao'] as num?)?.toDouble(),
       clientId: json['client_id'] as String?,
       ownerUserId: json['user_id'] as String?,
+      liberadoEm: json['liberado_em'] != null
+          ? DateTime.parse(json['liberado_em'] as String)
+          : null,
+      publicoAte: json['publico_ate'] != null
+          ? DateTime.parse(json['publico_ate'] as String)
+          : null,
       fotoAntesUrl: json['foto_antes_url'] as String?,
       fotoDepoisUrl: json['foto_depois_url'] as String?,
       ganhoProdutividade: json['ganho_produtividade'] as String?,
@@ -194,6 +208,8 @@ class MarketingCase {
       'valor_grao': valorGrao,
       'client_id': clientId,
       if (ownerUserId != null) 'user_id': ownerUserId,
+      if (liberadoEm != null) 'liberado_em': liberadoEm!.toIso8601String(),
+      if (publicoAte != null) 'publico_ate': publicoAte!.toIso8601String(),
       'foto_antes_url': fotoAntesUrl,
       'foto_depois_url': fotoDepoisUrl,
       'ganho_produtividade': ganhoProdutividade,
@@ -265,6 +281,103 @@ class MarketingCase {
     if (lista.isEmpty) return 0.0;
     final total = lista.fold<double>(0, (sum, item) => sum + item.deltaPercent);
     return total / lista.length;
+  }
+
+  MarketingCase copyWith({
+    String? id,
+    CaseTipo? tipo,
+    PlanoMarketing? visibilidade,
+    double? lat,
+    double? lng,
+    String? localizacaoTexto,
+    String? produtorFazenda,
+    String? produtoUtilizado,
+    DateTime? dataCase,
+    double? produtividadeValor,
+    ProdutividadeUnidade? produtividadeUnidade,
+    String? nomeVendedor,
+    String? telefoneVendedor,
+    String? descricao,
+    String? fotoPrincipalUrl,
+    double? quantidadeProduzida,
+    double? prodSemProduto,
+    double? prodComProduto,
+    String? unidadeProdutividade,
+    double? custoProdutoPorHa,
+    double? valorGrao,
+    String? clientId,
+    String? ownerUserId,
+    DateTime? liberadoEm,
+    bool clearLiberadoEm = false,
+    DateTime? publicoAte,
+    bool clearPublicoAte = false,
+    String? fotoAntesUrl,
+    String? fotoDepoisUrl,
+    String? ganhoProdutividade,
+    String? economiaGerada,
+    String? parametrosJson,
+    String? nomeTalhao,
+    double? tamanhoHa,
+    List<AvaliacaoBloco>? avaliacoes,
+    String? avaliacoesJson,
+    RoiBloco? roi,
+    String? conclusao,
+    String? conclusaoTecnica,
+    bool? ativo,
+    MarketingCaseStatus? status,
+    DateTime? criadoEm,
+    DateTime? atualizadoEm,
+    String? syncStatus,
+    DateTime? deletadoEm,
+    bool clearDeletadoEm = false,
+  }) {
+    return MarketingCase(
+      id: id ?? this.id,
+      tipo: tipo ?? this.tipo,
+      visibilidade: visibilidade ?? this.visibilidade,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
+      localizacaoTexto: localizacaoTexto ?? this.localizacaoTexto,
+      produtorFazenda: produtorFazenda ?? this.produtorFazenda,
+      produtoUtilizado: produtoUtilizado ?? this.produtoUtilizado,
+      dataCase: dataCase ?? this.dataCase,
+      produtividadeValor: produtividadeValor ?? this.produtividadeValor,
+      produtividadeUnidade:
+          produtividadeUnidade ?? this.produtividadeUnidade,
+      nomeVendedor: nomeVendedor ?? this.nomeVendedor,
+      telefoneVendedor: telefoneVendedor ?? this.telefoneVendedor,
+      descricao: descricao ?? this.descricao,
+      fotoPrincipalUrl: fotoPrincipalUrl ?? this.fotoPrincipalUrl,
+      quantidadeProduzida: quantidadeProduzida ?? this.quantidadeProduzida,
+      prodSemProduto: prodSemProduto ?? this.prodSemProduto,
+      prodComProduto: prodComProduto ?? this.prodComProduto,
+      unidadeProdutividade:
+          unidadeProdutividade ?? this.unidadeProdutividade,
+      custoProdutoPorHa: custoProdutoPorHa ?? this.custoProdutoPorHa,
+      valorGrao: valorGrao ?? this.valorGrao,
+      clientId: clientId ?? this.clientId,
+      ownerUserId: ownerUserId ?? this.ownerUserId,
+      liberadoEm: clearLiberadoEm ? null : (liberadoEm ?? this.liberadoEm),
+      publicoAte: clearPublicoAte ? null : (publicoAte ?? this.publicoAte),
+      fotoAntesUrl: fotoAntesUrl ?? this.fotoAntesUrl,
+      fotoDepoisUrl: fotoDepoisUrl ?? this.fotoDepoisUrl,
+      ganhoProdutividade: ganhoProdutividade ?? this.ganhoProdutividade,
+      economiaGerada: economiaGerada ?? this.economiaGerada,
+      parametrosJson: parametrosJson ?? this.parametrosJson,
+      nomeTalhao: nomeTalhao ?? this.nomeTalhao,
+      tamanhoHa: tamanhoHa ?? this.tamanhoHa,
+      avaliacoes: avaliacoes ?? this.avaliacoes,
+      avaliacoesJson: avaliacoesJson ?? this.avaliacoesJson,
+      roi: roi ?? this.roi,
+      conclusao: conclusao ?? this.conclusao,
+      conclusaoTecnica: conclusaoTecnica ?? this.conclusaoTecnica,
+      ativo: ativo ?? this.ativo,
+      status: status ?? this.status,
+      criadoEm: criadoEm ?? this.criadoEm,
+      atualizadoEm: atualizadoEm ?? this.atualizadoEm,
+      syncStatus: syncStatus ?? this.syncStatus,
+      deletadoEm: clearDeletadoEm ? null : (deletadoEm ?? this.deletadoEm),
+    );
   }
 
   List<AvaliacaoItem> get avaliacoesLivres {
