@@ -17,8 +17,7 @@ import '../components/public_map/loading_overlay.dart';
 import '../../modules/public/providers/public_location_provider.dart';
 import '../../modules/public/providers/public_publications_provider.dart';
 import '../../modules/marketing/presentation/providers/marketing_providers.dart';
-import '../../modules/marketing/domain/enums/plano_marketing.dart';
-import '../../modules/marketing/domain/marketing_visibility_policy.dart';
+import '../../modules/marketing/domain/marketing_case_visibility.dart';
 import '../../modules/marketing/presentation/widgets/marketing_case_marker.dart';
 import '../../modules/marketing/presentation/widgets/marketing_case_sheet.dart';
 import '../../core/config/map_config.dart';
@@ -238,10 +237,8 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
                       .value!
                       .where(
                         (mCase) =>
-                            mCase.visibilidade == PlanoMarketing.ouro &&
-                            mCase.liberadoEm != null &&
-                            MarketingVisibilityPolicy.janelaPublicaAtiva(
-                              mCase,
+                            MarketingCaseVisibility.isVisibleOnMapForAnonymous(
+                              marketingCase: mCase,
                             ) &&
                             MarketingCaseMarker.isVisibleAtZoom(
                               mCase.visibilidade,
