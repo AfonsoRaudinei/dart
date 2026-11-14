@@ -289,6 +289,12 @@ void main() {
     await tester.tap(find.text('Ouro'));
     await tester.pump();
     expect(find.text('R\$ 80 por mês, por 12 meses.'), findsOneWidget);
+    expect(
+      find.text(
+        'O pin Ouro aparece para todos, mesmo sem login, a partir do zoom 8.',
+      ),
+      findsOneWidget,
+    );
     expect(find.text('NDVI refinado.'), findsOneWidget);
     expect(
       find.text('Você compartilha ocorrência no vínculo.'),
