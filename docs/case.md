@@ -5,8 +5,6 @@
 **Bounded contexts:** `planos/` · `marketing/` · vínculo do produtor · ocorrências  
 A arquitetura continua em ADR-012 e ADR-011. Ocorrência no vínculo (Bronze+) entrou no app em 14/11/2026.
 
-Um ponto segue em aberto, no final: se o produtor também precisa de plano para ver a ocorrência compartilhada.
-
 ---
 
 ## Preço
@@ -93,7 +91,7 @@ A regra vale para todos os vínculos, inclusive os já aceitos.
 
 O vínculo leva fazenda, talhões, mapa e desenhos no mapa.
 
-Ocorrência entra no vínculo só com plano Bronze ou superior. Sem esse plano o produtor não vê a ocorrência. O consultor cria ocorrência sem plano pago. Compartilhar a ocorrência exige Bronze.
+Ocorrência entra no vínculo só com plano Bronze ou superior ativo em **consultor e produtor**. O consultor cria ocorrência sem plano pago; **compartilhar** no convite exige Bronze+ do consultor. O produtor **vê** ocorrências compartilhadas só com Bronze+ próprio — vínculo com `share_occurrences` não basta sem plano do produtor.
 
 ---
 
@@ -131,14 +129,8 @@ Parcial em relação à regra acima (atualizado 14/11/2026).
 - Pin no mapa (`MarketingCaseVisibility`): dono sempre vê o próprio `published`; sem `liberado_em` só o autor. Ouro liberado + janela ativa → todos (anônimo só Ouro via `isVisibleOnMapForAnonymous`). Prata + janela ativa → consultor e produtor logados; expirada só autor. Bronze + janela ativa → autor ou produtor com vínculo no `client_id`; consultor não vê bronze de terceiros. Grupos por `source_case_id`: no mapa só o pin do metal mais alto (`deduplicateHighestMetalPerGroup`).
 - Mapa sem login: `isVisibleOnMapForAnonymous` (Ouro liberado, janela ativa). Prata exige login.
 - O convite oferece Fazendas, Talhões e mapa, Ocorrências e Relatórios; Fazendas/Talhões/Relatórios ligados por padrão. **Ocorrências** só pode ser marcada com plano Bronze+ ativo (checkbox desligado e desabilitado sem plano; `createInvite` valida no app; RLS + RPC no Supabase).
-- Produtor lê ocorrências compartilhadas só quando `consultor_pode_compartilhar_ocorrencias` (Bronze+/admin ativo) — vínculos antigos com `share_occurrences=true` sem plano do consultor não expõem dados.
+- Produtor lê ocorrências compartilhadas quando consultor **e** produtor passam `consultor_pode_compartilhar_ocorrencias` (Bronze+/admin ativo) — app checa plano do produtor antes do RPC; Supabase repete no RPC e na policy `occurrences_select_authorized`.
+- `ProducerLinkOccurrencePolicy.usuarioPodeAcessarOcorrenciasNoVinculo` / `assertProdutorPodeVerOcorrenciasCompartilhadas` no app; consultor usa o mesmo gate ao compartilhar.
 - NDVI refinado já segue Ouro pago.
 - **Meu Plano** (`/planos/meu-plano`) e **Planos** (`/planos`) mostram preço só quando a loja devolve o produto (`LojaProduto.preco`). Sem produto na vitrine, o menu de vantagens usa só o prazo do catálogo (`store_plan_catalog.dart`) e o texto «preço na loja ao comprar» — sem BRL fictício no app. Valores de referência para cadastro na App Store / Play Console: **R$ 90 / R$ 300 / R$ 960** (`docs/store/PRODUTOS_IAP_LOJAS.md`, alinhado à tabela Preço acima).
 
----
-
-## Ainda em aberto
-
-O consultor cria a ocorrência sem plano e só compartilha a partir de Bronze.
-
-Falta decidir se o produtor, para ver essa ocorrência compartilhada, também precisa de um plano pago.
