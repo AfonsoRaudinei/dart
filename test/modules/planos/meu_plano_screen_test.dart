@@ -47,6 +47,21 @@ UserPlan _paidBronze() {
   );
 }
 
+UserPlan _paidTipo(PlanoTipo tipo, {required String id}) {
+  final now = DateTime.now();
+  return UserPlan(
+    id: id,
+    userId: 'u',
+    plano: tipo,
+    origem: PlanoOrigem.pagamento,
+    ativo: true,
+    iniciouEm: now,
+    expiraEm: now.add(const Duration(days: 90)),
+    paymentId: 'tx-$id',
+    criadoEm: now,
+  );
+}
+
 UserPlan _expiredBronze() {
   final now = DateTime.now();
   return UserPlan(
@@ -110,6 +125,11 @@ Future<void> _pumpMeuPlano(
   required LojaCompraGateway loja,
   required UserPlan plano,
 }) async {
+  tester.view.physicalSize = const Size(400, 2400);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -125,8 +145,9 @@ Future<void> _pumpMeuPlano(
 }
 
 void main() {
-  testWidgets('plano gratuito mostra Sem plano pago e preço como compra',
-      (tester) async {
+  testWidgets('plano gratuito mostra Sem plano pago e preço como compra', (
+    tester,
+  ) async {
     final loja = _FakeLoja(_vitrineTresPlanos);
     await _pumpMeuPlano(
       tester,
@@ -137,53 +158,66 @@ void main() {
     expect(find.text('Sem plano pago'), findsOneWidget);
     expect(find.text('via Pagamento'), findsNothing);
     expect(find.text('Sem expiração'), findsNothing);
-    expect(find.text(r'R$ 49,90'), findsOneWidget);
     expect(find.text('Atual'), findsNothing);
     expect(find.text('Mudar'), findsNothing);
+    expect(find.text(r'R$ 49,90'), findsNothing);
 
+    await tester.tap(find.text('Bronze'));
+    await tester.pump();
+
+    expect(find.text(r'R$ 49,90'), findsOneWidget);
+    expect(find.text('Mudar'), findsNothing);
+    await tester.ensureVisible(find.text(r'R$ 49,90'));
     await tester.tap(find.text(r'R$ 49,90'));
     await tester.pump();
     expect(loja.comprados, ['soloforte_plano_bronze']);
   });
 
-  testWidgets('plano pago bronze mostra Atual e Mudar nos demais', (tester) async {
+  testWidgets('plano pago bronze mostra Atual e Mudar nos demais', (
+    tester,
+  ) async {
     final loja = _FakeLoja(_vitrineTresPlanos);
-    tester.view.physicalSize = const Size(390, 1600);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
     await _pumpMeuPlano(tester, loja: loja, plano: _paidBronze());
     await tester.pumpAndSettle();
 
     expect(find.text('Plano Bronze'), findsOneWidget);
     expect(find.text('Atual'), findsOneWidget);
-    expect(find.text('Mudar'), findsNWidgets(2));
+    expect(find.text('Mudar'), findsNothing);
     expect(find.text(r'R$ 49,90'), findsNothing);
 
-    await tester.tap(find.text('Mudar').first);
+    await tester.tap(find.text('Prata'));
+    await tester.pump();
+    expect(find.text('Mudar'), findsOneWidget);
+    await tester.ensureVisible(find.text('Mudar'));
+    await tester.tap(find.text('Mudar'));
     await tester.pump();
     expect(loja.comprados, ['soloforte_plano_prata']);
   });
 
-  testWidgets('plano bronze expirado não mostra Atual e permite recompra',
-      (tester) async {
+  testWidgets('plano bronze expirado não mostra Atual e permite recompra', (
+    tester,
+  ) async {
     final loja = _FakeLoja(_vitrineTresPlanos);
-    tester.view.physicalSize = const Size(390, 1800);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
     await _pumpMeuPlano(tester, loja: loja, plano: _expiredBronze());
     await tester.pumpAndSettle();
 
     expect(find.text('Atual'), findsNothing);
     expect(find.text(r'R$ 49,90'), findsOneWidget);
-    expect(find.text('Mudar'), findsNWidgets(2));
+    expect(find.text('Mudar'), findsNothing);
+
+    await tester.tap(find.text('Prata'));
+    await tester.pump();
+    expect(find.text('Mudar'), findsOneWidget);
+    expect(find.text(r'R$ 49,90'), findsNothing);
+
+    await tester.tap(find.text('Ouro'));
+    await tester.pump();
+    expect(find.text('Mudar'), findsOneWidget);
   });
 
-  testWidgets('falha ao carregar loja não fica em loading eterno',
-      (tester) async {
+  testWidgets('falha ao carregar loja não fica em loading eterno', (
+    tester,
+  ) async {
     await _pumpMeuPlano(
       tester,
       loja: _ThrowingLoja(),
@@ -193,9 +227,7 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(
-      find.text(
-        'A loja não tem planos disponíveis para compra neste momento.',
-      ),
+      find.text('A loja não tem planos disponíveis para compra neste momento.'),
       findsOneWidget,
     );
   });
@@ -209,12 +241,78 @@ void main() {
     );
 
     expect(
-      find.text(
-        'A loja não tem planos disponíveis para compra neste momento.',
-      ),
+      find.text('A loja não tem planos disponíveis para compra neste momento.'),
       findsOneWidget,
     );
     expect(find.textContaining(r'R$'), findsNothing);
     expect(find.text('Restaurar compras'), findsNothing);
+    expect(find.text('Grátis'), findsNWidgets(2));
+    expect(find.textContaining('Só você vê'), findsOneWidget);
+  });
+
+  testWidgets('menu descreve o plano tocado', (tester) async {
+    await _pumpMeuPlano(
+      tester,
+      loja: _FakeLoja(LojaVitrine.indisponivel),
+      plano: UserPlan.free(userId: 'u'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Seu case fica no mapa. Só você vê.'), findsOneWidget);
+    expect(find.text('R\$ 30 por mês, por 3 meses.'), findsNothing);
+
+    await tester.tap(find.text('Bronze'));
+    await tester.pump();
+    expect(find.text('R\$ 30 por mês, por 3 meses.'), findsOneWidget);
+    expect(find.text('5 indicações sobem para Prata.'), findsOneWidget);
+    expect(find.text('Restaurar compras'), findsNothing);
+
+    await tester.tap(find.text('Prata'));
+    await tester.pump();
+    expect(find.text('R\$ 50 por mês, por 6 meses.'), findsOneWidget);
+    expect(find.text('10 indicações sobem para Ouro.'), findsOneWidget);
+
+    await tester.tap(find.text('Ouro'));
+    await tester.pump();
+    expect(find.text('R\$ 80 por mês, por 12 meses.'), findsOneWidget);
+    expect(find.text('NDVI refinado.'), findsOneWidget);
+  });
+
+  testWidgets('conta prata começa em Prata e esconde os outros preços', (
+    tester,
+  ) async {
+    await _pumpMeuPlano(
+      tester,
+      loja: _FakeLoja(_vitrineTresPlanos),
+      plano: _paidTipo(PlanoTipo.prata, id: 'plan-prata'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'O pin Prata aparece para quem está logado, a partir do zoom 12.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Atual'), findsOneWidget);
+    expect(find.text(r'R$ 79,90'), findsNothing);
+    expect(find.text(r'R$ 49,90'), findsNothing);
+    expect(find.text('Mudar'), findsNothing);
+  });
+
+  testWidgets('conta ouro começa em Ouro e esconde os outros preços', (
+    tester,
+  ) async {
+    await _pumpMeuPlano(
+      tester,
+      loja: _FakeLoja(_vitrineTresPlanos),
+      plano: _paidTipo(PlanoTipo.ouro, id: 'plan-ouro'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('NDVI refinado.'), findsOneWidget);
+    expect(find.text('Atual'), findsOneWidget);
+    expect(find.text(r'R$ 119,90'), findsNothing);
+    expect(find.text('Mudar'), findsNothing);
   });
 }
