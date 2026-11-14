@@ -9,7 +9,6 @@ import '../../../core/session/local_session_identity.dart';
 import '../../../core/session/user_role.dart';
 import '../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../planos/domain/entities/user_plan.dart';
-import '../../planos/domain/enums/plano_tipo.dart';
 import '../../planos/presentation/providers/plano_providers.dart';
 import '../../settings/presentation/providers/user_profile_provider.dart';
 import '../domain/entities/marketing_case.dart';
@@ -121,20 +120,28 @@ class MarketingCaseReportsLookupAdapter implements IMarketingCaseReportsLookup {
 
     final plano = _ref.read(planoAtivoProvider).valueOrNull;
     if (plano?.isAdmin != true) {
-      final limite = plano?.limiteCases ?? PlanoTipo.bronze.limiteCases;
+      final plan = plano ?? UserPlan.free(userId: '');
+      final metal = draft.visibilidade.name;
+      final limite = plan.cotaPublicacaoPorMetal(metal);
       if (marketingPublishBlockedByPlan(
-        plano: plano ?? UserPlan.free(userId: ''),
+        plano: plan,
         cases: cases,
         publishingCaseId: caseId,
+        visibilidade: draft.visibilidade,
       )) {
         if (!context.mounted) return false;
         final planoLabel = plano?.plano.label;
+        final metalLabel = metal.toUpperCase();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Limite de $limite cases publicados'
-              '${planoLabel != null ? ' no plano $planoLabel' : ''}. '
-              'Mantenha como Não gerado ou exclua um case publicado.',
+              limite <= 0
+                  ? 'Seu plano não permite cases $metalLabel'
+                      '${planoLabel != null ? ' (plano $planoLabel)' : ''}. '
+                      'Mantenha como Não gerado ou ajuste o metal.'
+                  : 'Limite de $limite cases $metalLabel publicados'
+                      '${planoLabel != null ? ' no plano $planoLabel' : ''}. '
+                      'Mantenha como Não gerado ou exclua um case publicado.',
             ),
             duration: const Duration(seconds: 5),
           ),
@@ -142,10 +149,12 @@ class MarketingCaseReportsLookupAdapter implements IMarketingCaseReportsLookup {
         await DraftSavedSheet.show(
           context,
           title: 'Limite de publicações atingido',
-          message:
-              'Você já tem $limite case(s) publicado(s). '
-              'Mantenha este case como Não gerado em Relatórios → Marketing '
-              'ou exclua um case publicado para liberar espaço.',
+          message: limite <= 0
+              ? 'Seu plano não tem cota para o metal $metalLabel. '
+                  'Mantenha este case como Não gerado em Relatórios → Marketing.'
+              : 'Você já tem $limite case(s) $metalLabel publicado(s). '
+                  'Mantenha como Não gerado ou exclua um case publicado '
+                  'desse metal para liberar espaço.',
         );
         return false;
       }
