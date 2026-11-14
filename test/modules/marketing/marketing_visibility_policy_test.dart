@@ -1,4 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.dart';
+import 'package:soloforte_app/modules/marketing/domain/enums/case_tipo.dart';
+import 'package:soloforte_app/modules/marketing/domain/enums/marketing_case_status.dart';
 import 'package:soloforte_app/modules/marketing/domain/enums/plano_marketing.dart';
 import 'package:soloforte_app/modules/marketing/domain/marketing_visibility_policy.dart';
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
@@ -100,6 +103,96 @@ void main() {
       expect(
         MarketingVisibilityPolicy.valorTecnicoSemSelecaoUi(),
         PlanoMarketing.bronze,
+      );
+    });
+
+    test('publicoAteParaMetal segue meses do tier', () {
+      final liberado = DateTime.utc(2026, 3, 15, 12);
+      expect(
+        MarketingVisibilityPolicy.publicoAteParaMetal(
+          PlanoMarketing.ouro,
+          liberado,
+        ),
+        DateTime.utc(2026, 9, 15, 12),
+      );
+      expect(
+        MarketingVisibilityPolicy.publicoAteParaMetal(
+          PlanoMarketing.prata,
+          liberado,
+        ),
+        DateTime.utc(2026, 7, 15, 12),
+      );
+      expect(
+        MarketingVisibilityPolicy.publicoAteParaMetal(
+          PlanoMarketing.bronze,
+          liberado,
+        ),
+        DateTime.utc(2026, 5, 15, 12),
+      );
+    });
+
+    test('somenteAutorNoMapa enquanto liberado_em é nulo', () {
+      final now = DateTime.utc(2026, 1, 1);
+      final c = MarketingCase(
+        id: 'x',
+        tipo: CaseTipo.resultado,
+        visibilidade: PlanoMarketing.ouro,
+        lat: 0,
+        lng: 0,
+        localizacaoTexto: 'L',
+        produtorFazenda: 'F',
+        produtoUtilizado: 'P',
+        status: MarketingCaseStatus.published,
+        criadoEm: now,
+        atualizadoEm: now,
+      );
+      expect(
+        MarketingVisibilityPolicy.somenteAutorNoMapa(c, 'u1'),
+        isTrue,
+      );
+      final liberado = c.copyWith(
+        liberadoEm: now,
+        publicoAte: MarketingVisibilityPolicy.publicoAteParaMetal(
+          PlanoMarketing.ouro,
+          now,
+        ),
+      );
+      expect(
+        MarketingVisibilityPolicy.somenteAutorNoMapa(liberado, 'u1'),
+        isFalse,
+      );
+    });
+
+    test('janelaPublicaAtiva respeita publico_ate', () {
+      final now = DateTime.utc(2026, 6, 1);
+      final base = MarketingCase(
+        id: 'x',
+        tipo: CaseTipo.resultado,
+        visibilidade: PlanoMarketing.ouro,
+        lat: 0,
+        lng: 0,
+        localizacaoTexto: 'L',
+        produtorFazenda: 'F',
+        produtoUtilizado: 'P',
+        liberadoEm: now,
+        publicoAte: DateTime.utc(2026, 12, 1),
+        status: MarketingCaseStatus.published,
+        criadoEm: now,
+        atualizadoEm: now,
+      );
+      expect(
+        MarketingVisibilityPolicy.janelaPublicaAtiva(
+          base,
+          reference: DateTime.utc(2026, 7, 1),
+        ),
+        isTrue,
+      );
+      expect(
+        MarketingVisibilityPolicy.janelaPublicaAtiva(
+          base,
+          reference: DateTime.utc(2027, 1, 2),
+        ),
+        isFalse,
       );
     });
   });

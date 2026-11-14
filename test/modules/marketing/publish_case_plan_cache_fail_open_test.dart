@@ -6,6 +6,7 @@ import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.d
 import 'package:soloforte_app/modules/marketing/domain/enums/marketing_case_status.dart';
 import 'package:soloforte_app/modules/marketing/domain/enums/plano_marketing.dart';
 import 'package:soloforte_app/modules/marketing/presentation/providers/marketing_providers.dart';
+import 'package:soloforte_app/modules/marketing/domain/marketing_visibility_policy.dart';
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
 import 'package:soloforte_app/modules/planos/domain/enums/plano_origem.dart';
 import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
@@ -109,6 +110,56 @@ void main() {
         );
       },
     );
+
+    test(
+      'bronze pago grava liberado_em ao publicar com sucesso',
+      () async {
+        final repo = _CaptureRepo();
+        final container = _container(
+          repo: repo,
+          planoOverride: (ref) async => _paidBronze('u1'),
+          seed: const [],
+        );
+        addTearDown(container.dispose);
+
+        final publishing = _publishedCase('mkt-liberado', visibilidade: 'bronze');
+        final outcome = await container
+            .read(marketingCasesProvider.notifier)
+            .publishCaseDetailed(publishing);
+
+        expect(outcome.isSuccess, isTrue);
+        final saved = repo.lastSaved;
+        expect(saved, isNotNull);
+        expect(saved!.liberadoEm, isNotNull);
+        expect(saved.publicoAte, isNotNull);
+        expect(
+          saved.publicoAte,
+          MarketingVisibilityPolicy.publicoAteParaMetal(
+            PlanoMarketing.bronze,
+            saved.liberadoEm!,
+          ),
+        );
+      },
+    );
+
+    test('fail-open de plano não grava liberado_em', () async {
+      final repo = _CaptureRepo();
+      final container = _container(
+        repo: repo,
+        planoOverride: (ref) async =>
+            throw const PlanoCacheUnavailableException(expired: true),
+        seed: const [],
+      );
+      addTearDown(container.dispose);
+
+      final publishing = _publishedCase('mkt-skip');
+      final outcome = await container
+          .read(marketingCasesProvider.notifier)
+          .publishCaseDetailed(publishing);
+
+      expect(outcome.isSuccess, isTrue);
+      expect(repo.lastSaved?.liberadoEm, isNull);
+    });
   });
 }
 
@@ -207,4 +258,14 @@ class _RecordingRepo implements IMarketingCaseRepository {
 
   @override
   Future<MarketingCase> softDelete(String id) async => throw UnimplementedError();
+}
+
+class _CaptureRepo extends _RecordingRepo {
+  MarketingCase? lastSaved;
+
+  @override
+  Future<MarketingCase> saveCase(MarketingCase marketingCase) async {
+    lastSaved = marketingCase;
+    return super.saveCase(marketingCase);
+  }
 }

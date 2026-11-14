@@ -89,6 +89,18 @@ void main() {
       expect(restored.toJson(), isNot(contains('roi_liquido_rs_ha')));
     });
 
+    test('fromJson/toJson preserva liberado_em e publico_ate', () {
+      final json = baseJson()
+        ..['liberado_em'] = DateTime.utc(2026, 6, 1).toIso8601String()
+        ..['publico_ate'] = DateTime.utc(2026, 12, 1).toIso8601String();
+
+      final original = MarketingCase.fromJson(json);
+      final restored = MarketingCase.fromJson(original.toJson());
+
+      expect(restored.liberadoEm, DateTime.utc(2026, 6, 1));
+      expect(restored.publicoAte, DateTime.utc(2026, 12, 1));
+    });
+
     test('fromJson aplica defaults quando campos opcionais ausentes', () {
       final json = baseJson()
         ..remove('roi_investimento')
