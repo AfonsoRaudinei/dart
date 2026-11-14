@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
-import '../../../../core/contracts/i_client_lookup.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 
@@ -30,23 +29,6 @@ String marketingVisitInitialProdutorFieldText({
   final client = clientName?.trim() ?? '';
   if (client.isNotEmpty && label == client) return '';
   return label;
-}
-
-/// Autofill de Produtor/Fazenda ao escolher cliente (seção Identificação).
-bool marketingProdutorShouldAutofillFromClient({
-  required String currentProdutor,
-  required String? lastAutoFilledClientName,
-  required bool produtorEditedByUser,
-}) {
-  if (produtorEditedByUser) return false;
-  final current = currentProdutor.trim();
-  return current.isEmpty ||
-      (lastAutoFilledClientName != null &&
-          current == lastAutoFilledClientName.trim());
-}
-
-String marketingClientProdutorAutofillValue(ClientSummary client) {
-  return client.name.trim();
 }
 
 /// Helpers compartilhados pelas seções do NovoCaseSheet.
