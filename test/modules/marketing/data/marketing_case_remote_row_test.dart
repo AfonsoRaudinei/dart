@@ -120,4 +120,30 @@ void main() {
     expect(row['title'], 'Fazenda Teste');
     expect(row['visibility'], 'ouro');
   });
+
+  test('toRemoteRow preserva liberado_em e publico_ate em ISO8601', () {
+    final liberado = DateTime.utc(2026, 6, 1, 14, 30);
+    final publicoAte = DateTime.utc(2026, 12, 1, 14, 30);
+    final marketingCase = _filledCase().copyWith(
+      liberadoEm: liberado,
+      publicoAte: publicoAte,
+    );
+
+    final row = MarketingCaseRepositoryImpl.toRemoteRow(
+      marketingCase,
+      userId: 'user-1',
+      syncStatus: 'synced',
+    );
+
+    expect(row['liberado_em'], liberado.toIso8601String());
+    expect(row['publico_ate'], publicoAte.toIso8601String());
+    expect(
+      MarketingCaseRepositoryImpl.remoteColumns.contains('liberado_em'),
+      isTrue,
+    );
+    expect(
+      MarketingCaseRepositoryImpl.remoteColumns.contains('publico_ate'),
+      isTrue,
+    );
+  });
 }
