@@ -27,15 +27,23 @@ class MarketingCaseMarker extends StatelessWidget {
   });
 
   /// A partir daqui o pin vira cartão de leitura (nome 15 px, resultado 14 px).
-  /// Longe disso o pin compacto continua igual — a foto é o marco.
+  /// Longe disso o pin compacto mostra a foto inteira e a faixa abaixo.
   static const double readingZoom = 15;
 
   static const double readingPinWidth = 184;
-  static const double readingPhotoHeight = 96;
+
+  /// Lado do quadrado da foto no cartão de leitura.
+  static const double readingPhotoSide = 136;
 
   /// 6+15+4+18+6: padding, nome (height 1), vão, pílula do resultado, padding.
   static const double readingBarHeight = 49;
   static const double pointerHeight = 10;
+
+  /// Faixa fixa do pin compacto, abaixo da foto, para o Marker não cortar.
+  static const double compactBarHeight = 20;
+
+  /// Poço da foto (faixa do contain). Neutro claro, para o mapa não vazar.
+  static const Color _photoWellColor = Color(0xFFF2F2F7);
 
   static const double compactNameFontSize = 8;
   static const double compactResultFontSize = 7;
@@ -57,13 +65,9 @@ class MarketingCaseMarker extends StatelessWidget {
 
   static double pinHeight(PlanoMarketing tier, {double zoom = 0}) {
     if (isReadingZoom(zoom)) {
-      return readingPhotoHeight + readingBarHeight + 2 * _borderWidth(tier);
+      return readingPhotoSide + readingBarHeight + 2 * _borderWidth(tier);
     }
-    return switch (tier) {
-      PlanoMarketing.ouro => 100,
-      PlanoMarketing.prata => 84,
-      PlanoMarketing.bronze => 70,
-    };
+    return pinWidth(tier) + compactBarHeight + 2 * _borderWidth(tier);
   }
 
   // Zoom mínimo por tier. Ouro aparece de mais longe; Prata e Bronze exigem
@@ -203,16 +207,23 @@ class MarketingCaseMarker extends StatelessWidget {
     );
   }
 
-  /// Foto em tela cheia e faixa sobreposta. O texto cabe pequeno de propósito.
+  /// Quadrado (lado = [pinWidth]) e faixa abaixo. A borda come 2× a
+  /// espessura; [pinHeight] reserva isso, então o quadrado que cabe é a
+  /// largura interna. O poço neutro preenche o vão para o mapa não vazar.
   Widget _compactBody(PlanoMarketing tier, String? resultText) {
-    return Stack(
-      fit: StackFit.expand,
+    return Column(
       children: [
-        _buildPhoto(tier),
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
+        Expanded(
+          child: ColoredBox(
+            color: _photoWellColor,
+            child: Center(
+              child: AspectRatio(aspectRatio: 1, child: _buildPhoto(tier)),
+            ),
+          ),
+        ),
+        SizedBox(
+          height: compactBarHeight,
+          width: double.infinity,
           child: _InfoBar(
             produto: marketingCase.produtoUtilizado,
             resultText: resultText,
@@ -222,15 +233,24 @@ class MarketingCaseMarker extends StatelessWidget {
     );
   }
 
-  /// Foto com a altura de hoje e a faixa abaixo, em duas linhas legíveis.
+  /// Quadrado 136×136 centralizado na largura do cartão, faixa abaixo.
   /// A borda do container come 2× a espessura; [pinHeight] já reserva isso.
   Widget _readingBody(PlanoMarketing tier, String? resultText) {
     return Column(
       children: [
         SizedBox(
-          height: readingPhotoHeight,
+          height: readingPhotoSide,
           width: double.infinity,
-          child: _buildPhoto(tier),
+          child: ColoredBox(
+            color: _photoWellColor,
+            child: Center(
+              child: SizedBox(
+                width: readingPhotoSide,
+                height: readingPhotoSide,
+                child: _buildPhoto(tier),
+              ),
+            ),
+          ),
         ),
         SizedBox(
           height: readingBarHeight,
@@ -250,12 +270,18 @@ class MarketingCaseMarker extends StatelessWidget {
     if (url == null) {
       return _PlaceholderPin(tier: tier);
     }
-    return CachedNetworkImage(
-      imageUrl: url,
-      fit: BoxFit.cover,
-      placeholder: (_, __) => _PlaceholderPin(tier: tier),
-      errorWidget: (_, __, ___) => _PlaceholderPin(tier: tier),
-      fadeInDuration: const Duration(milliseconds: 200),
+    return ColoredBox(
+      color: _photoWellColor,
+      child: CachedNetworkImage(
+        imageUrl: url,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.contain,
+        alignment: Alignment.center,
+        placeholder: (_, __) => _PlaceholderPin(tier: tier),
+        errorWidget: (_, __, ___) => _PlaceholderPin(tier: tier),
+        fadeInDuration: const Duration(milliseconds: 200),
+      ),
     );
   }
 }
@@ -281,7 +307,9 @@ class _InfoBar extends StatelessWidget {
 
   Widget _compactBar() {
     return Container(
+      height: MarketingCaseMarker.compactBarHeight,
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+      alignment: Alignment.centerLeft,
       decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.65)),
       child: Row(
         children: [
@@ -292,6 +320,7 @@ class _InfoBar extends StatelessWidget {
               style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: MarketingCaseMarker.compactNameFontSize,
+                height: 1,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
               ),
@@ -315,6 +344,7 @@ class _InfoBar extends StatelessWidget {
                 style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: MarketingCaseMarker.compactResultFontSize,
+                  height: 1,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
