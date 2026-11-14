@@ -8,4 +8,11 @@ extension UserPlanOccurrenceShare on UserPlan {
         planId: id,
         ocultaPinsMarketingNoMapa: ocultaPinsMarketingNoMapa,
       );
+
+  bool get produtorPodeVerOcorrenciaCompartilhadaNoVinculo =>
+      ProducerLinkOccurrencePolicy.usuarioPodeAcessarOcorrenciasNoVinculo(
+        isAdmin: isAdmin,
+        planId: id,
+        ocultaPinsMarketingNoMapa: ocultaPinsMarketingNoMapa,
+      );
 }
