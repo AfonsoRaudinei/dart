@@ -4,19 +4,36 @@ import 'package:soloforte_app/modules/marketing/data/repositories/i_marketing_ca
 import 'package:soloforte_app/modules/marketing/data/services/marketing_sync_service.dart';
 import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.dart';
 import 'package:soloforte_app/modules/marketing/domain/enums/marketing_case_status.dart';
+import 'package:soloforte_app/modules/marketing/domain/enums/plano_marketing.dart';
 import 'package:soloforte_app/modules/marketing/presentation/providers/marketing_providers.dart';
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
+import 'package:soloforte_app/modules/planos/domain/enums/plano_origem.dart';
 import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
 import 'package:soloforte_app/modules/planos/domain/plano_cache_unavailable_exception.dart';
 import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
 
 void main() {
   group('marketingPublishBlockedByPlan', () {
-    test('plano free bloqueia no limite bronze', () {
+    test('plano free bloqueia ouro na primeira publicação (cota 0)', () {
       final plano = UserPlan.free(userId: 'u1');
+      final cases = <MarketingCase>[];
+
+      expect(
+        marketingPublishBlockedByPlan(
+          plano: plano,
+          cases: cases,
+          publishingCaseId: 'new-case',
+          visibilidade: PlanoMarketing.ouro,
+        ),
+        isTrue,
+      );
+    });
+
+    test('bronze pago bloqueia na 6ª case bronze', () {
+      final plano = _paidBronze('u1');
       final cases = List.generate(
-        PlanoTipo.bronze.limiteCases,
-        (i) => _publishedCase('existing-$i'),
+        5,
+        (i) => _publishedCase('existing-$i', visibilidade: 'bronze'),
       );
 
       expect(
@@ -24,6 +41,7 @@ void main() {
           plano: plano,
           cases: cases,
           publishingCaseId: 'new-case',
+          visibilidade: PlanoMarketing.bronze,
         ),
         isTrue,
       );
@@ -32,7 +50,7 @@ void main() {
 
   group('publishCaseDetailed plano fail-open', () {
     test(
-      'PlanoCacheUnavailableException usa bronze e segue para saveCase',
+      'PlanoCacheUnavailableException não aplica teto local e segue para saveCase',
       () async {
         final repo = _RecordingRepo();
         final container = _container(
@@ -59,28 +77,31 @@ void main() {
     );
 
     test(
-      'falha de plano ainda bloqueia no limite bronze antes do optimistic',
+      'bronze pago bloqueia na 6ª case bronze antes do optimistic',
       () async {
         final repo = _RecordingRepo();
         final atLimit = List.generate(
-          PlanoTipo.bronze.limiteCases,
-          (i) => _publishedCase('on-map-$i'),
+          5,
+          (i) => _publishedCase('on-map-$i', visibilidade: 'bronze'),
         );
         final container = _container(
           repo: repo,
-          planoOverride: (ref) async =>
-              throw const PlanoCacheUnavailableException(expired: false),
+          planoOverride: (ref) async => _paidBronze('u1'),
           seed: atLimit,
         );
         addTearDown(container.dispose);
 
-        final publishing = _publishedCase('mkt-sixth');
+        final publishing = _publishedCase('mkt-sixth', visibilidade: 'bronze');
         final outcome = await container
             .read(marketingCasesProvider.notifier)
             .publishCaseDetailed(publishing);
 
         expect(outcome.isSuccess, isFalse);
-        expect(outcome.error, isA<MarketingPlanLimitException>());
+        final error = outcome.error;
+        expect(error, isA<MarketingPlanLimitException>());
+        final limitEx = error! as MarketingPlanLimitException;
+        expect(limitEx.metal, 'bronze');
+        expect(limitEx.limite, 5);
         expect(repo.saveCalls, 0);
         expect(
           container.read(marketingCasesProvider).valueOrNull,
@@ -89,6 +110,19 @@ void main() {
       },
     );
   });
+}
+
+UserPlan _paidBronze(String userId) {
+  return UserPlan(
+    id: 'p-bronze',
+    userId: userId,
+    plano: PlanoTipo.bronze,
+    origem: PlanoOrigem.pagamento,
+    ativo: true,
+    iniciouEm: DateTime.now(),
+    expiraEm: DateTime.now().add(const Duration(days: 90)),
+    criadoEm: DateTime.now(),
+  );
 }
 
 ProviderContainer _container({
@@ -108,11 +142,11 @@ ProviderContainer _container({
   );
 }
 
-MarketingCase _publishedCase(String id) {
+MarketingCase _publishedCase(String id, {String visibilidade = 'ouro'}) {
   return MarketingCase.fromJson({
     'id': id,
     'tipo': 'resultado',
-    'visibilidade': 'ouro',
+    'visibilidade': visibilidade,
     'lat': -10.2,
     'lng': -48.3,
     'localizacao_texto': 'Palmas, TO',
