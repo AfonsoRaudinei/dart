@@ -84,7 +84,7 @@ class PublicationActionsBottomSheet extends StatelessWidget {
                 ),
                 _ActionRow(
                   icon: SFIcons.compareArrows,
-                  title: 'Antes/Depois',
+                  title: 'Avaliação',
                   color: v.iconStroke,
                   isIos: true,
                   onTap: () => _select(context, onAntesDepois),
@@ -150,7 +150,7 @@ class PublicationActionsBottomSheet extends StatelessWidget {
                 ),
                 _ActionRow(
                   icon: SFIcons.compareArrows,
-                  title: 'Antes/Depois',
+                  title: 'Avaliação',
                   color: const Color(0xFFF59E0B),
                   onTap: () => _select(context, onAntesDepois),
                 ),
