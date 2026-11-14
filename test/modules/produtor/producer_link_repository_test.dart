@@ -24,8 +24,7 @@ void main() {
         throwsA(
           predicate(
             (e) =>
-                e is Exception &&
-                e.toString().contains('Bronze ou superior'),
+                e is Exception && e.toString().contains('Bronze ou superior'),
           ),
         ),
       );
@@ -63,9 +62,10 @@ void main() {
       final free = UserPlan.free(userId: 'produtor-1');
       expect(free.produtorPodeVerOcorrenciaCompartilhadaNoVinculo, isFalse);
       expect(
-        () => ProducerLinkRepository.assertProdutorPodeVerOcorrenciasCompartilhadas(
-          free,
-        ),
+        () =>
+            ProducerLinkRepository.assertProdutorPodeVerOcorrenciasCompartilhadas(
+              free,
+            ),
         throwsA(
           predicate(
             (e) =>
@@ -89,9 +89,10 @@ void main() {
       );
       expect(paid.produtorPodeVerOcorrenciaCompartilhadaNoVinculo, isTrue);
       expect(
-        () => ProducerLinkRepository.assertProdutorPodeVerOcorrenciasCompartilhadas(
-          paid,
-        ),
+        () =>
+            ProducerLinkRepository.assertProdutorPodeVerOcorrenciasCompartilhadas(
+              paid,
+            ),
         returnsNormally,
       );
     });
@@ -407,5 +408,31 @@ void main() {
 
     expect(client.link.status, 'active');
     expect(client.link.expiresAt.isBefore(DateTime.utc(2026, 1, 1)), isTrue);
+  });
+
+  test('relatório do convite não exige a flag de ocorrência', () {
+    final when = DateTime.utc(2026, 11, 14);
+    ProducerClientLink link({required String id, required bool reports}) {
+      return ProducerClientLink(
+        id: id,
+        consultorUserId: 'consultor-1',
+        clientId: id,
+        producerUserId: 'produtor-1',
+        status: 'active',
+        expiresAt: when,
+        usedAt: when,
+        createdAt: when,
+        updatedAt: when,
+        share: ProducerShareSelection(occurrences: false, reports: reports),
+      );
+    }
+
+    expect(
+      ProducerLinkRepository.reportClientIdsOf([
+        link(id: 'com-relatorio', reports: true),
+        link(id: 'sem-relatorio', reports: false),
+      ]),
+      ['com-relatorio'],
+    );
   });
 }
