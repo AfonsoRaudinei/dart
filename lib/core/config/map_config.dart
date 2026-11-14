@@ -269,7 +269,7 @@ class MapConfig {
       case LayerType.standard:
         if (hasMapTilerApiKey(mapTilerApiKey)) {
           return MapLayerTileConfig(
-            urlTemplate: mapTilerStreetsUrl(mapTilerApiKey),
+            urlTemplate: mapTilerOutdoorUrl(mapTilerApiKey),
             attribution: mapTilerAttribution,
             maxZoom: mapTilerStyledMaxZoom,
             maxNativeZoom: mapTilerStyledMaxNativeZoom,
