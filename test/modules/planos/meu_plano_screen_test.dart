@@ -165,6 +165,10 @@ void main() {
     await tester.tap(find.text('Bronze'));
     await tester.pump();
 
+    expect(
+      find.text(r'R$ 49,90 · 3 meses · pagamento único'),
+      findsOneWidget,
+    );
     expect(find.text(r'R$ 49,90'), findsOneWidget);
     expect(find.text('Mudar'), findsNothing);
     await tester.ensureVisible(find.text(r'R$ 49,90'));
@@ -265,11 +269,17 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('R\$ 30 por mês, por 3 meses.'), findsNothing);
+    expect(
+      find.text('3 meses · preço na loja ao comprar'),
+      findsNothing,
+    );
 
     await tester.tap(find.text('Bronze'));
     await tester.pump();
-    expect(find.text('R\$ 30 por mês, por 3 meses.'), findsOneWidget);
+    expect(
+      find.text('3 meses · preço na loja ao comprar'),
+      findsOneWidget,
+    );
     expect(find.text('5 indicações sobem para Prata.'), findsOneWidget);
     expect(
       find.text('Você compartilha ocorrência no vínculo.'),
@@ -279,7 +289,10 @@ void main() {
 
     await tester.tap(find.text('Prata'));
     await tester.pump();
-    expect(find.text('R\$ 50 por mês, por 6 meses.'), findsOneWidget);
+    expect(
+      find.text('6 meses · preço na loja ao comprar'),
+      findsOneWidget,
+    );
     expect(find.text('10 indicações sobem para Ouro.'), findsOneWidget);
     expect(
       find.text('Você compartilha ocorrência no vínculo.'),
@@ -288,7 +301,10 @@ void main() {
 
     await tester.tap(find.text('Ouro'));
     await tester.pump();
-    expect(find.text('R\$ 80 por mês, por 12 meses.'), findsOneWidget);
+    expect(
+      find.text('12 meses · preço na loja ao comprar'),
+      findsOneWidget,
+    );
     expect(
       find.text(
         'O pin Ouro aparece para todos, mesmo sem login, a partir do zoom 8.',
