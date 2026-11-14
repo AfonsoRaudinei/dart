@@ -45,9 +45,17 @@ class _MeuPlanoScreenState extends ConsumerState<MeuPlanoScreen> {
   }
 
   Future<void> _carregarLoja() async {
-    final vitrine = await ref.read(lojaCompraGatewayProvider).carregar();
-    if (!mounted) return;
-    setState(() => _vitrine = vitrine);
+    try {
+      final vitrine = await ref.read(lojaCompraGatewayProvider).carregar();
+      if (!mounted) return;
+      setState(() => _vitrine = vitrine);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _vitrine = LojaVitrine.indisponivel;
+        _aviso = 'Não foi possível carregar os planos da loja.';
+      });
+    }
   }
 
   @override
@@ -405,8 +413,14 @@ class _ProdutoLojaRow extends StatelessWidget {
 
   bool get _isAtual =>
       !semPlanoPago &&
+      !plano.expirado &&
+      plano.ativo &&
       _tipoProduto != null &&
       _tipoProduto == plano.plano;
+
+  bool get _mostrarPrecoCompra =>
+      semPlanoPago ||
+      (plano.expirado && _tipoProduto != null && _tipoProduto == plano.plano);
 
   @override
   Widget build(BuildContext context) {
@@ -452,7 +466,7 @@ class _ProdutoLojaRow extends StatelessWidget {
                       )
                     else
                       _LojaAcaoButton(
-                        label: semPlanoPago ? produto.preco : 'Mudar',
+                        label: _mostrarPrecoCompra ? produto.preco : 'Mudar',
                         color: metal,
                         enabled: !ocupado,
                         onPressed: onComprar,
