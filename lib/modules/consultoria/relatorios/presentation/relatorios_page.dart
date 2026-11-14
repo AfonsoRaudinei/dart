@@ -10,7 +10,9 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/contracts/i_client_lookup.dart';
 import '../../../../core/contracts/i_client_lookup_provider.dart';
+import '../../../../core/contracts/i_farm_lookup.dart';
 import '../../../../core/contracts/i_farm_lookup_provider.dart';
+import '../../../../core/contracts/i_field_lookup.dart';
 import '../../../../core/contracts/i_field_lookup_provider.dart';
 import '../../../../core/access/producer_create_context_resolver.dart';
 import '../../../../core/contracts/i_occurrence_access_reader_provider.dart';
@@ -53,6 +55,8 @@ import '../../occurrences/presentation/widgets/occurrence_photo_gallery.dart';
 import '../../occurrences/domain/occurrence_photo_paths.dart';
 // hide SyncStatus para evitar conflito com o enum de relatorio.dart
 import '../../occurrences/domain/occurrence.dart' hide SyncStatus;
+import '../../occurrences/domain/occurrence_andamento.dart';
+import '../../occurrences/presentation/widgets/occurrence_filters.dart';
 import '../../../../core/contracts/marketing_case_reports_list_provider.dart';
 import '../../../../core/contracts/i_marketing_case_reports_lookup_provider.dart';
 import '../../../../core/contracts/marketing_case_report_snapshot.dart';
@@ -67,6 +71,7 @@ part 'relatorios_combined_composer.dart';
 part 'relatorios_shared_widgets.dart';
 part 'relatorios_visit_photos_section.dart';
 part 'relatorios_report_visuals.dart';
+part 'relatorios_occurrence_filters.dart';
 
 String? _relatoriosRouteClienteId(BuildContext context) {
   return GoRouter.maybeOf(context)?.state.uri.queryParameters['clienteId'];
@@ -487,7 +492,7 @@ class _RelatorioCardState extends ConsumerState<_RelatorioCard> {
 // SEÇÃO — Ocorrências Registradas
 // ══════════════════════════════════════════════════════════════════════════════
 
-class _OccurrenciasSection extends ConsumerWidget {
+class _OccurrenciasSection extends ConsumerStatefulWidget {
   final DateFormat dateFormat;
   final String? selectedProducerClientId;
   final ValueChanged<String> onProducerSelected;
@@ -499,23 +504,96 @@ class _OccurrenciasSection extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_OccurrenciasSection> createState() =>
+      _OccurrenciasSectionState();
+}
+
+class _OccurrenciasSectionState extends ConsumerState<_OccurrenciasSection> {
+  OccurrenceFilters _filters = const OccurrenceFilters();
+  String? _farmId;
+  String? _fieldId;
+  bool _oldestFirst = false;
+  String? _boundProducerClientId;
+
+  void _syncProducerClient(String? clientId) {
+    if (_boundProducerClientId == clientId) return;
+    _boundProducerClientId = clientId;
+    _farmId = null;
+    _fieldId = null;
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _filters = const OccurrenceFilters();
+      _farmId = null;
+      _fieldId = null;
+      _oldestFirst = false;
+    });
+  }
+
+  void _toggleCategory(OccurrenceCategory category, bool selected) {
+    final next = {..._filters.categories};
+    if (selected) {
+      next.add(category);
+    } else {
+      next.remove(category);
+    }
+    setState(() => _filters = _filters.copyWith(categories: next));
+  }
+
+  void _toggleStatus(String status, bool selected) {
+    final next = {..._filters.statuses};
+    if (selected) {
+      next.add(status);
+    } else {
+      next.remove(status);
+    }
+    setState(() => _filters = _filters.copyWith(statuses: next));
+  }
+
+  void _toggleAndamento(String storageValue, bool selected) {
+    final next = {..._filters.andamentos};
+    if (selected) {
+      next.add(storageValue);
+    } else {
+      next.remove(storageValue);
+    }
+    setState(() => _filters = _filters.copyWith(andamentos: next));
+  }
+
+  void _selectFarm(String? farmId, OccurrencePlaceCatalog catalog) {
+    setState(() {
+      _farmId = farmId;
+      if (farmId == null) {
+        _fieldId = null;
+        return;
+      }
+      final fields = catalog.fieldsByFarm[farmId] ?? const <FieldSummary>[];
+      if (_fieldId != null && !fields.any((field) => field.id == _fieldId)) {
+        _fieldId = null;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final producerScope = _watchRelatoriosProducerScope(ref);
     final occAsync = ref.watch(occurrencesListProvider);
 
     return occAsync.when(
       data: (raw) {
         final list = _scopeRelatoriosOccurrences(producerScope, raw);
-        final nowLabel = dateFormat.format(DateTime.now());
+        final nowLabel = widget.dateFormat.format(DateTime.now());
         final producerCounts = _producerCountsFromIds(
           list.map((o) => o.clientId),
         );
         final producerIds = producerCounts.keys.toList()..sort();
         final effectiveClientId = resolveRelatoriosProducerClientId(
-          selectedClientId: selectedProducerClientId,
+          selectedClientId: widget.selectedProducerClientId,
           routeClientId: _relatoriosRouteClienteId(context),
           producerIds: producerIds,
         );
+        _syncProducerClient(effectiveClientId);
         final scoped = producerIds.isEmpty
             ? list
             : effectiveClientId == null
@@ -525,47 +603,109 @@ class _OccurrenciasSection extends ConsumerWidget {
                     (occurrence) => occurrence.clientId == effectiveClientId,
                   )
                   .toList();
-        final exportEnabled = effectiveClientId != null && scoped.isNotEmpty;
         final needsProducerPick =
             producerIds.length > 1 && effectiveClientId == null;
-        final displayList = _sortOccurrencesByCreatedAt(
-          needsProducerPick ? const <Occurrence>[] : scoped,
+        final placeRequest = effectiveClientId == null || scoped.isEmpty
+            ? null
+            : _occurrencePlaceRequest(effectiveClientId, scoped);
+        final indexAsync = placeRequest == null
+            ? const AsyncData<_OccurrencePlaceIndex>(
+                _OccurrencePlaceIndex.empty,
+              )
+            : ref.watch(_occurrencePlaceIndexProvider(placeRequest));
+        final catalog =
+            indexAsync.valueOrNull?.catalog ?? const OccurrencePlaceCatalog();
+        final places =
+            indexAsync.valueOrNull?.places ?? const <String, OccurrencePlace>{};
+        final placesLoading =
+            placeRequest != null &&
+            indexAsync.isLoading &&
+            !indexAsync.hasValue;
+        final placeIndexReady =
+            placeRequest == null || indexAsync.hasValue || indexAsync.hasError;
+        final catalogReady = placeIndexReady && !placesLoading;
+        final farmId = _acceptedOccurrenceFarmId(
+          catalog,
+          catalogReady,
+          _farmId,
         );
+        final fieldId = _acceptedOccurrenceFieldId(catalog, farmId, _fieldId);
+        final filtered = _filterRelatorioOccurrences(
+          occurrences: needsProducerPick ? const <Occurrence>[] : scoped,
+          filters: _filters,
+          farmId: farmId,
+          fieldId: fieldId,
+          placeIndexReady: placeIndexReady,
+          places: places,
+        );
+        final displayList = _sortOccurrencesByCreatedAt(
+          filtered,
+          oldestFirst: _oldestFirst,
+        );
+        final exportClientId = effectiveClientId;
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
             _InsetGroupHeader(
               title: 'Ocorrências Registradas',
-              count: effectiveClientId != null ? scoped.length : 0,
+              count: needsProducerPick ? 0 : displayList.length,
             ),
-            if (list.isNotEmpty && producerIds.isNotEmpty) ...[
+            if (list.isNotEmpty && producerIds.isNotEmpty)
               _relatoriosProducerSelectorBlock(
                 context: context,
                 producerIds: producerIds,
                 itemCounts: producerCounts,
                 effectiveClientId: effectiveClientId,
-                onSelected: onProducerSelected,
+                onSelected: widget.onProducerSelected,
               ),
-              if (exportEnabled) ...[
-                _GeneratedReportCard(
-                  leading: _relatoriosReportIconBadge(
-                    icon: SFIcons.assignment,
-                    accent: const Color(0xFF2C5564),
-                  ),
-                  eyebrow: 'Exportar lista',
-                  title: 'Lista de Ocorrências',
-                  subtitle: '${scoped.length} ocorrência(s)',
-                  date: nowLabel,
-                  enabled: true,
-                  buildPayload: () => _buildOccurrenceListPayload(
-                    ref,
-                    scoped,
-                    effectiveClientId,
-                  ),
+            if (scoped.isNotEmpty) ...[
+              _OccurrenceFiltersPanel(
+                categories: _occurrenceCategoriesPresent(scoped),
+                filters: _filters,
+                oldestFirst: _oldestFirst,
+                showPlaceFilters: effectiveClientId != null,
+                placesLoading: placesLoading,
+                farms: catalog.farms,
+                fields: farmId == null
+                    ? const <FieldSummary>[]
+                    : (catalog.fieldsByFarm[farmId] ?? const <FieldSummary>[]),
+                farmId: farmId,
+                fieldId: fieldId,
+                onClear: _clearFilters,
+                onToggleCategory: _toggleCategory,
+                onClearCategories: () => setState(
+                  () => _filters = _filters.copyWith(categories: const {}),
                 ),
-                const SizedBox(height: 12),
-              ],
+                onToggleStatus: _toggleStatus,
+                onToggleAndamento: _toggleAndamento,
+                onOldestFirst: (value) {
+                  if (_oldestFirst == value) return;
+                  setState(() => _oldestFirst = value);
+                },
+                onFarmChanged: (value) => _selectFarm(value, catalog),
+                onFieldChanged: (value) => setState(() => _fieldId = value),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (exportClientId != null && displayList.isNotEmpty) ...[
+              _GeneratedReportCard(
+                leading: _relatoriosReportIconBadge(
+                  icon: SFIcons.assignment,
+                  accent: const Color(0xFF2C5564),
+                ),
+                eyebrow: 'Exportar lista',
+                title: 'Lista de Ocorrências',
+                subtitle: '${displayList.length} ocorrência(s)',
+                date: nowLabel,
+                enabled: true,
+                buildPayload: () => _buildOccurrenceListPayload(
+                  ref,
+                  displayList,
+                  exportClientId,
+                ),
+              ),
+              const SizedBox(height: 12),
             ],
             if (list.isEmpty)
               _PremiumEmptyState(
@@ -575,6 +715,10 @@ class _OccurrenciasSection extends ConsumerWidget {
               )
             else if (needsProducerPick)
               const _PremiumEmptyState(message: 'Escolha o produtor.')
+            else if (scoped.isNotEmpty && displayList.isEmpty)
+              const _PremiumEmptyState(
+                message: 'Nenhuma ocorrência neste filtro.',
+              )
             else if (displayList.isEmpty)
               _PremiumEmptyState(
                 message: 'Nenhuma ocorrência para este produtor.',
@@ -585,7 +729,7 @@ class _OccurrenciasSection extends ConsumerWidget {
               ...displayList.map(
                 (occurrence) => _OccurrenciaCard(
                   occurrence: occurrence,
-                  dateFormat: dateFormat,
+                  dateFormat: widget.dateFormat,
                 ),
               ),
             const SizedBox(height: kFabSafeArea),
