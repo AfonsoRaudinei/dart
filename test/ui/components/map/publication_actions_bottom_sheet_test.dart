@@ -36,8 +36,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Resultado'), findsOneWidget);
-    expect(find.text('Antes/Depois'), findsOneWidget);
-    expect(find.text('Avaliação'), findsNothing);
+    expect(find.text('Avaliação'), findsOneWidget);
     expect(find.text('Área Visitada'), findsOneWidget);
     expect(find.text('Ocorrência'), findsOneWidget);
     expect(find.text('Foto rápida'), findsNothing);
