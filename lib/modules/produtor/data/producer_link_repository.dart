@@ -14,6 +14,7 @@ import '../../../core/session/local_session_identity.dart';
 import '../../planos/domain/entities/user_plan.dart';
 import 'linked_consultant_geometry.dart';
 import 'producer_link_models.dart';
+import 'producer_linked_drawings.dart';
 
 final producerLinkRepositoryProvider = Provider<ProducerLinkRepository>((ref) {
   return ProducerLinkRepository(Supabase.instance.client);
@@ -413,11 +414,12 @@ class ProducerLinkRepository implements ProducerLinkReader {
       client = await _loadLinkedClientLocal(link);
     }
     if (client == null) return null;
-    return _enrichLinkedClientFromRemote(
+    final enriched = await _enrichLinkedClientFromRemote(
       client,
       link,
       eligibleClientIds: eligibleClientIds,
     );
+    return ProducerLinkedDrawingLoader(_client).attach(enriched);
   }
 
   Future<ProducerLinkedClient> _enrichLinkedClientFromRemote(
@@ -427,9 +429,9 @@ class ProducerLinkRepository implements ProducerLinkReader {
   }) async {
     var occurrences = client.occurrences;
     var reports = client.reports;
-  // Painel do produtor relê o Supabase: tenta de novo se o primeiro
-  // caminho (v. g. cache local) não trouxe dados compartilhados.
-    if (_linkGrantsOccurrences(link, eligibleClientIds) && occurrences.isEmpty) {
+    // Relê o Supabase quando o cache local veio sem o dado compartilhado.
+    if (_linkGrantsOccurrences(link, eligibleClientIds) &&
+        occurrences.isEmpty) {
       occurrences = await _loadOccurrences(link.clientId);
     }
     if (link.share.reports && reports.isEmpty) {
@@ -523,9 +525,7 @@ class ProducerLinkRepository implements ProducerLinkReader {
   }
 
   @visibleForTesting
-  static List<ProducerLinkedOccurrence> occurrenceRowsFromRemote(
-    Object? rows,
-  ) {
+  static List<ProducerLinkedOccurrence> occurrenceRowsFromRemote(Object? rows) {
     return (rows as List? ?? const [])
         .map(
           (row) => occurrenceFromRemote(Map<String, dynamic>.from(row as Map)),
