@@ -156,40 +156,16 @@ void main() {
     });
 
     test(
-      'acima do limite rebaixa pending_sync mais novos e preserva synced',
+      'plano bronze rebaixa ouro pending quando cota ouro é zero',
       () async {
-        final cases = [
-          _publishedCase(
-            'synced-1',
-            syncStatus: 'synced',
-            atualizadoEm: '2026-09-01T10:00:00.000Z',
-          ),
-          _publishedCase(
-            'synced-2',
-            syncStatus: 'synced',
-            atualizadoEm: '2026-09-01T11:00:00.000Z',
-          ),
-          _publishedCase(
-            'pend-old',
+        final cases = List.generate(
+          6,
+          (i) => _publishedCase(
+            'pend-$i',
             syncStatus: 'pending_sync',
-            atualizadoEm: '2026-09-02T10:00:00.000Z',
+            atualizadoEm: '2026-09-0${i + 1}T10:00:00.000Z',
           ),
-          _publishedCase(
-            'pend-mid',
-            syncStatus: 'pending_sync',
-            atualizadoEm: '2026-09-03T10:00:00.000Z',
-          ),
-          _publishedCase(
-            'pend-new',
-            syncStatus: 'pending_sync',
-            atualizadoEm: '2026-09-04T10:00:00.000Z',
-          ),
-          _publishedCase(
-            'pend-extra',
-            syncStatus: 'pending_sync',
-            atualizadoEm: '2026-09-05T10:00:00.000Z',
-          ),
-        ];
+        );
         final repo = _DraftAwareRepo(cases);
         final notifier = _StubMarketingCasesNotifier(
           repo,
@@ -202,30 +178,12 @@ void main() {
         );
 
         final state = notifier.state.valueOrNull!;
-        expect(
-          state.firstWhere((c) => c.id == 'pend-extra').status.toValue(),
-          'draft',
-        );
-        expect(
-          state.firstWhere((c) => c.id == 'pend-new').status.toValue(),
-          'published',
-        );
-        expect(
-          state.firstWhere((c) => c.id == 'pend-mid').status.toValue(),
-          'published',
-        );
-        expect(
-          state.firstWhere((c) => c.id == 'pend-old').status.toValue(),
-          'published',
-        );
-        expect(
-          state.firstWhere((c) => c.id == 'synced-1').status.toValue(),
-          'published',
-        );
-        expect(
-          state.firstWhere((c) => c.id == 'synced-2').status.toValue(),
-          'published',
-        );
+        for (var i = 0; i < 6; i++) {
+          expect(
+            state.firstWhere((c) => c.id == 'pend-$i').status.toValue(),
+            'draft',
+          );
+        }
       },
     );
   });
