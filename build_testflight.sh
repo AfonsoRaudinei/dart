@@ -81,6 +81,13 @@ if [[ "$MAPTILER_API_KEY" == *"sua-chave"* ]]; then
   exit 1
 fi
 
+# A chave precisa servir tile de verdade: MapTiler responde 403 "Invalid key"
+# e o satélite fica branco no IPA. Sem rede também aborta (release não sobe às cegas).
+if ! "$ROOT/tool/check_maptiler_key.sh" "$MAPTILER_API_KEY"; then
+  echo "❌ ERRO: MAPTILER_API_KEY não foi validada. Abortando antes do build."
+  exit 1
+fi
+
 echo "🧹 Limpando cache..."
 flutter clean
 flutter pub get
