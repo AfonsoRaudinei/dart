@@ -492,6 +492,8 @@ class _MenuPlanoBadgeItem extends ConsumerWidget {
     if (plano == null) {
       subtitle = 'Sem plano';
       targetRoute = AppRoutes.meuPlano;
+    } else if (plano.id == 'free') {
+      subtitle = 'Sem plano pago';
     } else if (plano.expirado) {
       subtitle = 'Plano expirado';
       targetRoute = AppRoutes.meuPlano;
