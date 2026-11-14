@@ -30,7 +30,7 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
     'roi_investimento', 'roi_retorno', 'roi_calculado',
     'conclusao', 'conclusao_tecnica', 'ativo', 'status',
     'criado_em', 'atualizado_em', 'sync_status', 'deletado_em',
-    'liberado_em', 'publico_ate',
+    'liberado_em', 'publico_ate', 'source_case_id',
     'title', 'visibility',
   };
 
