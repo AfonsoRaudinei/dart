@@ -56,18 +56,25 @@ class _Occurrences implements IOccurrenceRead {
       return const [];
     }
     return const [
-      OccurrenceSummary(
-        id: 'occ-1',
-        type: 'doenca',
-        description: 'Ferrugem',
-      ),
+      OccurrenceSummary(id: 'occ-1', type: 'doenca', description: 'Ferrugem'),
     ];
   }
 }
 
 class _Access implements IOccurrenceAccessReader {
+  _Access({this.linked = const {'cli-1'}, this.occurrences = const {'cli-1'}});
+
+  final Set<String> linked;
+  final Set<String> occurrences;
+
   @override
-  Future<Set<String>> loadActiveClientIds() async => {'cli-1'};
+  Future<Set<String>> loadActiveClientIds() async => occurrences;
+
+  @override
+  Future<Set<String>> loadLinkedClientIds() async => linked;
+
+  @override
+  Future<Set<String>> loadReportClientIds() async => const {};
 
   @override
   Future<Set<String>> loadActiveFieldIdsForOccurrences() async => const {};
@@ -77,15 +84,56 @@ class _Access implements IOccurrenceAccessReader {
 }
 
 void main() {
-  test('visita só entra no calendário do produtor depois da confirmação', () async {
+  test(
+    'visita só entra no calendário do produtor depois da confirmação',
+    () async {
+      final store = _MemoryStore();
+      final calendar = ProducerVisitCalendarAdapter(
+        store: store,
+        occurrences: _Occurrences(),
+        access: _Access(),
+      );
+
+      expect(await calendar.listForProducer(), isEmpty);
+
+      await calendar.confirmVisit(
+        ProducerVisitConfirmationInput(
+          sessionId: 'sess-1',
+          clientId: 'cli-1',
+          visitedAt: DateTime.utc(2026, 11, 12, 11),
+          farmName: 'Fazenda X',
+          fieldName: 'Talhão X',
+        ),
+      );
+
+      final entries = await calendar.listForProducer();
+      expect(entries, hasLength(1));
+      expect(entries.single.farmName, 'Fazenda X');
+      expect(entries.single.fieldName, 'Talhão X');
+      expect(
+        entries.single.occurrences.single.label,
+        'Ferrugem · Talhão X · Fazenda X',
+      );
+      expect(await calendar.isConfirmed('sess-1'), isTrue);
+
+      await calendar.confirmVisit(
+        ProducerVisitConfirmationInput(
+          sessionId: 'sess-1',
+          clientId: 'cli-1',
+          visitedAt: DateTime.utc(2026, 11, 12, 11),
+        ),
+      );
+      expect(store.rows, hasLength(1));
+    },
+  );
+
+  test('visita aparece sem plano; ocorrência do vínculo não', () async {
     final store = _MemoryStore();
     final calendar = ProducerVisitCalendarAdapter(
       store: store,
       occurrences: _Occurrences(),
-      access: _Access(),
+      access: _Access(linked: const {'cli-1'}, occurrences: const {}),
     );
-
-    expect(await calendar.listForProducer(), isEmpty);
 
     await calendar.confirmVisit(
       ProducerVisitConfirmationInput(
@@ -99,18 +147,6 @@ void main() {
 
     final entries = await calendar.listForProducer();
     expect(entries, hasLength(1));
-    expect(entries.single.farmName, 'Fazenda X');
-    expect(entries.single.fieldName, 'Talhão X');
-    expect(entries.single.occurrences.single.label, 'Ferrugem · Talhão X · Fazenda X');
-    expect(await calendar.isConfirmed('sess-1'), isTrue);
-
-    await calendar.confirmVisit(
-      ProducerVisitConfirmationInput(
-        sessionId: 'sess-1',
-        clientId: 'cli-1',
-        visitedAt: DateTime.utc(2026, 11, 12, 11),
-      ),
-    );
-    expect(store.rows, hasLength(1));
+    expect(entries.single.occurrences, isEmpty);
   });
 }
