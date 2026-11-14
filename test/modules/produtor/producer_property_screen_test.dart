@@ -27,9 +27,23 @@ void main() {
     expect(find.text('Desenhar ou importar KML/KMZ'), findsOneWidget);
     expect(find.text('12.3 ha • com mapa'), findsOneWidget);
   });
+
+  testWidgets('fazenda do consultor entra em Minha área', (tester) async {
+    await _pumpScreen(tester, dashboard: _linkedDashboard());
+
+    expect(find.text('Nenhuma fazenda cadastrada ainda.'), findsNothing);
+    expect(find.text('Terra Viva'), findsWidgets);
+    expect(find.text('Talhão 1 • 94.8 ha • com mapa'), findsOneWidget);
+    expect(find.text('Ver no mapa'), findsOneWidget);
+    expect(find.text('Cadastrar fazenda'), findsOneWidget);
+    expect(find.byTooltip('Editar fazenda'), findsNothing);
+  });
 }
 
-Future<void> _pumpScreen(WidgetTester tester) async {
+Future<void> _pumpScreen(
+  WidgetTester tester, {
+  ProducerPropertyDashboard? dashboard,
+}) async {
   final router = GoRouter(
     initialLocation: AppRoutes.producerProperty,
     routes: [
@@ -49,7 +63,7 @@ Future<void> _pumpScreen(WidgetTester tester) async {
     ProviderScope(
       overrides: [
         producerPropertyDashboardProvider.overrideWith(
-          (ref) async => _dashboard(),
+          (ref) async => dashboard ?? _dashboard(),
         ),
       ],
       child: MaterialApp.router(routerConfig: router),
@@ -83,5 +97,55 @@ ProducerPropertyDashboard _dashboard() {
       ],
     ),
     linkedClients: [],
+  );
+}
+
+ProducerPropertyDashboard _linkedDashboard() {
+  return ProducerPropertyDashboard(
+    ownProperty: const ProducerOwnProperty(
+      clientId: 'producer-client-1',
+      name: 'Jonathan Pereira dos Santos',
+      email: 'jonathan.terraviva@gmail.com',
+      farms: [],
+    ),
+    linkedClients: [
+      ProducerLinkedClient(
+        link: ProducerClientLink(
+          id: 'link-1',
+          consultorUserId: 'consultor-1',
+          clientId: 'client-jonathan',
+          producerUserId: 'producer-client-1',
+          status: 'active',
+          expiresAt: DateTime.utc(2026, 11, 21),
+          usedAt: DateTime.utc(2026, 11, 14),
+          createdAt: DateTime.utc(2026, 11, 14),
+          updatedAt: DateTime.utc(2026, 11, 14),
+        ),
+        name: 'Jonathan Pereira dos Santos',
+        phone: null,
+        email: null,
+        city: 'Pium',
+        state: 'TO',
+        farms: const [
+          ProducerLinkedFarm(
+            id: 'farm-tv',
+            name: 'Terra Viva',
+            city: 'Pium',
+            state: 'TO',
+            areaHa: 200,
+            fields: [
+              ProducerLinkedField(
+                id: 'field-1',
+                name: 'Talhão 1',
+                areaHa: 94.806,
+                geometryJson: '{"type":"Polygon"}',
+                fromDrawing: true,
+              ),
+            ],
+          ),
+        ],
+        reports: const [],
+      ),
+    ],
   );
 }

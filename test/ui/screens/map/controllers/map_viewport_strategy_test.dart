@@ -101,6 +101,48 @@ void main() {
     syncProducerMapFarmSelection(widgetRef, farms, null);
     expect(widgetRef.read(producerMapSelectedFarmIdProvider), 'farm-1');
     expect(widgetRef.read(selectedFarmIdProvider), 'farm-1');
+    expect(widgetRef.read(producerMapSelectedFieldIdProvider), isNull);
+  });
+
+  testWidgets('fazenda do consultor já seleciona o primeiro talhão', (
+    tester,
+  ) async {
+    late WidgetRef widgetRef;
+    const farms = [
+      ProducerOwnFarm(
+        id: 'farm-tv',
+        name: 'Terra Viva',
+        city: 'Pium',
+        state: 'TO',
+        areaHa: 200,
+        sharedByConsultant: true,
+        sourceClientId: 'client-jonathan',
+        fields: [
+          ProducerOwnField(
+            id: 'talhao-1',
+            name: 'Talhão 1',
+            areaHa: 94.8,
+            hasGeometry: true,
+          ),
+        ],
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: Consumer(
+          builder: (context, ref, _) {
+            widgetRef = ref;
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    syncProducerMapFarmSelection(widgetRef, farms, null);
+    expect(widgetRef.read(producerMapSelectedFarmIdProvider), 'farm-tv');
+    expect(widgetRef.read(producerMapSelectedFieldIdProvider), 'talhao-1');
+    expect(widgetRef.read(selectedTalhaoIdProvider), 'talhao-1');
   });
 
   test('sem GPS a coordenada da fazenda salva ainda vale', () {
