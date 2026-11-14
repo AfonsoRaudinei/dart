@@ -9,8 +9,6 @@ import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
 import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
 
 class _FakeInviteWriter implements IProducerInviteWriter {
-  _FakeInviteWriter({this.lastShare});
-
   int calls = 0;
   ProducerShareSelection? lastShare;
 
