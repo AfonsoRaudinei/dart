@@ -84,7 +84,7 @@ final _relatoriosTecnicosListProvider =
       if (!role.isProdutor) {
         return repo.getAll();
       }
-      final authorized = await ref.watch(authorizedClientIdsProvider.future);
+      final authorized = await ref.watch(linkedReportClientIdsProvider.future);
       return repo.getVisibleForAuthorizedClients(authorized);
     });
 
@@ -125,7 +125,7 @@ _RelatoriosProducerScope _watchRelatoriosProducerScope(WidgetRef ref) {
     );
   }
 
-  final authorized = ref.watch(authorizedClientIdsProvider);
+  final authorized = ref.watch(occurrenceShareClientIdsProvider);
   final own = ref.watch(_relatoriosProducerOwnClientIdProvider);
   final resolved = resolveProducerAllowedClients(
     authorizedHasValue: authorized.hasValue,
