@@ -2,12 +2,63 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/core/contracts/i_producer_invite_writer.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/producer_invite_dialog.dart';
+import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
+import 'package:soloforte_app/modules/planos/domain/enums/plano_origem.dart';
+import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
 import 'package:soloforte_app/modules/produtor/data/producer_link_models.dart';
 import 'package:soloforte_app/modules/produtor/data/producer_link_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
+  group('occurrence share Bronze+', () {
+    test('createInvite barra ocorrência sem plano pago', () {
+      final free = UserPlan.free(userId: 'u1');
+      expect(
+        () => ProducerLinkRepository.assertConsultorPodeCompartilharOcorrencias(
+          free,
+          const ProducerShareSelection(occurrences: true),
+        ),
+        throwsA(
+          predicate(
+            (e) =>
+                e is Exception &&
+                e.toString().contains('Bronze ou superior'),
+          ),
+        ),
+      );
+    });
+
+    test('RPC client_id é parseado', () {
+      final ids = ProducerLinkRepository.clientIdsFromOccurrenceShareRpc([
+        {'client_id': 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'},
+        {'client_id': ''},
+      ]);
+      expect(ids, {'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'});
+    });
+
+    test('plano bronze ativo libera flag de ocorrência', () {
+      final paid = UserPlan(
+        id: 'p1',
+        userId: 'u1',
+        plano: PlanoTipo.bronze,
+        origem: PlanoOrigem.pagamento,
+        ativo: true,
+        iniciouEm: DateTime.utc(2026, 1, 1),
+        expiraEm: DateTime.utc(2027, 1, 1),
+        criadoEm: DateTime.utc(2026, 1, 1),
+      );
+      expect(
+        () => ProducerLinkRepository.assertConsultorPodeCompartilharOcorrencias(
+          paid,
+          const ProducerShareSelection(occurrences: true),
+        ),
+        returnsNormally,
+      );
+    });
+  });
+
   group('ProducerLinkRepository.createInvite error mapping', () {
     test('mapeia violação de RLS para orientação de sync/papel', () {
       final message = ProducerLinkRepository.mapCreateInviteError(
