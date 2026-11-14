@@ -116,7 +116,6 @@ final oportunidadesCarteiraOverviewProvider =
       for (var i = 0; i < clients.length; i++) {
         final cliente = clients[i];
         final ops = await lookup.getOpenOpportunities(cliente.id);
-        if (ops.isEmpty) continue;
         final total = sumOpportunityValues(ops);
         final color = _kProducerPalette[i % _kProducerPalette.length];
         porCliente.add(
@@ -127,7 +126,9 @@ final oportunidadesCarteiraOverviewProvider =
             colorArgb: color,
           ),
         );
-        all.addAll(ops);
+        if (ops.isNotEmpty) {
+          all.addAll(ops);
+        }
       }
 
       porCliente.sort((a, b) => b.totalValue.compareTo(a.totalValue));
