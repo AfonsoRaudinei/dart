@@ -75,5 +75,30 @@ void main() {
         isTrue,
       );
     });
+
+    test('usuarioPodeAcessar espelha consultor (produtor ver)', () {
+      final free = UserPlan.free(userId: 'u1');
+      final paid = _paid();
+      expect(
+        ProducerLinkOccurrencePolicy.usuarioPodeAcessarOcorrenciasNoVinculo(
+          isAdmin: free.isAdmin,
+          planId: free.id,
+          ocultaPinsMarketingNoMapa: free.ocultaPinsMarketingNoMapa,
+        ),
+        ProducerLinkOccurrencePolicy.consultorPodeCompartilharOcorrencia(
+          isAdmin: free.isAdmin,
+          planId: free.id,
+          ocultaPinsMarketingNoMapa: free.ocultaPinsMarketingNoMapa,
+        ),
+      );
+      expect(
+        ProducerLinkOccurrencePolicy.usuarioPodeAcessarOcorrenciasNoVinculo(
+          isAdmin: paid.isAdmin,
+          planId: paid.id,
+          ocultaPinsMarketingNoMapa: paid.ocultaPinsMarketingNoMapa,
+        ),
+        isTrue,
+      );
+    });
   });
 }
