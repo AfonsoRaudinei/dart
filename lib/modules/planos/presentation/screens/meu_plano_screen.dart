@@ -493,7 +493,7 @@ enum _PlanoMenu {
     ouro => const [
       'R\$ 80 por mês, por 12 meses.',
       '5 cases Bronze, 5 Prata e 10 Ouro.',
-      'O pin Ouro aparece para todos, mesmo sem login, a partir do zoom 10.',
+      'O pin Ouro aparece para todos, mesmo sem login, a partir do zoom 8.',
       'O produtor pode publicar o mesmo case. No mapa fica o pin mais alto.',
       'Você compartilha ocorrência no vínculo.',
       'NDVI refinado.',
