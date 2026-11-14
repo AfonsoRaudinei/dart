@@ -65,8 +65,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
   final _descricaoCtrl = TextEditingController();
   DateTime? _dataCase;
   String? _clientId;
-  String? _lastAutoFilledClientName;
-  bool _produtorEditedByUser = false;
+  String? _selectedClientNameForFallback;
 
   // ── Produtividade ──────────────────────────────────────────────
   final _produtividadeCtrl = TextEditingController();
@@ -108,9 +107,11 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
     final initialContext = widget.initialVisitContext;
     if (initialContext == null) return;
     _clientId = initialContext.clientId;
-    _lastAutoFilledClientName =
-        initialContext.producerFarmLabel ?? initialContext.clientName;
-    _produtorCtrl.text = initialContext.producerFarmLabel ?? '';
+    _selectedClientNameForFallback = initialContext.clientName?.trim();
+    _produtorCtrl.text = marketingVisitInitialProdutorFieldText(
+      producerFarmLabel: initialContext.producerFarmLabel,
+      clientName: initialContext.clientName,
+    );
     _localizacaoCtrl.text = initialContext.locationLabel ?? '';
     _nomeTalhaoCtrl.text = initialContext.fieldName ?? '';
     _tamanhoHaCtrl.text = initialContext.fieldAreaHa?.toString() ?? '';
@@ -250,7 +251,10 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
       lat: widget.lat,
       lng: widget.lng,
       localizacaoTexto: _localizacaoCtrl.text.trim(),
-      produtorFazenda: _produtorCtrl.text.trim(),
+      produtorFazenda: marketingEffectiveProdutorFazenda(
+        manualProdutor: _produtorCtrl.text,
+        selectedClientName: _selectedClientNameForFallback,
+      ),
       produtoUtilizado: _produtoCtrl.text.trim(),
       dataCase: _dataCase,
       produtividadeValor: _tipo == CaseTipo.antesDepois
@@ -436,39 +440,16 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
     });
   }
 
-  void _onProdutorTextChanged(String value) {
-    if (value.trim().isEmpty) {
-      _produtorEditedByUser = false;
-      return;
-    }
-    final trimmed = value.trim();
-    if (_lastAutoFilledClientName != null &&
-        trimmed == _lastAutoFilledClientName!.trim()) {
-      return;
-    }
-    _produtorEditedByUser = true;
-  }
-
   void _handleClientChanged(ClientSummary? client) {
     setState(() {
       if (client == null) {
         _clientId = null;
+        _selectedClientNameForFallback = null;
         return;
       }
 
       _clientId = client.id;
-      if (!marketingProdutorShouldAutofillFromClient(
-        currentProdutor: _produtorCtrl.text,
-        lastAutoFilledClientName: _lastAutoFilledClientName,
-        produtorEditedByUser: _produtorEditedByUser,
-      )) {
-        return;
-      }
-      final name = marketingClientProdutorAutofillValue(client);
-      if (name.isEmpty) return;
-      _produtorCtrl.text = name;
-      _lastAutoFilledClientName = name;
-      _produtorEditedByUser = false;
+      _selectedClientNameForFallback = client.name.trim();
     });
   }
 
@@ -514,9 +495,10 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                 children: [
                   novoCaseTextInput(
                     _produtorCtrl,
-                    'Produtor / Fazenda *',
-                    required: true,
-                    onChanged: _onProdutorTextChanged,
+                    marketingProdutorFieldRequired(clientId: _clientId)
+                        ? 'Produtor / Fazenda *'
+                        : 'Produtor / Fazenda',
+                    required: marketingProdutorFieldRequired(clientId: _clientId),
                   ),
                   const NovoCaseFDivider(),
                   novoCaseTextInput(
