@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
 import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
+import 'package:soloforte_app/modules/drawing/domain/drawing_utils.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
 
@@ -91,6 +92,196 @@ void main() {
       expect(controller.currentState, DrawingState.reviewing);
       expect(controller.pendingDrawingSubtipo, 'pivo');
       expect(controller.pendingDrawingRaioMetros, greaterThan(0));
+    });
+
+    test('pivô: mover o centro preserva o raio e desloca a borda', () {
+      controller.selectTool('pivot');
+      const oldCenter = LatLng(-15.0, -47.0);
+      controller.handlePivotTap(oldCenter);
+      controller.finalizePivotEdge(const LatLng(-15.001, -47.0));
+
+      final radius = controller.pivotRadiusMeters;
+      final oldEdge = controller.pivotEdgePoint!;
+      const newCenter = LatLng(-15.01, -47.02);
+      final distance = const Distance();
+      final expectedEdge = distance.offset(
+        newCenter,
+        radius!,
+        distance.bearing(oldCenter, oldEdge),
+      );
+
+      controller.movePivotCenter(newCenter);
+
+      expect(controller.pivotRadiusMeters, radius);
+      expect(controller.pivotCenter, newCenter);
+      expect(controller.pivotCenter, isNot(oldCenter));
+      expect(controller.pivotEdgePoint, isNot(oldEdge));
+      expect(
+        controller.pivotEdgePoint!.latitude,
+        closeTo(expectedEdge.latitude, 1e-8),
+      );
+      expect(
+        controller.pivotEdgePoint!.longitude,
+        closeTo(expectedEdge.longitude, 1e-8),
+      );
+      expect(
+        controller.instructionText,
+        'Arraste o centro para posicionar ou a borda para o raio',
+      );
+      expect(
+        controller.finishDrawingHint,
+        'Arraste o centro para posicionar ou a borda para o raio',
+      );
+
+      final ring =
+          (controller.liveGeometry as DrawingPolygon).coordinates.first;
+      final sample = LatLng(ring.first[1], ring.first[0]);
+      final fromNew = distance.as(LengthUnit.Meter, newCenter, sample);
+      final fromOld = distance.as(LengthUnit.Meter, oldCenter, sample);
+      expect(fromNew, lessThan(fromOld));
+    });
+
+    test('pivô: mover a borda mantém o centro e altera o raio', () {
+      controller.selectTool('pivot');
+      controller.handlePivotTap(const LatLng(-15.0, -47.0));
+      controller.finalizePivotEdge(const LatLng(-15.001, -47.0));
+
+      final center = controller.pivotCenter;
+      final radius = controller.pivotRadiusMeters!;
+      controller.updatePivotEdge(const LatLng(-15.003, -47.0));
+
+      expect(controller.pivotCenter, center);
+      expect(controller.pivotRadiusMeters, greaterThan(radius));
+      expect(controller.currentState, DrawingState.drawing);
+    });
+
+    test('pivô salvo: edição regenera o círculo e grava o raio novo', () async {
+      const storedRadius = 400.0;
+      final saved = await controller.addFeature(
+        geometry: DrawingPolygon(
+          coordinates: [
+            [
+              [-47.0, -15.0],
+              [-47.01, -15.0],
+              [-47.01, -15.01],
+              [-47.0, -15.01],
+              [-47.0, -15.0],
+            ],
+          ],
+        ),
+        nome: 'Pivô Norte',
+        tipo: DrawingType.talhao,
+        origem: DrawingOrigin.desenho_manual,
+        autorId: 'tester',
+        autorTipo: AuthorType.consultor,
+        subtipo: 'pivo',
+        raioMetros: storedRadius,
+      );
+      expect(saved, isNotNull);
+
+      controller.startEditMode();
+
+      expect(controller.currentState, DrawingState.editing);
+      expect(controller.isEditingPivot, isTrue);
+      expect(controller.pivotRadiusMeters, closeTo(storedRadius, 0.001));
+      final center = controller.pivotCenter!;
+      final regenerated = controller.liveGeometry as DrawingPolygon;
+      final expected = DrawingUtils.createPivotPolygon(center, storedRadius);
+      expect(
+        regenerated.coordinates.first.length,
+        expected.coordinates.first.length,
+      );
+      expect(regenerated.coordinates.first.length, greaterThan(16));
+      for (var i = 0; i < expected.coordinates.first.length; i++) {
+        expect(
+          regenerated.coordinates.first[i][0],
+          closeTo(expected.coordinates.first[i][0], 1e-9),
+        );
+        expect(
+          regenerated.coordinates.first[i][1],
+          closeTo(expected.coordinates.first[i][1], 1e-9),
+        );
+      }
+
+      final areaBefore = controller.liveAreaHa;
+      const movedCenter = LatLng(-15.2, -47.2);
+      final edgeBefore = controller.pivotEdgePoint!;
+      controller.moveEditPivotCenter(movedCenter);
+
+      expect(controller.pivotRadiusMeters, closeTo(storedRadius, 0.001));
+      expect(controller.pivotCenter, movedCenter);
+      expect(controller.pivotCenter, isNot(center));
+      expect(controller.pivotEdgePoint, isNot(edgeBefore));
+
+      final radiusBeforeEdge = controller.pivotRadiusMeters!;
+      final centerBeforeEdge = controller.pivotCenter!;
+      controller.updateEditPivotEdge(
+        LatLng(centerBeforeEdge.latitude + 0.02, centerBeforeEdge.longitude),
+      );
+
+      expect(controller.pivotCenter!.latitude, centerBeforeEdge.latitude);
+      expect(controller.pivotCenter!.longitude, centerBeforeEdge.longitude);
+      expect(controller.pivotRadiusMeters, greaterThan(radiusBeforeEdge));
+      expect(controller.liveAreaHa, greaterThan(areaBefore));
+
+      final newRadius = controller.pivotRadiusMeters!;
+      final areaAfter = controller.liveAreaHa;
+      final savedOk = await controller.saveEdit();
+
+      expect(savedOk, isTrue);
+      final persisted = controller.selectedFeature!;
+      expect(persisted.isPivot, isTrue);
+      expect(persisted.properties.subtipo, 'pivo');
+      expect(persisted.properties.raioMetros, closeTo(newRadius, 1e-6));
+      expect(persisted.properties.areaHa, closeTo(areaAfter, 0.01));
+      expect(persisted.properties.areaHa, greaterThan(areaBefore));
+      expect(
+        (persisted.geometry as DrawingPolygon).coordinates.first.length,
+        greaterThan(16),
+      );
+    });
+
+    test('pivô salvo: undo e redo acompanham centro e raio', () async {
+      final saved = await controller.addFeature(
+        geometry: DrawingUtils.createPivotPolygon(
+          const LatLng(-15.0, -47.0),
+          400,
+        ),
+        nome: 'Pivô Undo',
+        tipo: DrawingType.talhao,
+        origem: DrawingOrigin.desenho_manual,
+        autorId: 'tester',
+        autorTipo: AuthorType.consultor,
+        subtipo: 'pivo',
+        raioMetros: 400,
+      );
+      expect(saved, isNotNull);
+      controller.startEditMode();
+
+      final initialCenter = controller.pivotCenter!;
+      final initialRadius = controller.pivotRadiusMeters!;
+      const moved = LatLng(-15.2, -47.2);
+      controller.moveEditPivotCenter(moved);
+      controller.finishEditPivotGesture();
+
+      expect(controller.canUndo, isTrue);
+      controller.undoEdit();
+
+      expect(
+        controller.pivotCenter!.latitude,
+        closeTo(initialCenter.latitude, 1e-5),
+      );
+      expect(
+        controller.pivotCenter!.longitude,
+        closeTo(initialCenter.longitude, 1e-5),
+      );
+      expect(controller.pivotRadiusMeters, closeTo(initialRadius, 2));
+      expect(controller.pivotEdgePoint, isNotNull);
+
+      controller.redoEdit();
+      expect(controller.pivotCenter!.latitude, closeTo(moved.latitude, 1e-5));
+      expect(controller.pivotCenter!.longitude, closeTo(moved.longitude, 1e-5));
+      expect(controller.pivotRadiusMeters, closeTo(initialRadius, 2));
     });
 
     test('pivô: desfaz raio e centro sem entrar em edição', () {
@@ -181,10 +372,7 @@ void main() {
         0,
       );
       expect(
-        controller.findSketchVertexIndexNear(
-          const LatLng(-15.001, -47.0),
-          5.0,
-        ),
+        controller.findSketchVertexIndexNear(const LatLng(-15.001, -47.0), 5.0),
         1,
       );
       expect(
@@ -220,42 +408,48 @@ void main() {
         expect(controller.currentPoints.length, 5);
         expect(controller.currentPoints.last, sw);
         expect(controller.selectedSketchVertexIndex, 1);
-        expect(controller.currentPoints[1].latitude, closeTo(nw.latitude, 0.0003));
+        expect(
+          controller.currentPoints[1].latitude,
+          closeTo(nw.latitude, 0.0003),
+        );
         expect(controller.currentState, DrawingState.drawing);
       },
     );
 
-    test('polígono: toque na aresta de fechamento insere antes de voltar ao início', () {
-      controller.selectTool('polygon');
-      const nw = LatLng(-15.002, -47.002);
-      const ne = LatLng(-15.002, -46.998);
-      const se = LatLng(-15.000, -46.998);
-      controller.appendDrawingPoint(nw);
-      controller.appendDrawingPoint(ne);
-      controller.appendDrawingPoint(se);
-      expect(controller.selectSketchVertex(2), isTrue);
+    test(
+      'polígono: toque na aresta de fechamento insere antes de voltar ao início',
+      () {
+        controller.selectTool('polygon');
+        const nw = LatLng(-15.002, -47.002);
+        const ne = LatLng(-15.002, -46.998);
+        const se = LatLng(-15.000, -46.998);
+        controller.appendDrawingPoint(nw);
+        controller.appendDrawingPoint(ne);
+        controller.appendDrawingPoint(se);
+        expect(controller.selectSketchVertex(2), isTrue);
 
-      final camera = MapCamera(
-        crs: const Epsg3857(),
-        center: const LatLng(-15.001, -47.000),
-        zoom: 16,
-        rotation: 0,
-        nonRotatedSize: const Point(1000, 1000),
-      );
-      final closeMid = LatLng(
-        (se.latitude + nw.latitude) / 2,
-        (se.longitude + nw.longitude) / 2,
-      );
+        final camera = MapCamera(
+          crs: const Epsg3857(),
+          center: const LatLng(-15.001, -47.000),
+          zoom: 16,
+          rotation: 0,
+          nonRotatedSize: const Point(1000, 1000),
+        );
+        final closeMid = LatLng(
+          (se.latitude + nw.latitude) / 2,
+          (se.longitude + nw.longitude) / 2,
+        );
 
-      expect(controller.applySketchMapTap(closeMid, camera), isTrue);
-      expect(controller.currentPoints.length, 4);
-      expect(controller.currentPoints[2], se);
-      expect(controller.selectedSketchVertexIndex, 3);
-      expect(
-        controller.currentPoints[3].longitude,
-        closeTo(closeMid.longitude, 0.0004),
-      );
-    });
+        expect(controller.applySketchMapTap(closeMid, camera), isTrue);
+        expect(controller.currentPoints.length, 4);
+        expect(controller.currentPoints[2], se);
+        expect(controller.selectedSketchVertexIndex, 3);
+        expect(
+          controller.currentPoints[3].longitude,
+          closeTo(closeMid.longitude, 0.0004),
+        );
+      },
+    );
 
     test('polígono: beginSketchVertexDrag marca dragging sem notify', () {
       controller.selectTool('polygon');

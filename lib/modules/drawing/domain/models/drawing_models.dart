@@ -413,6 +413,7 @@ class DrawingFeature {
     required double newAreaHa,
     required String authorId,
     required AuthorType authorType,
+    double? raioMetros,
   }) {
     return DrawingFeature(
       id: newId,
@@ -427,6 +428,8 @@ class DrawingFeature {
         autorId: authorId,
         autorTipo: authorType,
         syncStatus: SyncStatus.local_only,
+        // null mantém o raio da versão anterior.
+        raioMetros: raioMetros,
       ),
     );
   }
