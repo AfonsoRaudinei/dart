@@ -120,14 +120,16 @@ Fonte: `ndviRefinedEnabledForUserPlan`.
 
 ## O que o app faz hoje
 
-Isto ainda não é a regra acima.
+Parcial em relação à regra acima (atualizado 14/11/2026).
 
 - `UserPlan.free` (`id = free`) aparece como “Sem plano pago” e, por dentro, está marcado como Bronze sem expiração. A tela mostra “5 cases” e “0/5 para Prata”.
 - Cota por metal na publicação (Bronze 5 / Prata 5+5 / Ouro 5+5+10 conforme plano pago; free e expirado = 0 em todos; admin ilimitado).
 - Seletor **Visibilidade** travado sem plano pago; com plano, só metais permitidos pela conta são tocáveis; caso novo inicia no primeiro metal permitido.
 - Publicar case não exige compra. O bloqueio aplica a cota do metal escolhido (`visibilidade`), não um teto único somando metais.
-- O produtor vê case do cliente vinculado e qualquer Ouro público. Não há segunda publicação do produtor nem regra de ficar só o pin mais alto.
-- Mapa sem login lê Ouro com `publico_ate` ainda válido. Prata não aparece para todo usuário logado.
+- **`liberado_em` nulo:** pin só do autor (`ownerUserId`); produtor vinculado e mapa anônimo não veem, mesmo com metal Ouro. Rascunho ou publish bloqueado mantém `liberado_em` nulo. Fail-open de plano no notifier (`skipPlanLimit`) não grava `liberado_em` localmente.
+- Ao publicar com plano pago, metal válido e cota ok: o app grava `liberado_em` (UTC) e `publico_ate` (Ouro 6m, Prata 4m, Bronze 2m), alinhado à migration Supabase.
+- Produtor vê case vinculado **só após** `liberado_em`; Ouro público de terceiros exige liberação e janela `publico_ate` ativa. Não há segunda publicação do produtor nem regra de ficar só o pin mais alto.
+- Mapa sem login: só Ouro com `liberado_em` e janela pública ativa. Prata não aparece para todo usuário logado.
 - O convite oferece Fazendas, Talhões e mapa, Ocorrências e Relatórios, todos ligados por padrão, código válido por 7 dias.
 - Ocorrência não consulta plano.
 - NDVI refinado já segue Ouro pago.
