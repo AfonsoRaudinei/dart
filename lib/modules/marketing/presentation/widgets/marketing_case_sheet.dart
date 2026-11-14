@@ -473,20 +473,27 @@ class MarketingCaseSheet extends ConsumerWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: CachedNetworkImage(
-          imageUrl: url,
-          height: 200,
-          width: double.infinity,
-          fit: BoxFit.cover,
-          errorWidget: (_, __, ___) => Container(
-            height: 200,
-            decoration: BoxDecoration(color: placeholderBg),
-            child: Icon(
-              Icons.image_not_supported_outlined,
-              size: 40,
-              color: placeholderIcon,
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: ColoredBox(
+            color: const Color(0xFFF2F2F7),
+            child: CachedNetworkImage(
+              imageUrl: url,
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.contain,
+              errorWidget: (_, __, ___) => ColoredBox(
+                color: placeholderBg,
+                child: Center(
+                  child: Icon(
+                    Icons.image_not_supported_outlined,
+                    size: 40,
+                    color: placeholderIcon,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -672,19 +679,26 @@ class MarketingCaseSheet extends ConsumerWidget {
     final placeholderBg = v.cardBackground;
     final placeholderIcon = v.subtitleColor;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: CachedNetworkImage(
-        imageUrl: url,
-        height: 130,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorWidget: (_, __, ___) => Container(
-          height: 130,
-          decoration: BoxDecoration(color: placeholderBg),
-          child: Icon(
-            Icons.image_not_supported_outlined,
-            color: placeholderIcon,
+    return AspectRatio(
+      aspectRatio: 1,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: ColoredBox(
+          color: const Color(0xFFF2F2F7),
+          child: CachedNetworkImage(
+            imageUrl: url,
+            width: double.infinity,
+            height: double.infinity,
+            fit: BoxFit.contain,
+            errorWidget: (_, __, ___) => ColoredBox(
+              color: placeholderBg,
+              child: Center(
+                child: Icon(
+                  Icons.image_not_supported_outlined,
+                  color: placeholderIcon,
+                ),
+              ),
+            ),
           ),
         ),
       ),
