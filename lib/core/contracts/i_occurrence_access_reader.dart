@@ -3,7 +3,14 @@
 /// Ownership continua sendo determinado por `occurrences.user_id`. Esta lista
 /// contem apenas `clients.id` concedidos por vinculos ativos.
 abstract interface class IOccurrenceAccessReader {
+  /// Ocorrências: vínculo ativo, `share_occurrences` e Bronze+ dos dois lados.
   Future<Set<String>> loadActiveClientIds();
+
+  /// Vínculo ativo, sem plano. Pin Bronze, visita e fazenda.
+  Future<Set<String>> loadLinkedClientIds();
+
+  /// Vínculo ativo com relatórios marcados no convite. Sem plano.
+  Future<Set<String>> loadReportClientIds();
 
   /// Talhões cujas ocorrências o produtor pode ler (vínculo + `share_occurrences`).
   Future<Set<String>> loadActiveFieldIdsForOccurrences();
