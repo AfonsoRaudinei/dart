@@ -7,7 +7,11 @@ import 'package:flutter/painting.dart';
 import 'package:flutter_map/flutter_map.dart';
 
 import '../network/network_policy.dart';
+import '../utils/map_logger.dart';
 import 'offline_tile_cache_service.dart';
+
+/// 401/403 do provedor de tiles: chave de API inválida, apagada ou sem cota.
+bool tileStatusMeansKeyRejected(int status) => status == 401 || status == 403;
 
 /// Limita quantos tiles saem ao mesmo tempo.
 ///
@@ -88,6 +92,7 @@ class PersistentOfflineTileProvider extends TileProvider {
     Duration requestTimeout = NetworkPolicy.kTimeout,
     int maxAttempts = NetworkPolicy.kMaxRetries,
     Map<String, String>? headers,
+    void Function(int status)? onNetworkStatus,
   }) : this._(
          offlineRoot: offlineRoot,
          layerKey: layerKey,
@@ -98,6 +103,7 @@ class PersistentOfflineTileProvider extends TileProvider {
          requestTimeout: requestTimeout,
          maxAttempts: maxAttempts,
          headers: headers ?? <String, String>{},
+         onNetworkStatus: onNetworkStatus,
        );
 
   PersistentOfflineTileProvider._({
@@ -109,6 +115,7 @@ class PersistentOfflineTileProvider extends TileProvider {
     required bool ownsClient,
     required this.requestTimeout,
     required this.maxAttempts,
+    required this.onNetworkStatus,
     super.headers,
   }) : _slots = slots,
        _httpClient = httpClient,
@@ -119,6 +126,12 @@ class PersistentOfflineTileProvider extends TileProvider {
   String offlineRoot;
   String layerKey;
   String? legacyRoot;
+
+  /// Recebe o status HTTP de cada resposta de tile (200, 401, 403…).
+  ///
+  /// Chave de API recusada devolve 403 com uma imagem de erro; sem este aviso
+  /// o tile some em silêncio e o mapa fica branco.
+  void Function(int status)? onNetworkStatus;
   final Duration requestTimeout;
   final int maxAttempts;
   final TileFetchSlots _slots;
@@ -241,6 +254,7 @@ class PersistentOfflineTileProvider extends TileProvider {
           throw TimeoutException('tile');
         },
       );
+      if (!aborted) _reportStatus(uri, response.statusCode);
       if (aborted || response.statusCode != 200) {
         abort();
         try {
@@ -270,6 +284,14 @@ class PersistentOfflineTileProvider extends TileProvider {
     } finally {
       await subscription.cancel();
     }
+  }
+
+  void _reportStatus(Uri uri, int status) {
+    if (status != 200) {
+      // Sem query: a URL do tile carrega a chave da API.
+      MapLogger.logError('Tile HTTP $status em ${uri.host}${uri.path}', null);
+    }
+    onNetworkStatus?.call(status);
   }
 
   @override
