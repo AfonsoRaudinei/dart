@@ -1,4 +1,5 @@
 import 'package:soloforte_app/core/services/sync_retry_runner.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 import 'drawing_local_store.dart';
 import 'drawing_remote_store.dart';
@@ -123,6 +124,29 @@ class DrawingSyncService {
       }
 
       if (local == null) {
+        final owner = await _localStore.ownerOf(remote.id);
+        final currentUserId = LocalSessionIdentity.resolveUserId();
+        if (owner != null &&
+            owner.isNotEmpty &&
+            currentUserId.isNotEmpty &&
+            owner != currentUserId) {
+          try {
+            await _localStore.restoreDrawingOwner(
+              id: remote.id,
+              ownerUserId: currentUserId,
+            );
+            resultUpdates.add(remote);
+          } catch (error, stackTrace) {
+            errorCount++;
+            AppLogger.error(
+              'Drawing pull falhou ao devolver o dono [id=${remote.id}]',
+              tag: 'DrawingSync',
+              error: error,
+              stackTrace: stackTrace,
+            );
+          }
+          continue;
+        }
         try {
           final newLocal = DrawingFeature(
             id: remote.id,

@@ -13,6 +13,11 @@ class DrawingOwnershipPolicy {
 
   static const orphanUserId = '';
 
+  /// Cópia local só para o produtor ver o contorno offline.
+  /// Não entra no mapa do dono e não sobe no sync.
+  static const linkedMirrorSubtipo = 'vinculo_leitura';
+  static const linkedMirrorIdPrefix = 'vinc_';
+
   static String normalizeSyncStatusForWrite({
     required String persistedUserId,
     required SyncStatus currentSyncStatus,
@@ -101,6 +106,72 @@ class DrawingLocalStore {
       ),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
     _logFallbackIdentityIfNeeded('insert', feature.id, userId);
+  }
+
+  /// Dono gravado na linha, sem filtrar a conta da sessão.
+  Future<String?> ownerOf(String id) async {
+    if (id.trim().isEmpty) return null;
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'drawings',
+      columns: ['user_id'],
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    final owner = (rows.first['user_id'] as String?)?.trim() ?? '';
+    return owner;
+  }
+
+  /// Devolve a linha ao consultor. Não mexe na geometria nem marca push.
+  Future<void> restoreDrawingOwner({
+    required String id,
+    required String ownerUserId,
+  }) async {
+    final owner = ownerUserId.trim();
+    if (id.trim().isEmpty || owner.isEmpty) return;
+    final db = await _dbHelper.database;
+    await db.update(
+      'drawings',
+      {'user_id': owner, 'sync_status': SyncStatus.synced.toJson()},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// Cópia offline com outro id. A linha do consultor permanece intacta.
+  Future<void> insertLinkedMirror(DrawingFeature feature) async {
+    if (feature.id.startsWith(DrawingOwnershipPolicy.linkedMirrorIdPrefix)) {
+      return;
+    }
+    final mirrorId =
+        '${DrawingOwnershipPolicy.linkedMirrorIdPrefix}${feature.id}';
+    if (await ownerOf(mirrorId) != null) return;
+    final mirror = DrawingFeature(
+      id: mirrorId,
+      geometry: feature.geometry,
+      properties: feature.properties.copyWith(
+        syncStatus: SyncStatus.synced,
+        subtipo: DrawingOwnershipPolicy.linkedMirrorSubtipo,
+      ),
+    );
+    await insert(mirror);
+  }
+
+  /// Remove só a cópia de leitura. O desenho do consultor fica.
+  Future<void> deleteLinkedMirror(String sourceId) async {
+    final raw = sourceId.trim();
+    if (raw.isEmpty) return;
+    final id = raw.startsWith(DrawingOwnershipPolicy.linkedMirrorIdPrefix)
+        ? raw
+        : '${DrawingOwnershipPolicy.linkedMirrorIdPrefix}$raw';
+    final db = await _dbHelper.database;
+    await db.delete(
+      'drawings',
+      where: 'id = ? AND subtipo = ?',
+      whereArgs: [id, DrawingOwnershipPolicy.linkedMirrorSubtipo],
+    );
   }
 
   Future<void> update(DrawingFeature feature) async {
@@ -236,7 +307,8 @@ class DrawingLocalStore {
       'drawings',
       where:
           '${DrawingOwnershipPolicy.buildOwnedOrOrphanWhereClause(userId)} '
-          'AND deleted_at IS NULL AND ativo = 1',
+          'AND deleted_at IS NULL AND ativo = 1 '
+          "AND (subtipo IS NULL OR subtipo != '${DrawingOwnershipPolicy.linkedMirrorSubtipo}')",
       whereArgs: DrawingOwnershipPolicy.buildOwnedOrOrphanWhereArgs(userId),
       orderBy: 'updated_at DESC',
     );
@@ -251,7 +323,8 @@ class DrawingLocalStore {
       'drawings',
       where:
           "${DrawingOwnershipPolicy.buildOwnedOrOrphanWhereClause(userId)} "
-          "AND sync_status IN ('pending_sync', 'local_only', 'deleted_local', 'conflict')",
+          "AND sync_status IN ('pending_sync', 'local_only', 'deleted_local', 'conflict') "
+          "AND (subtipo IS NULL OR subtipo != '${DrawingOwnershipPolicy.linkedMirrorSubtipo}')",
       whereArgs: DrawingOwnershipPolicy.buildOwnedOrOrphanWhereArgs(userId),
     );
     return maps.map((e) => _fromRow(e)).toList();
@@ -269,7 +342,8 @@ class DrawingLocalStore {
       'FROM drawings '
       'WHERE ${DrawingOwnershipPolicy.buildOwnedOrOrphanWhereClause(userId)} '
       'AND cliente_id = ? AND deleted_at IS NULL '
-      "AND (tipo IS NULL OR tipo != 'teste')",
+      "AND (tipo IS NULL OR tipo != 'teste') "
+      "AND (subtipo IS NULL OR subtipo != '${DrawingOwnershipPolicy.linkedMirrorSubtipo}')",
       [
         ...DrawingOwnershipPolicy.buildOwnedOrOrphanWhereArgs(userId),
         clienteId,
