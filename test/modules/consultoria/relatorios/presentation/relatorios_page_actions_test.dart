@@ -1249,7 +1249,11 @@ Future<void> _openReportCardByTitle(
   String title, {
   bool fullSettle = true,
 }) async {
-  final target = find.text(title);
+  final target = find.byElementPredicate((element) {
+    final widget = element.widget;
+    if (widget is! Text || widget.data != title) return false;
+    return element.findAncestorWidgetOfExactType<FilterChip>() == null;
+  });
   final scrollable = _verticalScrollable();
   if (scrollable.evaluate().isNotEmpty) {
     await tester.scrollUntilVisible(
