@@ -55,13 +55,13 @@ void main() {
       );
     });
 
-    test('vinculado exige liberado_em', () {
+    test('bronze vinculado exige liberado_em e janela ativa', () {
       final liberado = DateTime.utc(2026, 6, 1);
       final linked = _case(
         ownerUserId: 'consultor-9',
         visibilidade: PlanoMarketing.bronze,
         liberadoEm: liberado,
-        publicoAte: liberado.add(const Duration(days: 60)),
+        publicoAte: liberado.add(const Duration(days: 200)),
       );
       expect(
         MarketingCaseVisibility.isVisibleOnMapForProducer(
@@ -84,6 +84,21 @@ void main() {
           authorizedClientIds: const {'client-a'},
         ),
         isFalse,
+      );
+
+      final prataVinculada = _case(
+        ownerUserId: 'consultor-9',
+        visibilidade: PlanoMarketing.prata,
+        liberadoEm: liberado,
+        publicoAte: liberado.add(const Duration(days: 200)),
+      );
+      expect(
+        MarketingCaseVisibility.isVisibleOnMapForProducer(
+          marketingCase: prataVinculada,
+          currentUserId: 'prod-1',
+          authorizedClientIds: const {'client-a'},
+        ),
+        isTrue,
       );
     });
 
