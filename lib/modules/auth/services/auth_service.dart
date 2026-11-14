@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/infra/preferences_service.dart';
+import '../../../core/session/pending_signup_avatar_store.dart';
 import '../../../core/session/pending_signup_role_store.dart';
 import '../../../core/session/profile_role_resolver.dart';
 import '../../../core/session/session_controller.dart'
@@ -112,6 +115,22 @@ class AuthService extends _$AuthService {
         } catch (e) {
           AppLogger.error('_completeProfile falhou', tag: 'AuthService', error: e);
           // Não bloquear cadastro por falha no perfil
+        }
+      } else if (dto.photo != null) {
+        // Sem sessão (confirmação de e-mail pendente) não há como enviar a
+        // foto ao Storage agora. Guarda localmente; o primeiro login
+        // confirmado a envia via ensureProfileComplete().
+        try {
+          await _pendingSignupAvatarStore().save(
+            email: dto.email,
+            source: dto.photo!,
+          );
+        } catch (e) {
+          AppLogger.error(
+            'cache local da foto falhou',
+            tag: 'AuthService',
+            error: e,
+          );
         }
       }
 
@@ -255,6 +274,56 @@ class AuthService extends _$AuthService {
   /// Perfil mínimo funcional: `id` + `role` (obrigatórios).
   /// `name` é visual — não bloqueia funcionalidade se ausente.
   Future<void> ensureProfileComplete() async {
+    await _ensureProfileFields();
+    await _applyPendingAvatar();
+  }
+
+  /// Envia a foto escolhida no cadastro (guardada localmente enquanto o
+  /// e-mail não estava confirmado) e grava `perfis.photo_url`.
+  ///
+  /// Nunca sobrescreve foto já existente. Se o upload falhar, mantém o
+  /// arquivo local para nova tentativa no próximo login. Não lança.
+  Future<void> _applyPendingAvatar() async {
+    try {
+      final user = _client.auth.currentUser;
+      if (user == null) return;
+
+      final store = _pendingSignupAvatarStore();
+      final file = await store.readValid(user.email);
+      if (file == null) return;
+
+      final profile = await NetworkPolicy.withTimeout(
+        () => _client
+            .from('perfis')
+            .select('photo_url')
+            .eq('id', user.id)
+            .maybeSingle(),
+      );
+      final currentPhoto = (profile?['photo_url'] as String?)?.trim();
+      if (currentPhoto != null && currentPhoto.isNotEmpty) {
+        await store.clear(user.email);
+        return;
+      }
+
+      final photoUrl = await _uploadAvatar(userId: user.id, file: file);
+      if (photoUrl == null) return; // tenta de novo no próximo login
+
+      await NetworkPolicy.withTimeout(
+        () => _client
+            .from('perfis')
+            .update({'photo_url': photoUrl}).eq('id', user.id),
+      );
+      await store.clear(user.email);
+    } catch (e) {
+      AppLogger.error(
+        'Erro ao aplicar foto pendente',
+        tag: 'AuthService',
+        error: e,
+      );
+    }
+  }
+
+  Future<void> _ensureProfileFields() async {
     try {
       final user = _client.auth.currentUser;
       if (user == null) return;
@@ -349,34 +418,9 @@ class AuthService extends _$AuthService {
     required String userId,
     required RegisterDto dto,
   }) async {
-    String? photoUrl;
-
-    // Upload da imagem se existir
-    if (dto.photo != null) {
-      final fileExt = dto.photo!.path.split('.').last;
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExt';
-      final filePath = '$userId/$fileName';
-
-      try {
-        await NetworkPolicy.withTimeout(
-          () => _client.storage
-              .from('avatars')
-              .upload(
-                filePath,
-                dto.photo!,
-                fileOptions: const FileOptions(
-                  cacheControl: '3600',
-                  upsert: true,
-                ),
-              ),
-        );
-
-        photoUrl = _client.storage.from('avatars').getPublicUrl(filePath);
-      } catch (e) {
-        AppLogger.error('Erro no upload de avatar', tag: 'AuthService', error: e);
-        photoUrl = null;
-      }
-    }
+    final photoUrl = dto.photo == null
+        ? null
+        : await _uploadAvatar(userId: userId, file: dto.photo!);
 
     // UPDATE (não INSERT) — perfil já criado pelo trigger
     try {
@@ -398,6 +442,33 @@ class AuthService extends _$AuthService {
     }
   }
 
+  /// Envia [file] ao bucket `avatars` em `<userId>/<timestamp>.<ext>` e
+  /// devolve a URL pública, ou `null` se o upload falhar.
+  Future<String?> _uploadAvatar({
+    required String userId,
+    required File file,
+  }) async {
+    final fileExt = file.path.split('.').last;
+    final fileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+    final filePath = '$userId/$fileName';
+
+    try {
+      await NetworkPolicy.withTimeout(
+        () => _client.storage
+            .from('avatars')
+            .upload(
+              filePath,
+              file,
+              fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+            ),
+      );
+      return _client.storage.from('avatars').getPublicUrl(filePath);
+    } catch (e) {
+      AppLogger.error('Erro no upload de avatar', tag: 'AuthService', error: e);
+      return null;
+    }
+  }
+
   Future<void> _syncAuthRole(String role) async {
     final normalizedRole = role.toUserRole().isUnknown
         ? UserRole.produtor.value
@@ -415,6 +486,10 @@ class AuthService extends _$AuthService {
 
   PendingSignupRoleStore _pendingSignupRoleStore() {
     return PendingSignupRoleStore(ref.read(preferencesServiceProvider));
+  }
+
+  PendingSignupAvatarStore _pendingSignupAvatarStore() {
+    return PendingSignupAvatarStore(ref.read(preferencesServiceProvider));
   }
 
   Future<String?> _readPendingSignupRole(String? email) async {
