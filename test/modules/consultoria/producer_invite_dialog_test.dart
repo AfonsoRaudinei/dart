@@ -3,10 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/core/contracts/i_producer_invite_writer.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/producer_invite_dialog.dart';
+import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
+import 'package:soloforte_app/modules/planos/domain/enums/plano_origem.dart';
+import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
+import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
 
 class _FakeInviteWriter implements IProducerInviteWriter {
-  _FakeInviteWriter();
+  _FakeInviteWriter({this.lastShare});
+
   int calls = 0;
+  ProducerShareSelection? lastShare;
 
   @override
   Future<ProducerInviteData> createInvite(
@@ -14,12 +20,24 @@ class _FakeInviteWriter implements IProducerInviteWriter {
     ProducerShareSelection share = const ProducerShareSelection(),
   }) async {
     calls += 1;
+    lastShare = share;
     return ProducerInviteData(
       token: 'SF-ABCD-1234-EF56',
       expiresAt: DateTime.utc(2026, 8, 1),
     );
   }
 }
+
+UserPlan _bronzePaid() => UserPlan(
+      id: 'p1',
+      userId: 'u1',
+      plano: PlanoTipo.bronze,
+      origem: PlanoOrigem.pagamento,
+      ativo: true,
+      iniciouEm: DateTime.utc(2026, 1, 1),
+      expiraEm: DateTime.utc(2027, 1, 1),
+      criadoEm: DateTime.utc(2026, 1, 1),
+    );
 
 void main() {
   testWidgets('gera token após ensureClientRemote e exibe valor', (
@@ -30,6 +48,9 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          planoAtivoProvider.overrideWith((ref) async => _bronzePaid()),
+        ],
         child: MaterialApp(
           home: Scaffold(
             body: ProducerInviteDialog(
@@ -73,11 +94,45 @@ void main() {
     expect(message, contains('SF-ABCD-1234-EF56'));
   });
 
+  testWidgets('sem plano pago desabilita ocorrências no convite', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          planoAtivoProvider.overrideWith(
+            (ref) async => UserPlan.free(userId: 'u1'),
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: ProducerInviteDialog(
+              clientId: 'client-1',
+              clientName: 'Raudinei teste',
+              ensureClientRemote: (_) async {},
+              inviteWriter: _FakeInviteWriter(),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Requer plano Bronze ou superior'), findsOneWidget);
+    final tile = tester.widget<CheckboxListTile>(
+      find.widgetWithText(CheckboxListTile, 'Ocorrências'),
+    );
+    expect(tile.onChanged, isNull);
+    expect(tile.value, isFalse);
+  });
+
   testWidgets('mostra erro acionável quando ensureClientRemote falha', (
     tester,
   ) async {
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          planoAtivoProvider.overrideWith((ref) async => _bronzePaid()),
+        ],
         child: MaterialApp(
           home: Scaffold(
             body: ProducerInviteDialog(
