@@ -36,6 +36,7 @@ import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.d
 import 'package:soloforte_app/modules/marketing/infra/marketing_case_reports_lookup_adapter.dart';
 import 'package:soloforte_app/modules/marketing/presentation/providers/marketing_providers.dart';
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
+import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
 import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
 import 'package:soloforte_app/modules/settings/data/settings_repository.dart';
 import 'package:soloforte_app/modules/settings/domain/entities/user_profile.dart';
@@ -968,7 +969,10 @@ void main() {
       relatorioRepository: FakeRelatorioRepository(),
       occurrenceRepository: FakeOccurrenceRepository(),
       marketingRepository: marketingRepo,
-      planoOverride: UserPlan.free(userId: 'test-user'),
+      planoOverride: UserPlan.free(userId: 'test-user').copyWith(
+        id: 'plan-ouro',
+        plano: PlanoTipo.ouro,
+      ),
     );
 
     await _selectSegment(tester, 'Marketing');
