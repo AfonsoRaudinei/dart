@@ -128,8 +128,8 @@ Parcial em relação à regra acima (atualizado 14/11/2026).
 - Publicar case não exige compra. O bloqueio aplica a cota do metal escolhido (`visibilidade`), não um teto único somando metais.
 - **`liberado_em` nulo:** pin só do autor (`ownerUserId`); produtor vinculado e mapa anônimo não veem, mesmo com metal Ouro. Rascunho ou publish bloqueado mantém `liberado_em` nulo. Fail-open de plano no notifier (`skipPlanLimit`) não grava `liberado_em` localmente.
 - Ao publicar com plano pago, metal válido e cota ok: o app grava `liberado_em` (UTC) e `publico_ate` (Ouro 6m, Prata 4m, Bronze 2m), alinhado à migration Supabase.
-- Produtor vê case vinculado **só após** `liberado_em`; Ouro público de terceiros exige liberação e janela `publico_ate` ativa. Não há segunda publicação do produtor nem regra de ficar só o pin mais alto.
-- Mapa sem login: só Ouro com `liberado_em` e janela pública ativa. Prata não aparece para todo usuário logado.
+- Pin no mapa (`MarketingCaseVisibility`): dono sempre vê o próprio `published`; sem `liberado_em` só o autor. Ouro liberado + janela ativa → todos (anônimo só Ouro via `isVisibleOnMapForAnonymous`). Prata + janela ativa → consultor e produtor logados; expirada só autor. Bronze + janela ativa → autor ou produtor com vínculo no `client_id`; consultor não vê bronze de terceiros. Não há segunda publicação do produtor nem pin mais alto.
+- Mapa sem login: `isVisibleOnMapForAnonymous` (Ouro liberado, janela ativa). Prata exige login.
 - O convite oferece Fazendas, Talhões e mapa, Ocorrências e Relatórios, todos ligados por padrão, código válido por 7 dias.
 - Ocorrência não consulta plano.
 - NDVI refinado já segue Ouro pago.
