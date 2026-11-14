@@ -720,9 +720,4 @@ Future<T> _withRealHttpClient<T>(Future<T> Function() body) {
   );
 }
 
-class _DirectHttpOverrides extends HttpOverrides {
-  @override
-  HttpClient createHttpClient(SecurityContext? context) {
-    return super.createHttpClient(context);
-  }
-}
+class _DirectHttpOverrides extends HttpOverrides {}
