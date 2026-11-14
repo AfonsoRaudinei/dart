@@ -73,6 +73,7 @@ class _MapLayersWidgetState extends ConsumerState<MapLayersWidget> {
     if (offlineRoot == null) return null;
     final legacyRoot = OfflineTileCacheService.legacyRootBeside(offlineRoot);
     if (_persistedTiles != null && _persistedTilesKey == layerKey) {
+      _persistedTiles!.onNetworkStatus = _onTileStatus;
       _persistedTiles!.retarget(
         offlineRoot: offlineRoot,
         layerKey: layerKey,
@@ -86,12 +87,35 @@ class _MapLayersWidgetState extends ConsumerState<MapLayersWidget> {
       offlineRoot: offlineRoot,
       layerKey: layerKey,
       legacyRoot: legacyRoot,
+      onNetworkStatus: _onTileStatus,
     );
     return _persistedTiles;
   }
 
+  /// Chave recusada (401/403) liga o aviso; um 200 desliga. Outros status
+  /// (404 fora de cobertura, 5xx) não dizem nada sobre a chave.
+  void _onTileStatus(int status) {
+    if (!mounted) return;
+    final rejected = tileStatusMeansKeyRejected(status);
+    if (status != 200 && !rejected) return;
+    final flag = ref.read(mapTileKeyRejectedProvider.notifier);
+    if (flag.state != rejected) flag.state = rejected;
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen<bool>(mapTileKeyRejectedProvider, (previous, rejected) {
+      if (!rejected || previous == true) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível carregar o mapa: o provedor recusou a chave '
+            'de acesso. Avise o suporte.',
+          ),
+          duration: Duration(seconds: 8),
+        ),
+      );
+    });
     final activeLayer = ref.watch(activeLayerProvider);
     final satelliteLabelsEnabled = ref.watch(mapSatelliteLabelsEnabledProvider);
     final wms = ref.watch(externalWmsLayerProvider);
