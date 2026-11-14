@@ -7,11 +7,7 @@ import 'package:soloforte_app/core/utils/app_logger.dart';
 import '../producer_visit_confirmation_store.dart';
 
 class ProducerVisitConfirmationSync {
-  ProducerVisitConfirmationSync(
-    this._supabase,
-    this._store,
-    this._access,
-  );
+  ProducerVisitConfirmationSync(this._supabase, this._store, this._access);
 
   final SupabaseClient _supabase;
   final ProducerVisitConfirmationStore _store;
@@ -48,7 +44,7 @@ class ProducerVisitConfirmationSync {
     final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return;
 
-    final clientIds = await _access.loadActiveClientIds();
+    final clientIds = await _access.loadLinkedClientIds();
     final rows = <Map<String, dynamic>>[];
 
     try {

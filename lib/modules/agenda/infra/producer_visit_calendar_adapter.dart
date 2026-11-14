@@ -58,13 +58,14 @@ class ProducerVisitCalendarAdapter implements IProducerVisitCalendar {
       await _sync?.pull();
     } catch (_) {}
 
-    final clientIds = await _access.loadActiveClientIds();
+    final clientIds = await _access.loadLinkedClientIds();
+    final occurrenceClientIds = await _access.loadActiveClientIds();
     final rows = await _store.listByClients(clientIds);
     final entries = <ProducerVisitCalendarEntry>[];
     for (final row in rows) {
       final occurrences = await _occurrences.getAuthorizedBySessionId(
         row.sessionId,
-        clientIds,
+        occurrenceClientIds,
       );
       final farm = _name(row.farmName) ?? 'Fazenda';
       final field = _name(row.fieldName) ?? 'Talhão';
