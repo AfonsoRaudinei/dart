@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/services/sync_retry_runner.dart';
@@ -7,8 +8,31 @@ import '../modules/drawing/data/data_sources/drawing_local_store.dart';
 import '../modules/drawing/data/data_sources/drawing_remote_store.dart';
 import '../modules/produtor/data/producer_link_repository.dart';
 
-/// Baixa desenhos do consultor concedidos por vínculo (`share_fields`) para o
-/// SQLite local do produtor — alimenta [DrawingLayerWidget] offline.
+/// O que fazer com um desenho do consultor no SQLite deste aparelho.
+enum LinkedDrawingWrite { leave, restoreOwner, insertMirror }
+
+/// Não troca o `user_id` do consultor. Se o vínculo já tomou a linha,
+/// devolve ao dono remoto. Sem linha local, grava uma cópia com outro id.
+@visibleForTesting
+LinkedDrawingWrite decideLinkedDrawingWrite({
+  required String currentUserId,
+  required String remoteOwnerId,
+  required String? localOwnerId,
+}) {
+  final current = currentUserId.trim();
+  final remote = remoteOwnerId.trim();
+  final local = localOwnerId?.trim() ?? '';
+  if (local.isEmpty) return LinkedDrawingWrite.insertMirror;
+  if (remote.isNotEmpty && local == current && remote != current) {
+    return LinkedDrawingWrite.restoreOwner;
+  }
+  return LinkedDrawingWrite.leave;
+}
+
+/// Baixa desenhos do consultor concedidos por vínculo (`share_fields`).
+///
+/// A linha original continua do consultor. O produtor só ganha uma cópia
+/// de leitura, com outro id, quando o aparelho ainda não tem o desenho.
 class ProducerLinkedDrawingSyncService {
   ProducerLinkedDrawingSyncService({
     required SupabaseClient supabase,
@@ -29,7 +53,8 @@ class ProducerLinkedDrawingSyncService {
     final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return;
 
-    final clientIds = await _linkRepository.loadAuthorizedClientIdsForDrawings();
+    final clientIds = await _linkRepository
+        .loadAuthorizedClientIdsForDrawings();
     if (clientIds.isEmpty) return;
 
     var pulled = 0;
@@ -39,7 +64,7 @@ class ProducerLinkedDrawingSyncService {
           operation: () => _client
               .from('drawings')
               .select(
-                'id, geometry, properties, deleted_at, created_at, updated_at',
+                'id, user_id, geometry, properties, deleted_at, created_at, updated_at',
               )
               .eq('properties->>cliente_id', clientId)
               .order('updated_at', ascending: false),
@@ -49,15 +74,30 @@ class ProducerLinkedDrawingSyncService {
         );
         for (final raw in rows as List) {
           final row = Map<String, dynamic>.from(raw as Map);
+          final id = (row['id'] as String?)?.trim() ?? '';
+          if (id.isEmpty) continue;
           if (row['deleted_at'] != null) {
-            final id = row['id'] as String?;
-            if (id != null && id.isNotEmpty) {
-              await _localStore.delete(id);
-            }
+            await _localStore.deleteLinkedMirror(id);
             continue;
           }
           final feature = _remoteStore.featureFromRemoteRow(row);
-          await _localStore.insert(feature);
+          final remoteOwner = (row['user_id'] as String?)?.trim() ?? '';
+          final action = decideLinkedDrawingWrite(
+            currentUserId: userId,
+            remoteOwnerId: remoteOwner,
+            localOwnerId: await _localStore.ownerOf(feature.id),
+          );
+          switch (action) {
+            case LinkedDrawingWrite.leave:
+              break;
+            case LinkedDrawingWrite.restoreOwner:
+              await _localStore.restoreDrawingOwner(
+                id: feature.id,
+                ownerUserId: remoteOwner,
+              );
+            case LinkedDrawingWrite.insertMirror:
+              await _localStore.insertLinkedMirror(feature);
+          }
           pulled++;
         }
       } catch (error) {

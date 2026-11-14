@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/database/database_helper.dart';
@@ -59,11 +58,10 @@ class ProducerLinkedDrawingLoader {
     final rows = await db.query(
       'drawings',
       columns: ['id', 'nome', 'area_ha', 'fazenda_id', 'geojson'],
-      where:
-          'user_id = ? AND deleted_at IS NULL AND ativo = 1 AND tipo != ? AND $farmClause',
-      whereArgs: [userId, 'teste', clientId, ...farmIds],
+      where: 'deleted_at IS NULL AND ativo = 1 AND tipo != ? AND $farmClause',
+      whereArgs: ['teste', clientId, ...farmIds],
     );
-    return drawingsFromLocalRows(rows);
+    return preferOwnerDrawings(drawingsFromLocalRows(rows));
   }
 
   Future<List<ProducerLinkedDrawing>> _loadRemote(String clientId) async {
@@ -72,6 +70,38 @@ class ProducerLinkedDrawingLoader {
         .select('id, geometry, properties, deleted_at')
         .eq('properties->>cliente_id', clientId);
     return drawingsFromRemoteRows(rows);
+  }
+
+  /// A cópia `vinc_` só entra quando o desenho do consultor não está no aparelho.
+  @visibleForTesting
+  static List<ProducerLinkedDrawing> preferOwnerDrawings(
+    List<ProducerLinkedDrawing> drawings,
+  ) {
+    const prefix = 'vinc_';
+    final originals = drawings
+        .map((drawing) => drawing.id)
+        .where((id) => !id.startsWith(prefix))
+        .toSet();
+    final kept = <ProducerLinkedDrawing>[];
+    for (final drawing in drawings) {
+      if (!drawing.id.startsWith(prefix)) {
+        kept.add(drawing);
+        continue;
+      }
+      final sourceId = drawing.id.substring(prefix.length);
+      if (originals.contains(sourceId)) continue;
+      kept.add(
+        ProducerLinkedDrawing(
+          id: sourceId,
+          name: drawing.name,
+          areaHa: drawing.areaHa,
+          farmId: drawing.farmId,
+          groupName: drawing.groupName,
+          geometryJson: drawing.geometryJson,
+        ),
+      );
+    }
+    return kept;
   }
 
   @visibleForTesting
