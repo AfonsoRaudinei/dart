@@ -61,6 +61,27 @@ void main() {
       expect(draft.id, isNot('consultor-case'));
       expect(repo.lastDraft?.sourceCaseId, 'consultor-case');
     });
+
+    test('republicar clone visível A (source=R) grava sourceCaseId=R', () async {
+      const rootId = 'consultor-case';
+      final cloneA = _fonteConsultor().copyWith(
+        id: 'clone-a',
+        sourceCaseId: rootId,
+        ownerUserId: 'outro-produtor',
+      );
+      final repo = _RecordingRepo();
+      final sync = MarketingSyncService(repo);
+      final notifier = MarketingCasesNotifier(repo, sync, null);
+      notifier.state = AsyncData([_fonteConsultor(), cloneA]);
+
+      final draft = await notifier.republicarComoProdutor(
+        cloneA,
+        authorizedClientIds: {'client-vinculo'},
+      );
+
+      expect(draft.sourceCaseId, rootId);
+      expect(repo.lastDraft?.sourceCaseId, rootId);
+    });
   });
 }
 
