@@ -112,7 +112,7 @@ void main() {
     );
 
     final fields = find.byType(TextFormField);
-    expect(fields, findsNWidgets(4));
+    expect(fields, findsNWidgets(7));
 
     await tester.enterText(fields.at(0), 'Vagens por Planta');
     await tester.enterText(fields.at(1), '38');
@@ -125,54 +125,55 @@ void main() {
     expect(current.deltaPercent, closeTo(23.68, 0.01));
   });
 
-  testWidgets('perfil azul: ParametroCard usa card iOS claro e texto titleColor', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _blueThemeApp(
-        ParametroCard(
-          parametro: const ParametroComparativo(
-            id: 'param-blue',
-            titulo: '',
-            testemunha: 0,
-            teste: 0,
+  testWidgets(
+    'perfil azul: ParametroCard usa card iOS claro e texto titleColor',
+    (tester) async {
+      await tester.pumpWidget(
+        _blueThemeApp(
+          ParametroCard(
+            parametro: const ParametroComparativo(
+              id: 'param-blue',
+              titulo: '',
+              testemunha: 0,
+              teste: 0,
+            ),
+            selected: false,
+            onChanged: (_) {},
+            onDelete: () {},
+            onTap: () {},
           ),
-          selected: false,
-          onChanged: (_) {},
-          onDelete: () {},
-          onTap: () {},
         ),
-      ),
-    );
+      );
 
-    expect(
-      find.byWidgetPredicate(
-        (w) =>
-            w is DecoratedBox &&
-            w.decoration is BoxDecoration &&
-            (w.decoration as BoxDecoration).color ==
-                SoloForteSheetSkinIos.cardBackground,
-      ),
-      findsWidgets,
-    );
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is DecoratedBox &&
+              w.decoration is BoxDecoration &&
+              (w.decoration as BoxDecoration).color ==
+                  SoloForteSheetSkinIos.cardBackground,
+        ),
+        findsWidgets,
+      );
 
-    expect(
-      find.byWidgetPredicate(
-        (w) =>
-            w is DecoratedBox &&
-            w.decoration is BoxDecoration &&
-            (w.decoration as BoxDecoration).color ==
-                SoloForteSheetTokens.inputBackground,
-      ),
-      findsNothing,
-    );
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is DecoratedBox &&
+              w.decoration is BoxDecoration &&
+              (w.decoration as BoxDecoration).color ==
+                  SoloForteSheetTokens.inputBackground,
+        ),
+        findsNothing,
+      );
 
-    final editable = tester.widget<EditableText>(
-      find.descendant(
-        of: find.byType(TextFormField).first,
-        matching: find.byType(EditableText),
-      ),
-    );
-    expect(editable.style.color, SoloForteSheetSkinIos.titleColor);
-  });
+      final editable = tester.widget<EditableText>(
+        find.descendant(
+          of: find.byType(TextFormField).first,
+          matching: find.byType(EditableText),
+        ),
+      );
+      expect(editable.style.color, SoloForteSheetSkinIos.titleColor);
+    },
+  );
 }
