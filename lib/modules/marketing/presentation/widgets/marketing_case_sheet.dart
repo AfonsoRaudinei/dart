@@ -362,22 +362,12 @@ class MarketingCaseSheet extends ConsumerWidget {
                             hintColor: hintColor,
                           ),
                       ],
-                      if (marketingCase.avaliacoesLivres.isNotEmpty) ...[
-                        if (!_fotosLegadasNoPrimeiroBloco(marketingCase) &&
-                            (marketingCase.fotoAntesUrl != null ||
-                                marketingCase.fotoDepoisUrl != null)) ...[
-                          _buildAntesDepoisFotos(
-                            context,
-                            titleColor: titleColor,
-                            isIos: isIos,
-                          ),
-                          const SizedBox(height: 12),
-                        ],
+                      if (marketingCase.avaliacoesLivres.isNotEmpty)
                         _ComparacaoBlocosReadOnly(
                           avaliacoes: marketingCase.avaliacoesLivres,
                           titleColor: titleColor,
-                        ),
-                      ] else if (marketingCase.fotoAntesUrl != null ||
+                        )
+                      else if (marketingCase.fotoAntesUrl != null ||
                           marketingCase.fotoDepoisUrl != null)
                         _buildAntesDepoisFotos(
                           context,
