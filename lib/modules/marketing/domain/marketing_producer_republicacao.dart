@@ -1,15 +1,17 @@
 import '../../../core/access/producer_content_visibility.dart';
 import 'entities/marketing_case.dart';
 import 'enums/marketing_case_status.dart';
+import 'marketing_map_pin_dedup.dart';
 
+/// Já existe republicação do [currentUserId] ligada à raiz do grupo ([groupRootId]).
 bool producerJaRepublicouFonte({
   required List<MarketingCase> cases,
-  required String fonteId,
+  required String groupRootId,
   required String currentUserId,
 }) {
   return cases.any(
     (c) =>
-        c.sourceCaseId == fonteId &&
+        c.sourceCaseId == groupRootId &&
         c.ownerUserId == currentUserId &&
         c.deletadoEm == null,
   );
@@ -45,7 +47,7 @@ bool producerRepublicacaoDisponivel({
 
   return !producerJaRepublicouFonte(
     cases: allCases,
-    fonteId: fonte.id,
+    groupRootId: marketingCaseGroupRootId(fonte),
     currentUserId: currentUserId,
   );
 }
