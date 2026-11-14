@@ -14,6 +14,7 @@ import '../../../../core/domain/publicacao.dart';
 import '../../../../modules/consultoria/occurrences/domain/occurrence.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/marketing/domain/marketing_case_visibility.dart';
+import '../../../../modules/marketing/domain/marketing_visibility_policy.dart';
 import '../../../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../../../../modules/marketing/presentation/widgets/marketing_case_marker.dart';
 import '../../../../modules/marketing/presentation/widgets/marketing_case_sheet.dart';
@@ -166,6 +167,18 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
     final publishedCases = ref
         .watch(publishedCasesProvider)
         .where((c) => excludedMarkerId == null || c.id != excludedMarkerId)
+        .where((c) {
+          if (MarketingVisibilityPolicy.somenteAutorNoMapa(
+            c,
+            currentUserId,
+          )) {
+            final owner = c.ownerUserId;
+            return owner != null &&
+                owner.isNotEmpty &&
+                owner == currentUserId;
+          }
+          return true;
+        })
         .toList(growable: false);
 
     final cases =
