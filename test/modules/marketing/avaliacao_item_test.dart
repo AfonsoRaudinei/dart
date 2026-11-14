@@ -82,21 +82,37 @@ void main() {
 
       expect(restored.fotoLadoAPath, 'a.jpg');
       expect(restored.fotoLadoBPath, 'b.jpg');
+      expect(restored.nomeLadoC, isNull);
+      expect(restored.fotoLadoCPath, isNull);
       expect(restored.observacoes, original.observacoes);
       expect(restored.parametros, hasLength(1));
       expect(restored.parametros.first.deltaPercent, 20);
     });
 
-    test('nomes de lados vazios usam defaults sem excecao', () {
-      final restored = AvaliacaoItem.fromJson(const {
+    test('chave ausente usa fallback e chave vazia permanece vazia', () {
+      final ausente = AvaliacaoItem.fromJson(const {
         'id': 'av-1',
         'titulo': 'Avaliação 1',
-        'nome_lado_a': '',
-        'nome_lado_b': '',
       });
 
-      expect(restored.nomeLadoA, 'Lado A');
-      expect(restored.nomeLadoB, 'Lado B');
+      expect(ausente.nomeLadoA, 'Lado A');
+      expect(ausente.nomeLadoB, 'Lado B');
+      expect(ausente.nomeLadoC, isNull);
+      expect(ausente.fotoLadoCPath, isNull);
+
+      final vazio = AvaliacaoItem.fromJson(const {
+        'id': 'av-2',
+        'titulo': 'Avaliação 2',
+        'nome_lado_a': '',
+        'nome_lado_b': '',
+        'nome_lado_c': '',
+        'foto_lado_c_path': 'c.jpg',
+      });
+
+      expect(vazio.nomeLadoA, isEmpty);
+      expect(vazio.nomeLadoB, isEmpty);
+      expect(vazio.nomeLadoC, isEmpty);
+      expect(vazio.fotoLadoCPath, 'c.jpg');
     });
   });
 }
