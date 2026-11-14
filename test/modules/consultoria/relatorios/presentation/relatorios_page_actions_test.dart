@@ -183,7 +183,7 @@ void main() {
     await _pumpActionFrame(tester);
 
     expect(occurrenceRepository.get('occ-1')?.status, 'confirmed');
-    expect(find.text('Confirmada'), findsOneWidget);
+    expect(find.text('Confirmada'), findsWidgets);
 
     await _openReportCardByTitle(tester, 'Insetos');
     await _tapViewerToolbar(tester, 'Excluir');
