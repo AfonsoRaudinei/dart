@@ -161,16 +161,28 @@ class DrawingLocalStore {
 
   /// Remove só a cópia de leitura. O desenho do consultor fica.
   Future<void> deleteLinkedMirror(String sourceId) async {
+    await deleteLinkedMirrorsForSource(sourceId);
+  }
+
+  /// Apaga a cópia única e as partes `vinc_<id>__parte_*`.
+  /// O desenho do consultor fica.
+  Future<void> deleteLinkedMirrorsForSource(String sourceId) async {
     final raw = sourceId.trim();
     if (raw.isEmpty) return;
-    final id = raw.startsWith(DrawingOwnershipPolicy.linkedMirrorIdPrefix)
-        ? raw
-        : '${DrawingOwnershipPolicy.linkedMirrorIdPrefix}$raw';
+    final source = raw.startsWith(DrawingOwnershipPolicy.linkedMirrorIdPrefix)
+        ? raw.substring(DrawingOwnershipPolicy.linkedMirrorIdPrefix.length)
+        : raw;
+    if (source.isEmpty) return;
+    final mirrorId = '${DrawingOwnershipPolicy.linkedMirrorIdPrefix}$source';
     final db = await _dbHelper.database;
     await db.delete(
       'drawings',
-      where: 'id = ? AND subtipo = ?',
-      whereArgs: [id, DrawingOwnershipPolicy.linkedMirrorSubtipo],
+      where: '(id = ? OR id GLOB ?) AND subtipo = ?',
+      whereArgs: [
+        mirrorId,
+        '${mirrorId}__parte_*',
+        DrawingOwnershipPolicy.linkedMirrorSubtipo,
+      ],
     );
   }
 
