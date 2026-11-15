@@ -27,8 +27,7 @@ HtmlReportViewerActions _marketingReportViewerActions(
   final lookup = container.read(marketingCaseReportsLookupProvider);
   final lat = item.lat;
   final lng = item.lng;
-  final hasLocation =
-      lat.isFinite && lng.isFinite && !(lat == 0 && lng == 0);
+  final hasLocation = lat.isFinite && lng.isFinite && !(lat == 0 && lng == 0);
   final isDraft = item.statusValue.toLowerCase() == 'draft';
 
   return HtmlReportViewerActions(
@@ -47,8 +46,10 @@ HtmlReportViewerActions _marketingReportViewerActions(
         : null,
     onPublish: isDraft
         ? (viewerContext) async {
-            final published =
-                await lookup.publishDraftCase(viewerContext, item.id);
+            final published = await lookup.publishDraftCase(
+              viewerContext,
+              item.id,
+            );
             if (published && viewerContext.mounted) {
               ScaffoldMessenger.of(viewerContext).showSnackBar(
                 const SnackBar(content: Text('Case publicado com sucesso!')),
@@ -186,18 +187,15 @@ class _MarketingCasesReportsSectionState
             : needsProducerPick
             ? const <MarketingCaseReportSnapshot>[]
             : visible
-                .where((item) => item.clientId == effectiveClientId)
-                .toList();
+                  .where((item) => item.clientId == effectiveClientId)
+                  .toList();
         final statusFiltered = _applyStatusFilter(byProducer);
         final filtered = _applyTypeFilter(statusFiltered);
         final grouped = _groupByFarm(filtered);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _InsetGroupHeader(
-              title: 'Marketing',
-              count: filtered.length,
-            ),
+            _InsetGroupHeader(title: 'Marketing', count: filtered.length),
             _relatoriosProducerSelectorBlock(
               context: context,
               producerIds: producerIds,
@@ -228,9 +226,7 @@ class _MarketingCasesReportsSectionState
                 onCta: () => context.go(AppRoutes.map),
               )
             else if (needsProducerPick)
-              const _PremiumEmptyState(
-                message: 'Escolha o produtor.',
-              )
+              const _PremiumEmptyState(message: 'Escolha o produtor.')
             else if (filtered.isEmpty && byProducer.isNotEmpty)
               _PremiumEmptyState(
                 message: 'Nenhum case neste filtro.',
@@ -262,12 +258,8 @@ class _MarketingCasesReportsSectionState
                       ),
                     ),
                   ...items.map(
-                    (item) => _marketingReportCard(
-                      context,
-                      ref,
-                      dateFormat,
-                      item,
-                    ),
+                    (item) =>
+                        _marketingReportCard(context, ref, dateFormat, item),
                   ),
                 ];
               }),
@@ -307,7 +299,7 @@ Widget _marketingReportCard(
     ),
     eyebrow: _relatoriosMarketingTipoSectionTitle(item.tipo),
     title: item.produtorFazenda,
-    subtitle: mapHidden ? '' : statusText,
+    subtitle: item.produtoUtilizado?.trim() ?? '',
     date: dateFormat.format(item.criadoEm.toLocal()),
     enabled: true,
     statusLabel: mapHidden ? 'Oculto no mapa' : statusText,
@@ -369,7 +361,7 @@ class _MarketingCaseStatusFilterBar extends StatelessWidget {
       children: [
         _statusChip(
           context,
-          'Todas',
+          'Todos os status',
           _MarketingCaseStatusFilter.all,
           SFIcons.layers,
         ),
@@ -452,7 +444,7 @@ class _MarketingCaseFilterBar extends StatelessWidget {
       children: [
         _filterChip(
           context,
-          'Todas',
+          'Todos os tipos',
           _MarketingCaseFilter.all,
           SFIcons.layers,
         ),
@@ -495,9 +487,7 @@ class _MarketingCaseFilterBar extends StatelessWidget {
           color: isSelected ? context.themeAccent : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected
-                ? context.themeAccent
-                : const Color(0xFFD1D1D6),
+            color: isSelected ? context.themeAccent : const Color(0xFFD1D1D6),
           ),
         ),
         child: Row(

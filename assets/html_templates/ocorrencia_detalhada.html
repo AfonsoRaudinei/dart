@@ -25,14 +25,31 @@
     <!-- {{#if type}} -->
     <div class="sf-status-line">
       <!-- {{#if andamento_label}} -->
-      <span class="sf-status"><span class="sf-dot {{andamento_class}}"></span>{{andamento_label}}</span>
+      <span class="sf-status sf-pill sf-pill-{{andamento_class}}"><span class="sf-dot {{andamento_class}}"></span>{{andamento_label}}</span>
       <!-- {{/if}} -->
-      <span class="sf-status"><span class="sf-dot {{urgencia_class}}"></span>{{urgencia_label}}</span>
+      <span class="sf-status sf-pill sf-pill-{{urgencia_class}}"><span class="sf-dot {{urgencia_class}}"></span>{{urgencia_label}}</span>
     </div>
     <!-- {{/if}} -->
   </header>
 
   <main>
+
+    <!-- {{#if ordem_aplicacao}} -->
+    <section class="sf-section">
+      <h2 class="sf-section-title"><span class="sf-section-num"></span>Ordem de aplicação</h2>
+      <div class="sf-sheet sf-ordem">
+        <!-- {{#if recomendacao_acao}} -->
+        <div class="sf-row"><span class="sf-row-label">O que fazer</span><span class="sf-row-value">{{recomendacao_acao}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if recomendacao_dose}} -->
+        <div class="sf-row"><span class="sf-row-label">Dose</span><span class="sf-row-value">{{recomendacao_dose}}</span></div>
+        <!-- {{/if}} -->
+        <!-- {{#if recomendacao_quando}} -->
+        <div class="sf-row"><span class="sf-row-label">Quando</span><span class="sf-row-value">{{recomendacao_quando}}</span></div>
+        <!-- {{/if}} -->
+      </div>
+    </section>
+    <!-- {{/if}} -->
 
     <section class="sf-section">
       <h2 class="sf-section-title"><span class="sf-section-num"></span>Ficha técnica</h2>
@@ -112,23 +129,6 @@
     <!-- {{/if}} -->
 
     <!-- {{#if nutrientes && nutrientes.length > 0}} -->
-    <!-- {{/if}} -->
-
-    <!-- {{#if ordem_aplicacao}} -->
-    <section class="sf-section">
-      <h2 class="sf-section-title"><span class="sf-section-num"></span>Ordem de aplicação</h2>
-      <div class="sf-sheet sf-ordem">
-        <!-- {{#if recomendacao_acao}} -->
-        <div class="sf-row"><span class="sf-row-label">O que fazer</span><span class="sf-row-value">{{recomendacao_acao}}</span></div>
-        <!-- {{/if}} -->
-        <!-- {{#if recomendacao_dose}} -->
-        <div class="sf-row"><span class="sf-row-label">Dose</span><span class="sf-row-value">{{recomendacao_dose}}</span></div>
-        <!-- {{/if}} -->
-        <!-- {{#if recomendacao_quando}} -->
-        <div class="sf-row"><span class="sf-row-label">Quando</span><span class="sf-row-value">{{recomendacao_quando}}</span></div>
-        <!-- {{/if}} -->
-      </div>
-    </section>
     <!-- {{/if}} -->
 
   </main>

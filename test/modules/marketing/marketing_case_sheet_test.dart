@@ -40,8 +40,8 @@ void main() {
       expect(find.text('ROI líquido'), findsOneWidget);
       expect(find.text('R\$ 980,00/ha'), findsOneWidget);
       expect(find.text('9,3 sc/ha'), findsOneWidget);
-      expect(find.text('Testemunha'), findsOneWidget);
-      expect(find.text('Com produto'), findsOneWidget);
+      expect(find.text('Testemunha (sem produto)'), findsOneWidget);
+      expect(find.text('Com coach'), findsOneWidget);
       expect(find.text('Ganho'), findsOneWidget);
       expect(find.text('ROI/ha'), findsOneWidget);
     });

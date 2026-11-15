@@ -136,7 +136,10 @@ void main() {
     expect(html, contains('Palmas, TO · 14/10/2026'));
     expect(html, contains('<p class="mk-figure-value">60,0</p>'));
     expect(html, contains('<p class="mk-figure-value">64,0</p>'));
-    expect(html, contains('<p class="mk-figure-value">+4,0</p>'));
+    expect(html, contains('<p class="mk-gain-value">+4,0<span'));
+    expect(html, contains('mk-gain positive'));
+    expect(html, contains('Testemunha (sem produto)'));
+    expect(html, isNot(contains('Com produto')));
     expect(html, contains('<p class="mk-figure-value">1800</p>'));
     expect(html, contains('R\$ 350,00'));
     expect(html, contains('R\$ 440,00/ha'));
