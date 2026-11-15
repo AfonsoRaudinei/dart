@@ -102,14 +102,14 @@ class ProducerLinkedDrawingSyncService {
           final id = (row['id'] as String?)?.trim() ?? '';
           if (id.isEmpty) continue;
           if (row['deleted_at'] != null) {
-            await _localStore.deleteLinkedMirror(id);
+            await _localStore.deleteLinkedMirrorsForSource(id);
             continue;
           }
           final feature = _remoteStore.featureFromRemoteRow(row);
           final remoteOwner = (row['user_id'] as String?)?.trim() ?? '';
           final sources = linkedMirrorSources(feature);
           if (sources.length > 1) {
-            await _localStore.deleteLinkedMirror(feature.id);
+            await _localStore.deleteLinkedMirrorsForSource(feature.id);
           }
           for (final source in sources) {
             final action = decideLinkedDrawingWrite(
