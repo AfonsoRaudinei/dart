@@ -258,6 +258,32 @@ body {
 .sf-dot.ok    { background: var(--sf-urg-baixa); }
 .sf-dot.draft { background: var(--sf-text-tertiary); }
 
+/* Selo de status/urgência: leitura imediata sem depender só da bolinha. */
+.sf-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(142, 142, 147, 0.14);
+}
+.sf-pill-alta  { background: rgba(217, 48, 37, 0.12);  color: var(--sf-urg-alta); }
+.sf-pill-media { background: rgba(232, 163, 23, 0.16); color: #8A5A00; }
+.sf-pill-baixa,
+.sf-pill-ok    { background: rgba(46, 125, 50, 0.12);  color: var(--sf-urg-baixa); }
+
+/* Ordem de aplicação: é o que o produtor executa, então ganha peso. */
+.sf-ordem {
+  border-left: 3px solid var(--sf-navy);
+}
+.sf-ordem .sf-row-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.sf-ordem .sf-row-value {
+  font-size: 17px;
+  font-weight: 600;
+}
+
 /* ═══ Texto ═══ */
 .sf-prose {
   font-size: 15px;
@@ -704,6 +730,67 @@ body.sf-export-gallery-open { overflow: hidden; }
   margin-top: 2px;
   font-size: 12px;
   color: var(--sf-text-tertiary);
+}
+
+.mk-figures-pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 0;
+}
+
+/* Ganho: o resultado positivo é o herói da seção. */
+.mk-gain {
+  margin-bottom: var(--sf-space-4);
+  padding: var(--sf-space-4);
+  border-radius: 14px;
+  border: 0.5px solid rgba(46, 125, 50, 0.28);
+  background: rgba(46, 125, 50, 0.08);
+}
+.mk-gain.negative {
+  border-color: rgba(217, 48, 37, 0.28);
+  background: rgba(217, 48, 37, 0.07);
+}
+.mk-gain-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sf-text-secondary);
+}
+.mk-gain-value {
+  margin-top: var(--sf-space-1);
+  font-family: var(--sf-font-title);
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--sf-urg-baixa);
+}
+.mk-gain.negative .mk-gain-value { color: var(--sf-urg-alta); }
+.mk-gain-unit {
+  margin-left: 6px;
+  font-family: var(--sf-font-text);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--sf-text-secondary);
+}
+.mk-gain-chip {
+  display: inline-block;
+  margin-top: var(--sf-space-3);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--sf-urg-baixa);
+}
+.mk-gain.negative .mk-gain-chip { background: var(--sf-urg-alta); }
+
+/* Foto inteira, mas sem dominar a tela. */
+.mk-hero img {
+  width: auto;
+  max-width: 100%;
+  max-height: 340px;
+  margin: 0 auto;
 }
 
 .mk-lead { margin-bottom: var(--sf-space-4); }

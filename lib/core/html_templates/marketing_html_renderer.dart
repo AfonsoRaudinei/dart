@@ -71,6 +71,11 @@ class MarketingHtmlRenderer {
     tpl = _resolveAllIfBlocks(tpl, 'roi_agronomico', include: roi != null);
     tpl = _resolveAllIfBlocks(
       tpl,
+      'ganho_percent',
+      include: _ganhoPercentLabel(roi).isNotEmpty,
+    );
+    tpl = _resolveAllIfBlocks(
+      tpl,
       'roi_talhao',
       include: roi?.hasTalhao == true,
     );
@@ -112,6 +117,9 @@ class MarketingHtmlRenderer {
       'custo_produto_por_ha': _formatMoney(roi?.custoProdutoPorHa),
       'valor_grao': _formatMoney(roi?.valorGrao),
       'ganho_sc_ha': _formatSigned(roi?.ganhoScHa),
+      'ganho_percent': _ganhoPercentLabel(roi),
+      'ganho_class': (roi?.ganhoScHa ?? 0) < 0 ? 'negative' : 'positive',
+      'produto_rotulo': _produtoRotulo(data['produto_utilizado'] as String?),
       'receita_ganho': _formatMoney(roi?.receitaGanho),
       'roi_liquido_rs_ha': _formatMoney(roi?.roiLiquidoRsHa),
       'roi_em_sacas_ha': _formatNumber(roi?.roiEmSacasHa),
@@ -641,6 +649,21 @@ class MarketingHtmlRenderer {
   static String _formatNumber(double? value) {
     if (value == null) return '';
     return value.toStringAsFixed(1).replaceAll('.', ',');
+  }
+
+  /// Rótulo da coluna "com produto": usa o nome real do produto do case.
+  static String _produtoRotulo(String? produto) {
+    final nome = produto?.trim() ?? '';
+    return RelatorioHtmlRenderer.escapeHtml(
+      nome.isEmpty ? 'Com produto' : 'Com $nome',
+    );
+  }
+
+  /// Ganho relativo à testemunha, ex.: "+10,0%". Vazio sem base de cálculo.
+  static String _ganhoPercentLabel(_MarketingRoiData? roi) {
+    if (roi == null || roi.prodSemProduto <= 0) return '';
+    final pct = roi.ganhoScHa / roi.prodSemProduto * 100;
+    return '${_formatSigned(pct)}%';
   }
 
   static String _formatSigned(double? value) {

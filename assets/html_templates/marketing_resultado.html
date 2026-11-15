@@ -24,7 +24,7 @@
     <!-- {{/if}} -->
     <div class="sf-status-line">
       <!-- {{#if status}} -->
-      <span class="sf-status"><span class="sf-dot {{status_dot}}"></span>{{status_label}}</span>
+      <span class="sf-status sf-pill sf-pill-{{status_dot}}"><span class="sf-dot {{status_dot}}"></span>{{status_label}}</span>
       <!-- {{/if}} -->
       <!-- {{#if visibilidade}} -->
       <span class="sf-status">{{visibilidade_label}}</span>
@@ -37,32 +37,36 @@
     <!-- {{#if resultado_numeros}} -->
     <section class="sf-section">
       <h2 class="sf-section-title"><span class="sf-section-num"></span>Resultado</h2>
-      <div class="mk-figures">
-        <!-- {{#if roi_agronomico}} -->
+      <!-- {{#if roi_agronomico}} -->
+      <div class="mk-gain {{ganho_class}}">
+        <p class="mk-gain-label">Ganho de produtividade</p>
+        <p class="mk-gain-value">{{ganho_sc_ha}}<span class="mk-gain-unit">{{unidade_produtividade}}</span></p>
+        <!-- {{#if ganho_percent}} -->
+        <span class="mk-gain-chip">{{ganho_percent}} sobre a testemunha</span>
+        <!-- {{/if}} -->
+      </div>
+      <div class="mk-figures mk-figures-pair">
         <div class="mk-figure">
-          <p class="mk-figure-label">Testemunha</p>
+          <p class="mk-figure-label">Testemunha (sem produto)</p>
           <p class="mk-figure-value">{{prod_sem_produto}}</p>
           <span class="mk-figure-unit">{{unidade_produtividade}}</span>
         </div>
-        <div class="mk-figure">
-          <p class="mk-figure-label">Com produto</p>
+        <div class="mk-figure mk-figure-accent">
+          <p class="mk-figure-label">{{produto_rotulo}}</p>
           <p class="mk-figure-value">{{prod_com_produto}}</p>
           <span class="mk-figure-unit">{{unidade_produtividade}}</span>
         </div>
-        <div class="mk-figure mk-figure-accent">
-          <p class="mk-figure-label">Ganho</p>
-          <p class="mk-figure-value">{{ganho_sc_ha}}</p>
-          <span class="mk-figure-unit">{{unidade_produtividade}}</span>
-        </div>
-        <!-- {{/if}} -->
-        <!-- {{#if quantidade_produzida}} -->
+      </div>
+      <!-- {{/if}} -->
+      <!-- {{#if quantidade_produzida}} -->
+      <div class="mk-figures">
         <div class="mk-figure">
           <p class="mk-figure-label">Quantidade produzida</p>
           <p class="mk-figure-value">{{quantidade_produzida}}</p>
           <span class="mk-figure-unit">{{produtividade_unidade}}</span>
         </div>
-        <!-- {{/if}} -->
       </div>
+      <!-- {{/if}} -->
     </section>
     <!-- {{/if}} -->
 
@@ -94,7 +98,7 @@
     <!-- {{#if foto_principal_url}} -->
     <section class="sf-section">
       <h2 class="sf-section-title"><span class="sf-section-num"></span>Registro fotográfico</h2>
-      <figure class="sf-figure sf-figure-hero">
+      <figure class="sf-figure sf-figure-hero mk-hero">
         <input type="checkbox" id="sf-mk-foto-1" class="sf-lb-toggle" hidden>
         <label for="sf-mk-foto-1" class="photo-hero">
           <img data-sf-photo src="{{foto_principal_url}}" alt="Foto do resultado" loading="lazy">

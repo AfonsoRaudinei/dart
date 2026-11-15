@@ -502,8 +502,8 @@ void main() {
     expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
     expect(find.text('Produtor Antes Depois'), findsNothing);
 
-    // Status bar e tipo têm chip "Todas"; o de tipo é o último.
-    await tester.tap(find.text('Todas').last);
+    // Status e tipo têm chips distintos; este é o de tipo.
+    await tester.tap(find.text('Todos os tipos'));
     await tester.pumpAndSettle();
 
     expect(find.text('Produtor Antes Depois'), findsOneWidget);

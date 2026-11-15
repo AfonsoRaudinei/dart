@@ -19,6 +19,11 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
     return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
   }
 
+  String _comProdutoLabel(String produto) {
+    final nome = produto.trim();
+    return nome.isEmpty ? 'Com produto' : 'Com $nome';
+  }
+
   String _formatNumber(double value) {
     return value.toStringAsFixed(1).replaceAll('.', ',');
   }
@@ -36,29 +41,18 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
     final input = calc.input;
     final v = SoloForteSheetVisuals.of(context);
 
-    final heroBg = isIos
-        ? v.cardBackground
-        : const Color(0xFF123D2A);
-    final heroRadius =
-        v.cardRadius;
-    final heroLabelColor = isIos
-        ? v.subtitleColor
-        : const Color(0xCCFFFFFF);
-    final heroValueColor = isIos
-        ? v.iconStroke
-        : context.themeAccent;
-    final heroSubColor = isIos
-        ? v.titleColor
-        : const Color(0xCCFFFFFF);
+    final heroBg = isIos ? v.cardBackground : const Color(0xFF123D2A);
+    final heroRadius = v.cardRadius;
+    final heroLabelColor = isIos ? v.subtitleColor : const Color(0xCCFFFFFF);
+    final heroValueColor = isIos ? v.iconStroke : context.themeAccent;
+    final heroSubColor = isIos ? v.titleColor : const Color(0xCCFFFFFF);
 
     final detailBg = v.cardBackground;
     final detailBorder = v.cardBorder;
     final sectionLabelColor = v.subtitleColor;
     final lineLabelColor = v.subtitleColor;
     final lineValueColor = v.titleColor;
-    final gainColor = isIos
-        ? v.iconStroke
-        : context.themeAccent;
+    final gainColor = isIos ? v.iconStroke : context.themeAccent;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -113,9 +107,7 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: detailBg,
-            borderRadius: BorderRadius.circular(
-              v.cardRadius,
-            ),
+            borderRadius: BorderRadius.circular(v.cardRadius),
             border: Border.all(color: detailBorder),
           ),
           child: Column(
@@ -131,14 +123,14 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               _SheetRoiLine(
-                label: 'Testemunha',
+                label: 'Testemunha (sem produto)',
                 value:
                     '${_formatNumber(input.prodSemProduto)} ${input.unidadeProdutividade}',
                 labelColor: lineLabelColor,
                 valueColor: lineValueColor,
               ),
               _SheetRoiLine(
-                label: 'Com produto',
+                label: _comProdutoLabel(marketingCase.produtoUtilizado),
                 value:
                     '${_formatNumber(input.prodComProduto)} ${input.unidadeProdutividade}',
                 labelColor: lineLabelColor,
@@ -150,6 +142,7 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
                     '${_formatSigned(calc.ganhoScHa)} ${input.unidadeProdutividade}',
                 valueColor: gainColor,
                 labelColor: lineLabelColor,
+                emphasized: true,
               ),
               const SizedBox(height: 8),
               Text(
@@ -195,45 +188,54 @@ class _SheetRoiLine extends StatelessWidget {
   final String value;
   final Color? valueColor;
   final Color? labelColor;
+  final bool emphasized;
 
   const _SheetRoiLine({
     required this.label,
     required this.value,
     this.valueColor,
     this.labelColor,
+    this.emphasized = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: labelColor ?? v.inputHint,
-                fontSize: 13,
-              ),
+    final accent = valueColor ?? v.inputText;
+    final row = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(color: labelColor ?? v.inputHint, fontSize: 13),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              color: valueColor ?? v.inputText,
+              fontWeight: emphasized ? FontWeight.w800 : FontWeight.w700,
+              fontSize: emphasized ? 17 : 13,
             ),
           ),
-          const SizedBox(width: 12),
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                color: valueColor ?? v.inputText,
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-              ),
-            ),
-          ),
-        ],
+        ),
+      ],
+    );
+    if (!emphasized) {
+      return Padding(padding: const EdgeInsets.only(bottom: 8), child: row);
+    }
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
       ),
+      child: row,
     );
   }
 }
