@@ -457,7 +457,13 @@ ProducerLinkedFarm _mergeDrawingsIntoFarm(
   final fields = <ProducerLinkedField>[];
   final seen = <String>{};
 
+  final replacedByParts = <String>{
+    for (final drawing in drawings)
+      if (_sourceIdOfPart(drawing.id) case final source?) source,
+  };
+
   for (final field in farm.fields) {
+    if (replacedByParts.contains(field.id)) continue;
     seen.add(field.id);
     final drawing = byId[field.id];
     if (drawing == null || field.hasGeometry) {
@@ -503,6 +509,15 @@ ProducerLinkedFarm _mergeDrawingsIntoFarm(
     areaHa: farm.areaHa,
     fields: fields,
   );
+}
+
+String? _sourceIdOfPart(String drawingId) {
+  const marker = '__parte_';
+  final index = drawingId.lastIndexOf(marker);
+  if (index <= 0) return null;
+  final suffix = drawingId.substring(index + marker.length);
+  if (int.tryParse(suffix) == null) return null;
+  return drawingId.substring(0, index);
 }
 
 String _normalizeFarmLabel(String value) =>
