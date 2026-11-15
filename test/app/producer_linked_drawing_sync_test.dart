@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/app/producer_linked_drawing_sync_service.dart';
+import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/produtor/data/producer_link_models.dart';
 import 'package:soloforte_app/modules/produtor/data/producer_linked_drawings.dart';
 
@@ -73,5 +74,54 @@ void main() {
     ]);
 
     expect(kept.single.id, 'draw-1');
+  });
+
+  test('MultiPolygon compartilhado grava um desenho por parte', () {
+    final now = DateTime.utc(2026, 11, 15);
+    final feature = DrawingFeature(
+      id: 'draw-farm',
+      geometry: DrawingMultiPolygon(
+        coordinates: [
+          [
+            [
+              [-48.0, -10.0],
+              [-47.9, -10.0],
+              [-47.9, -9.9],
+              [-48.0, -10.0],
+            ],
+          ],
+          [
+            [
+              [-47.8, -10.0],
+              [-47.7, -10.0],
+              [-47.7, -9.9],
+              [-47.8, -10.0],
+            ],
+          ],
+        ],
+      ),
+      properties: DrawingProperties(
+        nome: 'Talhão Novo',
+        tipo: DrawingType.talhao,
+        origem: DrawingOrigin.importacao_kml,
+        status: DrawingStatus.aprovado,
+        autorId: 'consultor-1',
+        autorTipo: AuthorType.consultor,
+        areaHa: 750.72,
+        versao: 1,
+        ativo: true,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+
+    final parts = linkedMirrorSources(feature);
+
+    expect(parts.map((part) => part.id), [
+      'draw-farm__parte_1',
+      'draw-farm__parte_2',
+    ]);
+    expect(parts.every((part) => part.geometry is DrawingPolygon), isTrue);
+    expect(parts.every((part) => part.properties.areaHa > 0), isTrue);
   });
 }
