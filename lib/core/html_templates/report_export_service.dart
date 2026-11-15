@@ -80,7 +80,7 @@ class ReportExportService {
   }) {
     final data = payload.json;
     if (data == null) {
-      throw StateError('Dados JSON indisponiveis para este relatorio.');
+      throw StateError('Dados JSON indisponíveis para este relatório.');
     }
     return _writeAndShare(
       format: ReportExportFormat.json,
@@ -98,7 +98,7 @@ class ReportExportService {
   }) {
     final data = payload.csv;
     if (data == null || data.trim().isEmpty) {
-      throw StateError('Dados CSV indisponiveis para este relatorio.');
+      throw StateError('Dados CSV indisponíveis para este relatório.');
     }
     return _writeAndShare(
       format: ReportExportFormat.csv,

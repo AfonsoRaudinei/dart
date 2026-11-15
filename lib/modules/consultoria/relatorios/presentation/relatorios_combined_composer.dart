@@ -677,7 +677,7 @@ class _CombinedReportsComposerState
               children: [
                 TextButton.icon(
                   onPressed: _undoStack.isEmpty ? null : _undo,
-                  icon: const Icon(Icons.undo_rounded, size: 18),
+                  icon: const Icon(SFIcons.undo, size: 18),
                   label: const Text('Desfazer'),
                 ),
                 TextButton(

@@ -403,7 +403,7 @@ class _OccurrenceFiltersPanel extends StatelessWidget {
           isExpanded: true,
           value: value,
           icon: Icon(
-            Icons.keyboard_arrow_down_rounded,
+            SFIcons.chevronDown,
             color: context.premiumTextSecondary,
           ),
           borderRadius: BorderRadius.circular(PremiumTokens.borderRadiusSm),

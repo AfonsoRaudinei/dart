@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/design/sf_icons.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/modules/consultoria/relatorios/presentation/relatorio_detail_screen.dart';
 import 'package:soloforte_app/modules/consultoria/relatorios/presentation/relatorio_form_screen.dart';
@@ -629,7 +630,7 @@ void main() {
     );
     expect(find.text('Vazio'), findsNothing);
 
-    await tester.tap(find.byIcon(Icons.keyboard_arrow_down_rounded).first);
+    await tester.tap(find.byIcon(SFIcons.chevronDown).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Produtor A · 1').last);
     await tester.pumpAndSettle();
@@ -860,7 +861,7 @@ void main() {
     expect(find.text('Lista de Ocorrências'), findsNothing);
     expect(find.text('Exportar lista'), findsNothing);
 
-    await tester.tap(find.byIcon(Icons.keyboard_arrow_down_rounded).first);
+    await tester.tap(find.byIcon(SFIcons.chevronDown).first);
     await tester.pumpAndSettle();
     expect(find.text('Produtor A · 1'), findsOneWidget);
     expect(find.text('Produtor B · 1'), findsOneWidget);
@@ -913,10 +914,10 @@ void main() {
         find.text('Escolha o produtor.'),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
+      expect(find.byIcon(SFIcons.chevronDown), findsOneWidget);
       expect(find.text('Lista de Ocorrências'), findsNothing);
 
-      await tester.tap(find.byIcon(Icons.keyboard_arrow_down_rounded).first);
+      await tester.tap(find.byIcon(SFIcons.chevronDown).first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Produtor A · 1').last);
       await tester.pumpAndSettle();
