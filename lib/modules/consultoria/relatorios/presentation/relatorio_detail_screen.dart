@@ -305,12 +305,16 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
             const Divider(height: 24),
             _InfoRow(
               label: 'Talhões',
-              value: '${relatorio.talhoes.length} visitados',
+              value: relatorio.talhoes.length == 1
+                  ? '1 visitado'
+                  : '${relatorio.talhoes.length} visitados',
             ),
             const Divider(height: 24),
             _InfoRow(
               label: 'Ocorrências',
-              value: '${relatorio.ocorrencias.length} registradas',
+              value: relatorio.ocorrencias.length == 1
+                  ? '1 registrada'
+                  : '${relatorio.ocorrencias.length} registradas',
             ),
           ],
         ),

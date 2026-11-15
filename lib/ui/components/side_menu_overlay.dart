@@ -38,7 +38,7 @@ Color _menuSecondaryText(BuildContext context) =>
 
 const _appBuildVersion = String.fromEnvironment(
   'APP_VERSION',
-  defaultValue: '1.1.0+115',
+  defaultValue: '1.36.0+338',
 );
 
 class SideMenuOverlay extends ConsumerWidget {
