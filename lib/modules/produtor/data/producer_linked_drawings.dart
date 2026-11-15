@@ -35,7 +35,7 @@ class ProducerLinkedDrawingLoader {
         state: client.state,
         farms: attachDrawingsToLinkedFarms(
           farms: client.farms,
-          drawings: drawings,
+          drawings: drawingsKeepingEachPart(drawings),
         ),
         reports: client.reports,
         occurrences: client.occurrences,
@@ -70,6 +70,68 @@ class ProducerLinkedDrawingLoader {
         .select('id, geometry, properties, deleted_at')
         .eq('properties->>cliente_id', clientId);
     return drawingsFromRemoteRows(rows);
+  }
+
+  /// MultiPolygon vira um talhão por parte. Polígono único permanece.
+  @visibleForTesting
+  static List<ProducerLinkedDrawing> drawingsKeepingEachPart(
+    List<ProducerLinkedDrawing> drawings,
+  ) {
+    final kept = <ProducerLinkedDrawing>[];
+    for (final drawing in drawings) {
+      final parts = _polygonParts(drawing.geometryJson);
+      if (parts.length <= 1) {
+        kept.add(drawing);
+        continue;
+      }
+      for (var i = 0; i < parts.length; i++) {
+        final partName = _partName(drawing.name, i, parts.length);
+        kept.add(
+          ProducerLinkedDrawing(
+            id: '${drawing.id}__parte_${i + 1}',
+            name: partName,
+            areaHa: 0,
+            farmId: drawing.farmId,
+            groupName: drawing.groupName,
+            geometryJson: jsonEncode({
+              'type': 'Polygon',
+              'coordinates': parts[i],
+            }),
+          ),
+        );
+      }
+    }
+    return kept;
+  }
+
+  static List<List<dynamic>> _polygonParts(String? geometryJson) {
+    final raw = geometryJson?.trim() ?? '';
+    if (raw.isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return const [];
+      final type = decoded['type'];
+      final coordinates = decoded['coordinates'];
+      if (type == 'Polygon' && coordinates is List) {
+        return [coordinates];
+      }
+      if (type == 'MultiPolygon' && coordinates is List) {
+        return [
+          for (final part in coordinates)
+            if (part is List && part.isNotEmpty) part,
+        ];
+      }
+    } catch (_) {
+      return const [];
+    }
+    return const [];
+  }
+
+  static String _partName(String baseName, int index, int count) {
+    final trimmed = baseName.trim();
+    final base = trimmed.isEmpty ? 'Talhão' : trimmed;
+    if (count <= 1) return base;
+    return '$base ${index + 1}';
   }
 
   /// A cópia `vinc_` só entra quando o desenho do consultor não está no aparelho.
