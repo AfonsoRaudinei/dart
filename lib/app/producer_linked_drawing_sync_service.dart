@@ -6,6 +6,8 @@ import '../core/session/local_session_identity.dart';
 import '../core/utils/app_logger.dart';
 import '../modules/drawing/data/data_sources/drawing_local_store.dart';
 import '../modules/drawing/data/data_sources/drawing_remote_store.dart';
+import '../modules/drawing/domain/drawing_utils.dart';
+import '../modules/drawing/domain/models/drawing_models.dart';
 import '../modules/produtor/data/producer_link_repository.dart';
 
 /// O que fazer com um desenho do consultor no SQLite deste aparelho.
@@ -27,6 +29,29 @@ LinkedDrawingWrite decideLinkedDrawingWrite({
     return LinkedDrawingWrite.restoreOwner;
   }
   return LinkedDrawingWrite.leave;
+}
+
+/// Um MultiPolygon compartilhado vira um desenho por parte.
+/// Cada parte guarda o próprio id para o NDVI. Polígono único não muda.
+@visibleForTesting
+List<DrawingFeature> linkedMirrorSources(DrawingFeature feature) {
+  final parts = DrawingUtils.explodeToPolygons(feature.geometry);
+  if (parts.length <= 1) return [feature];
+  final names = DrawingUtils.buildSequentialFieldNames(
+    feature.properties.nome,
+    parts.length,
+  );
+  return [
+    for (var i = 0; i < parts.length; i++)
+      DrawingFeature(
+        id: '${feature.id}__parte_${i + 1}',
+        geometry: parts[i],
+        properties: feature.properties.copyWith(
+          nome: names[i],
+          areaHa: DrawingUtils.calculateGeometryArea(parts[i]),
+        ),
+      ),
+  ];
 }
 
 /// Baixa desenhos do consultor concedidos por vínculo (`share_fields`).
@@ -82,21 +107,27 @@ class ProducerLinkedDrawingSyncService {
           }
           final feature = _remoteStore.featureFromRemoteRow(row);
           final remoteOwner = (row['user_id'] as String?)?.trim() ?? '';
-          final action = decideLinkedDrawingWrite(
-            currentUserId: userId,
-            remoteOwnerId: remoteOwner,
-            localOwnerId: await _localStore.ownerOf(feature.id),
-          );
-          switch (action) {
-            case LinkedDrawingWrite.leave:
-              break;
-            case LinkedDrawingWrite.restoreOwner:
-              await _localStore.restoreDrawingOwner(
-                id: feature.id,
-                ownerUserId: remoteOwner,
-              );
-            case LinkedDrawingWrite.insertMirror:
-              await _localStore.insertLinkedMirror(feature);
+          final sources = linkedMirrorSources(feature);
+          if (sources.length > 1) {
+            await _localStore.deleteLinkedMirror(feature.id);
+          }
+          for (final source in sources) {
+            final action = decideLinkedDrawingWrite(
+              currentUserId: userId,
+              remoteOwnerId: remoteOwner,
+              localOwnerId: await _localStore.ownerOf(source.id),
+            );
+            switch (action) {
+              case LinkedDrawingWrite.leave:
+                break;
+              case LinkedDrawingWrite.restoreOwner:
+                await _localStore.restoreDrawingOwner(
+                  id: source.id,
+                  ownerUserId: remoteOwner,
+                );
+              case LinkedDrawingWrite.insertMirror:
+                await _localStore.insertLinkedMirror(source);
+            }
           }
           pulled++;
         }
