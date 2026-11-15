@@ -255,11 +255,50 @@ void main() {
       'draw-farm__parte_1',
       'draw-farm__parte_2',
     ]);
+    expect(parts.map((part) => part.name), ['Talhão 1', 'Talhão 2']);
+    expect(parts.every((part) => part.areaHa > 0), isTrue);
     expect(
       parts.every((part) => part.geometryJson!.contains('"Polygon"')),
       isTrue,
     );
     expect(parts.every((part) => part.farmId == 'farm-mv'), isTrue);
+  });
+
+  test('talhão fonte some quando o desenho vira partes', () {
+    final parts = ProducerLinkedDrawingLoader.drawingsKeepingEachPart(const [
+      ProducerLinkedDrawing(
+        id: 'draw-farm',
+        name: 'Talhão Novo',
+        areaHa: 750.72,
+        farmId: 'farm-mv',
+        geometryJson:
+            '{"type":"MultiPolygon","coordinates":[[[[-48, -10],[-47.9,-10],[-47.9,-9.9],[-48,-10]]],[[[-47.8,-10],[-47.7,-10],[-47.7,-9.9],[-47.8,-10]]]]}',
+      ),
+    ]);
+    final attached = attachDrawingsToLinkedFarms(
+      farms: const [
+        ProducerLinkedFarm(
+          id: 'farm-mv',
+          name: 'Morro Verde',
+          city: 'Paraíso',
+          state: 'TO',
+          areaHa: 750,
+          fields: [
+            ProducerLinkedField(
+              id: 'draw-farm',
+              name: 'Talhão Novo',
+              areaHa: 750.72,
+            ),
+          ],
+        ),
+      ],
+      drawings: parts,
+    );
+
+    expect(attached.single.fields.map((field) => field.id), [
+      'draw-farm__parte_1',
+      'draw-farm__parte_2',
+    ]);
   });
 
   test('linha remota de desenho vira talhão do vínculo', () {
