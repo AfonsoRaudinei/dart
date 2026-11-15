@@ -1,7 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../../core/utils/geodesic_utils.dart';
 
 import '../../../core/database/database_helper.dart';
 import '../../../core/session/local_session_identity.dart';
@@ -90,7 +93,7 @@ class ProducerLinkedDrawingLoader {
           ProducerLinkedDrawing(
             id: '${drawing.id}__parte_${i + 1}',
             name: partName,
-            areaHa: 0,
+            areaHa: _partAreaHa(parts[i]),
             farmId: drawing.farmId,
             groupName: drawing.groupName,
             geometryJson: jsonEncode({
@@ -131,7 +134,30 @@ class ProducerLinkedDrawingLoader {
     final trimmed = baseName.trim();
     final base = trimmed.isEmpty ? 'Talhão' : trimmed;
     if (count <= 1) return base;
-    return '$base ${index + 1}';
+    final lower = base.toLowerCase();
+    const generic = <String>{
+      'talhão novo',
+      'talhao novo',
+      'talhão',
+      'talhao',
+      'novo',
+      'nova',
+    };
+    final prefix = generic.contains(lower) ? 'Talhão' : base;
+    return '$prefix ${index + 1}';
+  }
+
+  static double _partAreaHa(List<dynamic> part) {
+    if (part.isEmpty || part.first is! List) return 0;
+    final points = <LatLng>[];
+    for (final coord in part.first as List) {
+      if (coord is! List || coord.length < 2) continue;
+      final lng = coord[0];
+      final lat = coord[1];
+      if (lng is! num || lat is! num) continue;
+      points.add(LatLng(lat.toDouble(), lng.toDouble()));
+    }
+    return GeodesicUtils.calculateAreaHectares(points);
   }
 
   /// A cópia `vinc_` só entra quando o desenho do consultor não está no aparelho.
