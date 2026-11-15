@@ -370,7 +370,7 @@ class MarketingCasesNotifier
       throw StateError('Republicacao apenas de case de outro autor.');
     }
     if (fonte.liberadoEm == null) {
-      throw StateError('Case ainda nao liberado para republicacao.');
+      throw StateError('Case ainda não liberado para republicação.');
     }
     if (!ProducerContentVisibility.ownsOrLinkedClient(
       currentUserId: currentUserId,
@@ -388,7 +388,7 @@ class MarketingCasesNotifier
       groupRootId: groupRootId,
       currentUserId: currentUserId,
     )) {
-      throw StateError('Ja existe republicacao sua deste case.');
+      throw StateError('Já existe republicação sua deste case.');
     }
 
     PlanoMarketing visibilidade = PlanoMarketing.bronze;

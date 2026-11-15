@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/design/sf_icons.dart';
 import '../../../../core/contracts/i_client_lookup_provider.dart';
 import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/html_templates/html_report_viewer.dart';
@@ -126,7 +127,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(
-                    Icons.error_outline,
+                    SFIcons.warningOutlined,
                     size: 48,
                     color: Color(0xFFEF4444),
                   ),
@@ -196,7 +197,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
             _StatusChip(status: relatorio.status),
             const SizedBox(width: 8),
             PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert, color: context.premiumTextSecondary),
+              icon: Icon(SFIcons.moreVert, color: context.premiumTextSecondary),
               onSelected: (value) async {
                 if (value == 'html') {
                   await _openHtml(context, ref, relatorio);
@@ -245,7 +246,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
                   value: 'html',
                   child: Row(
                     children: [
-                      Icon(Icons.preview_outlined, size: 18),
+                      Icon(SFIcons.preview, size: 18),
                       SizedBox(width: 8),
                       Text('Pré-visualizar HTML'),
                     ],
@@ -255,7 +256,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
                   value: 'export',
                   child: Row(
                     children: [
-                      Icon(Icons.ios_share_outlined, size: 18),
+                      Icon(SFIcons.share, size: 18),
                       SizedBox(width: 8),
                       Text('Exportar'),
                     ],

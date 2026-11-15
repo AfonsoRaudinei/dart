@@ -90,4 +90,12 @@ class SFIcons {
   static const IconData campaign = CupertinoIcons.speaker_2_fill;
   static const IconData agriculture = CupertinoIcons.selection_pin_in_out;
   static const IconData trendingUp = CupertinoIcons.chart_bar_fill;
+
+  // Relatórios / ações (padrão iOS, sem Material genérico)
+  static const IconData moreVert = CupertinoIcons.ellipsis_vertical;
+  static const IconData preview = CupertinoIcons.eye;
+  static const IconData share = CupertinoIcons.share;
+  static const IconData undo = CupertinoIcons.arrow_uturn_left;
+  static const IconData chevronDown = CupertinoIcons.chevron_down;
+  static const IconData soilSample = CupertinoIcons.square_stack_3d_down_right;
 }

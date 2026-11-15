@@ -58,7 +58,7 @@ class _RelatoriosProducerSelector extends ConsumerWidget {
             ),
           ),
           icon: Icon(
-            Icons.keyboard_arrow_down_rounded,
+            SFIcons.chevronDown,
             color: context.premiumTextSecondary,
           ),
           borderRadius: BorderRadius.circular(PremiumTokens.borderRadiusSm),
