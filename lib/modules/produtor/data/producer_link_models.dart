@@ -313,11 +313,18 @@ List<ProducerOwnFarm> producerFarmsForProducer({
   required List<ProducerLinkedClient> linkedClients,
 }) {
   final ownIds = own.farms.map((farm) => farm.id).toSet();
+  final sharedFieldsByFarm = <String, List<ProducerLinkedField>>{};
   final linked = <ProducerOwnFarm>[];
   for (final client in linkedClients) {
     if (!client.link.share.farms && !client.link.share.fields) continue;
     for (final farm in client.farms) {
-      if (farm.id.isEmpty || ownIds.contains(farm.id)) continue;
+      if (farm.id.isEmpty) continue;
+      if (ownIds.contains(farm.id)) {
+        sharedFieldsByFarm
+            .putIfAbsent(farm.id, () => <ProducerLinkedField>[])
+            .addAll(farm.fields);
+        continue;
+      }
       ownIds.add(farm.id);
       linked.add(
         ProducerOwnFarm(
@@ -328,22 +335,64 @@ List<ProducerOwnFarm> producerFarmsForProducer({
           areaHa: farm.areaHa,
           sharedByConsultant: true,
           sourceClientId: client.link.clientId,
-          fields: farm.fields
-              .map(
-                (field) => ProducerOwnField(
-                  id: field.id,
-                  name: field.name,
-                  areaHa: field.areaHa,
-                  hasGeometry: field.hasGeometry,
-                  geometryJson: field.geometryJson,
-                ),
-              )
-              .toList(growable: false),
+          fields: farm.fields.map(_ownFieldFromLinked).toList(growable: false),
         ),
       );
     }
   }
-  return [...own.farms, ...linked];
+  final ownWithSharedFields = own.farms
+      .map((farm) {
+        final shared = sharedFieldsByFarm[farm.id];
+        if (shared == null || shared.isEmpty) return farm;
+        return ProducerOwnFarm(
+          id: farm.id,
+          name: farm.name,
+          city: farm.city,
+          state: farm.state,
+          areaHa: farm.areaHa,
+          sharedByConsultant: farm.sharedByConsultant,
+          sourceClientId: farm.sourceClientId,
+          fields: _mergeOwnFieldsWithShared(farm.fields, shared),
+        );
+      })
+      .toList(growable: false);
+  return [...ownWithSharedFields, ...linked];
+}
+
+ProducerOwnField _ownFieldFromLinked(ProducerLinkedField field) {
+  return ProducerOwnField(
+    id: field.id,
+    name: field.name,
+    areaHa: field.areaHa,
+    hasGeometry: field.hasGeometry,
+    geometryJson: field.geometryJson,
+  );
+}
+
+/// Talhão da propriedade própria permanece. Cada talhão do vínculo entra
+/// com o próprio id e o próprio contorno. O mapa único não substitui a lista.
+List<ProducerOwnField> _mergeOwnFieldsWithShared(
+  List<ProducerOwnField> ownFields,
+  List<ProducerLinkedField> sharedFields,
+) {
+  final merged = [...ownFields];
+  final indexById = <String, int>{
+    for (var i = 0; i < merged.length; i++) merged[i].id: i,
+  };
+  for (final shared in sharedFields) {
+    final id = shared.id.trim();
+    if (id.isEmpty) continue;
+    final existingIndex = indexById[id];
+    if (existingIndex == null) {
+      indexById[id] = merged.length;
+      merged.add(_ownFieldFromLinked(shared));
+      continue;
+    }
+    final existing = merged[existingIndex];
+    if (existing.hasGeometry || !shared.hasGeometry) continue;
+    merged[existingIndex] = _ownFieldFromLinked(shared);
+  }
+  return merged;
 }
 
 /// Encaixa desenhos do vínculo nos talhões da fazenda.
@@ -408,7 +457,13 @@ ProducerLinkedFarm _mergeDrawingsIntoFarm(
   final fields = <ProducerLinkedField>[];
   final seen = <String>{};
 
+  final replacedByParts = <String>{
+    for (final drawing in drawings)
+      if (_sourceIdOfPart(drawing.id) case final source?) source,
+  };
+
   for (final field in farm.fields) {
+    if (replacedByParts.contains(field.id)) continue;
     seen.add(field.id);
     final drawing = byId[field.id];
     if (drawing == null || field.hasGeometry) {
@@ -454,6 +509,15 @@ ProducerLinkedFarm _mergeDrawingsIntoFarm(
     areaHa: farm.areaHa,
     fields: fields,
   );
+}
+
+String? _sourceIdOfPart(String drawingId) {
+  const marker = '__parte_';
+  final index = drawingId.lastIndexOf(marker);
+  if (index <= 0) return null;
+  final suffix = drawingId.substring(index + marker.length);
+  if (int.tryParse(suffix) == null) return null;
+  return drawingId.substring(0, index);
 }
 
 String _normalizeFarmLabel(String value) =>
