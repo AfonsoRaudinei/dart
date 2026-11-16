@@ -291,6 +291,43 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Ervas Daninhas nova sem prefill, pin no talhão field-3 com Plantio '
+    'mostra Dados do plantio e copia cultivar/data ao salvar',
+    (tester) async {
+      OccurrenceFormData? submitted;
+      final writer = _RecordingWriter();
+      await _pumpSheet(
+        tester,
+        plantios: [
+          _plantio(
+            'p-1',
+            createdAt: DateTime(2026, 10, 28),
+            safra: _safraAtual,
+          ),
+        ],
+        initialCategory: 'ervas_daninhas',
+        prefill: null,
+        writer: writer,
+        onConfirm: (data) async => submitted = data,
+      );
+
+      expect(find.text('Dados do plantio'), findsOneWidget);
+      expect(find.text('Cultivar & Plantio'), findsNothing);
+      expect(_inSummary('Neo 790'), findsOneWidget);
+      expect(_inSummary('27/10/2026'), findsOneWidget);
+
+      await tester.tap(find.text('Salvar'));
+      await tester.pump();
+
+      expect(submitted, isNotNull);
+      expect(submitted!.fieldId, 'field-3');
+      expect(submitted!.cultivar, 'Neo 790');
+      expect(submitted!.dataPlantio, '2026-10-27');
+      expect(writer.calls, isEmpty);
+    },
+  );
+
   testWidgets('sem Plantio nem talhão na safra mantém o bloco editável', (
     tester,
   ) async {
