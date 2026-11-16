@@ -29,7 +29,6 @@ extension _OccurrenceCreationSheetPlantioContext
         ? widget.talhaoPrefill?.fieldId
         : occurrence.fieldId;
     if (own != null && own.trim().isNotEmpty) return own.trim();
-    if (occurrence == null) return null;
     final location = occurrenceLocationProvider(_locationQuery);
     return (watch ? ref.watch(location) : ref.read(location))
         .valueOrNull
