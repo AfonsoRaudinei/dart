@@ -89,6 +89,8 @@ class OccurrenceFormData {
   final int? estandePlantas;
   final String? avaliacaoPlantio;
   final String? objetivoPlantio;
+  final String? dataValidacao;
+  final String? avaliacaoEmergencia;
   final String? dataFimPlantio; // "yyyy-MM-dd"
   final int? cicloDias;
   final String? cultura;
@@ -131,6 +133,8 @@ class OccurrenceFormData {
     this.estandePlantas,
     this.avaliacaoPlantio,
     this.objetivoPlantio,
+    this.dataValidacao,
+    this.avaliacaoEmergencia,
     this.dataFimPlantio,
     this.cicloDias,
     this.cultura,

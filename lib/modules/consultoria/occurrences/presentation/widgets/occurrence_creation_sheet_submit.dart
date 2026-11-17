@@ -107,6 +107,12 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
       _showSubmitError('O término do plantio não pode ser antes do início.');
       return;
     }
+    if (_isPlantio && !_canSavePlantioOccurrence()) {
+      _showSubmitError(
+        'Informe dados da execução ou da emergência para salvar o plantio.',
+      );
+      return;
+    }
 
     final fieldId = _plantioFieldId(watch: false);
     final plantio = _plantioValuesForSubmit();
@@ -162,6 +168,8 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
           objetivoPlantio: _objetivoPlantioCtrl.text.trim().isEmpty
               ? null
               : _objetivoPlantioCtrl.text.trim(),
+          dataValidacao: _isoDate(_dataValidacao),
+          avaliacaoEmergencia: sanitizeAvaliacaoEmergencia(_avaliacaoEmergencia),
           fieldId: fieldId,
           estadioFenologico: _estadio?.code,
           tipoOcorrencia: null,
