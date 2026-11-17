@@ -24,7 +24,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 54,
+      version: 55,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -226,6 +226,9 @@ class DatabaseHelper {
           break;
         case 54:
           await DatabaseMigrations.migrateToV54(db);
+          break;
+        case 55:
+          await DatabaseMigrations.migrateToV55(db);
           break;
       }
     }
