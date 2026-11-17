@@ -25,6 +25,9 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
     _dataEmergencia = draft.dataEmergenciaIso != null
         ? DateTime.tryParse(draft.dataEmergenciaIso!)
         : null;
+    _dataValidacao = draft.dataValidacaoIso != null
+        ? DateTime.tryParse(draft.dataValidacaoIso!)
+        : null;
     _dataFimPlantio = draft.dataFimPlantioIso != null
         ? DateTime.tryParse(draft.dataFimPlantioIso!)
         : null;
@@ -32,6 +35,7 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
     _sementesPorMetroCtrl.text = draft.sementesPorMetro;
     _estandePlantasCtrl.text = draft.estandePlantas;
     _avaliacaoPlantio = draft.avaliacaoPlantio;
+    _avaliacaoEmergencia = draft.avaliacaoEmergencia;
     _objetivoPlantioCtrl.text = draft.objetivoPlantio;
     _amostraCodigoCtrl.text = draft.amostraCodigo;
     _amostraColetorCtrl.text = draft.amostraColetor;
@@ -113,11 +117,13 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
       safra: _safraCtrl.text,
       dataPlantioIso: _isoDate(_dataPlantio),
       dataEmergenciaIso: _isoDate(_dataEmergencia),
+      dataValidacaoIso: _isoDate(_dataValidacao),
       dataFimPlantioIso: _isoDate(_dataFimPlantio),
       cicloDias: _cicloDiasCtrl.text,
       sementesPorMetro: _sementesPorMetroCtrl.text,
       estandePlantas: _estandePlantasCtrl.text,
       avaliacaoPlantio: _avaliacaoPlantio,
+      avaliacaoEmergencia: _avaliacaoEmergencia,
       objetivoPlantio: _objetivoPlantioCtrl.text,
       estadioCode: _estadio?.code,
       selectedCategoryValue: _selectedCategoryValue,

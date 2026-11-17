@@ -49,6 +49,7 @@ part 'occurrence_creation_sheet_ui_helpers.dart';
 part 'occurrence_creation_sheet_draft.dart';
 part 'occurrence_creation_sheet_submit.dart';
 part 'occurrence_creation_sheet_plantio_context.dart';
+part 'occurrence_creation_sheet_plantio_phases.dart';
 
 class OccurrenceCreationSheet extends ConsumerStatefulWidget {
   final double latitude;
@@ -97,10 +98,14 @@ class _OccurrenceCreationSheetState
   final _safraCtrl = TextEditingController();
   DateTime? _dataPlantio;
   DateTime? _dataEmergencia;
+  DateTime? _dataValidacao;
   DateTime? _dataFimPlantio;
   final _sementesPorMetroCtrl = TextEditingController();
   final _estandePlantasCtrl = TextEditingController();
   String? _avaliacaoPlantio;
+  String? _avaliacaoEmergencia;
+  bool _plantioExecucaoExpanded = true;
+  bool _plantioEmergenciaExpanded = false;
   final _objetivoPlantioCtrl = TextEditingController();
   final _amostraCodigoCtrl = TextEditingController();
   final _amostraColetorCtrl = TextEditingController();
@@ -226,6 +231,9 @@ class _OccurrenceCreationSheetState
     _dataEmergencia = occurrence.dataEmergencia != null
         ? DateTime.tryParse(occurrence.dataEmergencia!)
         : null;
+    _dataValidacao = occurrence.dataValidacao != null
+        ? DateTime.tryParse(occurrence.dataValidacao!)
+        : null;
     _dataFimPlantio = occurrence.dataFimPlantio != null
         ? DateTime.tryParse(occurrence.dataFimPlantio!)
         : null;
@@ -233,7 +241,13 @@ class _OccurrenceCreationSheetState
     _sementesPorMetroCtrl.text = occurrence.sementesPorMetro?.toString() ?? '';
     _estandePlantasCtrl.text = occurrence.estandePlantas?.toString() ?? '';
     _avaliacaoPlantio = occurrence.avaliacaoPlantio;
+    _avaliacaoEmergencia = occurrence.avaliacaoEmergencia;
     _objetivoPlantioCtrl.text = occurrence.objetivoPlantio ?? '';
+    _plantioExecucaoExpanded = occurrence.dataPlantio != null;
+    _plantioEmergenciaExpanded =
+        occurrence.dataEmergencia != null ||
+        occurrence.dataValidacao != null ||
+        occurrence.avaliacaoEmergencia != null;
     _amostraCodigoCtrl.text = occurrence.amostraCodigo ?? '';
     _amostraColetorCtrl.text = occurrence.amostraColetor ?? '';
     _amostraLaudoCtrl.text = occurrence.amostraLaudoTexto ?? '';

@@ -6,12 +6,14 @@ extension _OccurrenceCreationSheetLifecycle on _OccurrenceCreationSheetState {
     if (_culturaCtrl.text.trim().isNotEmpty) return true;
     if (_safraCtrl.text.trim().isNotEmpty) return true;
     if (_dataPlantio != null) return true;
+    if (_dataValidacao != null) return true;
     if (_dataEmergencia != null) return true;
     if (_dataFimPlantio != null) return true;
     if (_cicloDiasCtrl.text.trim().isNotEmpty) return true;
     if (_sementesPorMetroCtrl.text.trim().isNotEmpty) return true;
     if (_estandePlantasCtrl.text.trim().isNotEmpty) return true;
     if (_avaliacaoPlantio != null) return true;
+    if (_avaliacaoEmergencia != null) return true;
     if (_objetivoPlantioCtrl.text.trim().isNotEmpty) return true;
     if (_amostraCodigoCtrl.text.trim().isNotEmpty) return true;
     if (_amostraColetorCtrl.text.trim().isNotEmpty) return true;
@@ -175,137 +177,6 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
         laudoController: _amostraLaudoCtrl,
         tramite: _amostraTramite,
         onTramiteChanged: (step) => _patchForm(() => _amostraTramite = step),
-      ),
-    );
-  }
-
-  Widget _buildPlantioSection(Color color) {
-    final v = SoloForteSheetVisuals.of(context);
-    final isIos = occurrenceFormIsIos(context);
-    final muted = isIos ? v.subtitleColor : const Color(0xFF8E8E93);
-    final idleSurface = v.cardBackground;
-    final idleBorder = v.cardBorder;
-    final idleText = v.onSheetSecondary;
-    const avaliacoes = [('Boa', 'boa'), ('Ruim', 'ruim')];
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          OccurrenceDarkField(
-            controller: _cultivarCtrl,
-            label: 'Cultivar',
-            hint: 'ex.: Intacta 2 IPRO, M6410 IPRO…',
-          ),
-          ..._buildCulturaSafraFields(),
-          const SizedBox(height: 10),
-          OccurrenceDateField(
-            key: const Key('occurrence_plantio_inicio_field'),
-            label: 'Início do plantio',
-            value: _dataPlantio,
-            helperText: occurrenceDapLabel(_dataPlantio),
-            onChanged: _setDataPlantio,
-          ),
-          const SizedBox(height: 10),
-          OccurrenceDateField(
-            key: const Key('occurrence_plantio_termino_field'),
-            label: 'Término do plantio',
-            value: _dataFimPlantio,
-            firstDate: _dataPlantio,
-            onChanged: (d) => _patchForm(() => _dataFimPlantio = d),
-          ),
-          const SizedBox(height: 10),
-          OccurrenceDateField(
-            key: const Key('occurrence_plantio_emergencia_field'),
-            label: 'Data de emergência',
-            value: _dataEmergencia,
-            helperText: occurrenceSoyAgeLabel(_dataEmergencia),
-            onChanged: (d) => _patchForm(() => _dataEmergencia = d),
-          ),
-          const SizedBox(height: 10),
-          OccurrenceDarkField(
-            controller: _cicloDiasCtrl,
-            label: 'Ciclo (dias)',
-            hint: 'ex.: 115',
-          ),
-          if (occurrenceCicloLabel(
-                parseOccurrenceCicloDias(_cicloDiasCtrl.text),
-              )
-              case final cicloLabel?)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                cicloLabel,
-                style: TextStyle(color: muted, fontSize: 12),
-              ),
-            ),
-          const SizedBox(height: 10),
-          OccurrenceDarkField(
-            controller: _sementesPorMetroCtrl,
-            label: 'Sementes por metro',
-            hint: 'ex.: 14.5',
-          ),
-          const SizedBox(height: 10),
-          OccurrenceDarkField(
-            controller: _estandePlantasCtrl,
-            label: 'Estande de plantas',
-            hint: 'ex.: 12',
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 6),
-            child: Text(
-              'Avaliação do plantio',
-              style: TextStyle(color: muted, fontSize: 12),
-            ),
-          ),
-          Row(
-            children: List.generate(avaliacoes.length, (i) {
-              final label = avaliacoes[i].$1;
-              final value = avaliacoes[i].$2;
-              final sel = _avaliacaoPlantio == value;
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    _patchForm(() {
-                      _avaliacaoPlantio = sel ? null : value;
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    margin: EdgeInsets.only(right: i == 0 ? 6 : 0),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: sel ? color.withValues(alpha: .2) : idleSurface,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: sel ? color : idleBorder,
-                        width: sel ? 1.5 : 1,
-                      ),
-                    ),
-                    child: Text(
-                      label,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: sel ? color : idleText,
-                        fontWeight: sel ? FontWeight.bold : FontWeight.normal,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }),
-          ),
-          const SizedBox(height: 10),
-          OccurrenceDarkField(
-            controller: _objetivoPlantioCtrl,
-            label: 'Objetivo',
-            hint: 'Objetivo do plantio…',
-            maxLines: 2,
-          ),
-        ],
       ),
     );
   }
