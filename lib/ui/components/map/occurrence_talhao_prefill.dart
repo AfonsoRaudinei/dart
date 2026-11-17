@@ -107,6 +107,8 @@ Widget buildMapOccurrenceCreationSheet({
             avaliacaoPlantio: data.avaliacaoPlantio,
             objetivoPlantio: data.objetivoPlantio,
             dataFimPlantio: data.dataFimPlantio,
+            dataValidacao: data.dataValidacao,
+            avaliacaoEmergencia: data.avaliacaoEmergencia,
             cicloDias: data.cicloDias,
             cultura: data.cultura,
             safra: data.safra,
