@@ -8,11 +8,13 @@ class OccurrenceFormDraft {
   final String safra;
   final String? dataPlantioIso;
   final String? dataEmergenciaIso;
+  final String? dataValidacaoIso;
   final String? dataFimPlantioIso;
   final String cicloDias;
   final String sementesPorMetro;
   final String estandePlantas;
   final String? avaliacaoPlantio;
+  final String? avaliacaoEmergencia;
   final String objetivoPlantio;
   final String? estadioCode;
   final String? selectedCategoryValue;
@@ -41,11 +43,13 @@ class OccurrenceFormDraft {
     this.safra = '',
     this.dataPlantioIso,
     this.dataEmergenciaIso,
+    this.dataValidacaoIso,
     this.dataFimPlantioIso,
     this.cicloDias = '',
     this.sementesPorMetro = '',
     this.estandePlantas = '',
     this.avaliacaoPlantio,
+    this.avaliacaoEmergencia,
     this.objetivoPlantio = '',
     this.estadioCode,
     this.selectedCategoryValue,
@@ -77,6 +81,9 @@ class OccurrenceFormDraft {
     if (dataEmergenciaIso != null && dataEmergenciaIso!.isNotEmpty) {
       return false;
     }
+    if (dataValidacaoIso != null && dataValidacaoIso!.isNotEmpty) {
+      return false;
+    }
     if (dataFimPlantioIso != null && dataFimPlantioIso!.isNotEmpty) {
       return false;
     }
@@ -86,6 +93,9 @@ class OccurrenceFormDraft {
     if (sementesPorMetro.trim().isNotEmpty) return false;
     if (estandePlantas.trim().isNotEmpty) return false;
     if (avaliacaoPlantio != null && avaliacaoPlantio!.isNotEmpty) return false;
+    if (avaliacaoEmergencia != null && avaliacaoEmergencia!.isNotEmpty) {
+      return false;
+    }
     if (objetivoPlantio.trim().isNotEmpty) return false;
     if (estadioCode != null && estadioCode!.isNotEmpty) return false;
     if (selectedCategoryValue != null) return false;
@@ -116,11 +126,13 @@ class OccurrenceFormDraft {
     String? safra,
     String? dataPlantioIso,
     String? dataEmergenciaIso,
+    String? dataValidacaoIso,
     String? dataFimPlantioIso,
     String? cicloDias,
     String? sementesPorMetro,
     String? estandePlantas,
     String? avaliacaoPlantio,
+    String? avaliacaoEmergencia,
     String? objetivoPlantio,
     String? estadioCode,
     String? selectedCategoryValue,
@@ -151,11 +163,13 @@ class OccurrenceFormDraft {
       safra: safra ?? this.safra,
       dataPlantioIso: dataPlantioIso ?? this.dataPlantioIso,
       dataEmergenciaIso: dataEmergenciaIso ?? this.dataEmergenciaIso,
+      dataValidacaoIso: dataValidacaoIso ?? this.dataValidacaoIso,
       dataFimPlantioIso: dataFimPlantioIso ?? this.dataFimPlantioIso,
       cicloDias: cicloDias ?? this.cicloDias,
       sementesPorMetro: sementesPorMetro ?? this.sementesPorMetro,
       estandePlantas: estandePlantas ?? this.estandePlantas,
       avaliacaoPlantio: avaliacaoPlantio ?? this.avaliacaoPlantio,
+      avaliacaoEmergencia: avaliacaoEmergencia ?? this.avaliacaoEmergencia,
       objetivoPlantio: objetivoPlantio ?? this.objetivoPlantio,
       estadioCode: estadioCode ?? this.estadioCode,
       selectedCategoryValue:
