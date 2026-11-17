@@ -299,7 +299,7 @@ extension _OccurrenceCreationSheetPlantioPhases on _OccurrenceCreationSheetState
                   label: 'Sementes por metro',
                   hint: 'ex.: 14.5',
                 ),
-                if (_dataPlantio != null) ...[
+                if (_dataPlantio != null && !_plantioEmergenciaExpanded) ...[
                   const SizedBox(height: 10),
                   OccurrenceDarkField(
                     controller: _estandePlantasCtrl,
@@ -372,12 +372,14 @@ extension _OccurrenceCreationSheetPlantioPhases on _OccurrenceCreationSheetState
                   helperText: occurrenceSoyAgeLabel(_dataEmergencia),
                   onChanged: (d) => _patchForm(() => _dataEmergencia = d),
                 ),
-                const SizedBox(height: 10),
-                OccurrenceDarkField(
-                  controller: _estandePlantasCtrl,
-                  label: 'Estande observado',
-                  hint: 'ex.: 12',
-                ),
+                if (!_plantioExecucaoExpanded || _dataPlantio == null) ...[
+                  const SizedBox(height: 10),
+                  OccurrenceDarkField(
+                    controller: _estandePlantasCtrl,
+                    label: 'Estande observado',
+                    hint: 'ex.: 12',
+                  ),
+                ],
                 const SizedBox(height: 12),
                 _buildPlantioAvaliacaoRow(
                   color,
