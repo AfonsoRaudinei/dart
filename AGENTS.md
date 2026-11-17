@@ -17,7 +17,7 @@
 | Arquitetura | Map-First + Clean Architecture + Bounded Contexts |
 | Estado | Riverpod `@riverpod` / `AsyncNotifier` (ADR-008) |
 | Navegação | `context.go()` / `context.push()` — **nunca** `pop()` |
-| Persistência | SQLite offline-first — schema **v54** (`database_helper.dart`) |
+| Persistência | SQLite offline-first — schema **v55** (`database_helper.dart`) |
 | Mapa | `flutter_map` — nunca `google_maps_flutter` |
 | CI gate | `./tool/arch_check.sh` → Exit 0 |
 | Coverage mínimo CI | 36.46% |
@@ -337,6 +337,7 @@ lib/
 | 060 | Visita de campo no mapa entra na agenda (mesmo UUID) e gera relatório ao encerrar |
 | 061 | Calendário do produtor só após confirmação da visita pelo consultor |
 | 062 | Calendário do produtor: estádios da soja e plantio do talhão |
+| 063 | Plantio em duas fases (execução + validação / só emergência) |
 
 Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 
