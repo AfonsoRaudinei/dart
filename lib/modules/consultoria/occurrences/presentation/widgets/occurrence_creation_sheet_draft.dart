@@ -37,6 +37,11 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
     _avaliacaoPlantio = draft.avaliacaoPlantio;
     _avaliacaoEmergencia = draft.avaliacaoEmergencia;
     _objetivoPlantioCtrl.text = draft.objetivoPlantio;
+    _plantioExecucaoExpanded = _dataPlantio != null;
+    _plantioEmergenciaExpanded =
+        _dataEmergencia != null ||
+        _dataValidacao != null ||
+        _avaliacaoEmergencia != null;
     _amostraCodigoCtrl.text = draft.amostraCodigo;
     _amostraColetorCtrl.text = draft.amostraColetor;
     _amostraLaudoCtrl.text = draft.amostraLaudo;
