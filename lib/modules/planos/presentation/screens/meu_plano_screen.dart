@@ -202,7 +202,7 @@ class _PlanoAtivoContentState extends ConsumerState<_PlanoAtivoContent> {
     final vitrineLocal = vitrine;
 
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
       children: [
         const SizedBox(height: 16),
         Container(
