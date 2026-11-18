@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/services/sync_orchestrator.dart';
+import '../client_list_filter_logic.dart';
 import '../providers/clients_providers.dart';
+import '../widgets/client_list_filters_sheet.dart';
 import '../../../../../core/router/app_routes.dart';
+import '../../domain/enums/cultura_tipo.dart';
 import '../../../../../ui/theme/premium/design_tokens.dart';
 import 'package:soloforte_app/core/design/sf_icons.dart';
 import '../widgets/client_avatar_widget.dart';
@@ -20,11 +23,15 @@ class ClientListScreen extends ConsumerWidget {
     ref.listen(syncOrchestratorProvider, (_, orchestrator) {
       if (!orchestrator.isSyncing) {
         ref.invalidate(clientsListProvider);
+        ref.invalidate(clientAllCulturasProvider);
       }
     });
 
     final clientsAsync = ref.watch(filteredClientsProvider);
     final filter = ref.watch(clientFilterProvider);
+    final advanced = ref.watch(clientAdvancedFiltersProvider);
+    final headerExtra = advanced.hasAny ? 48.0 : 0.0;
+    final expandedHeight = 176.0 + headerExtra;
 
     return SoloforteKeyboardDismiss(
       child: Scaffold(
@@ -33,7 +40,7 @@ class ClientListScreen extends ConsumerWidget {
           slivers: [
             SliverAppBar(
               pinned: true,
-              expandedHeight: 176.0,
+              expandedHeight: expandedHeight,
               backgroundColor: context.premiumBackground.withValues(alpha: 0.8),
               surfaceTintColor: Colors.transparent,
               flexibleSpace: ClipRect(
@@ -53,7 +60,7 @@ class ClientListScreen extends ConsumerWidget {
                 const SizedBox(width: 8),
               ],
               bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(176),
+                preferredSize: Size.fromHeight(expandedHeight),
                 child: Column(
                   children: [
                     Padding(
@@ -108,53 +115,129 @@ class ClientListScreen extends ConsumerWidget {
                       child: ListView(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        children: ['Todos', 'Ativos', 'Inativos'].map((f) {
-                          final isSelected = filter == f;
-                          final accent = Theme.of(context).colorScheme.primary;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: GestureDetector(
-                              onTap: () =>
-                                  ref
-                                          .read(clientFilterProvider.notifier)
-                                          .state =
-                                      f,
-                              child: Container(
-                                alignment: Alignment.center,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? accent
-                                      : context.premiumSurface,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
+                        children: [
+                          ...['Todos', 'Ativos', 'Inativos'].map((f) {
+                            final isSelected = filter == f;
+                            final accent = Theme.of(context).colorScheme.primary;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: GestureDetector(
+                                onTap: () =>
+                                    ref
+                                            .read(clientFilterProvider.notifier)
+                                            .state =
+                                        f,
+                                child: Container(
+                                  alignment: Alignment.center,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  decoration: BoxDecoration(
                                     color: isSelected
                                         ? accent
-                                        : context.premiumHairline,
+                                        : context.premiumSurface,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? accent
+                                          : context.premiumHairline,
+                                    ),
                                   ),
-                                ),
-                                child: Text(
-                                  f,
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? Theme.of(
-                                            context,
-                                          ).colorScheme.onPrimary
-                                        : context.premiumTextPrimary,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w600
-                                        : FontWeight.normal,
-                                    fontSize: 14,
+                                  child: Text(
+                                    f,
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.onPrimary
+                                          : context.premiumTextPrimary,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                      fontSize: 14,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          );
-                        }).toList(),
+                            );
+                          }),
+                          _FiltrosChip(
+                            activeCount: advanced.activeChipCount,
+                            onTap: () => showClientListFiltersSheet(context, ref),
+                          ),
+                        ],
                       ),
                     ),
+                    if (advanced.hasAny) ...[
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 36,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          children: [
+                            ...advanced.cityKeys.map((key) {
+                              return _ActiveFilterChip(
+                                label: clientCityKeyLabel(key),
+                                onRemove: () {
+                                  final next = Set<String>.from(
+                                    advanced.cityKeys,
+                                  )..remove(key);
+                                  ref
+                                      .read(
+                                        clientAdvancedFiltersProvider.notifier,
+                                      )
+                                      .state = advanced.copyWith(
+                                    cityKeys: next,
+                                  );
+                                },
+                              );
+                            }),
+                            ...advanced.culturas.map((cultura) {
+                              return _ActiveFilterChip(
+                                label: cultura.label,
+                                onRemove: () {
+                                  final next = Set<CulturaTipo>.from(
+                                    advanced.culturas,
+                                  )..remove(cultura);
+                                  ref
+                                      .read(
+                                        clientAdvancedFiltersProvider.notifier,
+                                      )
+                                      .state = advanced.copyWith(
+                                    culturas: next,
+                                  );
+                                },
+                              );
+                            }),
+                            if (advanced.areaRange != null)
+                              _ActiveFilterChip(
+                                label: advanced.areaRange!.label,
+                                onRemove: () {
+                                  ref
+                                      .read(
+                                        clientAdvancedFiltersProvider.notifier,
+                                      )
+                                      .state = advanced.copyWith(
+                                    clearAreaRange: true,
+                                  );
+                                },
+                              ),
+                            _ActiveFilterChip(
+                              label: 'Limpar filtros',
+                              emphasize: true,
+                              onRemove: () {
+                                ref
+                                    .read(
+                                      clientAdvancedFiltersProvider.notifier,
+                                    )
+                                    .state = const ClientListAdvancedFilters();
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     Divider(height: 1, color: context.premiumHairline),
                   ],
@@ -330,6 +413,120 @@ class ClientListScreen extends ConsumerWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FiltrosChip extends StatelessWidget {
+  final int activeCount;
+  final VoidCallback onTap;
+
+  const _FiltrosChip({required this.activeCount, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+    final hasBadge = activeCount > 0;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: hasBadge ? accent.withValues(alpha: 0.12) : context.premiumSurface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: hasBadge ? accent : context.premiumHairline,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Filtros',
+              style: TextStyle(
+                color: hasBadge ? accent : context.premiumTextPrimary,
+                fontWeight: hasBadge ? FontWeight.w600 : FontWeight.normal,
+                fontSize: 14,
+              ),
+            ),
+            if (hasBadge) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: accent,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$activeCount',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActiveFilterChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onRemove;
+  final bool emphasize;
+
+  const _ActiveFilterChip({
+    required this.label,
+    required this.onRemove,
+    this.emphasize = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: onRemove,
+        child: Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: emphasize
+                ? accent.withValues(alpha: 0.08)
+                : context.premiumSurface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: emphasize ? accent : context.premiumHairline,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: emphasize ? accent : context.premiumTextPrimary,
+                  fontWeight: emphasize ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                SFIcons.close,
+                size: 14,
+                color: emphasize ? accent : context.premiumTextSecondary,
+              ),
+            ],
+          ),
         ),
       ),
     );
