@@ -233,6 +233,7 @@ class FarmLinkedFieldList extends ConsumerWidget {
     ref.invalidate(farmLinkedFieldsProvider(farmId));
     ref.invalidate(clientDrawingFieldsProvider(clientId));
     ref.invalidate(clientDrawingCropRowsProvider(clientId));
+    ref.invalidate(clientListCulturaIndexProvider);
     ref.invalidate(clientDetailProvider(clientId));
 
     if (!context.mounted) return;

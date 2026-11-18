@@ -378,6 +378,7 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
       ref.invalidate(clientDetailProvider(widget.clientId));
       ref.invalidate(clientDrawingFieldsProvider(widget.clientId));
       ref.invalidate(clientDrawingCropRowsProvider(widget.clientId));
+      ref.invalidate(clientListCulturaIndexProvider);
       if (widget.farmId != null && widget.farmId!.isNotEmpty) {
         ref.invalidate(farmLinkedFieldsProvider(widget.farmId!));
       }
