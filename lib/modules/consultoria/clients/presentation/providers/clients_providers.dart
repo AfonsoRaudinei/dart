@@ -37,18 +37,23 @@ final clientAdvancedFiltersProvider = StateProvider<ClientListAdvancedFilters>(
   (ref) => const ClientListAdvancedFilters(),
 );
 
-final clientAllCulturasProvider =
-    FutureProvider.autoDispose<Map<String, List<ClientCultura>>>((ref) async {
-      final repo = ref.watch(clientsRepositoryProvider);
-      return repo.getAllCulturasForUser();
-    });
+final clientListCulturaIndexProvider = FutureProvider.autoDispose<
+    Map<String, List<ClientListCulturaRow>>>((ref) async {
+  final repo = ref.watch(clientsRepositoryProvider);
+  final drawings = await repo.getAllDrawingCropRowsByClientId();
+  final dbCulturas = await repo.getAllCulturasForUser();
+  return buildClientListCulturaIndex(
+    drawingsByClientId: drawings,
+    culturasByClientId: dbCulturas,
+  );
+});
 
 // Filtered List
 final filteredClientsProvider = Provider.autoDispose<AsyncValue<List<Client>>>((
   ref,
 ) {
   final clientsAsync = ref.watch(clientsListProvider);
-  final culturasAsync = ref.watch(clientAllCulturasProvider);
+  final culturasAsync = ref.watch(clientListCulturaIndexProvider);
   final filter = ref.watch(clientFilterProvider);
   final search = ref.watch(clientSearchProvider);
   final advanced = ref.watch(clientAdvancedFiltersProvider);
@@ -56,8 +61,20 @@ final filteredClientsProvider = Provider.autoDispose<AsyncValue<List<Client>>>((
   if (clientsAsync.isLoading) {
     return clientsAsync;
   }
-  if (advanced.hasAny && culturasAsync.isLoading) {
-    return const AsyncValue.loading();
+  if (clientsAsync.hasError) {
+    return clientsAsync;
+  }
+
+  if (advancedFilterNeedsCulturaIndex(advanced)) {
+    if (culturasAsync.isLoading) {
+      return const AsyncValue.loading();
+    }
+    if (culturasAsync.hasError) {
+      return AsyncValue.error(
+        culturasAsync.error!,
+        culturasAsync.stackTrace ?? StackTrace.empty,
+      );
+    }
   }
 
   final culturasMap = culturasAsync.valueOrNull ?? {};
@@ -105,7 +122,7 @@ class ClientsController {
     final repo = ref.read(clientsRepositoryProvider);
     await repo.saveClient(client, culturas: culturas);
     ref.invalidate(clientsListProvider);
-    ref.invalidate(clientAllCulturasProvider);
+    ref.invalidate(clientListCulturaIndexProvider);
     ref.invalidate(clientDetailProvider(client.id));
     ref.invalidate(clientCulturasProvider(client.id));
     _triggerSyncInBackground();
@@ -118,7 +135,7 @@ class ClientsController {
     final repo = ref.read(clientsRepositoryProvider);
     await repo.updateClient(client, culturas: culturas);
     ref.invalidate(clientsListProvider);
-    ref.invalidate(clientAllCulturasProvider);
+    ref.invalidate(clientListCulturaIndexProvider);
     ref.invalidate(clientDetailProvider(client.id));
     ref.invalidate(clientCulturasProvider(client.id));
     _triggerSyncInBackground();
@@ -128,7 +145,7 @@ class ClientsController {
     final repo = ref.read(clientsRepositoryProvider);
     await repo.deleteClient(id);
     ref.invalidate(clientsListProvider);
-    ref.invalidate(clientAllCulturasProvider);
+    ref.invalidate(clientListCulturaIndexProvider);
     ref.invalidate(clientDetailProvider(id));
     ref.invalidate(clientCulturasProvider(id));
     _triggerSyncInBackground();
