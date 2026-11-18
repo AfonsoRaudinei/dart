@@ -5,6 +5,7 @@ import 'package:soloforte_app/core/services/sync_orchestrator.dart';
 import '../../data/clients_repository.dart';
 import '../../domain/client.dart';
 import '../../domain/client_cultura.dart';
+import '../client_list_filter_logic.dart';
 
 typedef ClientSyncTrigger = Future<void> Function();
 
@@ -32,23 +33,43 @@ final clientFilterProvider = StateProvider<String>(
 ); // Todos, Ativos, Inativos
 final clientSearchProvider = StateProvider<String>((ref) => '');
 
+final clientAdvancedFiltersProvider = StateProvider<ClientListAdvancedFilters>(
+  (ref) => const ClientListAdvancedFilters(),
+);
+
+final clientAllCulturasProvider =
+    FutureProvider.autoDispose<Map<String, List<ClientCultura>>>((ref) async {
+      final repo = ref.watch(clientsRepositoryProvider);
+      return repo.getAllCulturasForUser();
+    });
+
 // Filtered List
 final filteredClientsProvider = Provider.autoDispose<AsyncValue<List<Client>>>((
   ref,
 ) {
   final clientsAsync = ref.watch(clientsListProvider);
+  final culturasAsync = ref.watch(clientAllCulturasProvider);
   final filter = ref.watch(clientFilterProvider);
-  final search = ref.watch(clientSearchProvider).toLowerCase();
+  final search = ref.watch(clientSearchProvider);
+  final advanced = ref.watch(clientAdvancedFiltersProvider);
+
+  if (clientsAsync.isLoading) {
+    return clientsAsync;
+  }
+  if (advanced.hasAny && culturasAsync.isLoading) {
+    return const AsyncValue.loading();
+  }
+
+  final culturasMap = culturasAsync.valueOrNull ?? {};
 
   return clientsAsync.whenData((clients) {
-    return clients.where((c) {
-      final matchesSearch = c.name.toLowerCase().contains(search);
-      final matchesFilter =
-          filter == 'Todos' ||
-          (filter == 'Ativos' && c.active) ||
-          (filter == 'Inativos' && !c.active);
-      return matchesSearch && matchesFilter;
-    }).toList();
+    return applyClientListFilters(
+      clients: clients,
+      statusFilter: filter,
+      search: search,
+      advanced: advanced,
+      culturasByClientId: culturasMap,
+    );
   });
 });
 
@@ -84,6 +105,7 @@ class ClientsController {
     final repo = ref.read(clientsRepositoryProvider);
     await repo.saveClient(client, culturas: culturas);
     ref.invalidate(clientsListProvider);
+    ref.invalidate(clientAllCulturasProvider);
     ref.invalidate(clientDetailProvider(client.id));
     ref.invalidate(clientCulturasProvider(client.id));
     _triggerSyncInBackground();
@@ -96,6 +118,7 @@ class ClientsController {
     final repo = ref.read(clientsRepositoryProvider);
     await repo.updateClient(client, culturas: culturas);
     ref.invalidate(clientsListProvider);
+    ref.invalidate(clientAllCulturasProvider);
     ref.invalidate(clientDetailProvider(client.id));
     ref.invalidate(clientCulturasProvider(client.id));
     _triggerSyncInBackground();
@@ -105,6 +128,7 @@ class ClientsController {
     final repo = ref.read(clientsRepositoryProvider);
     await repo.deleteClient(id);
     ref.invalidate(clientsListProvider);
+    ref.invalidate(clientAllCulturasProvider);
     ref.invalidate(clientDetailProvider(id));
     ref.invalidate(clientCulturasProvider(id));
     _triggerSyncInBackground();
