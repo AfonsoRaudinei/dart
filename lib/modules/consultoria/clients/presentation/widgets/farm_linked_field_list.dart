@@ -9,6 +9,7 @@ import 'package:soloforte_app/core/domain/cultura_tipo.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/core/utils/area_display_format.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/farm_geometry_export.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_actions_sheet.dart';
@@ -163,6 +164,29 @@ class FarmLinkedFieldList extends ConsumerWidget {
         onPressed: () => context.go(_mapViewUri(field.id, showNdvi)),
       ),
     ];
+
+    if (canOfferFieldGeometryExport(
+      geojson: field.geojson,
+      vertexCount: field.vertices.length,
+    )) {
+      actions.add(
+        IconButton(
+          tooltip: 'Exportar KML',
+          icon: const Icon(Icons.ios_share_outlined, size: 20),
+          onPressed: () => exportFieldGeometries(
+            context: context,
+            documentName: field.name,
+            items: [
+              FarmGeometryExportItem(
+                name: field.name,
+                areaHa: field.areaHa,
+                geojson: field.geojson,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     if (field.isDrawing) {
       actions.add(
