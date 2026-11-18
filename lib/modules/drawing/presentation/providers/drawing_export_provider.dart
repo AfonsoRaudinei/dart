@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
+import 'package:soloforte_app/core/geo/kml_exporter.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../domain/services/geojson_exporter_service.dart';
 
@@ -36,7 +37,7 @@ class ExportError extends ExportState {
   const ExportError(this.message);
 }
 
-enum DrawingExportFormat { geojson, gpx, dxf, csv, txt, pdf }
+enum DrawingExportFormat { geojson, gpx, dxf, csv, txt, pdf, kml, kmz }
 
 class _ExportPayload {
   final String fileName;
@@ -182,6 +183,10 @@ class DrawingExportNotifier extends Notifier<ExportState> {
           fileName: _replaceExtension(_service.fileNameFor(feature), 'pdf'),
           mimeType: 'application/pdf',
         );
+      case DrawingExportFormat.kml:
+        return _kmlPayload([feature], kmz: false);
+      case DrawingExportFormat.kmz:
+        return _kmlPayload([feature], kmz: true);
     }
   }
 
@@ -226,7 +231,48 @@ class DrawingExportNotifier extends Notifier<ExportState> {
           fileName: _replaceExtension(_service.collectionFileName(), 'pdf'),
           mimeType: 'application/pdf',
         );
+      case DrawingExportFormat.kml:
+        return _kmlPayload(features, kmz: false, collection: true);
+      case DrawingExportFormat.kmz:
+        return _kmlPayload(features, kmz: true, collection: true);
     }
+  }
+
+  _ExportPayload _kmlPayload(
+    List<DrawingFeature> features, {
+    required bool kmz,
+    bool collection = false,
+  }) {
+    final placemarks = [
+      for (final feature in features)
+        KmlPlacemark(
+          name: feature.properties.nome,
+          areaHa: feature.properties.areaHa,
+          geometry: feature.geometry.toJson(),
+        ),
+    ];
+    final documentName = collection
+        ? 'SoloForte'
+        : features.first.properties.nome;
+    final sourceName = collection
+        ? _service.collectionFileName()
+        : _service.fileNameFor(features.first);
+    final extension = kmz ? 'kmz' : 'kml';
+    return _ExportPayload(
+      content: kmz
+          ? null
+          : buildKmlDocument(
+              documentName: documentName,
+              placemarks: placemarks,
+            ),
+      bytes: kmz
+          ? buildKmzBytes(documentName: documentName, placemarks: placemarks)
+          : null,
+      fileName: _replaceExtension(sourceName, extension),
+      mimeType: kmz
+          ? 'application/vnd.google-earth.kmz'
+          : 'application/vnd.google-earth.kml+xml',
+    );
   }
 
   String _replaceExtension(String fileName, String extension) {
