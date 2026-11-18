@@ -18,6 +18,7 @@ class ClientDrawingFieldSummary {
     required this.areaHa,
     required this.vertices,
     this.boundsVertices = const [],
+    this.geojson,
     this.farmId,
     this.crop,
     this.material,
@@ -36,6 +37,9 @@ class ClientDrawingFieldSummary {
 
   /// Enquadramento (todas as partes/anéis); [vertices] = contorno externo p/ desenho.
   final List<LatLng> boundsVertices;
+
+  /// GeoJSON Polygon/MultiPolygon gravado em `drawings.geojson`.
+  final String? geojson;
   final String? farmId;
   final String? crop;
   final String? material;
@@ -57,6 +61,7 @@ class FarmLinkedFieldSummary {
     required this.source,
     this.vertices = const [],
     this.boundsVertices = const [],
+    this.geojson,
     this.crop,
     this.material,
     this.harvest,
@@ -75,6 +80,9 @@ class FarmLinkedFieldSummary {
   final FarmLinkedFieldSource source;
   final List<LatLng> vertices;
   final List<LatLng> boundsVertices;
+
+  /// GeoJSON da geometria (desenho ou `Talhao.geometry`).
+  final String? geojson;
   final String? crop;
   final String? material;
   final String? harvest;
@@ -181,6 +189,7 @@ final clientDrawingFieldsProvider = FutureProvider.family
           areaHa: (row['area_ha'] as num?)?.toDouble() ?? 0,
           vertices: _verticesFromGeoJson(row['geojson'] as String?),
           boundsVertices: _boundsVerticesFromGeoJson(row['geojson'] as String?),
+          geojson: row['geojson'] as String?,
           farmId: row['fazenda_id'] as String?,
           crop: _nullableNonEmptyString(row['cultura']),
           material: _nullableNonEmptyString(row['material']),
@@ -237,6 +246,7 @@ final clientAllDrawingFieldsProvider = FutureProvider.family
           areaHa: (row['area_ha'] as num?)?.toDouble() ?? 0,
           vertices: _verticesFromGeoJson(row['geojson'] as String?),
           boundsVertices: _boundsVerticesFromGeoJson(row['geojson'] as String?),
+          geojson: row['geojson'] as String?,
           farmId: row['fazenda_id'] as String?,
           crop: _nullableNonEmptyString(row['cultura']),
           material: _nullableNonEmptyString(row['material']),
@@ -284,13 +294,15 @@ double totalFarmLinkedAreaHa(List<FarmLinkedFieldSummary> fields) {
 }
 
 FarmLinkedFieldSummary _linkedSummaryFromField(Talhao field) {
+  final geometry = field.geometry;
   return FarmLinkedFieldSummary(
     id: field.id,
     name: field.name,
     areaHa: field.areaHa,
     source: FarmLinkedFieldSource.field,
-    vertices: _verticesFromGeometry(field.geometry),
-    boundsVertices: _boundsVerticesFromGeometry(field.geometry),
+    vertices: _verticesFromGeometry(geometry),
+    boundsVertices: _boundsVerticesFromGeometry(geometry),
+    geojson: geometry == null || geometry.isEmpty ? null : jsonEncode(geometry),
     crop: field.crop.isEmpty ? null : field.crop,
     material: null,
     harvest: field.harvest.isEmpty ? null : field.harvest,
@@ -338,6 +350,7 @@ Future<List<FarmLinkedFieldSummary>> _loadDrawingFieldsByFarmId(
       source: FarmLinkedFieldSource.drawing,
       vertices: _verticesFromGeoJson(row['geojson'] as String?),
       boundsVertices: _boundsVerticesFromGeoJson(row['geojson'] as String?),
+      geojson: row['geojson'] as String?,
       crop: row['cultura'] as String?,
       material: row['material'] as String?,
       harvest: row['safra'] as String?,
