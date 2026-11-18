@@ -4,6 +4,7 @@ import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/core/utils/area_display_format.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/farm_geometry_export.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/farm_map_download.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
@@ -175,6 +176,10 @@ class FarmDetailScreen extends ConsumerWidget {
                         ),
                         FarmMapDownloadButton(
                           farmId: farmId,
+                          fields: linkedFields,
+                        ),
+                        FarmGeometryExportButton(
+                          documentName: farm.name,
                           fields: linkedFields,
                         ),
                         const SizedBox(height: 8),
