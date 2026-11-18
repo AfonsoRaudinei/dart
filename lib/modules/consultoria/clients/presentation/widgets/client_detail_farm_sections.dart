@@ -10,6 +10,7 @@ import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/agronomic_models.dart';
 import '../../domain/client.dart';
+import '../farm_geometry_export.dart';
 import '../farm_map_download.dart';
 import '../farm_delete_guard.dart';
 import '../providers/clients_providers.dart';
@@ -252,6 +253,10 @@ class _ClientFarmWithTalhoesSectionState
             ],
           ),
           FarmMapDownloadButton(farmId: farm.id, fields: linkedFields),
+          FarmGeometryExportButton(
+            documentName: farm.name,
+            fields: linkedFields,
+          ),
           const SizedBox(height: 8),
           fieldsAsync.when(
             data: (fields) => FarmLinkedFieldList(
@@ -362,6 +367,25 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
                       ),
                     ),
                   ),
+                  if (canOfferFieldGeometryExport(
+                    geojson: field.geojson,
+                    vertexCount: field.vertices.length,
+                  ))
+                    IconButton(
+                      tooltip: 'Exportar KML',
+                      icon: const Icon(Icons.ios_share_outlined, size: 20),
+                      onPressed: () => exportFieldGeometries(
+                        context: context,
+                        documentName: field.name,
+                        items: [
+                          FarmGeometryExportItem(
+                            name: field.name,
+                            areaHa: field.areaHa,
+                            geojson: field.geojson,
+                          ),
+                        ],
+                      ),
+                    ),
                   IconButton(
                     tooltip: 'Excluir talhão',
                     icon: const Icon(
