@@ -152,7 +152,7 @@ void main() {
         const ClientListCulturaRow(tipo: CulturaTipo.milho, areaHa: 200),
       ]);
 
-      final filters = ClientListAdvancedFilters(
+      final filters = const ClientListAdvancedFilters(
         culturas: {CulturaTipo.soja, CulturaTipo.milho},
         areaRange: ClientListAreaRange.de100a500,
       );
@@ -169,7 +169,7 @@ void main() {
 
     test('área sem cultura usa areaTotal do cliente', () {
       final client = _client(id: '1', areaTotal: 90);
-      final filters = ClientListAdvancedFilters(
+      final filters = const ClientListAdvancedFilters(
         areaRange: ClientListAreaRange.ate100,
       );
 
@@ -185,7 +185,7 @@ void main() {
 
     test('cliente sem dado numérico excluído com filtro de área', () {
       final client = _client(id: '1', areaTotal: null);
-      final filters = ClientListAdvancedFilters(
+      final filters = const ClientListAdvancedFilters(
         areaRange: ClientListAreaRange.ate100,
       );
 
