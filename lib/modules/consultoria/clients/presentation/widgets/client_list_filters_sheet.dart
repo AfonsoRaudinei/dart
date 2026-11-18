@@ -11,8 +11,9 @@ Future<void> showClientListFiltersSheet(
   BuildContext context,
   WidgetRef ref,
 ) async {
-  final clients = await ref.read(clientsListProvider.future);
-  final cityOptions = distinctClientCityKeys(clients);
+  final cityOptions = distinctClientCityKeys(
+    ref.read(clientsListProvider).valueOrNull ?? const [],
+  );
   final current = ref.read(clientAdvancedFiltersProvider);
 
   if (!context.mounted) return;
