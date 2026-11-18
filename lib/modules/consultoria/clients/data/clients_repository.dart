@@ -152,6 +152,24 @@ class ClientsRepository {
 
   // ── Culturas ──────────────────────────────────────────────────────
 
+  /// Todas as culturas do usuário, agrupadas por [ClientCultura.clientId].
+  Future<Map<String, List<ClientCultura>>> getAllCulturasForUser() async {
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty) return {};
+    final db = await _db;
+    final rows = await db.query(
+      'client_culturas',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
+    final map = <String, List<ClientCultura>>{};
+    for (final row in rows) {
+      final cultura = ClientCultura.fromMap(row);
+      map.putIfAbsent(cultura.clientId, () => []).add(cultura);
+    }
+    return map;
+  }
+
   Future<List<ClientCultura>> getCulturas(String clientId) async {
     final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return [];
