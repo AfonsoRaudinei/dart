@@ -40,7 +40,70 @@ ClientCultura _cultura({
   );
 }
 
+List<ClientListCulturaRow> _rows(List<ClientListCulturaRow> rows) => rows;
+
 void main() {
+  group('buildClientListCulturaIndex', () {
+    test('drawings prevalecem sobre client_culturas', () {
+      const clientId = 'c1';
+      final index = buildClientListCulturaIndex(
+        drawingsByClientId: {
+          clientId: [
+            (cultura: 'Soja', areaHa: 80.0),
+            (cultura: 'Milho', areaHa: 40.0),
+          ],
+        },
+        culturasByClientId: {
+          clientId: [
+            _cultura(clientId: clientId, tipo: CulturaTipo.soja, areaHa: 500),
+          ],
+        },
+      );
+
+      final rows = index[clientId]!;
+      expect(rows, hasLength(2));
+      expect(
+        rows.firstWhere((r) => r.tipo == CulturaTipo.soja).areaHa,
+        80.0,
+      );
+      expect(
+        rows.firstWhere((r) => r.tipo == CulturaTipo.milho).areaHa,
+        40.0,
+      );
+    });
+
+    test('sem drawings usa client_culturas', () {
+      const clientId = 'c2';
+      final index = buildClientListCulturaIndex(
+        drawingsByClientId: const {},
+        culturasByClientId: {
+          clientId: [
+            _cultura(clientId: clientId, tipo: CulturaTipo.trigo, areaHa: 12),
+          ],
+        },
+      );
+
+      expect(index[clientId]!.single.tipo, CulturaTipo.trigo);
+      expect(index[clientId]!.single.areaHa, 12);
+    });
+
+    test('matchStored agrega labels de drawing', () {
+      const clientId = 'c3';
+      final index = buildClientListCulturaIndex(
+        drawingsByClientId: {
+          clientId: [
+            (cultura: 'soja', areaHa: 30.0),
+            (cultura: 'Soja', areaHa: 20.0),
+          ],
+        },
+        culturasByClientId: const {},
+      );
+
+      expect(index[clientId]!.single.tipo, CulturaTipo.soja);
+      expect(index[clientId]!.single.areaHa, 50.0);
+    });
+  });
+
   group('areaHaMatchesRange', () {
     test('faixas de área', () {
       expect(areaHaMatchesRange(ClientListAreaRange.ate100, 80), isTrue);
@@ -84,10 +147,10 @@ void main() {
 
     test('cultura: exige match; área soma culturas selecionadas', () {
       final client = _client(id: '1', areaTotal: 9999);
-      final culturas = [
-        _cultura(clientId: '1', tipo: CulturaTipo.soja, areaHa: 60),
-        _cultura(clientId: '1', tipo: CulturaTipo.milho, areaHa: 200),
-      ];
+      final culturas = _rows([
+        const ClientListCulturaRow(tipo: CulturaTipo.soja, areaHa: 60),
+        const ClientListCulturaRow(tipo: CulturaTipo.milho, areaHa: 200),
+      ]);
 
       final filters = ClientListAdvancedFilters(
         culturas: {CulturaTipo.soja, CulturaTipo.milho},
@@ -160,6 +223,29 @@ void main() {
         culturasByClientId: const {},
       );
       expect(result, [inativo]);
+    });
+  });
+
+  group('advancedFilterNeedsCulturaIndex', () {
+    test('só com cultura selecionada', () {
+      expect(
+        advancedFilterNeedsCulturaIndex(
+          const ClientListAdvancedFilters(cityKeys: {'x|y'}),
+        ),
+        isFalse,
+      );
+      expect(
+        advancedFilterNeedsCulturaIndex(
+          const ClientListAdvancedFilters(areaRange: ClientListAreaRange.ate100),
+        ),
+        isFalse,
+      );
+      expect(
+        advancedFilterNeedsCulturaIndex(
+          const ClientListAdvancedFilters(culturas: {CulturaTipo.soja}),
+        ),
+        isTrue,
+      );
     });
   });
 }
