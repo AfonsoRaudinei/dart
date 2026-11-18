@@ -68,6 +68,66 @@ class ClientListAdvancedFilters {
   ClientListAdvancedFilters cleared() => const ClientListAdvancedFilters();
 }
 
+/// Linha unificada de cultura por cliente (talhões primeiro, senão client_culturas).
+class ClientListCulturaRow {
+  final CulturaTipo tipo;
+  final double areaHa;
+
+  const ClientListCulturaRow({required this.tipo, required this.areaHa});
+}
+
+/// Filtro de cultura/área por cultura exige índice unificado (async).
+bool advancedFilterNeedsCulturaIndex(ClientListAdvancedFilters advanced) =>
+    advanced.culturas.isNotEmpty;
+
+List<ClientListCulturaRow> clientListCulturasFromDrawingRows(
+  List<({String cultura, double areaHa})> rows,
+) {
+  final acc = <CulturaTipo, double>{};
+  for (final row in rows) {
+    final raw = row.cultura.trim();
+    if (raw.isEmpty) continue;
+    final tipo = CulturaTipo.matchStored(raw);
+    if (tipo == null || tipo == CulturaTipo.outro) continue;
+    acc[tipo] = (acc[tipo] ?? 0) + row.areaHa;
+  }
+  return acc.entries
+      .map((e) => ClientListCulturaRow(tipo: e.key, areaHa: e.value))
+      .toList(growable: false);
+}
+
+List<ClientListCulturaRow> clientListCulturasFromClientCulturas(
+  List<ClientCultura> list,
+) {
+  return list
+      .map((c) => ClientListCulturaRow(tipo: c.culturaTipo, areaHa: c.areaHa))
+      .where((r) => r.tipo != CulturaTipo.outro)
+      .toList(growable: false);
+}
+
+/// Talhões (drawings) primeiro; fallback para [client_culturas] como no detalhe.
+Map<String, List<ClientListCulturaRow>> buildClientListCulturaIndex({
+  required Map<String, List<({String cultura, double areaHa})>>
+  drawingsByClientId,
+  required Map<String, List<ClientCultura>> culturasByClientId,
+}) {
+  final allIds = {
+    ...drawingsByClientId.keys,
+    ...culturasByClientId.keys,
+  };
+  final result = <String, List<ClientListCulturaRow>>{};
+  for (final id in allIds) {
+    final drawingRows = drawingsByClientId[id] ?? const [];
+    if (drawingRows.isNotEmpty) {
+      result[id] = clientListCulturasFromDrawingRows(drawingRows);
+    } else {
+      final culturas = culturasByClientId[id] ?? const [];
+      result[id] = clientListCulturasFromClientCulturas(culturas);
+    }
+  }
+  return result;
+}
+
 bool areaHaMatchesRange(ClientListAreaRange range, double areaHa) {
   return switch (range) {
     ClientListAreaRange.ate100 => areaHa > 0 && areaHa <= 100,
@@ -80,11 +140,11 @@ bool areaHaMatchesRange(ClientListAreaRange range, double areaHa) {
 double? resolveAreaHaForFilter({
   required Client client,
   required ClientListAdvancedFilters advanced,
-  required List<ClientCultura> culturas,
+  required List<ClientListCulturaRow> culturas,
 }) {
   if (advanced.culturas.isNotEmpty) {
     final matching = culturas.where(
-      (c) => advanced.culturas.contains(c.culturaTipo),
+      (c) => advanced.culturas.contains(c.tipo),
     );
     if (matching.isEmpty) return null;
     return matching.fold<double>(0, (sum, c) => sum + c.areaHa);
@@ -95,7 +155,7 @@ double? resolveAreaHaForFilter({
 bool clientMatchesAdvancedFilters({
   required Client client,
   required ClientListAdvancedFilters advanced,
-  required List<ClientCultura> culturas,
+  required List<ClientListCulturaRow> culturas,
 }) {
   if (!advanced.hasAny) return true;
 
@@ -109,7 +169,7 @@ bool clientMatchesAdvancedFilters({
 
   if (advanced.culturas.isNotEmpty) {
     final hasMatch = culturas.any(
-      (c) => advanced.culturas.contains(c.culturaTipo),
+      (c) => advanced.culturas.contains(c.tipo),
     );
     if (!hasMatch) return false;
   }
@@ -133,7 +193,7 @@ List<Client> applyClientListFilters({
   required String statusFilter,
   required String search,
   required ClientListAdvancedFilters advanced,
-  required Map<String, List<ClientCultura>> culturasByClientId,
+  required Map<String, List<ClientListCulturaRow>> culturasByClientId,
 }) {
   final searchLower = search.toLowerCase();
 
