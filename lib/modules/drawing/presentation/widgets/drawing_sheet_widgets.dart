@@ -143,6 +143,18 @@ class _SheetHeader extends StatelessWidget {
 }
 
 enum _ExportOption {
+  kml(
+    DrawingExportFormat.kml,
+    'KML',
+    'Google Earth e GPS',
+    Icons.public_outlined,
+  ),
+  kmz(
+    DrawingExportFormat.kmz,
+    'KMZ',
+    'KML compactado',
+    Icons.folder_zip_outlined,
+  ),
   geojson(
     DrawingExportFormat.geojson,
     'GeoJSON',
