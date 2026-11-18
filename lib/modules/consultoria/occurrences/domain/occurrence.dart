@@ -114,6 +114,10 @@ String? sanitizeAvaliacaoPlantio(String? value) {
   return null;
 }
 
+/// Avaliação da emergência (ADR-063) — mesmo conjunto permitido.
+String? sanitizeAvaliacaoEmergencia(String? value) =>
+    sanitizeAvaliacaoPlantio(value);
+
 /// Valor persistido em [Occurrence.category] para pins de área visitada (A1).
 const kOccurrenceAreaVisitadaCategory = 'area_visitada';
 
@@ -187,6 +191,10 @@ class Occurrence {
   final String? avaliacaoPlantio; // "boa" | "ruim"
   final String? objetivoPlantio;
 
+  // ── Validação de emergência (Schema v55 — ADR-063) ─────────────────
+  final String? dataValidacao; // ISO "yyyy-MM-dd" — visita de validação
+  final String? avaliacaoEmergencia; // "boa" | "ruim"
+
   // ── Término do plantio e ciclo (Schema v51 — ADR-058) ───────────────
   final String? dataFimPlantio; // ISO "yyyy-MM-dd"
   final int? cicloDias;
@@ -255,6 +263,8 @@ class Occurrence {
     this.estandePlantas,
     this.avaliacaoPlantio,
     this.objetivoPlantio,
+    this.dataValidacao,
+    this.avaliacaoEmergencia,
     this.dataFimPlantio,
     this.cicloDias,
     this.cultura,
@@ -335,6 +345,10 @@ class Occurrence {
         map['avaliacao_plantio'] as String?,
       ),
       objetivoPlantio: map['objetivo_plantio'] as String?,
+      dataValidacao: map['data_validacao'] as String?,
+      avaliacaoEmergencia: sanitizeAvaliacaoEmergencia(
+        map['avaliacao_emergencia'] as String?,
+      ),
       dataFimPlantio: map['data_fim_plantio'] as String?,
       cicloDias: (map['ciclo_dias'] as num?)?.toInt(),
       cultura: map['cultura'] as String?,
@@ -410,6 +424,8 @@ class Occurrence {
       'estande_plantas': estandePlantas,
       'avaliacao_plantio': avaliacaoPlantio,
       'objetivo_plantio': objetivoPlantio,
+      'data_validacao': dataValidacao,
+      'avaliacao_emergencia': avaliacaoEmergencia,
       'data_fim_plantio': dataFimPlantio,
       'ciclo_dias': cicloDias,
       'cultura': cultura,
@@ -478,6 +494,10 @@ class Occurrence {
     bool clearAvaliacaoPlantio = false,
     String? objetivoPlantio,
     bool clearObjetivoPlantio = false,
+    String? dataValidacao,
+    bool clearDataValidacao = false,
+    String? avaliacaoEmergencia,
+    bool clearAvaliacaoEmergencia = false,
     String? dataFimPlantio,
     bool clearDataFimPlantio = false,
     int? cicloDias,
@@ -565,6 +585,12 @@ class Occurrence {
       objetivoPlantio: clearObjetivoPlantio
           ? null
           : (objetivoPlantio ?? this.objetivoPlantio),
+      dataValidacao: clearDataValidacao
+          ? null
+          : (dataValidacao ?? this.dataValidacao),
+      avaliacaoEmergencia: clearAvaliacaoEmergencia
+          ? null
+          : (avaliacaoEmergencia ?? this.avaliacaoEmergencia),
       dataFimPlantio: clearDataFimPlantio
           ? null
           : (dataFimPlantio ?? this.dataFimPlantio),

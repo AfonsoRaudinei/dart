@@ -453,10 +453,23 @@ class OccurrenceDetailSheet extends ConsumerWidget {
           label: 'Ciclo',
           value: cicloLabel,
         ),
+      if (live.dataValidacao?.isNotEmpty == true)
+        _DetailRowData(
+          icon: SFIcons.calendar,
+          label: 'Validação (visita)',
+          value: live.dataValidacao!,
+        ),
       if (live.dataEmergencia?.isNotEmpty == true)
         _DetailRowData(
           icon: SFIcons.calendar, label: 'Data de emergência',
           value: live.dataEmergencia!),
+      if (live.avaliacaoEmergencia == 'boa' ||
+          live.avaliacaoEmergencia == 'ruim')
+        _DetailRowData(
+          icon: SFIcons.agriculture,
+          label: 'Avaliação da emergência',
+          value: live.avaliacaoEmergencia == 'boa' ? 'Boa' : 'Ruim',
+        ),
       if (live.sementesPorMetro != null)
         _DetailRowData(
           icon: SFIcons.agriculture, label: 'Sementes por metro',

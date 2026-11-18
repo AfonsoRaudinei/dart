@@ -152,6 +152,49 @@ class ClientsRepository {
 
   // ── Culturas ──────────────────────────────────────────────────────
 
+  /// Culturas de talhões (`drawings`) por cliente — mesmos predicados do detalhe.
+  Future<Map<String, List<({String cultura, double areaHa})>>>
+  getAllDrawingCropRowsByClientId() async {
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty) return {};
+    final db = await _db;
+    final rows = await db.query(
+      'drawings',
+      columns: ['cliente_id', 'cultura', 'area_ha'],
+      where:
+          "user_id = ? AND deleted_at IS NULL AND ativo = 1 AND tipo != 'teste' AND cliente_id IS NOT NULL",
+      whereArgs: [userId],
+    );
+    final map = <String, List<({String cultura, double areaHa})>>{};
+    for (final row in rows) {
+      final clientId = (row['cliente_id'] as String?)?.trim() ?? '';
+      if (clientId.isEmpty) continue;
+      final cultura = (row['cultura'] as String?)?.trim() ?? '';
+      if (cultura.isEmpty) continue;
+      final areaHa = (row['area_ha'] as num?)?.toDouble() ?? 0;
+      map.putIfAbsent(clientId, () => []).add((cultura: cultura, areaHa: areaHa));
+    }
+    return map;
+  }
+
+  /// Todas as culturas do usuário, agrupadas por [ClientCultura.clientId].
+  Future<Map<String, List<ClientCultura>>> getAllCulturasForUser() async {
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty) return {};
+    final db = await _db;
+    final rows = await db.query(
+      'client_culturas',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
+    final map = <String, List<ClientCultura>>{};
+    for (final row in rows) {
+      final cultura = ClientCultura.fromMap(row);
+      map.putIfAbsent(cultura.clientId, () => []).add(cultura);
+    }
+    return map;
+  }
+
   Future<List<ClientCultura>> getCulturas(String clientId) async {
     final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return [];

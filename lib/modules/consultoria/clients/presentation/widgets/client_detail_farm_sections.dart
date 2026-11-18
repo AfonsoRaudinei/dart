@@ -443,6 +443,7 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
     ref.invalidate(clientDetailProvider(client.id));
     ref.invalidate(clientDrawingFieldsProvider(client.id));
     ref.invalidate(clientDrawingCropRowsProvider(client.id));
+    ref.invalidate(clientListCulturaIndexProvider);
     ref.invalidate(farmLinkedFieldsProvider(linkedFarm.id));
     if (previousFarmId != null && previousFarmId != linkedFarm.id) {
       ref.invalidate(farmLinkedFieldsProvider(previousFarmId));
@@ -489,6 +490,7 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
 
     ref.invalidate(clientDrawingFieldsProvider(client.id));
     ref.invalidate(clientDrawingCropRowsProvider(client.id));
+    ref.invalidate(clientListCulturaIndexProvider);
     if (field.farmId != null) {
       ref.invalidate(farmLinkedFieldsProvider(field.farmId!));
     }
