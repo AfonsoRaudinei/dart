@@ -1,3 +1,4 @@
+import '../../../../core/constants/app_version.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
@@ -43,7 +44,7 @@ class SettingsScreen extends ConsumerWidget {
           SliverAppBar(
             pinned: true,
             expandedHeight: 120.0,
-            backgroundColor: context.premiumBackground.withValues(alpha: 0.8),
+            backgroundColor: context.premiumBackground,
             surfaceTintColor: Colors.transparent,
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
@@ -119,20 +120,12 @@ class SettingsScreen extends ConsumerWidget {
               // Dados Offline
               _buildSectionHeader('DADOS OFFLINE'),
               _buildSection(context, [
-                _buildSwitchTile(
-                  context,
-                  title: 'Modo Offline',
-                  subtitle: 'Em breve — baixar mapas e dados para uso sem internet.',
-                  value: false,
-                  onChanged: null,
-                  icon: SFIcons.layers,
-                ),
                 // Storage Usage
                 _buildStorageUsageTile(context, ref),
                 _buildActionTile(
                   context,
                   title: 'Limpar cache',
-                  icon: SFIcons.settings,
+                  icon: SFIcons.syncAlt,
                   onTap: () async {
                     // Placeholder action
                   },
@@ -152,7 +145,7 @@ class SettingsScreen extends ConsumerWidget {
                 _buildTile(
                   context,
                   title: 'Meu Plano',
-                  icon: Icons.workspace_premium_rounded,
+                  icon: SFIcons.plan,
                   onTap: () => context.go(AppRoutes.meuPlano),
                 ),
                 _buildSwitchTile(
@@ -160,12 +153,12 @@ class SettingsScreen extends ConsumerWidget {
                   title: 'Notificações',
                   value: true,
                   onChanged: (val) {},
-                  icon: SFIcons.info,
+                  icon: SFIcons.bell,
                 ),
                 _buildTile(
                   context,
                   title: 'Relatórios & Exportação',
-                  icon: SFIcons.openInNew,
+                  icon: SFIcons.share,
                   onTap: () {
                     SoloforteKeyboardDismiss.dismiss();
                     Navigator.of(context).push(
@@ -178,13 +171,13 @@ class SettingsScreen extends ConsumerWidget {
                 _buildTile(
                   context,
                   title: 'Termos de Serviço',
-                  icon: SFIcons.info,
+                  icon: SFIcons.terms,
                   onTap: () => _openUrl(ExternalLinks.termsOfUse),
                 ),
                 _buildTile(
                   context,
                   title: 'Política de Privacidade',
-                  icon: SFIcons.info,
+                  icon: SFIcons.privacy,
                   onTap: () => _openUrl(ExternalLinks.privacyPolicy),
                 ),
               ]),
@@ -213,7 +206,7 @@ class SettingsScreen extends ConsumerWidget {
               const SizedBox(height: kFabSafeArea),
               Center(
                 child: Text(
-                  'SoloForte v1.1.0',
+                  'SoloForte v$kAppVersion',
                   style:
                       (Theme.of(context).textTheme.labelMedium ??
                               const TextStyle())
@@ -298,7 +291,7 @@ class SettingsScreen extends ConsumerWidget {
                   backgroundColor: Colors.grey.shade300,
                   backgroundImage: avatarImage,
                   child: avatarImage == null
-                      ? const Icon(Icons.person, size: 30, color: Colors.grey)
+                      ? const Icon(SFIcons.person, size: 30, color: Colors.grey)
                       : null,
                 ),
                 Positioned(
@@ -311,7 +304,7 @@ class SettingsScreen extends ConsumerWidget {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      Icons.edit,
+                      SFIcons.edit,
                       color: Theme.of(context).colorScheme.onPrimary,
                       size: 12,
                     ),
@@ -326,7 +319,7 @@ class SettingsScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Sua Foto',
+                  'Sua foto',
                   style:
                       (Theme.of(context).textTheme.bodyMedium ??
                               const TextStyle())
@@ -372,7 +365,7 @@ class SettingsScreen extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: Icon(Icons.camera_alt, color: iconColor),
+                leading: Icon(SFIcons.camera, color: iconColor),
                 title: Text('Câmera', style: TextStyle(color: titleColor)),
                 onTap: () {
                   Navigator.pop(context);
@@ -382,7 +375,7 @@ class SettingsScreen extends ConsumerWidget {
                 },
               ),
               ListTile(
-                leading: Icon(Icons.photo_library, color: iconColor),
+                leading: Icon(SFIcons.photoLibrary, color: iconColor),
                 title: Text('Galeria', style: TextStyle(color: titleColor)),
                 onTap: () {
                   Navigator.pop(context);
@@ -408,7 +401,7 @@ class SettingsScreen extends ConsumerWidget {
     final themes = [
       {'id': 'green', 'color': const Color(0xFF34C759), 'label': 'Verde'},
       {'id': 'blue', 'color': const Color(0xFF1B6EE0), 'label': 'Azul'},
-      {'id': 'black', 'color': const Color(0xFF1A1A1A), 'label': 'Black'},
+      {'id': 'black', 'color': const Color(0xFF1A1A1A), 'label': 'Preto'},
     ];
 
     return Padding(
@@ -444,7 +437,7 @@ class SettingsScreen extends ConsumerWidget {
                         : null,
                   ),
                   child: isSelected
-                      ? const Icon(Icons.check, color: Colors.white)
+                      ? const Icon(SFIcons.check, color: Colors.white)
                       : null,
                 ),
                 const SizedBox(height: 8),
@@ -518,7 +511,7 @@ class SettingsScreen extends ConsumerWidget {
                 context,
                 'Telefone',
                 profile.phone?.isNotEmpty == true
-                    ? profile.phone!
+                    ? _formatPhone(profile.phone!)
                     : 'Não informado',
               ),
               const SizedBox(height: 10),
@@ -526,7 +519,7 @@ class SettingsScreen extends ConsumerWidget {
                 context,
                 'Perfil',
                 profile.role?.isNotEmpty == true
-                    ? profile.role!
+                    ? _capitalize(profile.role!)
                     : 'Não informado',
               ),
               if (profile.creaNumber?.isNotEmpty == true) ...[
@@ -538,7 +531,7 @@ class SettingsScreen extends ConsumerWidget {
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: () => context.push(AppRoutes.settingsEditProfile),
-                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  icon: const Icon(SFIcons.edit, size: 16),
                   label: const Text('Editar perfil'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Theme.of(context).colorScheme.primary,
@@ -868,4 +861,19 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _capitalize(String s) =>
+    s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
+
+/// Formata telefone brasileiro: (63) 98437-6572. Outros formatos ficam como estão.
+String _formatPhone(String raw) {
+  final d = raw.replaceAll(RegExp(r'\D'), '');
+  if (d.length == 11) {
+    return '(${d.substring(0, 2)}) ${d.substring(2, 7)}-${d.substring(7)}';
+  }
+  if (d.length == 10) {
+    return '(${d.substring(0, 2)}) ${d.substring(2, 6)}-${d.substring(6)}';
+  }
+  return raw;
 }

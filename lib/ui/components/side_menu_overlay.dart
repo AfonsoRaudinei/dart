@@ -1,3 +1,4 @@
+import '../../core/constants/app_version.dart';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -36,10 +37,6 @@ Color _menuBorder(BuildContext context) {
 Color _menuSecondaryText(BuildContext context) =>
     context.premiumTextSecondary;
 
-const _appBuildVersion = String.fromEnvironment(
-  'APP_VERSION',
-  defaultValue: '1.36.0+338',
-);
 
 class SideMenuOverlay extends ConsumerWidget {
   const SideMenuOverlay({super.key});
@@ -300,7 +297,7 @@ class SideMenuOverlay extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               const Text(
-                'Versão $_appBuildVersion',
+                'Versão $kAppVersion',
                 style: TextStyle(fontSize: 9, color: Color(0xFF8E8E93)),
               ),
               const SizedBox(height: 3),

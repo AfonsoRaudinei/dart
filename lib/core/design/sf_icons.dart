@@ -98,4 +98,11 @@ class SFIcons {
   static const IconData undo = CupertinoIcons.arrow_uturn_left;
   static const IconData chevronDown = CupertinoIcons.chevron_down;
   static const IconData soilSample = CupertinoIcons.square_stack_3d_down_right;
+
+  // Configurações
+  static const IconData bell = CupertinoIcons.bell;
+  static const IconData terms = CupertinoIcons.doc_text;
+  static const IconData privacy = CupertinoIcons.hand_raised;
+  static const IconData plan = CupertinoIcons.rosette;
+  static const IconData camera = CupertinoIcons.camera;
 }
