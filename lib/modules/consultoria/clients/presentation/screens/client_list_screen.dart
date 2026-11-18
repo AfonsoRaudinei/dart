@@ -23,7 +23,7 @@ class ClientListScreen extends ConsumerWidget {
     ref.listen(syncOrchestratorProvider, (_, orchestrator) {
       if (!orchestrator.isSyncing) {
         ref.invalidate(clientsListProvider);
-        ref.invalidate(clientAllCulturasProvider);
+        ref.invalidate(clientListCulturaIndexProvider);
       }
     });
 
