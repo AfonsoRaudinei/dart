@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import '../../../../core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -128,7 +129,7 @@ class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         Text(
-                          '${fmt(safra.dataInicio)} -> ${fmt(safra.dataFim)}',
+                          '${fmt(safra.dataInicio)} → ${fmt(safra.dataFim)}',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[600],
@@ -322,7 +323,8 @@ class _ValorGraoInlineItemState extends ConsumerState<_ValorGraoInlineItem> {
 
   String _rotuloValor(double valor) {
     if (valor <= 0) return 'Não configurado';
-    return 'R\$ ${valor.toStringAsFixed(2)}';
+    return '${NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(valor)}'
+        ' por saca';
   }
 
   @override
@@ -499,7 +501,7 @@ class _MetaCategoriaItem extends ConsumerWidget {
     final metaQtd = meta?.quantidade;
     final metaLabel = metaQtd == null
         ? 'Sem meta definida'
-        : 'Meta: ${metaQtd % 1 == 0 ? metaQtd.toInt() : metaQtd.toStringAsFixed(1)} $unidade';
+        : 'Meta da safra: ${NumberFormat('#,##0.#', 'pt_BR').format(metaQtd)} $unidade';
     final refLabel = categoria.rotuloReferencia();
     final equivLabel = categoria.rotuloEquivalenteSacasHa(valorGrao);
 
@@ -534,7 +536,7 @@ class _MetaCategoriaItem extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(
-                      refLabel,
+                      'Valor de referência: $refLabel',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -545,7 +547,7 @@ class _MetaCategoriaItem extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(
-                      equivLabel,
+                      '$equivLabel (custo por hectare)',
                       style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                     ),
                   ),
@@ -566,7 +568,7 @@ class _MetaCategoriaItem extends ConsumerWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '${pct.toStringAsFixed(0)}%',
+                        '${pct.toStringAsFixed(0)}% da meta',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,

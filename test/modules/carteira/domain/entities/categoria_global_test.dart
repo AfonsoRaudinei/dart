@@ -86,7 +86,7 @@ void main() {
     test('rotuloReferencia exibe valor cadastrado com unidade', () {
       expect(
         build(valorReferencia: 2000, unidadeLabel: r'R$/ha').rotuloReferencia(),
-        r'2000 R$/ha',
+        r'2.000 R$/ha',
       );
       expect(
         build(
@@ -94,7 +94,7 @@ void main() {
           unidadeLabel: 'ton/ha',
           converteSacasHa: false,
         ).rotuloReferencia(),
-        '15.5 ton/ha',
+        '15,5 ton/ha',
       );
       expect(build(valorReferencia: null).rotuloReferencia(), isNull);
       expect(build(valorReferencia: 0).rotuloReferencia(), isNull);
@@ -107,7 +107,7 @@ void main() {
         converteSacasHa: true,
       );
 
-      expect(categoria.rotuloEquivalenteSacasHa(100), '≈ 10.000 sc/ha');
+      expect(categoria.rotuloEquivalenteSacasHa(100), '≈ 10 sc/ha');
       expect(
         build(
           unidadeCodigo: 'toneladaPorHa',

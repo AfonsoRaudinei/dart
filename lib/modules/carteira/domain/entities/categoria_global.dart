@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 import '../enums/unidade_categoria.dart';
 
 /// Categoria global de produtos da carteira do agrônomo.
@@ -117,16 +119,11 @@ class CategoriaGlobal {
   String? rotuloEquivalenteSacasHa(double valorGrao) {
     final sacas = custoSacasHa(valorGrao);
     if (sacas == null) return null;
-    return '≈ ${sacas.toStringAsFixed(3)} sc/ha';
+    return '≈ ${NumberFormat('#,##0.###', 'pt_BR').format(sacas)} sc/ha';
   }
 
-  static String _formatarValorReferencia(double valor) {
-    if (valor % 1 == 0) return valor.toInt().toString();
-    final formatted = valor.toStringAsFixed(2);
-    return formatted
-        .replaceAll(RegExp(r'0+$'), '')
-        .replaceAll(RegExp(r'\.$'), '');
-  }
+  static String _formatarValorReferencia(double valor) =>
+      NumberFormat('#,##0.##', 'pt_BR').format(valor);
 
   CategoriaGlobal copyWith({
     String? nome,

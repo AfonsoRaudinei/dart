@@ -169,8 +169,11 @@ class _OportunidadeItem extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          '${oportunidade.categoryName}  '
-                          'R\$ ${oportunidade.totalOpportunityValue.toStringAsFixed(0)}',
+                          oportunidade.monetaryPerHa
+                              ? '${oportunidade.categoryName}  '
+                                    'R\$ ${oportunidade.totalOpportunityValue.toStringAsFixed(0)}'
+                              : '${oportunidade.categoryName}  '
+                                    '${oportunidade.residualPercent.toStringAsFixed(0)}% em aberto',
                           style: Theme.of(context).textTheme.bodyMedium,
                           overflow: TextOverflow.ellipsis,
                         ),

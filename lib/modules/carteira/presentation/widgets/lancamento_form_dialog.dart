@@ -147,7 +147,7 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
       return;
     }
 
-  final percent = double.parse(
+    final percent = double.parse(
       _percentController.text.trim().replaceAll(',', '.'),
     );
 
@@ -439,7 +439,8 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
                           'Em aberto: ${_formatQuantidade(oportunidadeVolume)} $unidadeLabel',
                           style: const TextStyle(fontSize: 13),
                         ),
-                        if (valorRef > 0) ...[
+                        if (valorRef > 0 &&
+                            widget.categoria.converteSacasHa) ...[
                           Text(
                             'Fechado: ${closedValuePerHa.toStringAsFixed(2)} $unidadeLabel',
                             style: const TextStyle(fontSize: 13),

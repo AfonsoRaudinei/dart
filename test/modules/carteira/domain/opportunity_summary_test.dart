@@ -34,5 +34,22 @@ void main() {
       expect(fechado.residualPercent, 0);
       expect(fechado.totalOpportunityValue, 0);
     });
+
+    test('categoria fora de R\$/ha não vira reais multiplicando pela área', () {
+      const sacas = OpportunitySummary(
+        clientId: 'c1',
+        categoryId: 'cat-milho',
+        categoryName: 'Semente de milho',
+        categoryColor: 0xFF00FF00,
+        referenceValuePerHa: 600,
+        closedPercent: 0,
+        areaHa: 2558,
+        unit: 'Sacas 60k',
+        monetaryPerHa: false,
+      );
+
+      expect(sacas.totalOpportunityValue, 0);
+      expect(sacas.residualPercent, 100);
+    });
   });
 }
