@@ -8,21 +8,60 @@ void main() {
       expect(UnidadeCategoria.labelForCodigo('bigBag'), 'Big Bag');
     });
 
-    test('seeds cobrem os quatro tipos padrão', () {
-      expect(UnidadeCategoria.seeds, hasLength(4));
-      expect(
-        UnidadeCategoria.seeds.map((s) => s.codigo),
-        containsAll(['realPorHa', 'toneladaPorHa', 'bigBag', 'sacas60k']),
-      );
-    });
+    test(
+      'seeds cobrem os tipos padrão, incluindo sacas de 500 mil sementes',
+      () {
+        expect(UnidadeCategoria.seeds, hasLength(5));
+        expect(
+          UnidadeCategoria.seeds.map((s) => s.codigo),
+          containsAll([
+            'realPorHa',
+            'toneladaPorHa',
+            'bigBag',
+            'sacas60k',
+            'sacas500milSementes',
+          ]),
+        );
+        expect(
+          UnidadeCategoria.labelForCodigo('sacas500milSementes'),
+          'Sacas 500 mil sementes',
+        );
+        expect(
+          UnidadeCategoria.converteSacasHaForCodigo('sacas500milSementes'),
+          isFalse,
+        );
+      },
+    );
 
     test('seedEntities gera tipos sistema por usuário', () {
       final now = DateTime(2026, 3, 1);
       final tipos = UnidadeCategoria.seedEntities(userId: 'u1', now: now);
 
-      expect(tipos, hasLength(4));
+      expect(tipos, hasLength(5));
       expect(tipos.every((t) => t.sistema), isTrue);
       expect(tipos.first.userId, 'u1');
+    });
+
+    test('seedsFaltantes completa só o que a conta ainda não tem', () {
+      final tipos = UnidadeCategoria.seedsFaltantes(
+        userId: 'u1',
+        now: DateTime(2026, 3, 1),
+        codigosExistentes: {'realPorHa', 'toneladaPorHa', 'bigBag', 'sacas60k'},
+      );
+
+      expect(tipos.map((t) => t.codigo), ['sacas500milSementes']);
+      expect(tipos.single.id, 'seed-sacas500milSementes-u1');
+      expect(tipos.single.sistema, isTrue);
+      expect(
+        UnidadeCategoria.seedsFaltantes(
+          userId: 'u1',
+          now: DateTime(2026, 3, 1),
+          codigosExistentes: UnidadeCategoria.seeds
+              .map((s) => s.codigo)
+              .toSet(),
+        ),
+        isEmpty,
+      );
     });
   });
 }
