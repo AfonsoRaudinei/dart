@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/carteira_meta.dart';
 import '../../domain/entities/categoria_global.dart';
 import '../providers/carteira_providers.dart';
+import 'carteira_ajuda_card.dart';
+import 'carteira_segment_bar.dart';
 import 'meta_form_dialog.dart';
 import 'safra_form_dialog.dart';
 
@@ -60,6 +62,10 @@ class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16 + kFabSafeArea),
       children: [
+        const CarteiraAjudaCard(
+              segment: CarteiraSegment.metas,
+              margin: EdgeInsets.only(bottom: 12),
+            ),
         const _SectionLabel('Valor do grão'),
         const SizedBox(height: 8),
         valorGraoAsync.when(
