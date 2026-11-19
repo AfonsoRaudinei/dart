@@ -72,17 +72,20 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
   @override
   Future<void> ensureTiposProdutoIniciais(String userId) async {
     final db = await _dbHelper.database;
-    final existing = Sqflite.firstIntValue(
-      await db.rawQuery(
-        'SELECT COUNT(*) FROM carteira_tipos_produto WHERE user_id = ?',
-        [userId],
-      ),
+    final rows = await db.query(
+      'carteira_tipos_produto',
+      columns: ['codigo'],
+      where: 'user_id = ?',
+      whereArgs: [userId],
     );
-    if ((existing ?? 0) > 0) return;
+    final codigosExistentes = {for (final r in rows) r['codigo'] as String};
 
-    final now = DateTime.now();
-    final seeds = UnidadeCategoria.seedEntities(userId: userId, now: now);
-    for (final tipo in seeds) {
+    final faltantes = UnidadeCategoria.seedsFaltantes(
+      userId: userId,
+      now: DateTime.now(),
+      codigosExistentes: codigosExistentes,
+    );
+    for (final tipo in faltantes) {
       await db.insert(
         'carteira_tipos_produto',
         _withPendingSync(tipo.toMap()),
