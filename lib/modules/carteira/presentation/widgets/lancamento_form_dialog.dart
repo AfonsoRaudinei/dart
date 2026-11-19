@@ -389,6 +389,10 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
                 decoration: const InputDecoration(
                   labelText: 'Percentual fechado *',
                   hintText: 'Ex.: 25',
+                  helperText:
+                      'Quanto do potencial deste produtor nesta categoria '
+                      'você já vendeu (0 a 100). O resto vira oportunidade.',
+                  helperMaxLines: 3,
                   suffixText: '%',
                   border: OutlineInputBorder(),
                 ),
