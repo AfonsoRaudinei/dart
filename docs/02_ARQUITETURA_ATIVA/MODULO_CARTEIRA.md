@@ -90,6 +90,9 @@ flowchart TB
 | `toneladaPorHa` | ton/ha | Meta de fertilizante por área |
 | `bigBag` | Big Bag | Unidade absoluta (sementes soja) |
 | `sacas60k` | Sacas 60k | Unidade absoluta (sementes milho) |
+| `sacas500milSementes` | Sacas 500 mil sementes | Unidade absoluta (sementes sorgo) |
+
+Unidades de sistema novas chegam às contas existentes por `ensureTiposProdutoIniciais`, que insere só os códigos que faltam (id determinístico `seed-<codigo>-<userId>`).
 
 ### Tabelas SQLite (migrations V22–V29)
 
