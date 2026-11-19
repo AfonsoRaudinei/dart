@@ -16,6 +16,11 @@ class UnidadeCategoria {
     (codigo: 'toneladaPorHa', label: 'ton/ha', converteSacasHa: false),
     (codigo: 'bigBag', label: 'Big Bag', converteSacasHa: false),
     (codigo: 'sacas60k', label: 'Sacas 60k', converteSacasHa: false),
+    (
+      codigo: 'sacas500milSementes',
+      label: 'Sacas 500 mil sementes',
+      converteSacasHa: false,
+    ),
   ];
 
   static String labelForCodigo(String codigo) {
@@ -36,19 +41,36 @@ class UnidadeCategoria {
     required String userId,
     required DateTime now,
   }) {
+    return seedsFaltantes(
+      userId: userId,
+      now: now,
+      codigosExistentes: const <String>{},
+    );
+  }
+
+  /// Seeds de sistema que o usuário ainda não tem.
+  ///
+  /// Permite que contas antigas recebam unidades novas (ex.: sorgo em
+  /// sacas de 500 mil sementes) sem recriar nem alterar as já existentes.
+  static List<CarteiraTipoProduto> seedsFaltantes({
+    required String userId,
+    required DateTime now,
+    required Set<String> codigosExistentes,
+  }) {
     return [
       for (var i = 0; i < seeds.length; i++)
-        CarteiraTipoProduto(
-          id: 'seed-${seeds[i].codigo}-$userId',
-          userId: userId,
-          codigo: seeds[i].codigo,
-          label: seeds[i].label,
-          converteSacasHa: seeds[i].converteSacasHa,
-          sistema: true,
-          ordem: i,
-          createdAt: now,
-          updatedAt: now,
-        ),
+        if (!codigosExistentes.contains(seeds[i].codigo))
+          CarteiraTipoProduto(
+            id: 'seed-${seeds[i].codigo}-$userId',
+            userId: userId,
+            codigo: seeds[i].codigo,
+            label: seeds[i].label,
+            converteSacasHa: seeds[i].converteSacasHa,
+            sistema: true,
+            ordem: i,
+            createdAt: now,
+            updatedAt: now,
+          ),
     ];
   }
 }
