@@ -40,17 +40,47 @@ class OportunidadesDetalheScreen extends ConsumerWidget {
 
           final slices = aggregateOpportunitiesByCategory(oportunidades);
           final total = sumOpportunityValues(oportunidades);
+          final outrasUnidades = oportunidades
+              .where((o) => !o.monetaryPerHa)
+              .toList();
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
-              OportunidadesChartCard(
-                slices: slices,
-                title: 'Oportunidades por categoria',
-                totalValue: total,
-              ),
-              const SizedBox(height: 16),
-              OportunidadesChartLegend(slices: slices),
+              if (slices.isNotEmpty) ...[
+                OportunidadesChartCard(
+                  slices: slices,
+                  title: 'Oportunidades por categoria',
+                  totalValue: total,
+                ),
+                const SizedBox(height: 16),
+                OportunidadesChartLegend(slices: slices),
+              ],
+              if (outrasUnidades.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Em outras unidades (fora do total em R\$)',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                for (final o in outrasUnidades)
+                  ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      radius: 6,
+                      backgroundColor: Color(o.categoryColor),
+                    ),
+                    title: Text(o.categoryName),
+                    subtitle: Text(o.unit),
+                    trailing: Text(
+                      '${o.residualPercent.toStringAsFixed(0)}% em aberto',
+                    ),
+                  ),
+              ],
             ],
           );
         },
