@@ -168,6 +168,10 @@ class _MetaFormDialogState extends ConsumerState<MetaFormDialog> {
             autofocus: true,
             decoration: InputDecoration(
               labelText: 'Meta',
+              helperText:
+                  'Quanto quer vender desta categoria na safra ativa, '
+                  'na unidade dela.',
+              helperMaxLines: 2,
               suffixText: unidade,
               border: const OutlineInputBorder(),
             ),

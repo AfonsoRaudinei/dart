@@ -359,6 +359,10 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
                         ),
                         decoration: InputDecoration(
                           labelText: 'Custo / Referência (opcional)',
+                          helperText:
+                              'Em R\$/ha, entra no cálculo das oportunidades. '
+                              'Nas outras unidades é só referência.',
+                          helperMaxLines: 3,
                           labelStyle: TextStyle(color: labelColor),
                           suffixText: _unidadeLabel,
                           suffixStyle: TextStyle(color: labelColor),
