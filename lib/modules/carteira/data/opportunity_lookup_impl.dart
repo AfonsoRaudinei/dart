@@ -77,6 +77,7 @@ class OpportunityLookupImpl implements IOpportunityLookup {
             closedPercent: closedPercent,
             areaHa: areaHa,
             unit: categoria.unidadeLabel,
+            monetaryPerHa: categoria.converteSacasHa,
           ),
         );
       }

@@ -11,6 +11,7 @@ class OpportunitySummary {
     required this.closedPercent,
     required this.areaHa,
     required this.unit,
+    this.monetaryPerHa = true,
   });
 
   final String clientId;
@@ -32,6 +33,13 @@ class OpportunitySummary {
   /// Unidade: 'R$/ha' | 'ton/ha' | 'Big Bag' | 'Sacas 60k'
   final String unit;
 
+  /// `true` quando [referenceValuePerHa] é um valor em R$ por hectare.
+  ///
+  /// Categorias em outras unidades (sacas, big bag, ton/ha, sementes…) não
+  /// podem ser multiplicadas pela área para virar reais: o valor em R$ delas
+  /// é indeterminado, então [totalOpportunityValue] retorna 0.
+  final bool monetaryPerHa;
+
   // ── Getters calculados (não persistidos) ──────────────────────────────────
 
   double get closedValuePerHa => referenceValuePerHa * closedPercent / 100;
@@ -40,7 +48,9 @@ class OpportunitySummary {
 
   double get residualPercent => 100.0 - closedPercent;
 
-  double get totalOpportunityValue => residualValuePerHa * areaHa;
+  /// Oportunidade total em R$ — só existe para categorias em R$/ha.
+  double get totalOpportunityValue =>
+      monetaryPerHa ? residualValuePerHa * areaHa : 0.0;
 
   // ── copyWith ──────────────────────────────────────────────────────────────
 
@@ -53,6 +63,7 @@ class OpportunitySummary {
     double? closedPercent,
     double? areaHa,
     String? unit,
+    bool? monetaryPerHa,
   }) {
     return OpportunitySummary(
       clientId: clientId ?? this.clientId,
@@ -63,6 +74,7 @@ class OpportunitySummary {
       closedPercent: closedPercent ?? this.closedPercent,
       areaHa: areaHa ?? this.areaHa,
       unit: unit ?? this.unit,
+      monetaryPerHa: monetaryPerHa ?? this.monetaryPerHa,
     );
   }
 }
