@@ -11,6 +11,7 @@ import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_ajuda_card.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_metas_tab.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_module_scaffold.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_segment_bar.dart';
@@ -88,7 +89,10 @@ class _ClientesTab extends ConsumerWidget {
     final registros = registrosAsync.value ?? const [];
 
     if (clientes.isEmpty) {
-      return const Center(child: Text('Nenhum cliente ativo encontrado.'));
+      return const CarteiraEstadoVazio(
+        titulo: 'Nenhum produtor por aqui ainda',
+        mensagem: 'Cadastre um cliente e ele aparece na Carteira.',
+      );
     }
 
     final percentualPorClienteCategoria = <String, int>{
@@ -115,9 +119,12 @@ class _ClientesTab extends ConsumerWidget {
       },
       child: ListView.builder(
         padding: const EdgeInsets.only(top: 8, bottom: 24),
-        itemCount: clientes.length,
+        itemCount: clientes.length + 1,
         itemBuilder: (context, index) {
-          final cliente = clientes[index];
+          if (index == 0) {
+            return const CarteiraAjudaCard(segment: CarteiraSegment.clientes);
+          }
+          final cliente = clientes[index - 1];
           return ClienteCarteiraCard(
             clienteNome: cliente.name,
             mediaPercentual: mediaCliente(cliente.id),
@@ -224,7 +231,10 @@ class _CategoriasTab extends ConsumerWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Desativar categoria'),
-        content: Text('Deseja desativar "${categoria.nome}"?'),
+        content: Text(
+          'Deseja desativar "${categoria.nome}"? Ela some das telas; '
+          'os lançamentos já feitos ficam guardados.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -264,6 +274,7 @@ class _CategoriasTab extends ConsumerWidget {
             ),
           ),
         ),
+        const CarteiraAjudaCard(segment: CarteiraSegment.categorias),
         Expanded(
           child: categoriasAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -271,7 +282,12 @@ class _CategoriasTab extends ConsumerWidget {
                 const Center(child: Text('Erro ao carregar categorias.')),
             data: (categorias) {
               if (categorias.isEmpty) {
-                return const Center(child: Text('Nenhuma categoria ativa.'));
+                return const CarteiraEstadoVazio(
+                  titulo: 'Nenhuma categoria ativa',
+                  mensagem:
+                      'Toque em Nova categoria para criar a primeira. '
+                      'Ex.: Nutrição, Sementes de soja.',
+                );
               }
 
               return ListView.builder(
@@ -366,7 +382,12 @@ class _OportunidadesTab extends ConsumerWidget {
           const Center(child: Text('Erro ao carregar oportunidades.')),
       data: (overview) {
         if (overview.porCliente.isEmpty) {
-          return const Center(child: Text('Nenhuma oportunidade em aberto 🎯'));
+          return const CarteiraEstadoVazio(
+            titulo: 'Nenhuma oportunidade em aberto 🎯',
+            mensagem:
+                'Ou tudo está 100% fechado, ou ainda não há categorias '
+                'ativas. Registre lançamentos na aba Clientes.',
+          );
         }
 
         final slices = overview.slicesFor(chartMode);
@@ -377,6 +398,10 @@ class _OportunidadesTab extends ConsumerWidget {
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
+            const CarteiraAjudaCard(
+              segment: CarteiraSegment.oportunidades,
+              margin: EdgeInsets.only(bottom: 12),
+            ),
             OportunidadesChartModeToggle(
               value: chartMode,
               onChanged: (mode) {
