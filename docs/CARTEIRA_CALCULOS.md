@@ -26,6 +26,7 @@ O campo `valorReferencia` é **obrigatório** para todas as unidades:
 - `toneladaPorHa` → ton/ha
 - `bigBag` → Big Bag
 - `sacas60k` → Sacas 60k
+- `reaisTotal` → R$ total (meta em valor, sem conversão por hectare)
 
 Sem ele preenchido, nenhum cálculo de oportunidade ou progresso pode ser executado.
 
