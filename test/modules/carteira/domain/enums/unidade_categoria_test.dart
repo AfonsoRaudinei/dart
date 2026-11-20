@@ -11,7 +11,7 @@ void main() {
     test(
       'seeds cobrem os tipos padrão, incluindo sacas de 500 mil sementes',
       () {
-        expect(UnidadeCategoria.seeds, hasLength(5));
+        expect(UnidadeCategoria.seeds, hasLength(6));
         expect(
           UnidadeCategoria.seeds.map((s) => s.codigo),
           containsAll([
@@ -20,6 +20,7 @@ void main() {
             'bigBag',
             'sacas60k',
             'sacas500milSementes',
+            'reaisTotal',
           ]),
         );
         expect(
@@ -30,6 +31,11 @@ void main() {
           UnidadeCategoria.converteSacasHaForCodigo('sacas500milSementes'),
           isFalse,
         );
+        expect(UnidadeCategoria.labelForCodigo('reaisTotal'), r'R$ total');
+        expect(
+          UnidadeCategoria.converteSacasHaForCodigo('reaisTotal'),
+          isFalse,
+        );
       },
     );
 
@@ -37,7 +43,7 @@ void main() {
       final now = DateTime(2026, 3, 1);
       final tipos = UnidadeCategoria.seedEntities(userId: 'u1', now: now);
 
-      expect(tipos, hasLength(5));
+      expect(tipos, hasLength(6));
       expect(tipos.every((t) => t.sistema), isTrue);
       expect(tipos.first.userId, 'u1');
     });
@@ -49,9 +55,9 @@ void main() {
         codigosExistentes: {'realPorHa', 'toneladaPorHa', 'bigBag', 'sacas60k'},
       );
 
-      expect(tipos.map((t) => t.codigo), ['sacas500milSementes']);
-      expect(tipos.single.id, 'seed-sacas500milSementes-u1');
-      expect(tipos.single.sistema, isTrue);
+      expect(tipos.map((t) => t.codigo), ['sacas500milSementes', 'reaisTotal']);
+      expect(tipos.first.id, 'seed-sacas500milSementes-u1');
+      expect(tipos.every((t) => t.sistema), isTrue);
       expect(
         UnidadeCategoria.seedsFaltantes(
           userId: 'u1',
