@@ -219,39 +219,47 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
     // rotate: true — pin permanece vertical se a câmera rotacionar.
     // alignment topCenter — widget acima do ponto; ponteiro na base aponta
     // para a coordenada (flutter_map 7: topCenter = acima do ponto).
-    return MarkerLayer(
-      rotate: true,
-      markers: visibleCases
-          .map(
-            (mCase) => Marker(
-              key: ValueKey('mkt_${mCase.id}'),
-              point: LatLng(mCase.lat, mCase.lng),
-              width: MarketingCaseMarker.pinWidth(
-                mCase.visibilidade,
-                zoom: currentZoom,
-              ),
-              height:
-                  MarketingCaseMarker.pinHeight(
+    return ValueListenableBuilder<int>(
+      valueListenable: MarketingCaseMarker.aspectRevision,
+      builder: (_, __, ___) {
+        return MarkerLayer(
+          rotate: true,
+          markers: visibleCases
+              .map(
+                (mCase) => Marker(
+                  key: ValueKey('mkt_${mCase.id}'),
+                  point: LatLng(mCase.lat, mCase.lng),
+                  width: MarketingCaseMarker.pinWidth(
                     mCase.visibilidade,
                     zoom: currentZoom,
-                  ) +
-                  MarketingCaseMarker.pointerHeight,
-              alignment: Alignment.topCenter,
-              child: MarketingCaseMarker(
-                marketingCase: mCase,
-                zoom: currentZoom,
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  MarketingCaseSheet.show(
-                    context,
-                    mCase,
-                    allowPinCorrection: true,
-                  );
-                },
-              ),
-            ),
-          )
-          .toList(growable: false),
+                  ),
+                  height:
+                      MarketingCaseMarker.pinHeight(
+                        mCase.visibilidade,
+                        zoom: currentZoom,
+                        aspect: MarketingCaseMarker.cachedAspect(
+                          MarketingCaseMarker.primaryPhotoUrl(mCase),
+                        ),
+                      ) +
+                      MarketingCaseMarker.pointerHeight,
+                  alignment: Alignment.topCenter,
+                  child: MarketingCaseMarker(
+                    marketingCase: mCase,
+                    zoom: currentZoom,
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      MarketingCaseSheet.show(
+                        context,
+                        mCase,
+                        allowPinCorrection: true,
+                      );
+                    },
+                  ),
+                ),
+              )
+              .toList(growable: false),
+        );
+      },
     );
   }
 }
