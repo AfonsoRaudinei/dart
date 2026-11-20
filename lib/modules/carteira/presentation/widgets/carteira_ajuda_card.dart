@@ -31,8 +31,9 @@ class CarteiraAjudaTextos {
     CarteiraSegment.categorias => const [
       'Exemplos: Nutrição, Sementes de soja, Defensivos.',
       'Cada categoria tem uma unidade (R\$/ha, Big Bag, Sacas 60k, '
-          'Sacas 500 mil sementes…) e um valor de referência.',
-      'Só categorias em R\$/ha entram no total em reais das Oportunidades.',
+          'Sacas 500 mil sementes, R\$ total…) e um valor de referência.',
+      'Só categorias em R\$/ha entram no total em reais das Oportunidades. '
+          'R\$ total é para metas em valor fechado, como adjuvantes.',
       'Desativar esconde a categoria das telas. Os lançamentos já feitos '
           'ficam guardados.',
     ],
