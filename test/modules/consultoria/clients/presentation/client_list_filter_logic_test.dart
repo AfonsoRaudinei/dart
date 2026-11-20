@@ -224,6 +224,35 @@ void main() {
       );
       expect(result, [inativo]);
     });
+
+    test('retorna lista ordenada alfabeticamente por nome', () {
+      final zebra = _client(id: 'z', name: 'Zebra Fazenda');
+      final alfa = _client(id: 'a', name: 'Alfa Agro');
+      final beta = _client(id: 'b', name: 'beta campo');
+      final clients = [zebra, alfa, beta];
+
+      final result = applyClientListFilters(
+        clients: clients,
+        statusFilter: 'Todos',
+        search: '',
+        advanced: const ClientListAdvancedFilters(),
+        culturasByClientId: const {},
+      );
+
+      expect(result.map((c) => c.name), ['Alfa Agro', 'beta campo', 'Zebra Fazenda']);
+    });
+  });
+
+  group('compareClientDisplayName', () {
+    test('case-insensitive por nome; desempate por id', () {
+      final a = _client(id: 'aa', name: 'Maria');
+      final b = _client(id: 'bb', name: 'joão');
+      final c = _client(id: 'cc', name: ' João ');
+
+      expect(compareClientDisplayName(a, b), greaterThan(0));
+      expect(compareClientDisplayName(b, c), lessThan(0));
+      expect(compareClientDisplayName(a, c), greaterThan(0));
+    });
   });
 
   group('advancedFilterNeedsCulturaIndex', () {
