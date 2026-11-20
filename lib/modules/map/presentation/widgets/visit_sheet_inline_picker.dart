@@ -160,10 +160,23 @@ class VisitSheetProdutorPicker extends StatelessWidget {
   final ValueChanged<String> onQueryChanged;
   final ValueChanged<VisitClientSummary> onSelectClient;
 
+  List<VisitClientSummary> _displayClients(
+    List<VisitClientSummary> clients,
+    String query,
+    String? selectedId,
+  ) {
+    if (query.trim().isEmpty) {
+      if (selectedId == null) return const [];
+      return clients.where((c) => c.id == selectedId).toList();
+    }
+    return filterVisitClients(clients, query);
+  }
+
   @override
   Widget build(BuildContext context) {
     final clients = clientsAsync.valueOrNull ?? [];
-    final items = filterVisitClients(clients, clientQuery);
+    final queryEmpty = clientQuery.trim().isEmpty;
+    final displayItems = _displayClients(clients, clientQuery, selectedClientId);
     final isLoading = clientsAsync.isLoading;
     final v = visuals;
 
@@ -187,14 +200,20 @@ class VisitSheetProdutorPicker extends StatelessWidget {
           visitSheetMutedLine(v, 'Carregando...')
         else if (clients.isEmpty)
           visitSheetMutedLine(v, 'Nenhum produtor encontrado', padding: EdgeInsets.zero)
-        else if (items.isEmpty)
+        else if (queryEmpty && selectedClientId == null)
+          visitSheetMutedLine(
+            v,
+            'Digite para buscar o produtor',
+            padding: EdgeInsets.zero,
+          )
+        else if (!queryEmpty && displayItems.isEmpty)
           visitSheetMutedLine(
             v,
             'Nenhum produtor para esta busca',
             padding: EdgeInsets.zero,
           )
         else
-          for (final client in items)
+          for (final client in displayItems)
             VisitSheetNameTile(
               title: client.name,
               selected: client.id == selectedClientId,
