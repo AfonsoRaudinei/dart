@@ -334,7 +334,7 @@ void main() {
   });
 
   testWidgets(
-    'MapControlsOverlay exibe ícone de feature selecionada na fileira superior',
+    'MapControlsOverlay não exibe indicador órfão com feature selecionada',
     (tester) async {
       await _pumpMapControlsOverlay(
         tester,
@@ -343,7 +343,7 @@ void main() {
 
       expect(
         find.byKey(const Key('map_control_selected_feature_indicator')),
-        findsOneWidget,
+        findsNothing,
       );
     },
   );
