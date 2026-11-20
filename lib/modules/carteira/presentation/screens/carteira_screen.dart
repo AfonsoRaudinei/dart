@@ -70,7 +70,7 @@ class _ClientesTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final clientesAsync = ref.watch(carteiraClientesProvider);
     final categoriasAsync = ref.watch(categoriasGlobaisProvider(userId));
-    final registrosAsync = ref.watch(todosRegistrosProvider(userId));
+    final registrosAsync = ref.watch(closedPercentTodosProvider(userId));
 
     if (clientesAsync.isLoading ||
         categoriasAsync.isLoading ||
@@ -86,7 +86,8 @@ class _ClientesTab extends ConsumerWidget {
 
     final clientes = clientesAsync.value ?? const [];
     final categorias = categoriasAsync.value ?? const [];
-    final registros = registrosAsync.value ?? const [];
+    final percentualPorClienteCategoria =
+        registrosAsync.value ?? const <String, double>{};
 
     if (clientes.isEmpty) {
       return const CarteiraEstadoVazio(
@@ -95,15 +96,10 @@ class _ClientesTab extends ConsumerWidget {
       );
     }
 
-    final percentualPorClienteCategoria = <String, int>{
-      for (final r in registros)
-        '${r.clienteId}_${r.categoriaId}': r.percentualFechado,
-    };
-
     double mediaCliente(String clienteId) {
       if (categorias.isEmpty) return 0;
 
-      var soma = 0;
+      var soma = 0.0;
       for (final categoria in categorias) {
         soma +=
             percentualPorClienteCategoria['${clienteId}_${categoria.id}'] ?? 0;
@@ -115,7 +111,7 @@ class _ClientesTab extends ConsumerWidget {
       onRefresh: () async {
         ref.invalidate(carteiraClientesProvider);
         ref.invalidate(categoriasGlobaisProvider(userId));
-        ref.invalidate(todosRegistrosProvider(userId));
+        ref.invalidate(closedPercentTodosProvider(userId));
       },
       child: ListView.builder(
         padding: EdgeInsets.only(top: 8, bottom: context.fabSafeBottomPadding),
