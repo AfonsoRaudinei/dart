@@ -104,6 +104,9 @@ bool marketingPublishBlockedByPlan({
 }
 
 /// Grava `liberado_em` / `publico_ate` ao publicar com plano pago e gate ok.
+///
+/// Sem plano pago (seletor travado) o case segue `published` e a janela
+/// pública é apagada: cota 0 não libera o pin para outros usuários.
 MarketingCase marketingCaseComLiberacaoSeElegivel({
   required MarketingCase marketingCase,
   required UserPlan plano,
@@ -114,7 +117,10 @@ MarketingCase marketingCaseComLiberacaoSeElegivel({
     return marketingCase;
   }
   if (MarketingVisibilityPolicy.seletorTotalmenteTravado(plano)) {
-    return marketingCase;
+    return marketingCase.copyWith(
+      clearLiberadoEm: true,
+      clearPublicoAte: true,
+    );
   }
   if (!MarketingVisibilityPolicy.metaisSelecionaveis(plano)
       .contains(marketingCase.visibilidade)) {
@@ -252,7 +258,13 @@ class MarketingCasesNotifier
       }
       final cases = state.valueOrNull ?? [];
       final metal = newCase.visibilidade.name;
+      // Cota 0 continua bloqueando publicação para outros (`marketingPublishBlockedByPlan`).
+      // Criação privada (seletor travado) segue para saveCase, sem janela pública.
+      final criacaoPrivadaSemCotaPublica =
+          !skipPlanLimit &&
+          MarketingVisibilityPolicy.seletorTotalmenteTravado(plano);
       if (!skipPlanLimit &&
+          !criacaoPrivadaSemCotaPublica &&
           marketingPublishBlockedByPlan(
             plano: plano,
             cases: cases,
@@ -450,8 +462,9 @@ class MarketingCasesNotifier
   /// Reconcilia pins publicados offline (`pending_sync`) com o plano atual.
   ///
   /// Nunca faz hard-delete: demote via [saveAsDraft].
-  /// - Plano expirado/inativo: não altera status (pins ocultos só na leitura do mapa).
-  /// - Acima do limite: demote os pending_sync mais novos até caber; synced ficam.
+  /// - Sem plano pago ou plano expirado/inativo (seletor travado): não rebaixa.
+  ///   O case privado `pending_sync` permanece `published`.
+  /// - Acima da cota do metal pago: demote os pending_sync mais novos até caber; synced ficam.
   Future<void> reconcileOfflinePublishes(UserPlan plano) async {
     final currentCases = List<MarketingCase>.from(state.valueOrNull ?? const []);
     if (currentCases.isEmpty) return;
@@ -460,7 +473,7 @@ class MarketingCasesNotifier
         c.syncStatus == 'pending_sync' &&
         c.status == MarketingCaseStatus.published;
 
-    if (plano.ocultaPinsMarketingNoMapa) {
+    if (MarketingVisibilityPolicy.seletorTotalmenteTravado(plano)) {
       return;
     }
 
