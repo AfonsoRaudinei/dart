@@ -92,6 +92,51 @@ void main() {
       await tester.pumpAndSettle();
     });
 
+    testWidgets(
+      'plano free cria case publicado só no mapa do autor, sem rascunho',
+      (tester) async {
+        final repo = _LauncherFakeMarketingRepo(const []);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              marketingCaseRepositoryProvider.overrideWithValue(repo),
+              marketingCasesProvider.overrideWith((ref) {
+                final sync = ref.watch(marketingSyncServiceProvider);
+                return _StubMarketingCasesNotifier(repo, sync, ref, const []);
+              }),
+              planoAtivoProvider.overrideWith(
+                (ref) async => UserPlan.free(userId: 'test-user'),
+              ),
+            ],
+            child: const MaterialApp(home: _LauncherHarness()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('open_sheet')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('submit_case')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(repo.draftSaveCalls, 0);
+        expect(repo.saveCalls, 1);
+        expect(repo.cases, hasLength(1));
+        final created = repo.cases.single;
+        expect(created.id, 'mkt-new');
+        expect(created.status.toValue(), 'published');
+        expect(created.liberadoEm, isNull);
+        expect(
+          find.textContaining('Case criado. Ele fica só no seu mapa.'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Case publicado com sucesso'), findsNothing);
+        expect(find.textContaining('Seu plano não permite'), findsNothing);
+        expect(find.text('Case salvo com sucesso!'), findsNothing);
+      },
+    );
+
     testWidgets('abaixo do limite Publicar não bloqueia por marketingPublishBlockedByPlan', (
       tester,
     ) async {
@@ -251,6 +296,8 @@ class _LauncherFakeMarketingRepo implements IMarketingCaseRepository {
   _LauncherFakeMarketingRepo(List<MarketingCase> seed) : cases = List.of(seed);
 
   final List<MarketingCase> cases;
+  int saveCalls = 0;
+  int draftSaveCalls = 0;
 
   @override
   Future<List<MarketingCase>> fetchMarketingCases() async => cases;
@@ -266,12 +313,14 @@ class _LauncherFakeMarketingRepo implements IMarketingCaseRepository {
 
   @override
   Future<MarketingCase> saveCase(MarketingCase marketingCase) async {
+    saveCalls++;
     cases.add(marketingCase);
     return marketingCase;
   }
 
   @override
   Future<MarketingCase> saveAsDraft(MarketingCase marketingCase) async {
+    draftSaveCalls++;
     final draft = MarketingCase.fromJson({
       ...marketingCase.toJson(),
       'status': 'draft',
