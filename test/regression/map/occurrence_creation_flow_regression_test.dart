@@ -210,8 +210,13 @@ void main() {
         );
         expect(
           mapBottomSheetSource,
-          contains('void _onDrawingSaved(DrawingFeature? feature)'),
+          contains('void _onDrawingSaved('),
         );
+        expect(
+          mapBottomSheetSource,
+          contains('CampoTestPhotoDraft? campoTestPhoto'),
+        );
+        expect(mapBottomSheetSource, contains('handleMapDrawingSaved('));
         expect(
           mapBottomSheetSource,
           isNot(contains('drawingController.selectedFeature')),
