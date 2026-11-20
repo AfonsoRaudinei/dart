@@ -120,10 +120,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Negociação em aberto'), findsNothing);
 
-    await tester.tap(find.text('Perdido p/ conc.'));
+    await tester.tap(find.text('Perdido p/ concorrência'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Perdido p/ conc.'));
+    await tester.tap(find.text('Perdido p/ concorrência'));
     await tester.pumpAndSettle();
     expect(find.text('Negociação em aberto'), findsOneWidget);
   });
