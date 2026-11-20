@@ -165,6 +165,14 @@ final todosRegistrosProvider = FutureProvider.autoDispose
       return repo.getTodosRegistros(userId);
     });
 
+/// Percentual fechado por `<clienteId>_<categoriaId>` (soma de lançamentos,
+/// ADR-029). Mesma fonte do detalhe do produtor.
+final closedPercentTodosProvider = FutureProvider.autoDispose
+    .family<Map<String, double>, String>((ref, userId) async {
+      final repo = ref.watch(carteiraRepositoryProvider);
+      return repo.getClosedPercentTodos(userId);
+    });
+
 final carteiraClientesProvider =
     FutureProvider.autoDispose<List<ClientSummary>>((ref) async {
       return ref.watch(clientLookupProvider).listAtivos();
