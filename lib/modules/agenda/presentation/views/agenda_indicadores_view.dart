@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/core/extensions/context_extensions.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../domain/enums/event_status.dart';
 import '../providers/agenda_provider.dart';
@@ -39,7 +40,12 @@ class AgendaIndicadoresView extends ConsumerWidget {
         : '0';
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        16 + context.fabSafeBottomPadding,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
