@@ -50,7 +50,7 @@ class _SideMenuContent extends StatelessWidget {
                   _MenuItem(
                     icon: Icons.account_balance_wallet_outlined,
                     label: 'Carteira',
-                    subtitle: 'Acompanhamento de mercado',
+                    subtitle: 'Metas e oportunidades',
                     route: AppRoutes.carteira,
                   ),
                   _MenuItem(
