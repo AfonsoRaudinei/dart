@@ -27,7 +27,7 @@ Referência antiga do Mercado Pago, fora do funil do app: Bronze R$ 49,90 em 3 m
 
 ## Cota da conta
 
-Cada publicação gasta a cota do metal escolhido. Ouro não é ilimitado.
+Cada publicação para outros usuários gasta a cota do metal escolhido. Ouro não é ilimitado. O número 0 é a cota de publicação para outros usuários. Criar o case privado não gasta essa cota e não exige plano pago.
 
 | Plano da conta | Cases Bronze | Cases Prata | Cases Ouro |
 |---|---|---|---|
@@ -44,7 +44,7 @@ Admin continua ilimitado, como no código de hoje.
 
 O seletor **Visibilidade** escolhe o metal **daquela publicação**: Ouro, Prata ou Bronze. Não é um filtro “o plano da conta e os inferiores”.
 
-Sem plano pago o seletor fica visível e travado. Nenhum metal é escolhido. O case fica no mapa só do autor.
+Sem plano pago o usuário cria o case. O seletor continua visível e travado. Nenhum metal é escolhido. O pin fica só no mapa do autor. Outros usuários não veem.
 
 Com plano pago, o autor escolhe um metal que ainda tenha cota:
 
@@ -120,12 +120,13 @@ Fonte: `ndviRefinedEnabledForUserPlan`.
 
 ## O que o app faz hoje
 
-Parcial em relação à regra acima (atualizado 14/11/2026).
+Parcial em relação à regra acima (atualizado 19/11/2026).
 
 - `UserPlan.free` (`id = free`) aparece como “Sem plano pago” e, por dentro, está marcado como Bronze sem expiração. A tela mostra “5 cases” e “0/5 para Prata”.
 - Cota por metal na publicação (Bronze 5 / Prata 5+5 / Ouro 5+5+10 conforme plano pago; free e expirado = 0 em todos; admin ilimitado).
 - Seletor **Visibilidade** travado sem plano pago; com plano, só metais permitidos pela conta são tocáveis; caso novo inicia no primeiro metal permitido.
-- Publicar case não exige compra. O bloqueio aplica a cota do metal escolhido (`visibilidade`), não um teto único somando metais.
+- Criar o case privado não exige plano pago. Sem plano pago (e plano expirado/inativo, seletor travado) criar grava `status = published` sem `liberado_em` e sem `publico_ate`. O pin fica só no mapa do autor. Publicar um rascunho «Não gerado» para outros usuários continua bloqueado quando a cota do metal é 0.
+- Publicar para outros usuários aplica a cota do metal escolhido (`visibilidade`); cota 0 bloqueia essa publicação. Não há teto único somando metais. Cota paga e admin permanecem como na tabela.
 - **`liberado_em` nulo:** pin só do autor (`ownerUserId`); produtor vinculado e mapa anônimo não veem, mesmo com metal Ouro. Rascunho ou publish bloqueado mantém `liberado_em` nulo. Fail-open de plano no notifier (`skipPlanLimit`) não grava `liberado_em` localmente.
 - Ao publicar com plano pago, metal válido e cota ok: o app grava `liberado_em` (UTC) e `publico_ate` (Ouro 6m, Prata 4m, Bronze 2m), alinhado à migration Supabase.
 - Pin no mapa (`MarketingCaseVisibility`): dono sempre vê o próprio `published`; sem `liberado_em` só o autor. Ouro liberado + janela ativa → todos (anônimo só Ouro via `isVisibleOnMapForAnonymous`). Prata + janela ativa → consultor e produtor logados; expirada só autor. Bronze + janela ativa → autor ou produtor com vínculo no `client_id` **e** consultor do vínculo Bronze+ (`list_bronze_pin_client_ids_for_producer`); consultor não vê bronze de terceiros. Grupos por `source_case_id`: no mapa só o pin do metal mais alto (`deduplicateHighestMetalPerGroup`).
