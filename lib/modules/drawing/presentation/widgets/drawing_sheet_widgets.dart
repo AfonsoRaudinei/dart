@@ -293,3 +293,75 @@ class _FormatButton extends StatelessWidget {
     );
   }
 }
+
+class _CampoTestPhotoReviewSection extends StatelessWidget {
+  const _CampoTestPhotoReviewSection({
+    super.key,
+    required this.draft,
+    required this.onPick,
+  });
+
+  final CampoTestPhotoDraft? draft;
+  final Future<void> Function() onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
+    final titleColor = v.titleColor;
+    final muted = v.subtitleColor;
+    final hasPhoto = draft != null && draft!.localPath.isNotEmpty;
+    final ctaLabel = hasPhoto ? 'Trocar foto' : 'Adicionar foto';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Foto do teste (opcional)',
+          style: TextStyle(
+            color: titleColor,
+            fontSize: v.sectionFontSize,
+            fontWeight: v.sectionWeight,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            if (hasPhoto) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  File(draft!.localPath),
+                  key: const Key('drawing_campo_test_photo_thumbnail'),
+                  width: 72,
+                  height: 72,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 72,
+                    height: 72,
+                    color: v.cardBackground,
+                    alignment: Alignment.center,
+                    child: Icon(Icons.broken_image_outlined, color: muted),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: OutlinedButton.icon(
+                key: const Key('drawing_campo_test_photo_add'),
+                onPressed: () => onPick(),
+                icon: Icon(hasPhoto ? Icons.swap_horiz : Icons.add_a_photo),
+                label: Text(ctaLabel),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Georreferência: centro do polígono desenhado.',
+          style: TextStyle(fontSize: 12, color: muted),
+        ),
+      ],
+    );
+  }
+}
