@@ -254,6 +254,7 @@ MarketingCase _publishedCase(String id) {
     'produto_utilizado': 'Produto X',
     'status': 'published',
     'ativo': true,
+    'liberado_em': '2026-06-01T12:00:00.000Z',
     'criado_em': '2026-06-04T12:00:00.000Z',
     'atualizado_em': '2026-06-04T12:00:00.000Z',
     'sync_status': 'synced',
