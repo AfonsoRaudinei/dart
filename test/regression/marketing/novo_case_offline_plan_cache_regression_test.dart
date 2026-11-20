@@ -179,14 +179,22 @@ void main() {
     test(
       'plano bronze rebaixa ouro pending quando cota ouro é zero',
       () async {
-        final cases = List.generate(
-          6,
-          (i) => _publishedCase(
-            'pend-$i',
-            syncStatus: 'pending_sync',
-            atualizadoEm: '2026-09-0${i + 1}T10:00:00.000Z',
+        final cases = [
+          ...List.generate(
+            6,
+            (i) => _publishedCase(
+              'pend-$i',
+              syncStatus: 'pending_sync',
+              atualizadoEm: '2026-09-0${i + 1}T10:00:00.000Z',
+              liberadoEm: '2026-06-01T12:00:00.000Z',
+            ),
           ),
-        );
+          _publishedCase(
+            'pend-privado',
+            syncStatus: 'pending_sync',
+            atualizadoEm: '2026-09-09T10:00:00.000Z',
+          ),
+        ];
         final repo = _DraftAwareRepo(cases);
         final notifier = _StubMarketingCasesNotifier(
           repo,
@@ -205,6 +213,10 @@ void main() {
             'draft',
           );
         }
+        expect(
+          state.firstWhere((c) => c.id == 'pend-privado').status.toValue(),
+          'published',
+        );
       },
     );
   });
@@ -270,6 +282,7 @@ MarketingCase _publishedCase(
   String id, {
   required String syncStatus,
   String atualizadoEm = '2026-06-04T12:00:00.000Z',
+  String? liberadoEm,
 }) {
   return MarketingCase.fromJson({
     'id': id,
@@ -282,6 +295,7 @@ MarketingCase _publishedCase(
     'produto_utilizado': 'Produto X',
     'status': 'published',
     'ativo': true,
+    if (liberadoEm != null) 'liberado_em': liberadoEm,
     'criado_em': '2026-06-04T12:00:00.000Z',
     'atualizado_em': atualizadoEm,
     'sync_status': syncStatus,
