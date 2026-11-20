@@ -91,6 +91,7 @@ flowchart TB
 | `bigBag` | Big Bag | Unidade absoluta (sementes soja) |
 | `sacas60k` | Sacas 60k | Unidade absoluta (sementes milho) |
 | `sacas500milSementes` | Sacas 500 mil sementes | Unidade absoluta (sementes sorgo) |
+| `reaisTotal` | R$ total | Meta em valor total (ex.: adjuvantes); não multiplica pela área e fica fora do total em R$/ha |
 
 Unidades de sistema novas chegam às contas existentes por `ensureTiposProdutoIniciais`, que insere só os códigos que faltam (id determinístico `seed-<codigo>-<userId>`).
 
