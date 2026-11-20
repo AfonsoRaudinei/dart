@@ -30,11 +30,33 @@ void main() {
       );
     });
 
+    test('cases privados published não gastam cota do bronze pago', () {
+      final plano = _paidBronze('u1');
+      final privados = List.generate(
+        8,
+        (i) => _publishedCase('privado-$i', visibilidade: 'bronze'),
+      );
+
+      expect(
+        marketingPublishBlockedByPlan(
+          plano: plano,
+          cases: privados,
+          publishingCaseId: 'novo',
+          visibilidade: PlanoMarketing.bronze,
+        ),
+        isFalse,
+      );
+    });
+
     test('bronze pago bloqueia na 6ª case bronze', () {
       final plano = _paidBronze('u1');
       final cases = List.generate(
         5,
-        (i) => _publishedCase('existing-$i', visibilidade: 'bronze'),
+        (i) => _publishedCase(
+          'existing-$i',
+          visibilidade: 'bronze',
+          liberadoEm: _liberadoEm,
+        ),
       );
 
       expect(
@@ -83,7 +105,11 @@ void main() {
         final repo = _RecordingRepo();
         final atLimit = List.generate(
           5,
-          (i) => _publishedCase('on-map-$i', visibilidade: 'bronze'),
+          (i) => _publishedCase(
+            'on-map-$i',
+            visibilidade: 'bronze',
+            liberadoEm: _liberadoEm,
+          ),
         );
         final container = _container(
           repo: repo,
@@ -227,7 +253,13 @@ ProviderContainer _container({
   );
 }
 
-MarketingCase _publishedCase(String id, {String visibilidade = 'ouro'}) {
+const _liberadoEm = '2026-06-01T12:00:00.000Z';
+
+MarketingCase _publishedCase(
+  String id, {
+  String visibilidade = 'ouro',
+  String? liberadoEm,
+}) {
   return MarketingCase.fromJson({
     'id': id,
     'tipo': 'resultado',
@@ -239,6 +271,7 @@ MarketingCase _publishedCase(String id, {String visibilidade = 'ouro'}) {
     'produto_utilizado': 'Produto',
     'status': MarketingCaseStatus.published.toValue(),
     'ativo': true,
+    if (liberadoEm != null) 'liberado_em': liberadoEm,
     'criado_em': '2026-06-05T12:00:00.000Z',
     'atualizado_em': '2026-06-05T12:00:00.000Z',
     'sync_status': 'local_only',
