@@ -67,6 +67,9 @@ int marketingPublishedActiveCount(
       .length;
 }
 
+/// Publicações para outros usuários: `published` com janela pública (`liberado_em`).
+///
+/// Case privado (`liberadoEm` nulo) não gasta cota.
 int marketingPublishedActiveCountForMetal(
   List<MarketingCase> cases, {
   required String metal,
@@ -80,6 +83,7 @@ int marketingPublishedActiveCountForMetal(
             c.status == MarketingCaseStatus.published &&
             c.ativo &&
             c.deletadoEm == null &&
+            c.liberadoEm != null &&
             c.visibilidade.name == normalized,
       )
       .length;
@@ -464,7 +468,8 @@ class MarketingCasesNotifier
   /// Nunca faz hard-delete: demote via [saveAsDraft].
   /// - Sem plano pago ou plano expirado/inativo (seletor travado): não rebaixa.
   ///   O case privado `pending_sync` permanece `published`.
-  /// - Acima da cota do metal pago: demote os pending_sync mais novos até caber; synced ficam.
+  /// - Acima da cota do metal pago: demote os `pending_sync` com `liberado_em`
+  ///   mais novos até caber. Case privado e os já `synced` ficam.
   Future<void> reconcileOfflinePublishes(UserPlan plano) async {
     final currentCases = List<MarketingCase>.from(state.valueOrNull ?? const []);
     if (currentCases.isEmpty) return;
@@ -490,6 +495,7 @@ class MarketingCasesNotifier
                 c.status == MarketingCaseStatus.published &&
                 c.ativo &&
                 c.deletadoEm == null &&
+                c.liberadoEm != null &&
                 c.visibilidade == visibilidade,
           )
           .toList();
