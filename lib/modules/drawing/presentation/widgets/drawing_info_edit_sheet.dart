@@ -8,6 +8,7 @@ import '../providers/drawing_client_provider.dart';
 import '../../../../core/domain/cultura_tipo.dart';
 import '../../../../core/ui/cultura_material_fields.dart';
 import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
+import 'drawing_hierarchy_search_field.dart';
 
 /// Padding inferior do form. Host do mapa já encolhe o detent pelo teclado.
 @visibleForTesting
@@ -54,6 +55,11 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
 
   Client? _selectedClient;
   Farm? _selectedFarm;
+
+  String _clientQuery = '';
+  String _farmQuery = '';
+  final _clientSearchController = TextEditingController();
+  final _farmSearchController = TextEditingController();
 
   @override
   void initState() {
@@ -110,6 +116,8 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
     _culturaLivreCtrl.dispose();
     _materialCtrl.dispose();
     _safraCtrl.dispose();
+    _clientSearchController.dispose();
+    _farmSearchController.dispose();
     super.dispose();
   }
 
@@ -117,7 +125,9 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
     setState(() {
       _selectedClient = client;
       _selectedFarm = null;
+      _farmQuery = '';
     });
+    _farmSearchController.clear();
     if (client != null) {
       ref.read(drawingClientProvider.notifier).loadFarms(client.id);
     }
@@ -282,74 +292,38 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
             // Cliente
             Text('Cliente', style: labelStyle),
             const SizedBox(height: 6),
-            clientState.isLoadingClients
-                ? const LinearProgressIndicator()
-                : DropdownButtonFormField<Client>(
-                    initialValue: _selectedClient,
-                    dropdownColor: inputBg,
-                    style: textStyle,
-                    hint: Text(
-                      'Selecionar cliente',
-                      style: TextStyle(color: hintColor),
-                    ),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: inputBg,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                    items: [
-                      const DropdownMenuItem<Client>(
-                        value: null,
-                        child: Text('— Nenhum —'),
-                      ),
-                      ...clientState.clients.map(
-                        (c) => DropdownMenuItem(value: c, child: Text(c.name)),
-                      ),
-                    ],
-                    onChanged: _onClientChanged,
-                  ),
+            DrawingClientSearchField(
+              visuals: v,
+              clients: clientState.clients,
+              searchController: _clientSearchController,
+              query: _clientQuery,
+              selectedClient: _selectedClient,
+              isLoading: clientState.isLoadingClients,
+              clearable: true,
+              onClearSelection: () => _onClientChanged(null),
+              onQueryChanged: (value) =>
+                  setState(() => _clientQuery = value),
+              onSelectClient: _onClientChanged,
+            ),
             const SizedBox(height: 16),
 
             // Fazenda
             Text('Fazenda', style: labelStyle),
             const SizedBox(height: 6),
-            clientState.isLoadingFarms
-                ? const LinearProgressIndicator()
-                : DropdownButtonFormField<Farm>(
-                    initialValue: _selectedFarm,
-                    dropdownColor: inputBg,
-                    style: textStyle,
-                    hint: Text(
-                      'Selecionar fazenda',
-                      style: TextStyle(color: hintColor),
-                    ),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: inputBg,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                    items: [
-                      DropdownMenuItem<Farm>(
-                        value: null,
-                        child: Text(
-                          '— Nenhuma —',
-                          style: TextStyle(color: hintColor),
-                        ),
-                      ),
-                      ...clientState.farms.map(
-                        (f) => DropdownMenuItem(value: f, child: Text(f.name)),
-                      ),
-                    ],
-                    onChanged: _selectedClient == null
-                        ? null
-                        : (f) => setState(() => _selectedFarm = f),
-                  ),
+            DrawingFarmSearchField(
+              visuals: v,
+              farms: clientState.farms,
+              searchController: _farmSearchController,
+              query: _farmQuery,
+              selectedFarm: _selectedFarm,
+              clientSelected: _selectedClient != null,
+              isLoading: clientState.isLoadingFarms,
+              enabled: _selectedClient != null,
+              clearable: true,
+              onClearSelection: () => setState(() => _selectedFarm = null),
+              onQueryChanged: (value) => setState(() => _farmQuery = value),
+              onSelectFarm: (farm) => setState(() => _selectedFarm = farm),
+            ),
             const SizedBox(height: 16),
 
             CulturaMaterialFields(
