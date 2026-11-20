@@ -590,6 +590,10 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     MapSheetController.toggleDrawMode(context, ref, _setSheetState);
   }
 
+  Future<void> _armCampoTeste() async {
+    await MapSheetController.armCampoTeste(context, ref, _setSheetState);
+  }
+
   // HARDENING DEFINITIVO: Máquina de Decisão de Viewport
   // Determinístico. Idempotente. Sem race loops.
   // ADR-030 F6: lógica extraída para MapViewportController
@@ -1028,6 +1032,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           handleMapLongPress: _handleMapLongPress,
           finishDrawing: _finishDrawing,
           toggleDrawMode: _toggleDrawMode,
+          armCampoTeste: _armCampoTeste,
           centerOnUser: _centerOnUser,
           onLocationModeChanged: _handleLocationModeChanged,
           stopFollowing: () =>
