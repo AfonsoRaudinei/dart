@@ -7,7 +7,9 @@ import '../../theme/premium/design_tokens.dart';
 import '../premium/premium_glass_panel.dart';
 import 'package:latlong2/latlong.dart';
 import 'map_layers_sheet.dart';
+import '../../../modules/drawing/domain/models/campo_test_photo_draft.dart';
 import '../../../modules/drawing/presentation/widgets/drawing_sheet.dart';
+import 'map_drawing_saved_handler.dart';
 import '../../../modules/settings/presentation/providers/user_profile_provider.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
 import '../../../modules/drawing/presentation/controllers/drawing_controller.dart';
@@ -288,27 +290,18 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     widget.onClose();
   }
 
-  /// Visita sem talhão: o desenho salvo vira a área da sessão.
-  /// Visita que já tem área não é sobrescrita.
-  void _onDrawingSaved(DrawingFeature? feature) {
-    final session = ref.read(visitControllerProvider).valueOrNull;
-    final areaId = session?.areaId;
-    if (feature != null &&
-        feature.properties.tipo == DrawingType.talhao &&
-        session != null &&
-        (areaId == null || areaId.isEmpty)) {
-      final farmId = feature.properties.fazendaId;
-      unawaited(
-        ref
-            .read(visitControllerProvider.notifier)
-            .updateArea(
-              feature.id,
-              farmId: (farmId == null || farmId.isEmpty)
-                  ? session.farmId
-                  : farmId,
-            ),
-      );
-    }
+  void _onDrawingSaved(
+    DrawingFeature? feature, {
+    CampoTestPhotoDraft? campoTestPhoto,
+  }) {
+    handleMapDrawingSaved(
+      feature: feature,
+      campoTestPhoto: campoTestPhoto,
+      session: ref.read(visitControllerProvider).valueOrNull,
+      onUpdateVisitArea: (id, {farmId}) =>
+          ref.read(visitControllerProvider.notifier).updateArea(id, farmId: farmId),
+      sessionLookup: ref.read(visitSessionLookupProvider),
+    );
     _closeDrawingSheetChrome();
   }
 

@@ -60,7 +60,7 @@ Widget _sheetHarness(DrawingController controller) {
           child: DrawingSheet(
             controller: controller,
             onClose: () {},
-            onSaved: (_) {},
+            onSaved: (_, {campoTestPhoto}) {},
           ),
         ),
       ),
@@ -113,7 +113,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(_firstNomeField(tester).controller?.text, 'Teste');
-      expect(find.text('Nome do Talhão'), findsOneWidget);
+      expect(find.text('Nome do teste'), findsOneWidget);
     });
 
     testWidgets(

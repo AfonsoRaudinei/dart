@@ -529,7 +529,7 @@ void main() {
               body: SingleChildScrollView(
                 child: DrawingSheet(
                   controller: controller,
-                  onSaved: (_) => closeCount++,
+                  onSaved: (_, {campoTestPhoto}) => closeCount++,
                 ),
               ),
             ),
@@ -574,7 +574,7 @@ void main() {
               body: SingleChildScrollView(
                 child: DrawingSheet(
                   controller: controller,
-                  onSaved: (_) => closeCount++,
+                  onSaved: (_, {campoTestPhoto}) => closeCount++,
                 ),
               ),
             ),
