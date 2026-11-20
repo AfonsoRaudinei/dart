@@ -145,9 +145,8 @@ class MarketingCaseReportsLookupAdapter implements IMarketingCaseReportsLookup {
           SnackBar(
             content: Text(
               limite <= 0
-                  ? 'Seu plano não permite cases $metalLabel'
-                      ' (plano $planoLabel). '
-                      'Mantenha como Não gerado ou ajuste o metal.'
+                  ? 'Sem plano pago o case fica só no seu mapa. '
+                      'Publicar para outros usuários exige plano pago.'
                   : 'Limite de $limite cases $metalLabel publicados'
                       ' no plano $planoLabel. '
                       'Mantenha como Não gerado ou exclua um case publicado.',
@@ -159,8 +158,8 @@ class MarketingCaseReportsLookupAdapter implements IMarketingCaseReportsLookup {
           context,
           title: 'Limite de publicações atingido',
           message: limite <= 0
-              ? 'Seu plano não tem cota para o metal $metalLabel. '
-                  'Mantenha este case como Não gerado em Relatórios → Marketing.'
+              ? 'Sem plano pago o case fica só no seu mapa. '
+                  'Publicar para outros usuários exige plano pago.'
               : 'Você já tem $limite case(s) $metalLabel publicado(s). '
                   'Mantenha como Não gerado ou exclua um case publicado '
                   'desse metal para liberar espaço.',
