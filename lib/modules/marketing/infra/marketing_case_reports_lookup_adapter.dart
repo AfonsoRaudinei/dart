@@ -14,6 +14,7 @@ import '../../settings/presentation/providers/user_profile_provider.dart';
 import '../domain/entities/marketing_case.dart';
 import '../domain/enums/marketing_case_status.dart';
 import '../domain/marketing_case_visibility.dart';
+import '../domain/marketing_visibility_policy.dart';
 import '../presentation/providers/marketing_providers.dart';
 import '../presentation/widgets/draft_saved_sheet.dart';
 import '../presentation/widgets/edit_case_sheet.dart';
@@ -44,6 +45,7 @@ final marketingCaseReportsListImplProvider =
                   item.status == MarketingCaseStatus.published;
               final isDraft = item.status == MarketingCaseStatus.draft;
               if (!isPublished && !isDraft) return false;
+              if (_casePrivadoDeOutroAutor(item, currentUserId)) return false;
               if (!role.isProdutor) return true;
               if (isDraft) return true;
               return MarketingCaseVisibility.isVisibleInReports(
@@ -61,6 +63,17 @@ final marketingCaseReportsListImplProvider =
         return AsyncError(e, st);
       }
     });
+
+/// Case publicado só do autor (`liberado_em` nulo) não entra na lista de outra conta.
+///
+/// `ownerUserId` vazio permanece visível: rascunho local ainda pode não ter dono gravado.
+bool _casePrivadoDeOutroAutor(MarketingCase item, String currentUserId) {
+  if (item.status != MarketingCaseStatus.published) return false;
+  if (item.liberadoEm != null) return false;
+  final owner = item.ownerUserId?.trim() ?? '';
+  if (owner.isEmpty) return false;
+  return owner != currentUserId.trim();
+}
 
 MarketingCaseReportSnapshot _toSnapshot(
   MarketingCase item, {
@@ -141,28 +154,38 @@ class MarketingCaseReportsLookupAdapter implements IMarketingCaseReportsLookup {
         if (!context.mounted) return false;
         final planoLabel = plano.plano.label;
         final metalLabel = metal.toUpperCase();
+        final semPlanoPago =
+            MarketingVisibilityPolicy.seletorTotalmenteTravado(plano);
+        final String snackMessage;
+        final String sheetMessage;
+        if (limite <= 0 && semPlanoPago) {
+          snackMessage = 'Sem plano pago o case fica só no seu mapa. '
+              'Publicar para outros usuários exige plano pago.';
+          sheetMessage = snackMessage;
+        } else if (limite <= 0) {
+          snackMessage = 'Seu plano não permite cases $metalLabel'
+              ' (plano $planoLabel). '
+              'Mantenha como Não gerado ou ajuste o metal.';
+          sheetMessage = 'Seu plano não tem cota para o metal $metalLabel. '
+              'Mantenha este case como Não gerado em Relatórios → Marketing.';
+        } else {
+          snackMessage = 'Limite de $limite cases $metalLabel publicados'
+              ' no plano $planoLabel. '
+              'Mantenha como Não gerado ou exclua um case publicado.';
+          sheetMessage = 'Você já tem $limite case(s) $metalLabel publicado(s). '
+              'Mantenha como Não gerado ou exclua um case publicado '
+              'desse metal para liberar espaço.';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              limite <= 0
-                  ? 'Sem plano pago o case fica só no seu mapa. '
-                      'Publicar para outros usuários exige plano pago.'
-                  : 'Limite de $limite cases $metalLabel publicados'
-                      ' no plano $planoLabel. '
-                      'Mantenha como Não gerado ou exclua um case publicado.',
-            ),
+            content: Text(snackMessage),
             duration: const Duration(seconds: 5),
           ),
         );
         await DraftSavedSheet.show(
           context,
           title: 'Limite de publicações atingido',
-          message: limite <= 0
-              ? 'Sem plano pago o case fica só no seu mapa. '
-                  'Publicar para outros usuários exige plano pago.'
-              : 'Você já tem $limite case(s) $metalLabel publicado(s). '
-                  'Mantenha como Não gerado ou exclua um case publicado '
-                  'desse metal para liberar espaço.',
+          message: sheetMessage,
         );
         return false;
       }
