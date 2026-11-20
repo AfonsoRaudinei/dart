@@ -1,10 +1,14 @@
+import 'dart:io' show File;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../coordinators/drawing_close_coordinator.dart';
 import '../controllers/drawing_controller.dart';
+import '../../domain/models/campo_test_photo_draft.dart';
 import '../../domain/models/drawing_models.dart';
+import '../../../../core/widgets/photo/soloforte_photo_picker_sheet.dart';
 import '../../domain/models/gps_walk_session.dart';
 import '../../domain/drawing_state.dart';
 import '../../domain/drawing_feature_actions_mode.dart';
@@ -43,7 +47,10 @@ part 'drawing_sheet_widgets.dart';
 // Os itens de ferramenta ficam em:
 // lib/modules/drawing/presentation/widgets/components/drawing_tool_selector.dart
 
-typedef DrawingSheetSavedCallback = void Function(DrawingFeature? savedFeature);
+typedef DrawingSheetSavedCallback = void Function(
+  DrawingFeature? savedFeature, {
+  CampoTestPhotoDraft? campoTestPhoto,
+});
 
 const _kDefaultTalhaoSketchName = 'Talhão Novo';
 const _kDefaultTesteSketchName = 'Teste';
@@ -123,6 +130,12 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
   final _nomeController = TextEditingController();
   final _descricaoController = TextEditingController();
+
+  CampoTestPhotoDraft? _campoTestPhotoDraft;
+
+  bool get _isCampoTestReview =>
+      widget.controller.isSketchingTest ||
+      widget.controller.pendingDrawingType == DrawingType.teste;
 
   @override
   void initState() {
@@ -280,6 +293,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     DrawingCloseIntent intent, {
     bool preferSavedCallback = false,
     DrawingFeature? savedFeature,
+    CampoTestPhotoDraft? campoTestPhoto,
   }) async {
     // 1A: X / dismiss durante edição só recolhe o sheet — não cancela vértices.
     if (intent == DrawingCloseIntent.dismissSheet &&
@@ -299,15 +313,20 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     _emitCloseCallback(
       preferSavedCallback: preferSavedCallback,
       savedFeature: savedFeature,
+      campoTestPhoto: campoTestPhoto,
     );
   }
 
   void _emitCloseCallback({
     bool preferSavedCallback = false,
     DrawingFeature? savedFeature,
+    CampoTestPhotoDraft? campoTestPhoto,
   }) {
     if (preferSavedCallback && widget.onSaved != null) {
-      widget.onSaved!.call(savedFeature);
+      widget.onSaved!.call(
+        savedFeature,
+        campoTestPhoto: campoTestPhoto,
+      );
       return;
     }
     if (widget.onClose != null) {
@@ -315,6 +334,24 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       return;
     }
     widget.onSaved?.call(null);
+  }
+
+  Future<void> _pickCampoTestPhoto() async {
+    final geo = resolveCampoTestSketchGeo(widget.controller.liveGeometry);
+    await showSoloFortePhotoPicker(
+      context: context,
+      label: 'Foto do teste',
+      onPhotoSelected: (path) async {
+        if (!mounted) return;
+        _rebuild(() {
+          _campoTestPhotoDraft = CampoTestPhotoDraft(
+            localPath: path,
+            lat: geo?.latitude,
+            lng: geo?.longitude,
+          );
+        });
+      },
+    );
   }
 
   Future<void> _handleClosePressed() async {
@@ -635,6 +672,8 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       DrawingCloseIntent.completeSaveAndClose,
       preferSavedCallback: true,
       savedFeature: savedFeatures.first,
+      campoTestPhoto:
+          _isCampoTestReview ? _campoTestPhotoDraft : null,
     );
   }
 }
