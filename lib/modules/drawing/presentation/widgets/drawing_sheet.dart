@@ -45,6 +45,17 @@ part 'drawing_sheet_widgets.dart';
 
 typedef DrawingSheetSavedCallback = void Function(DrawingFeature? savedFeature);
 
+const _kDefaultTalhaoSketchName = 'Talhão Novo';
+const _kDefaultTesteSketchName = 'Teste';
+
+String _defaultNomeForSketch(DrawingController controller) {
+  if (controller.isSketchingTest ||
+      controller.pendingDrawingType == DrawingType.teste) {
+    return _kDefaultTesteSketchName;
+  }
+  return _kDefaultTalhaoSketchName;
+}
+
 class DrawingSheet extends ConsumerStatefulWidget {
   final DrawingController controller;
   final ScrollController? scrollController;
@@ -131,12 +142,26 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       _drainCompactOpenMetadataIfNeeded();
     });
 
-    // Suggest logical name
-    _nomeController.text = "Talhão Novo";
+    _nomeController.text = _defaultNomeForSketch(widget.controller);
+    widget.controller.addListener(_onDrawingControllerChanged);
+  }
+
+  void _onDrawingControllerChanged() {
+    if (!mounted) return;
+    final controller = widget.controller;
+    if (controller.currentState != DrawingState.reviewing) return;
+    final trimmed = _nomeController.text.trim();
+    if (trimmed != _kDefaultTalhaoSketchName) return;
+    if (!controller.isSketchingTest &&
+        controller.pendingDrawingType != DrawingType.teste) {
+      return;
+    }
+    _nomeController.text = _kDefaultTesteSketchName;
   }
 
   @override
   void dispose() {
+    widget.controller.removeListener(_onDrawingControllerChanged);
     _nomeController.dispose();
     _descricaoController.dispose();
     super.dispose();
