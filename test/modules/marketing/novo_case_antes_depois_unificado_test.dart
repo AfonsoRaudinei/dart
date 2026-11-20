@@ -153,8 +153,8 @@ void main() {
       'Jataizinho - PR',
     );
     await _preencher(tester, _campoComHint('Valor *'), '60');
-    await tester.ensureVisible(find.text('Publicar Case'));
-    await tester.tap(find.text('Publicar Case'));
+    await tester.ensureVisible(find.text('Criar case'));
+    await tester.tap(find.text('Criar case'));
     await tester.pumpAndSettle();
 
     expect(publicado, isNull);
