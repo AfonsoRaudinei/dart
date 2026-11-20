@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/extensions/context_extensions.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -101,7 +102,10 @@ class CarteiraClienteScreen extends ConsumerWidget {
               final clienteNome = clienteAsync.valueOrNull?.name ?? 'Cliente';
 
               return ListView.builder(
-                padding: const EdgeInsets.only(top: 8, bottom: 24),
+                padding: EdgeInsets.only(
+                  top: 8,
+                  bottom: context.fabSafeBottomPadding,
+                ),
                 itemCount: categorias.length,
                 itemBuilder: (context, index) {
                   final categoria = categorias[index];
@@ -519,9 +523,8 @@ class _CategoriaClienteItemState extends ConsumerState<_CategoriaClienteItem> {
                                     size: 16,
                                     color: Colors.grey[600],
                                   ),
-                                  onPressed: () => _abrirLancamento(
-                                    lancamento: l,
-                                  ),
+                                  onPressed: () =>
+                                      _abrirLancamento(lancamento: l),
                                 ),
                               ],
                             ),
