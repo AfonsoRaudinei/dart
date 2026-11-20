@@ -142,6 +142,40 @@ void main() {
       },
     );
 
+    test(
+      'plano free grava case published sem liberado_em',
+      () async {
+        final repo = _CaptureRepo();
+        final container = _container(
+          repo: repo,
+          planoOverride: (ref) async => UserPlan.free(userId: 'u1'),
+          seed: const [],
+        );
+        addTearDown(container.dispose);
+
+        final publishing = _publishedCase(
+          'mkt-free',
+          visibilidade: 'ouro',
+        ).copyWith(
+          liberadoEm: DateTime.utc(2026, 1, 1),
+          publicoAte: DateTime.utc(2026, 7, 1),
+        );
+        final outcome = await container
+            .read(marketingCasesProvider.notifier)
+            .publishCaseDetailed(publishing);
+
+        expect(outcome.isSuccess, isTrue);
+        expect(repo.saveCalls, 1);
+        final saved = repo.lastSaved;
+        expect(saved, isNotNull);
+        expect(saved!.status, MarketingCaseStatus.published);
+        expect(saved.liberadoEm, isNull);
+        expect(saved.publicoAte, isNull);
+        expect(outcome.publishedCase?.liberadoEm, isNull);
+        expect(outcome.publishedCase?.status, MarketingCaseStatus.published);
+      },
+    );
+
     test('fail-open de plano não grava liberado_em', () async {
       final repo = _CaptureRepo();
       final container = _container(
