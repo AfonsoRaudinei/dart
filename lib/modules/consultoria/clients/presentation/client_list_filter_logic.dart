@@ -187,6 +187,22 @@ bool clientMatchesAdvancedFilters({
   return true;
 }
 
+/// Ordenação alfabética por nome de exibição (case-insensitive); desempate por [Client.id].
+int compareClientDisplayName(Client a, Client b) {
+  final nameCmp = a.name
+      .trim()
+      .toLowerCase()
+      .compareTo(b.name.trim().toLowerCase());
+  if (nameCmp != 0) return nameCmp;
+  return a.id.compareTo(b.id);
+}
+
+List<Client> sortClientsAlphabetically(List<Client> clients) {
+  final sorted = List<Client>.from(clients);
+  sorted.sort(compareClientDisplayName);
+  return sorted;
+}
+
 /// Filtra clientes por busca, status (Todos/Ativos/Inativos) e filtros avançados.
 List<Client> applyClientListFilters({
   required List<Client> clients,
@@ -197,7 +213,7 @@ List<Client> applyClientListFilters({
 }) {
   final searchLower = search.toLowerCase();
 
-  return clients.where((c) {
+  final filtered = clients.where((c) {
     final matchesSearch = searchLower.isEmpty ||
         c.name.toLowerCase().contains(searchLower);
     final matchesFilter =
@@ -214,6 +230,8 @@ List<Client> applyClientListFilters({
       culturas: culturas,
     );
   }).toList();
+
+  return sortClientsAlphabetically(filtered);
 }
 
 /// Cidades distintas (cidade+UF) dos clientes, ordenadas por rótulo.
