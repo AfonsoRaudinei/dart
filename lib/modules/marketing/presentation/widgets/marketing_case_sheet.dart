@@ -15,6 +15,7 @@ import '../../domain/enums/plano_marketing.dart';
 import '../providers/marketing_providers.dart';
 import '../marketing_case_report_sheet_actions.dart';
 import 'comparativo_chart.dart';
+import 'marketing_case_marker.dart';
 import 'marketing_case_resultado_read_only_section.dart';
 import 'marketing_case_story_entry_button.dart';
 import 'marketing_comparativo_read_only_section.dart';
@@ -473,27 +474,16 @@ class MarketingCaseSheet extends ConsumerWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
-      child: AspectRatio(
-        aspectRatio: 1,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: ColoredBox(
-            color: const Color(0xFFF2F2F7),
-            child: CachedNetworkImage(
-              imageUrl: url,
-              width: double.infinity,
-              height: double.infinity,
-              fit: BoxFit.contain,
-              errorWidget: (_, __, ___) => ColoredBox(
-                color: placeholderBg,
-                child: Center(
-                  child: Icon(
-                    Icons.image_not_supported_outlined,
-                    size: 40,
-                    color: placeholderIcon,
-                  ),
-                ),
-              ),
+      child: _photoFrame(
+        url: url,
+        radius: 16,
+        errorWidget: ColoredBox(
+          color: placeholderBg,
+          child: Center(
+            child: Icon(
+              Icons.image_not_supported_outlined,
+              size: 40,
+              color: placeholderIcon,
             ),
           ),
         ),
@@ -679,29 +669,42 @@ class MarketingCaseSheet extends ConsumerWidget {
     final placeholderBg = v.cardBackground;
     final placeholderIcon = v.subtitleColor;
 
-    return AspectRatio(
-      aspectRatio: 1,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: ColoredBox(
-          color: const Color(0xFFF2F2F7),
-          child: CachedNetworkImage(
-            imageUrl: url,
-            width: double.infinity,
-            height: double.infinity,
-            fit: BoxFit.contain,
-            errorWidget: (_, __, ___) => ColoredBox(
-              color: placeholderBg,
-              child: Center(
-                child: Icon(
-                  Icons.image_not_supported_outlined,
-                  color: placeholderIcon,
-                ),
-              ),
-            ),
+    return _photoFrame(
+      url: url,
+      radius: 10,
+      errorWidget: ColoredBox(
+        color: placeholderBg,
+        child: Center(
+          child: Icon(
+            Icons.image_not_supported_outlined,
+            color: placeholderIcon,
           ),
         ),
       ),
+    );
+  }
+
+  Widget _photoFrame({
+    required String url,
+    required double radius,
+    required Widget errorWidget,
+  }) {
+    return ValueListenableBuilder<int>(
+      valueListenable: MarketingCaseMarker.aspectRevision,
+      builder: (_, __, ___) {
+        return AspectRatio(
+          aspectRatio: MarketingCaseMarker.frameAspect(
+            MarketingCaseMarker.cachedAspect(url),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(radius),
+            child: MarketingCaseNetworkPhoto(
+              url: url,
+              errorWidget: errorWidget,
+            ),
+          ),
+        );
+      },
     );
   }
 
