@@ -48,6 +48,8 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final ValueChanged<MapLocationMode> onLocationModeChanged;
   final VoidCallback onOpenMapTools;
   final VoidCallback? onLongPressMapTools;
+  final VoidCallback? onArmCampoTeste;
+  final bool isCampoTestArmed;
   final Function(int, String) onTabSelected;
   final bool isDrawMode;
   final bool isCheckInActive;
@@ -85,6 +87,8 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     required this.onLocationModeChanged,
     required this.onOpenMapTools,
     this.onLongPressMapTools,
+    this.onArmCampoTeste,
+    this.isCampoTestArmed = false,
     required this.isDrawMode,
     this.isCheckInActive = false,
     this.showCheckInAction = true,
@@ -334,8 +338,19 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
+              if (widget.onArmCampoTeste != null) ...[
+                _MapActionButton(
+                  buttonKey: const Key('map_control_campo_teste_btn'),
+                  icon: SFIcons.science,
+                  label: 'Teste',
+                  isActive: widget.isCampoTestArmed,
+                  activeColor: activeColor,
+                  onTap: widget.onArmCampoTeste!,
+                ),
+                const SizedBox(height: kMapActionColumnSpacingAboveCheckIn),
+              ],
               _MapToolsFab(
-                isActive: widget.isDrawMode,
+                isActive: widget.isDrawMode && !widget.isCampoTestArmed,
                 enabled: widget.drawingState != DrawingState.editing,
                 activeColor: activeColor,
                 onTap: widget.onOpenMapTools,
