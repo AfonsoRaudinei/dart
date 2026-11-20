@@ -19,6 +19,7 @@ import '../../../../core/utils/app_logger.dart';
 import '../../../../modules/marketing/domain/entities/marketing_case.dart';
 import '../../../../modules/marketing/domain/enums/case_tipo.dart';
 import '../../../../modules/marketing/domain/enums/marketing_case_status.dart';
+import '../../../../modules/marketing/domain/marketing_visibility_policy.dart';
 import '../../../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../../../../modules/marketing/presentation/screens/novo_case_type_sheets.dart';
 import '../../../../modules/marketing/presentation/widgets/draft_saved_sheet.dart';
@@ -125,7 +126,8 @@ class NovoCaseModalLauncher {
     );
   }
 
-  /// Publica case do mapa ou salva rascunho quando o limite de publicados foi atingido.
+  /// Publica case do mapa, cria case privado sem plano pago, ou salva rascunho
+  /// quando a cota do metal pago foi atingida.
   static Future<void> submitCaseFromMap({
     required BuildContext context,
     required WidgetRef ref,
@@ -171,6 +173,19 @@ class NovoCaseModalLauncher {
         messenger: messenger,
         ref: ref,
         newCase: _asPublishedCase(newCase),
+      );
+      return;
+    }
+
+    if (MarketingVisibilityPolicy.seletorTotalmenteTravado(plano)) {
+      if (!context.mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      _closeSheetIfPossible(context);
+      await _publishFromMap(
+        messenger: messenger,
+        ref: ref,
+        newCase: _asPublishedCase(newCase),
+        sucessoSoNoMapaDoAutor: true,
       );
       return;
     }
@@ -248,6 +263,7 @@ class NovoCaseModalLauncher {
     required ScaffoldMessengerState messenger,
     required WidgetRef ref,
     required MarketingCase newCase,
+    bool sucessoSoNoMapaDoAutor = false,
   }) async {
     final outcome = await ref
         .read(marketingCasesProvider.notifier)
@@ -258,6 +274,7 @@ class NovoCaseModalLauncher {
       ref: ref,
       outcome: outcome,
       caseToRetry: newCase,
+      sucessoSoNoMapaDoAutor: sucessoSoNoMapaDoAutor,
     );
   }
 
@@ -403,12 +420,15 @@ class NovoCaseModalLauncher {
     required WidgetRef ref,
     required PublishOutcome outcome,
     required MarketingCase caseToRetry,
+    bool sucessoSoNoMapaDoAutor = false,
   }) {
     if (outcome.isSuccess) {
       HapticFeedback.heavyImpact();
       _showSnackBar(
         messenger: messenger,
-        message: 'Case publicado com sucesso! 📈',
+        message: sucessoSoNoMapaDoAutor
+            ? 'Case criado. Ele fica só no seu mapa.'
+            : 'Case publicado com sucesso! 📈',
         backgroundColor: const Color(0xFF34C759),
         icon: Icons.check_circle,
       );
@@ -461,7 +481,12 @@ class NovoCaseModalLauncher {
       actionLabel: 'Tentar novamente',
       onAction: () {
         unawaited(
-          _publishFromMap(messenger: messenger, ref: ref, newCase: caseToRetry),
+          _publishFromMap(
+            messenger: messenger,
+            ref: ref,
+            newCase: caseToRetry,
+            sucessoSoNoMapaDoAutor: sucessoSoNoMapaDoAutor,
+          ),
         );
       },
     );
