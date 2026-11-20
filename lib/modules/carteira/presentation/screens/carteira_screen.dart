@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/extensions/context_extensions.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
@@ -118,7 +118,7 @@ class _ClientesTab extends ConsumerWidget {
         ref.invalidate(todosRegistrosProvider(userId));
       },
       child: ListView.builder(
-        padding: const EdgeInsets.only(top: 8, bottom: 24),
+        padding: EdgeInsets.only(top: 8, bottom: context.fabSafeBottomPadding),
         itemCount: clientes.length + 1,
         itemBuilder: (context, index) {
           if (index == 0) {
@@ -291,7 +291,10 @@ class _CategoriasTab extends ConsumerWidget {
               }
 
               return ListView.builder(
-                padding: const EdgeInsets.only(top: 8, bottom: kFabSafeArea),
+                padding: EdgeInsets.only(
+                  top: 8,
+                  bottom: context.fabSafeBottomPadding,
+                ),
                 itemCount: categorias.length,
                 itemBuilder: (context, index) {
                   final categoria = categorias[index];
@@ -396,7 +399,7 @@ class _OportunidadesTab extends ConsumerWidget {
             : 'Oportunidades por produtor';
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          padding: EdgeInsets.fromLTRB(16, 8, 16, context.fabSafeBottomPadding),
           children: [
             const CarteiraAjudaCard(
               segment: CarteiraSegment.oportunidades,
