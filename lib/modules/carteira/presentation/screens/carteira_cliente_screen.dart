@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:soloforte_app/core/extensions/context_extensions.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -227,6 +228,8 @@ class _CategoriaClienteItem extends ConsumerStatefulWidget {
 }
 
 class _CategoriaClienteItemState extends ConsumerState<_CategoriaClienteItem> {
+  static String _qtd(double v) => NumberFormat('#,##0.#', 'pt_BR').format(v);
+
   bool _historicoExpandido = false;
 
   Color _parseCor(String hex) {
@@ -374,7 +377,7 @@ class _CategoriaClienteItemState extends ConsumerState<_CategoriaClienteItem> {
               if (meta != null) ...[
                 const SizedBox(height: 4),
                 Text(
-                  'Meta: ${meta.quantidade % 1 == 0 ? meta.quantidade.toInt() : meta.quantidade.toStringAsFixed(1)} $unidade  ·  Realizado: ${realizado % 1 == 0 ? realizado.toInt() : realizado.toStringAsFixed(1)}',
+                  'Meta: ${_qtd(meta.quantidade)} $unidade  ·  Realizado: ${_qtd(realizado)}',
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 6),
