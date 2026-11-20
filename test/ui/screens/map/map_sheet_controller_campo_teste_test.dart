@@ -7,7 +7,6 @@ import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
 import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
-import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
 import 'package:soloforte_app/modules/drawing/presentation/providers/drawing_provider.dart';
 import 'package:soloforte_app/ui/components/map/map_sheet_state.dart';
 import 'package:soloforte_app/ui/screens/map/controllers/map_sheet_controller.dart';
@@ -47,21 +46,24 @@ void main() {
     final controller = DrawingController(repository: _MockDrawingRepository());
     addTearDown(controller.dispose);
 
-  MapSheetState? sheet;
+    MapSheetState? sheet;
+    MapSheetState? mapSheetBeforeTap;
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           drawingControllerProvider.overrideWith((ref) => controller),
+          mapSheetStateProvider.overrideWith(
+            (ref) => const MapSheetState(type: MapSheetType.draw),
+          ),
         ],
         child: MaterialApp(
           home: Consumer(
             builder: (context, ref, _) {
+              mapSheetBeforeTap = ref.read(mapSheetStateProvider);
               return Scaffold(
                 body: ElevatedButton(
                   onPressed: () {
-                    ref.read(mapSheetStateProvider.notifier).state =
-                        const MapSheetState(type: MapSheetType.draw);
                     MapSheetController.armCampoTeste(
                       context,
                       ref,
@@ -76,6 +78,8 @@ void main() {
         ),
       ),
     );
+
+    expect(mapSheetBeforeTap?.type, MapSheetType.draw);
 
     await tester.tap(find.text('Armar teste'));
     await tester.pumpAndSettle();
