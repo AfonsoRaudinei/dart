@@ -361,19 +361,23 @@ class _MarketingCaseNetworkPhotoState extends State<MarketingCaseNetworkPhoto> {
   }
 
   void _remember(String url, ImageInfo info) {
-    final height = info.image.height;
-    if (height <= 0) return;
-    final ratio = info.image.width / height;
-    void store() => MarketingCaseMarker.rememberAspect(url, ratio);
-    final phase = WidgetsBinding.instance.schedulerPhase;
-    final inFrame =
-        phase == SchedulerPhase.persistentCallbacks ||
-        phase == SchedulerPhase.midFrameMicrotasks;
-    if (inFrame) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => store());
-      return;
+    try {
+      final height = info.image.height;
+      if (height <= 0) return;
+      final ratio = info.image.width / height;
+      void store() => MarketingCaseMarker.rememberAspect(url, ratio);
+      final phase = WidgetsBinding.instance.schedulerPhase;
+      final inFrame =
+          phase == SchedulerPhase.persistentCallbacks ||
+          phase == SchedulerPhase.midFrameMicrotasks;
+      if (inFrame) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => store());
+        return;
+      }
+      store();
+    } finally {
+      info.dispose();
     }
-    store();
   }
 
   void _detach() {
