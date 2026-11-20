@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/extensions/context_extensions.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
@@ -63,7 +64,12 @@ class _AgendaPlanejamentoViewState
               : filteredDays.isEmpty
               ? const Center(child: Text('Nenhum dia selecionado.'))
               : ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    16,
+                    16,
+                    16 + context.fabSafeBottomPadding,
+                  ),
                   itemCount: filteredDays.length,
                   itemBuilder: (context, index) {
                     final day = filteredDays[index];
@@ -309,7 +315,9 @@ class _AgendaPlanejamentoViewState
   ) {
     final isSunday = day.weekday == DateTime.sunday;
     final isToday = _isToday(day);
-    final sundayFill = theme.colorScheme.primaryContainer;
+    // primaryContainer == primary neste tema (verde sólido), o que apagava o
+    // texto do domingo; usa um tom suave da cor primária.
+    final sundayFill = theme.colorScheme.primary.withValues(alpha: 0.10);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
