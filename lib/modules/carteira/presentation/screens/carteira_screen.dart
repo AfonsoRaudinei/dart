@@ -129,6 +129,14 @@ class _ClientesTab extends ConsumerWidget {
             clienteNome: cliente.name,
             mediaPercentual: mediaCliente(cliente.id),
             categoriasAtivas: categorias.length,
+            categoriasComLancamento: categorias
+                .where(
+                  (c) =>
+                      (percentualPorClienteCategoria['${cliente.id}_${c.id}'] ??
+                          0) >
+                      0,
+                )
+                .length,
             onTap: () => context.push(AppRoutes.carteiraCliente(cliente.id)),
           );
         },
