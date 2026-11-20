@@ -494,7 +494,6 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     final clientState = ref.watch(drawingClientProvider);
     final inputText = v.titleColor;
     final inputHint = v.subtitleColor;
-    final dropdownBg = v.cardBackground;
 
     if (clientState.preSelectedClientId != null) {
       final name =
@@ -509,26 +508,24 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       );
     }
 
-    return DropdownButtonFormField<Client>(
-      initialValue: _selectedClient,
-      decoration: _sheetFieldDecoration(),
-      dropdownColor: dropdownBg,
-      style: TextStyle(color: inputText),
-      iconEnabledColor: inputHint,
-      hint: Text('Selecione o cliente...', style: TextStyle(color: inputHint)),
-      items: clientState.clients.map((c) {
-        return DropdownMenuItem(value: c, child: Text(c.name));
-      }).toList(),
-      onChanged: (client) {
+    return DrawingClientSearchField(
+      visuals: v,
+      clients: clientState.clients,
+      searchController: _clientSearchController,
+      query: _clientQuery,
+      selectedClient: _selectedClient,
+      isLoading: clientState.isLoadingClients,
+      onQueryChanged: (value) => _rebuild(() => _clientQuery = value),
+      onSelectClient: (client) {
         _rebuild(() {
           _selectedClient = client;
           _selectedFarm = null;
+          _farmQuery = '';
         });
-        if (client != null) {
-          ref.read(drawingClientProvider.notifier).loadFarms(client.id);
-        }
+        _farmSearchController.clear();
+        ref.read(drawingClientProvider.notifier).loadFarms(client.id);
       },
-      validator: (v) => v == null ? 'Selecione um cliente' : null,
+      validator: (value) => value == null ? 'Selecione um cliente' : null,
     );
   }
 
@@ -537,7 +534,6 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     final clientState = ref.watch(drawingClientProvider);
     final inputText = v.titleColor;
     final inputHint = v.subtitleColor;
-    final dropdownBg = v.cardBackground;
 
     if (clientState.preSelectedFarmId != null) {
       final name =
@@ -552,43 +548,27 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       );
     }
 
-    return DropdownButtonFormField<dynamic>(
-      initialValue: _selectedFarm,
-      decoration: _sheetFieldDecoration(),
-      dropdownColor: dropdownBg,
-      style: TextStyle(color: inputText),
-      iconEnabledColor: inputHint,
-      hint: Text('Selecione a fazenda...', style: TextStyle(color: inputHint)),
-      items: [
-        ...clientState.farms.map(
-          (f) => DropdownMenuItem(value: f, child: Text(f.name)),
-        ),
-        const DropdownMenuItem(
-          value: 'NEW_FARM',
-          child: Row(
-            children: [
-              Icon(Icons.add_circle_outline, size: 16, color: Colors.blue),
-              SizedBox(width: 8),
-              Text('Nova Fazenda', style: TextStyle(color: Colors.blue)),
-            ],
-          ),
-        ),
-      ],
-      onChanged: (getValue) {
-        if (getValue == 'NEW_FARM') {
-          if (_selectedClient == null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Selecione o Cliente primeiro')),
-            );
-            return;
-          }
-          _showCreateFarmDialog();
+    return DrawingFarmSearchField(
+      visuals: v,
+      farms: clientState.farms,
+      searchController: _farmSearchController,
+      query: _farmQuery,
+      selectedFarm: _selectedFarm,
+      clientSelected: _selectedClient != null,
+      isLoading: clientState.isLoadingFarms,
+      onQueryChanged: (value) => _rebuild(() => _farmQuery = value),
+      onSelectFarm: (farm) => _rebuild(() => _selectedFarm = farm),
+      onNewFarm: () {
+        if (_selectedClient == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Selecione o Cliente primeiro')),
+          );
           return;
         }
-        _rebuild(() => _selectedFarm = getValue as Farm?);
+        _showCreateFarmDialog();
       },
-      validator: (v) =>
-          v == null && _selectedFarm == null ? 'Selecione uma fazenda' : null,
+      validator: (value) =>
+          value == null && _selectedFarm == null ? 'Selecione uma fazenda' : null,
     );
   }
 
@@ -603,7 +583,11 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       if (!preserveContextClient) _selectedClient = null;
       if (!preserveContextFarm) _selectedFarm = null;
       _campoTestPhotoDraft = null;
+      _clientQuery = '';
+      _farmQuery = '';
     });
+    _clientSearchController.clear();
+    _farmSearchController.clear();
   }
 
   InputDecoration _sheetFieldDecoration({Widget? suffixIcon}) {
