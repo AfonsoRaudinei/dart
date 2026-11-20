@@ -34,17 +34,10 @@ import 'map_sheet_state.dart'; // 🛡 REFATORAÇÃO: Modelo compartilhado
 import '../../../core/utils/app_logger.dart';
 import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import '../../../core/state/map_ui_providers.dart';
-import '../../../../core/contracts/i_visit_session_lookup.dart';
 import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/solo_forte_sheet_visuals.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
-
-/// Provider local para sessão ativa — substitui visitControllerProvider para leituras
-final _activeVisitProvider = FutureProvider<VisitSessionSummary?>((ref) async {
-  final lookup = ref.watch(visitSessionLookupProvider);
-  return lookup.getActiveSession();
-});
 
 /// Bottom Sheet estilo iOS "Buscar" com 3 detents
 /// Compacto → Médio → Expandido
@@ -297,7 +290,9 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     handleMapDrawingSaved(
       feature: feature,
       campoTestPhoto: campoTestPhoto,
-      session: ref.read(visitControllerProvider).valueOrNull,
+      session: visitSessionToSummary(
+        ref.read(visitControllerProvider).valueOrNull,
+      ),
       onUpdateVisitArea: (id, {farmId}) =>
           ref.read(visitControllerProvider.notifier).updateArea(id, farmId: farmId),
       sessionLookup: ref.read(visitSessionLookupProvider),
@@ -593,8 +588,8 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   }
 
   Widget _buildCheckInContent() {
-    final activeVisitAsync = ref.watch(_activeVisitProvider);
-    final isActive = activeVisitAsync.valueOrNull?.isActive ?? false;
+    final visitSession = ref.watch(visitControllerProvider).valueOrNull;
+    final isActive = visitSession?.status == 'active';
 
     if (isActive) {
       // Já está em visita - mostrar status
