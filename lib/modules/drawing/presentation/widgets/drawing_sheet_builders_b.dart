@@ -180,6 +180,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     final inputHint = v.subtitleColor;
     final inputFill = v.cardBackground;
     final focusBorder = v.accent;
+  final isCampoTest = _isCampoTestReview;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Form(
@@ -188,7 +189,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Salvar Polígono',
+              isCampoTest ? 'Salvar teste' : 'Salvar Polígono',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: titleColor,
@@ -272,7 +273,9 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
             const SizedBox(height: 16),
 
             Text(
-              isMultiPartSave ? 'Prefixo do talhão' : 'Nome do Talhão',
+              isMultiPartSave
+                  ? 'Prefixo do talhão'
+                  : (isCampoTest ? 'Nome do teste' : 'Nome do Talhão'),
               style: sectionLabelStyle,
             ),
             const SizedBox(height: 8),
@@ -311,6 +314,14 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Informe o nome' : null,
             ),
+            if (isCampoTest) ...[
+              const SizedBox(height: 16),
+              _CampoTestPhotoReviewSection(
+                key: const Key('drawing_campo_test_photo_section'),
+                draft: _campoTestPhotoDraft,
+                onPick: _pickCampoTestPhoto,
+              ),
+            ],
             const SizedBox(height: 24),
 
             // Actions Buttons
@@ -591,6 +602,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     _rebuild(() {
       if (!preserveContextClient) _selectedClient = null;
       if (!preserveContextFarm) _selectedFarm = null;
+      _campoTestPhotoDraft = null;
     });
   }
 
