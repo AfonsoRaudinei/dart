@@ -7,10 +7,14 @@ class NovoCasePublicarButton extends StatelessWidget {
   final bool isLoading;
   final VoidCallback onPressed;
 
+  /// Sem plano pago o case é criado só no mapa do autor.
+  final bool criarCasePrivado;
+
   const NovoCasePublicarButton({
     super.key,
     required this.isLoading,
     required this.onPressed,
+    this.criarCasePrivado = false,
   });
 
   @override
@@ -35,7 +39,11 @@ class NovoCasePublicarButton extends StatelessWidget {
               ),
             )
           : const Icon(Icons.campaign_rounded, size: 20),
-      label: Text(isLoading ? 'Publicando...' : 'Publicar Case'),
+      label: Text(
+        isLoading
+            ? (criarCasePrivado ? 'Criando...' : 'Publicando...')
+            : (criarCasePrivado ? 'Criar case' : 'Publicar Case'),
+      ),
       style: ElevatedButton.styleFrom(
         backgroundColor: bg,
         foregroundColor: fg,
