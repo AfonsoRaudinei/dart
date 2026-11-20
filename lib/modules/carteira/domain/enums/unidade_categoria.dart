@@ -21,6 +21,8 @@ class UnidadeCategoria {
       label: 'Sacas 500 mil sementes',
       converteSacasHa: false,
     ),
+    // Meta em valor total (ex.: adjuvantes), sem multiplicar pela área.
+    (codigo: 'reaisTotal', label: r'R$ total', converteSacasHa: false),
   ];
 
   static String labelForCodigo(String codigo) {
