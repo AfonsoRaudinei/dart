@@ -9,6 +9,24 @@ import '../../../modules/consultoria/quick_photo/domain/save_quick_photo.dart';
 import '../../../modules/consultoria/relatorio_visita/data/image_storage_service.dart';
 import '../../../modules/drawing/domain/models/campo_test_photo_draft.dart';
 import '../../../modules/drawing/domain/models/drawing_models.dart';
+import '../../../modules/visitas/domain/models/visit_session.dart';
+
+/// Mesmos campos que [VisitSessionLookupAdapter] `_toSummary` — para leitura síncrona do controller.
+VisitSessionSummary? visitSessionToSummary(VisitSession? session) {
+  if (session == null) return null;
+  return VisitSessionSummary(
+    id: session.id,
+    producerId: session.producerId,
+    status: session.status,
+    startTime: session.startTime,
+    farmId: session.farmId,
+    areaId: session.areaId,
+    activityType: session.activityType,
+    endTime: session.endTime,
+    initialLat: session.initialLat,
+    initialLong: session.initialLong,
+  );
+}
 
 typedef MapDrawingVisitAreaUpdate = Future<void> Function(
   String featureId, {
