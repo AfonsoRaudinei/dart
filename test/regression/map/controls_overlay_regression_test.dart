@@ -277,6 +277,57 @@ void main() {
     });
   });
 
+  group('campo teste coluna direita', () {
+    testWidgets('botão Teste visível e tap dispara callback', (tester) async {
+      var armCalls = 0;
+      await _pumpMapControlsOverlay(
+        tester,
+        onArmCampoTeste: () => armCalls++,
+      );
+
+      expect(
+        find.byKey(const Key('map_control_campo_teste_btn')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const Key('map_control_campo_teste_btn')));
+      await tester.pump();
+      expect(armCalls, 1);
+    });
+
+    testWidgets(
+      'check-in ancorado com botão Teste presente (REGRA-MAP-CHROME-1)',
+      (tester) async {
+        await _pumpMapControlsOverlay(
+          tester,
+          safePadding: const EdgeInsets.only(bottom: _kSafeBottom),
+          onArmCampoTeste: () {},
+        );
+
+        final checkIn = _buttonBounds(tester, 'map_control_check_in');
+        expect(
+          checkIn.bottom,
+          closeTo(
+            _kViewport.height - _kSafeBottom - kMapActionColumnBottomInset,
+            0.1,
+          ),
+        );
+      },
+    );
+
+    testWidgets('editing sem onArmCampoTeste omite botão Teste', (tester) async {
+      await _pumpMapControlsOverlay(
+        tester,
+        drawingState: DrawingState.editing,
+        editingFieldName: 'Talhão 2',
+      );
+
+      expect(
+        find.byKey(const Key('map_control_campo_teste_btn')),
+        findsNothing,
+      );
+    });
+  });
+
   group('coluna direita alinhamento', () {
     testWidgets(
       'gap canônico 16dp layers↔check-in e bottom absoluto (REGRA-MAP-CHROME-1)',
@@ -439,6 +490,7 @@ void main() {
                 onCenterUser: () {},
                 onLocationModeChanged: (_) {},
                 onOpenMapTools: () {},
+                onArmCampoTeste: () {},
                 onTabSelected: (_, _) {},
                 isDrawMode: false,
                 showCheckInAction: true,
@@ -704,6 +756,7 @@ Future<void> _pumpMapControlsOverlay(
   DrawingState drawingState = DrawingState.idle,
   String? editingFieldName,
   VoidCallback? onOpenMapTools,
+  VoidCallback? onArmCampoTeste,
   EdgeInsets safePadding = EdgeInsets.zero,
   Widget? topLeftCard,
 }) async {
@@ -731,6 +784,7 @@ Future<void> _pumpMapControlsOverlay(
             onCenterUser: () {},
             onLocationModeChanged: (_) {},
             onOpenMapTools: onOpenMapTools ?? () {},
+            onArmCampoTeste: onArmCampoTeste,
             onTabSelected: (_, _) {},
             isDrawMode: isDrawMode,
             showCheckInAction: showCheckInAction,
@@ -785,6 +839,7 @@ Future<void> _pumpOverlayWithFabHarness(
                 onCenterUser: () {},
                 onLocationModeChanged: (_) {},
                 onOpenMapTools: () {},
+                onArmCampoTeste: () {},
                 onTabSelected: (_, _) {},
                 isDrawMode: false,
                 showCheckInAction: true,
