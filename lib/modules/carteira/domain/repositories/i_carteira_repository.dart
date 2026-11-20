@@ -96,4 +96,8 @@ abstract class ICarteiraRepository {
     String categoriaId,
     String userId,
   );
+
+  /// Percentual fechado de todos os pares cliente+categoria do usuário
+  /// (ADR-029), com chave `<clienteId>_<categoriaId>` e cada par limitado a 100.
+  Future<Map<String, double>> getClosedPercentTodos(String userId);
 }
