@@ -18,9 +18,35 @@ void main() {
           MarketingCaseMarker.pinWidth(PlanoMarketing.prata, zoom: 12),
           100,
         );
+        const border = 2.5;
+        const inner = 100 - 2 * border;
+        final portraitHeight =
+            inner / MarketingCaseMarker.portraitAspect + 20 + 2 * border;
+        final compactHeight = MarketingCaseMarker.pinHeight(
+          PlanoMarketing.prata,
+          zoom: 12,
+        );
+        expect(compactHeight, isNot(125));
+        expect(compactHeight, portraitHeight);
         expect(
-          MarketingCaseMarker.pinHeight(PlanoMarketing.prata, zoom: 12),
-          125,
+          MarketingCaseMarker.pinHeight(
+            PlanoMarketing.prata,
+            zoom: 12,
+            aspect: MarketingCaseMarker.landscapeAspect,
+          ),
+          lessThan(compactHeight),
+        );
+        expect(
+          MarketingCaseMarker.frameAspect(null),
+          MarketingCaseMarker.portraitAspect,
+        );
+        expect(
+          MarketingCaseMarker.frameAspect(9 / 16),
+          MarketingCaseMarker.portraitAspect,
+        );
+        expect(
+          MarketingCaseMarker.frameAspect(2),
+          MarketingCaseMarker.landscapeAspect,
         );
         expect(
           MarketingCaseMarker.pinWidth(PlanoMarketing.ouro, zoom: 15),
@@ -84,7 +110,7 @@ void main() {
       );
 
       expect(image.imageUrl, 'https://example.com/depois.jpg');
-      expect(image.fit, BoxFit.contain);
+      expect(image.fit, BoxFit.cover);
     });
 
     testWidgets('mantem placeholder quando Antes/Depois nao tem fotos', (
