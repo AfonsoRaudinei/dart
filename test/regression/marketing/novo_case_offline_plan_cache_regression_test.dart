@@ -135,6 +135,27 @@ void main() {
       );
     });
 
+    test('plano free não rebaixa published pending_sync para draft', () async {
+      final pending = _publishedCase('pend-free', syncStatus: 'pending_sync');
+      final repo = _DraftAwareRepo([pending]);
+      final notifier = _StubMarketingCasesNotifier(
+        repo,
+        MarketingSyncService(repo),
+        [pending],
+      );
+
+      await notifier.reconcileOfflinePublishes(
+        UserPlan.free(userId: 'user-1'),
+      );
+
+      expect(
+        notifier.state.valueOrNull!.firstWhere((c) => c.id == 'pend-free').status
+            .toValue(),
+        'published',
+      );
+      expect(repo.cases.single.status.toValue(), 'published');
+    });
+
     test('plano inativo não rebaixa cases publicados', () async {
       final pending = _publishedCase('pend-1', syncStatus: 'pending_sync');
       final repo = _DraftAwareRepo([pending]);
