@@ -28,6 +28,7 @@ import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../core/utils/share_position.dart';
 import 'components/drawing_tool_selector.dart';
 import 'components/drawing_actions_bar.dart';
+import 'drawing_hierarchy_search_field.dart';
 import 'drawing_info_edit_sheet.dart';
 import 'drawing_delete_undo_snackbar.dart';
 import 'drawing_review_metrics_panel.dart';
@@ -112,6 +113,11 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   Client? _selectedClient;
   Farm? _selectedFarm;
 
+  String _clientQuery = '';
+  String _farmQuery = '';
+  final _clientSearchController = TextEditingController();
+  final _farmSearchController = TextEditingController();
+
   /// Cliente da propriedade própria, resolvido quando [forceOwnPropertyClient].
   String? _ownPropertyClientId;
   String? _ownPropertyClientName;
@@ -177,6 +183,8 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     widget.controller.removeListener(_onDrawingControllerChanged);
     _nomeController.dispose();
     _descricaoController.dispose();
+    _clientSearchController.dispose();
+    _farmSearchController.dispose();
     super.dispose();
   }
 
