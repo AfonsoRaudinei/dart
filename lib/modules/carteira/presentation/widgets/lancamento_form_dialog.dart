@@ -305,7 +305,11 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
 
     return AlertDialog(
       backgroundColor: context.premiumSurface,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+      contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      // Sem largura mínima o AlertDialog encolhe ao tamanho intrínseco do
+      // conteúdo e o formulário fica apertado; o teto é a tela menos o inset.
+      constraints: const BoxConstraints(minWidth: 560, maxWidth: 560),
       title: Row(
         children: [
           Container(
@@ -392,7 +396,7 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
                   helperText:
                       'Quanto do potencial deste produtor nesta categoria '
                       'você já vendeu (0 a 100). O resto vira oportunidade.',
-                  helperMaxLines: 3,
+                  helperMaxLines: 4,
                   suffixText: '%',
                   border: OutlineInputBorder(),
                 ),
@@ -632,6 +636,6 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
   }
 
   String _formatQuantidade(double value) {
-    return value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(2);
+    return NumberFormat('#,##0.##', 'pt_BR').format(value);
   }
 }
