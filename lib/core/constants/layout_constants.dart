@@ -151,10 +151,6 @@ const double kMapTopControlsReservedRightWidth =
     (kMapTopControlsLocationLabelButtonGap + kMapActionColumnButtonSize) +
     (2 * kMapTopControlsButtonSpacing);
 
-/// Fileira superior com indicador de feature selecionada (4.º botão circular).
-const double kMapTopControlsSelectedFeatureChromeWidth =
-    kMapTopControlsButtonSpacing + kMapActionColumnButtonSize;
-
 /// Margem esquerda do card de contexto do mapa (produtor e consultor).
 const double kMapContextCardLeftInset = 12.0;
 
