@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/extensions/context_extensions.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_ai_launcher_provider.dart';
@@ -144,7 +145,12 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
           ? (agendaState.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      16,
+                      16,
+                      16 + context.fabSafeBottomPadding,
+                    ),
                     child: Column(
                       children: [
                         _buildMonthNavigation(theme),
