@@ -583,7 +583,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
 
   // Antigo helper de limpar form
   void _resetReviewForm() {
-    _nomeController.text = "Talhão Novo";
+    _nomeController.text = _defaultNomeForSketch(widget.controller);
     // _descricaoController.clear(); // Removed as per instruction
     final clientState = ref.read(drawingClientProvider);
     final preserveContextClient = clientState.preSelectedClientId != null;
