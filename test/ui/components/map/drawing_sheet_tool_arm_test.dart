@@ -69,7 +69,7 @@ void main() {
                         builder: (_) => DrawingSheet(
                           controller: controller,
                           onClose: () => Navigator.of(context).pop(),
-                          onSaved: (_) => Navigator.of(context).pop(),
+                          onSaved: (_, {campoTestPhoto}) => Navigator.of(context).pop(),
                         ),
                       );
                     },
@@ -127,7 +127,7 @@ void main() {
                           controller: controller,
                           onAreaVisitada: () => areaVisitadaArmed = true,
                           onClose: () => Navigator.of(context).pop(),
-                          onSaved: (_) => Navigator.of(context).pop(),
+                          onSaved: (_, {campoTestPhoto}) => Navigator.of(context).pop(),
                         ),
                       );
                     },
@@ -185,7 +185,7 @@ void main() {
                         builder: (_) => DrawingSheet(
                           controller: controller,
                           onClose: () => Navigator.of(context).pop(),
-                          onSaved: (_) => Navigator.of(context).pop(),
+                          onSaved: (_, {campoTestPhoto}) => Navigator.of(context).pop(),
                         ),
                       );
                     },
@@ -230,7 +230,7 @@ void main() {
             body: DrawingSheet(
               controller: controller,
               onClose: () {},
-              onSaved: (_) {},
+              onSaved: (_, {campoTestPhoto}) {},
             ),
           ),
         ),
