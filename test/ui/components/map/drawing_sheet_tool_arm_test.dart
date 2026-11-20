@@ -7,6 +7,7 @@ import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
 import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
+import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
 import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_sheet.dart';
 
@@ -155,6 +156,59 @@ void main() {
     expect(find.text('Área Visitada'), findsNothing);
     expect(controller.currentState, DrawingState.idle);
     expect(controller.currentTool, DrawingTool.none);
+  });
+
+  testWidgets('tap Teste fecha modal e mantém ferramenta armed', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1179, 2556);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final controller = DrawingController(repository: _MockDrawingRepository());
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Builder(
+            builder: (context) {
+              return Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      showSoloForteSheet<void>(
+                        context: context,
+                        showDragHandle: true,
+                        useSafeArea: true,
+                        maxHeightFraction: 0.78,
+                        builder: (_) => DrawingSheet(
+                          controller: controller,
+                          onClose: () => Navigator.of(context).pop(),
+                          onSaved: (_) => Navigator.of(context).pop(),
+                        ),
+                      );
+                    },
+                    child: const Text('Abrir Desenho'),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Abrir Desenho'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Teste'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Teste'), findsNothing);
+    expect(controller.currentState, DrawingState.armed);
+    expect(controller.isSketchingTest, isTrue);
   });
 
   testWidgets('DrawingSheet não aplica AnimatedPadding de teclado', (
