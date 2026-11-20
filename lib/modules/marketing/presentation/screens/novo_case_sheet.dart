@@ -540,7 +540,8 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
               if (seletorTravado) ...[
                 const SizedBox(height: 8),
                 Text(
-                  'Disponível com plano pago',
+                  'Você pode criar o case. Ele fica só no seu mapa. '
+                  'A visibilidade para outros usuários fica disponível com plano pago.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: SoloForteSheetVisuals.of(context).subtitleColor,
                   ),
@@ -683,6 +684,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
               const SizedBox(height: 32),
               NovoCasePublicarButton(
                 isLoading: _isLoading,
+                criarCasePrivado: seletorTravado,
                 onPressed: _handlePublicar,
               ),
               const SizedBox(height: 8),
