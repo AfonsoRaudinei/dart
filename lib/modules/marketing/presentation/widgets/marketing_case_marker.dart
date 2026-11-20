@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
@@ -27,13 +28,16 @@ class MarketingCaseMarker extends StatelessWidget {
   });
 
   /// A partir daqui o pin vira cartão de leitura (nome 15 px, resultado 14 px).
-  /// Longe disso o pin compacto mostra a foto inteira e a faixa abaixo.
+  /// Longe disso o pin compacto mostra a foto na proporção da câmera e a faixa abaixo.
   static const double readingZoom = 15;
 
   static const double readingPinWidth = 184;
 
-  /// Lado do quadrado da foto no cartão de leitura.
-  static const double readingPhotoSide = 136;
+  /// Largura/altura da câmera em pé (3:4).
+  static const double portraitAspect = 3 / 4;
+
+  /// Largura/altura da câmera deitada (4:3).
+  static const double landscapeAspect = 4 / 3;
 
   /// 6+15+4+18+6: padding, nome (height 1), vão, pílula do resultado, padding.
   static const double readingBarHeight = 49;
@@ -42,8 +46,12 @@ class MarketingCaseMarker extends StatelessWidget {
   /// Faixa fixa do pin compacto, abaixo da foto, para o Marker não cortar.
   static const double compactBarHeight = 20;
 
-  /// Poço da foto (faixa do contain). Neutro claro, para o mapa não vazar.
-  static const Color _photoWellColor = Color(0xFFF2F2F7);
+  /// Proporção largura/altura já medida, por URL da foto.
+  static final Map<String, double> _aspectByUrl = {};
+
+  /// Incrementa quando a proporção exibida de alguma foto muda.
+  /// Foto em pé (já é o fallback) não incrementa.
+  static final ValueNotifier<int> aspectRevision = ValueNotifier<int>(0);
 
   static const double compactNameFontSize = 8;
   static const double compactResultFontSize = 7;
@@ -63,11 +71,43 @@ class MarketingCaseMarker extends StatelessWidget {
     };
   }
 
-  static double pinHeight(PlanoMarketing tier, {double zoom = 0}) {
-    if (isReadingZoom(zoom)) {
-      return readingPhotoSide + readingBarHeight + 2 * _borderWidth(tier);
+  /// Proporção largura/altura do quadro. Fora de [portraitAspect]–[landscapeAspect]
+  /// vai para o extremo; valor ausente ou inválido fica em pé.
+  static double frameAspect(double? widthOverHeight) {
+    if (widthOverHeight == null ||
+        widthOverHeight <= 0 ||
+        widthOverHeight.isNaN) {
+      return portraitAspect;
     }
-    return pinWidth(tier) + compactBarHeight + 2 * _borderWidth(tier);
+    return widthOverHeight.clamp(portraitAspect, landscapeAspect).toDouble();
+  }
+
+  static double? cachedAspect(String? url) {
+    if (url == null) return null;
+    return _aspectByUrl[url];
+  }
+
+  /// Grava [frameAspect] de [widthOverHeight]. Não notifica se o quadro
+  /// exibido (cache anterior, ou [portraitAspect] se ainda não havia) já é esse.
+  static void rememberAspect(String url, double widthOverHeight) {
+    final next = frameAspect(widthOverHeight);
+    final previous = _aspectByUrl[url];
+    final displayed = previous ?? portraitAspect;
+    _aspectByUrl[url] = next;
+    if (displayed == next) return;
+    aspectRevision.value++;
+  }
+
+  static double pinHeight(
+    PlanoMarketing tier, {
+    double zoom = 0,
+    double? aspect,
+  }) {
+    final border = _borderWidth(tier);
+    final innerW = pinWidth(tier, zoom: zoom) - 2 * border;
+    final photoH = innerW / frameAspect(aspect);
+    final bar = isReadingZoom(zoom) ? readingBarHeight : compactBarHeight;
+    return photoH + bar + 2 * border;
   }
 
   // Zoom mínimo por tier. Ouro aparece de mais longe; Prata e Bronze exigem
@@ -100,16 +140,19 @@ class MarketingCaseMarker extends StatelessWidget {
     PlanoMarketing.bronze => const Color(0xFF1E1200),
   };
 
-  String? _primaryPhotoUrl() {
-    final url = switch (marketingCase.tipo) {
-      CaseTipo.resultado => marketingCase.fotoPrincipalUrl,
-      CaseTipo.antesDepois =>
-        marketingCase.fotoDepoisUrl ?? marketingCase.fotoAntesUrl,
-      CaseTipo.avaliacao => marketingCase.fotoPrincipalUrl,
+  /// Resultado/avaliação usam a foto principal. Antes/Depois prefere o depois.
+  /// Vazio vira null.
+  static String? primaryPhotoUrl(MarketingCase c) {
+    final url = switch (c.tipo) {
+      CaseTipo.resultado => c.fotoPrincipalUrl,
+      CaseTipo.antesDepois => c.fotoDepoisUrl ?? c.fotoAntesUrl,
+      CaseTipo.avaliacao => c.fotoPrincipalUrl,
     };
     if (url == null || url.trim().isEmpty) return null;
     return url;
   }
+
+  String? _primaryPhotoUrl() => primaryPhotoUrl(marketingCase);
 
   // ─── Resultado/ROI text ───────────────────────────────────────
   String? _resultText() {
@@ -155,8 +198,9 @@ class MarketingCaseMarker extends StatelessWidget {
   Widget build(BuildContext context) {
     final tier = marketingCase.visibilidade;
     final reading = isReadingZoom(zoom);
+    final photoUrl = _primaryPhotoUrl();
     final w = pinWidth(tier, zoom: zoom);
-    final h = pinHeight(tier, zoom: zoom);
+    final h = pinHeight(tier, zoom: zoom, aspect: cachedAspect(photoUrl));
     final border = _borderWidth(tier);
     final borderColor = _borderColor(tier);
     final resultText = _resultText();
@@ -207,20 +251,12 @@ class MarketingCaseMarker extends StatelessWidget {
     );
   }
 
-  /// Quadrado (lado = [pinWidth]) e faixa abaixo. A borda come 2× a
-  /// espessura; [pinHeight] reserva isso, então o quadrado que cabe é a
-  /// largura interna. O poço neutro preenche o vão para o mapa não vazar.
+  /// Foto na largura inteira do cartão e faixa abaixo. A borda come 2× a
+  /// espessura; [pinHeight] reserva isso na altura da foto.
   Widget _compactBody(PlanoMarketing tier, String? resultText) {
     return Column(
       children: [
-        Expanded(
-          child: ColoredBox(
-            color: _photoWellColor,
-            child: Center(
-              child: AspectRatio(aspectRatio: 1, child: _buildPhoto(tier)),
-            ),
-          ),
-        ),
+        Expanded(child: _buildPhoto(tier)),
         SizedBox(
           height: compactBarHeight,
           width: double.infinity,
@@ -233,25 +269,12 @@ class MarketingCaseMarker extends StatelessWidget {
     );
   }
 
-  /// Quadrado 136×136 centralizado na largura do cartão, faixa abaixo.
+  /// Mesma foto em largura cheia, com a faixa de leitura abaixo.
   /// A borda do container come 2× a espessura; [pinHeight] já reserva isso.
   Widget _readingBody(PlanoMarketing tier, String? resultText) {
     return Column(
       children: [
-        SizedBox(
-          height: readingPhotoSide,
-          width: double.infinity,
-          child: ColoredBox(
-            color: _photoWellColor,
-            child: Center(
-              child: SizedBox(
-                width: readingPhotoSide,
-                height: readingPhotoSide,
-                child: _buildPhoto(tier),
-              ),
-            ),
-          ),
-        ),
+        Expanded(child: _buildPhoto(tier)),
         SizedBox(
           height: readingBarHeight,
           width: double.infinity,
@@ -270,18 +293,118 @@ class MarketingCaseMarker extends StatelessWidget {
     if (url == null) {
       return _PlaceholderPin(tier: tier);
     }
-    return ColoredBox(
-      color: _photoWellColor,
-      child: CachedNetworkImage(
-        imageUrl: url,
-        width: double.infinity,
-        height: double.infinity,
-        fit: BoxFit.contain,
-        alignment: Alignment.center,
-        placeholder: (_, __) => _PlaceholderPin(tier: tier),
-        errorWidget: (_, __, ___) => _PlaceholderPin(tier: tier),
-        fadeInDuration: const Duration(milliseconds: 200),
-      ),
+    final placeholder = _PlaceholderPin(tier: tier);
+    return MarketingCaseNetworkPhoto(
+      url: url,
+      placeholder: placeholder,
+      errorWidget: placeholder,
+      fadeInDuration: const Duration(milliseconds: 200),
+    );
+  }
+}
+
+/// Foto de rede do case. Ao resolver, grava a proporção em [MarketingCaseMarker].
+class MarketingCaseNetworkPhoto extends StatefulWidget {
+  final String url;
+  final Widget? placeholder;
+  final Widget errorWidget;
+  final BoxFit fit;
+  final Alignment alignment;
+  final Duration fadeInDuration;
+
+  const MarketingCaseNetworkPhoto({
+    super.key,
+    required this.url,
+    required this.errorWidget,
+    this.placeholder,
+    this.fit = BoxFit.cover,
+    this.alignment = Alignment.center,
+    this.fadeInDuration = const Duration(milliseconds: 500),
+  });
+
+  @override
+  State<MarketingCaseNetworkPhoto> createState() =>
+      _MarketingCaseNetworkPhotoState();
+}
+
+class _MarketingCaseNetworkPhotoState extends State<MarketingCaseNetworkPhoto> {
+  ImageStream? _stream;
+  ImageStreamListener? _listener;
+  String? _listenedUrl;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _bind(widget.url);
+  }
+
+  @override
+  void didUpdateWidget(covariant MarketingCaseNetworkPhoto oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) _bind(widget.url);
+  }
+
+  void _bind(String url) {
+    if (_listenedUrl == url && _stream != null) return;
+    _detach();
+    _listenedUrl = url;
+    final stream = CachedNetworkImageProvider(
+      url,
+    ).resolve(createLocalImageConfiguration(context));
+    final listener = ImageStreamListener(
+      (info, _) => _remember(url, info),
+      onError: (_, __) {},
+    );
+    stream.addListener(listener);
+    _stream = stream;
+    _listener = listener;
+  }
+
+  void _remember(String url, ImageInfo info) {
+    final height = info.image.height;
+    if (height <= 0) return;
+    final ratio = info.image.width / height;
+    void store() => MarketingCaseMarker.rememberAspect(url, ratio);
+    final phase = WidgetsBinding.instance.schedulerPhase;
+    final inFrame =
+        phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks;
+    if (inFrame) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => store());
+      return;
+    }
+    store();
+  }
+
+  void _detach() {
+    final listener = _listener;
+    final stream = _stream;
+    if (listener != null && stream != null) {
+      stream.removeListener(listener);
+    }
+    _stream = null;
+    _listener = null;
+    _listenedUrl = null;
+  }
+
+  @override
+  void dispose() {
+    _detach();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final placeholder = widget.placeholder;
+    return CachedNetworkImage(
+      imageUrl: widget.url,
+      width: double.infinity,
+      height: double.infinity,
+      fit: widget.fit,
+      alignment: widget.alignment,
+      fadeInDuration: widget.fadeInDuration,
+      placeholder: placeholder == null ? null : (_, __) => placeholder,
+      errorWidget: (_, __, ___) => widget.errorWidget,
     );
   }
 }
