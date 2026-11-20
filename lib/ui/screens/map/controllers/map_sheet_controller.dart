@@ -9,6 +9,7 @@ import '../../../../modules/drawing/presentation/coordinators/drawing_close_coor
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../ui/components/map/map_sheet_state.dart';
+import '../providers/map_armed_mode_provider.dart';
 import '../widgets/map_sheet_content_builder.dart';
 
 /// Controla abertura de modais e toggle do modo de desenho no mapa.
@@ -218,6 +219,69 @@ class MapSheetController {
     setSheetState(
       const MapSheetState(type: MapSheetType.draw),
       'ToggleDrawMode: Opening draw sheet',
+    );
+  }
+
+  /// Arma polígono de [DrawingType.teste] em um toque — fecha a grade de
+  /// ferramentas se estiver aberta, preservando o estado armed no mapa.
+  static Future<void> armCampoTeste(
+    BuildContext context,
+    WidgetRef ref,
+    void Function(MapSheetState? s, String reason) setSheetState,
+  ) async {
+    HapticFeedback.mediumImpact();
+    final controller = ref.read(drawingControllerProvider);
+    ref.read(armedModeProvider.notifier).state = ArmedMode.none;
+
+    if (controller.currentState == DrawingState.editing) {
+      return;
+    }
+
+    if (controller.currentState == DrawingState.drawing ||
+        controller.currentState == DrawingState.reviewing ||
+        controller.currentState == DrawingState.selected) {
+      final decision = await DrawingCloseCoordinator.handle(
+        context,
+        controller: controller,
+        intent: DrawingCloseIntent.cancelFlowAndClose,
+      );
+      if (!context.mounted) return;
+      if (controller.currentState != DrawingState.idle &&
+          controller.currentState != DrawingState.armed) {
+        return;
+      }
+      if (decision.shouldCloseSheet) {
+        setSheetState(null, 'ArmCampoTeste: cancelled previous flow');
+      }
+    }
+
+    final drawSheetOpen =
+        ref.read(mapSheetStateProvider)?.type == MapSheetType.draw;
+
+    controller.selectTool('teste');
+    if (controller.currentState != DrawingState.armed &&
+        controller.currentState != DrawingState.drawing) {
+      return;
+    }
+
+    if (drawSheetOpen && context.mounted) {
+      final decision = await DrawingCloseCoordinator.handle(
+        context,
+        controller: controller,
+        intent: DrawingCloseIntent.dismissSheetPreserveArmed,
+      );
+      if (decision.shouldCloseSheet) {
+        setSheetState(null, 'ArmCampoTeste: close tool sheet armed');
+      }
+    }
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Marque a área do teste no mapa'),
+        duration: Duration(seconds: 2),
+      ),
     );
   }
 }
