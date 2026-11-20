@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io' show File;
+import 'dart:typed_data';
 
 import '../../../core/contracts/i_visit_session_lookup.dart';
 import '../../../core/utils/app_logger.dart';
@@ -14,6 +15,50 @@ typedef MapDrawingVisitAreaUpdate = Future<void> Function(
   String? farmId,
 });
 
+typedef PersistCampoTestPhotoFn = Future<void> Function({
+  required CampoTestPhotoDraft draft,
+  required IVisitSessionLookup sessionLookup,
+});
+
+typedef CampoTestPersistLocalCopy = Future<String?> Function(String localPath);
+
+typedef CampoTestResolveLocalPath = Future<String?> Function(String storedPath);
+
+typedef CampoTestReadFileBytes = Future<Uint8List> Function(String absolutePath);
+
+typedef CampoTestSaveQuickPhoto = Future<void> Function({
+  required Uint8List bytes,
+  required String localPath,
+  double? lat,
+  double? lng,
+});
+
+Future<String?> _defaultCampoTestPersistLocalCopy(String localPath) =>
+    ImageStorageService().persistLocalCopy(localPath);
+
+Future<String?> _defaultCampoTestResolveLocalPath(String storedPath) =>
+    ImageStorageService().resolveLocalPath(storedPath);
+
+Future<Uint8List> _defaultCampoTestReadFileBytes(String absolutePath) =>
+    File(absolutePath).readAsBytes();
+
+Future<void> _defaultCampoTestSaveQuickPhoto({
+  required Uint8List bytes,
+  required String localPath,
+  double? lat,
+  double? lng,
+  required IVisitSessionLookup sessionLookup,
+}) =>
+    SaveQuickPhoto(
+      QuickPhotoRepository(),
+      sessionLookup,
+    ).execute(
+      bytes: bytes,
+      localPath: localPath,
+      lat: lat,
+      lng: lng,
+    );
+
 /// Pós-save do [DrawingSheet]: área da visita (talhão) e foto opcional do teste.
 void handleMapDrawingSaved({
   required DrawingFeature? feature,
@@ -21,7 +66,9 @@ void handleMapDrawingSaved({
   required VisitSessionSummary? session,
   required MapDrawingVisitAreaUpdate onUpdateVisitArea,
   required IVisitSessionLookup sessionLookup,
+  PersistCampoTestPhotoFn? persistCampoTestPhoto,
 }) {
+  final persist = persistCampoTestPhoto ?? persistCampoTestPhotoFromDraft;
   final areaId = session?.areaId;
   if (feature != null &&
       feature.properties.tipo == DrawingType.talhao &&
@@ -39,7 +86,7 @@ void handleMapDrawingSaved({
   }
   if (feature?.properties.tipo == DrawingType.teste && campoTestPhoto != null) {
     unawaited(
-      persistCampoTestPhotoFromDraft(
+      persist(
         draft: campoTestPhoto,
         sessionLookup: sessionLookup,
       ),
@@ -50,10 +97,31 @@ void handleMapDrawingSaved({
 Future<void> persistCampoTestPhotoFromDraft({
   required CampoTestPhotoDraft draft,
   required IVisitSessionLookup sessionLookup,
+  CampoTestPersistLocalCopy? persistLocalCopy,
+  CampoTestResolveLocalPath? resolveLocalPath,
+  CampoTestReadFileBytes? readFileBytes,
+  CampoTestSaveQuickPhoto? saveQuickPhoto,
 }) async {
+  final copyLocal = persistLocalCopy ?? _defaultCampoTestPersistLocalCopy;
+  final resolvePath = resolveLocalPath ?? _defaultCampoTestResolveLocalPath;
+  final readBytes = readFileBytes ?? _defaultCampoTestReadFileBytes;
+  final savePhoto = saveQuickPhoto ??
+      ({
+        required Uint8List bytes,
+        required String localPath,
+        double? lat,
+        double? lng,
+      }) =>
+          _defaultCampoTestSaveQuickPhoto(
+            bytes: bytes,
+            localPath: localPath,
+            lat: lat,
+            lng: lng,
+            sessionLookup: sessionLookup,
+          );
+
   try {
-    final storage = ImageStorageService();
-    final storedPath = await storage.persistLocalCopy(draft.localPath);
+    final storedPath = await copyLocal(draft.localPath);
     if (storedPath == null) {
       AppLogger.warning(
         'Campo teste: falha ao copiar foto para pasta estável',
@@ -61,13 +129,10 @@ Future<void> persistCampoTestPhotoFromDraft({
       );
       return;
     }
-    final absolute = await storage.resolveLocalPath(storedPath);
+    final absolute = await resolvePath(storedPath);
     if (absolute == null) return;
-    final bytes = await File(absolute).readAsBytes();
-    await SaveQuickPhoto(
-      QuickPhotoRepository(),
-      sessionLookup,
-    ).execute(
+    final bytes = await readBytes(absolute);
+    await savePhoto(
       bytes: bytes,
       localPath: storedPath,
       lat: draft.lat,
