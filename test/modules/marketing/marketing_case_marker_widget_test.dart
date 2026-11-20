@@ -65,6 +65,21 @@ void main() {
       },
     );
 
+    test('rememberAspect não redesenha retrato e notifica paisagem uma vez', () {
+      const urlRetrato = 'https://example.com/pin-aspect-retrato-unico.jpg';
+      const urlPaisagem = 'https://example.com/pin-aspect-paisagem-unica.jpg';
+      final before = MarketingCaseMarker.aspectRevision.value;
+
+      MarketingCaseMarker.rememberAspect(urlRetrato, 3 / 4);
+      expect(MarketingCaseMarker.aspectRevision.value, before);
+
+      MarketingCaseMarker.rememberAspect(urlPaisagem, 4 / 3);
+      expect(MarketingCaseMarker.aspectRevision.value, before + 1);
+
+      MarketingCaseMarker.rememberAspect(urlPaisagem, 4 / 3);
+      expect(MarketingCaseMarker.aspectRevision.value, before + 1);
+    });
+
     test('aplica zoom mínimo progressivo por plano', () {
       expect(
         MarketingCaseMarker.isVisibleAtZoom(PlanoMarketing.ouro, 7.9),
