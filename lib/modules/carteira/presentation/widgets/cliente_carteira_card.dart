@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class ClienteCarteiraCard extends StatelessWidget {
   const ClienteCarteiraCard({
@@ -6,12 +7,16 @@ class ClienteCarteiraCard extends StatelessWidget {
     required this.clienteNome,
     required this.mediaPercentual,
     required this.categoriasAtivas,
+    required this.categoriasComLancamento,
     required this.onTap,
   });
 
   final String clienteNome;
   final double mediaPercentual;
   final int categoriasAtivas;
+
+  /// Quantas categorias já têm algum lançamento deste produtor.
+  final int categoriasComLancamento;
   final VoidCallback onTap;
 
   @override
@@ -39,11 +44,15 @@ class ClienteCarteiraCard extends StatelessWidget {
               LinearProgressIndicator(
                 value: clamped / 100,
                 minHeight: 10,
+                // Sem isto a trilha herda a cor secundária (verde) do tema e
+                // 0% parece uma barra cheia.
+                backgroundColor: Colors.grey[200],
                 borderRadius: BorderRadius.circular(999),
               ),
               const SizedBox(height: 8),
               Text(
-                'Média geral: ${clamped.toStringAsFixed(1)}% • $categoriasAtivas categorias',
+                'Fechado em média: ${NumberFormat('#,##0.#', 'pt_BR').format(clamped)}% '
+                '• $categoriasComLancamento de $categoriasAtivas categorias com lançamento',
                 style: theme.textTheme.bodySmall,
               ),
             ],
