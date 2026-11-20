@@ -210,14 +210,16 @@ class DrawingClientSearchField extends StatelessWidget {
     return filterDrawingClients(clients, query);
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildClientBody({
+    required void Function(Client client) onClientTap,
+    VoidCallback? onClearTap,
+  }) {
     final v = visuals;
     final queryEmpty = query.trim().isEmpty;
     final displayItems = _displayClients();
     final fieldEnabled = enabled && !isLoading;
 
-    final content = Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextField(
@@ -241,26 +243,34 @@ class DrawingClientSearchField extends StatelessWidget {
           _drawingHierarchyMutedLine(v, 'Nenhum cliente para esta busca')
         else ...[
           if (clearable &&
-              onClearSelection != null &&
+              onClearTap != null &&
               (!queryEmpty || selectedClient != null))
             DrawingHierarchyNameTile(
               title: '— Nenhum —',
               selected: selectedClient == null,
               visuals: v,
-              onTap: onClearSelection!,
+              onTap: onClearTap,
             ),
           for (final client in displayItems)
             DrawingHierarchyNameTile(
               title: client.name,
               selected: client.id == selectedClient?.id,
               visuals: v,
-              onTap: () => onSelectClient(client),
+              onTap: () => onClientTap(client),
             ),
         ],
       ],
     );
+  }
 
-    if (validator == null) return content;
+  @override
+  Widget build(BuildContext context) {
+    if (validator == null) {
+      return _buildClientBody(
+        onClientTap: onSelectClient,
+        onClearTap: onClearSelection,
+      );
+    }
 
     return FormField<Client?>(
       initialValue: selectedClient,
@@ -269,7 +279,18 @@ class DrawingClientSearchField extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            content,
+            _buildClientBody(
+              onClientTap: (client) {
+                state.didChange(client);
+                onSelectClient(client);
+              },
+              onClearTap: onClearSelection == null
+                  ? null
+                  : () {
+                      state.didChange(null);
+                      onClearSelection!();
+                    },
+            ),
             if (state.hasError)
               Padding(
                 padding: const EdgeInsets.only(top: 8, left: 12),
@@ -337,15 +358,17 @@ class DrawingFarmSearchField extends StatelessWidget {
     return filterDrawingFarms(farms, query);
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildFarmBody({
+    required void Function(Farm farm) onFarmTap,
+    VoidCallback? onClearTap,
+  }) {
     final v = visuals;
     final queryEmpty = query.trim().isEmpty;
     final displayItems = _displayFarms();
     final showNewFarm = clientSelected && onNewFarm != null;
     final fieldEnabled = enabled && clientSelected && !isLoading;
 
-    final content = Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextField(
@@ -373,20 +396,20 @@ class DrawingFarmSearchField extends StatelessWidget {
           _drawingHierarchyMutedLine(v, 'Nenhuma fazenda para esta busca')
         else ...[
           if (clearable &&
-              onClearSelection != null &&
+              onClearTap != null &&
               (!queryEmpty || selectedFarm != null))
             DrawingHierarchyNameTile(
               title: '— Nenhuma —',
               selected: selectedFarm == null,
               visuals: v,
-              onTap: onClearSelection!,
+              onTap: onClearTap,
             ),
           for (final farm in displayItems)
             DrawingHierarchyNameTile(
               title: farm.name,
               selected: farm.id == selectedFarm?.id,
               visuals: v,
-              onTap: () => onSelectFarm(farm),
+              onTap: () => onFarmTap(farm),
             ),
           if (showNewFarm)
             DrawingHierarchyNameTile(
@@ -400,8 +423,16 @@ class DrawingFarmSearchField extends StatelessWidget {
         ],
       ],
     );
+  }
 
-    if (validator == null) return content;
+  @override
+  Widget build(BuildContext context) {
+    if (validator == null) {
+      return _buildFarmBody(
+        onFarmTap: onSelectFarm,
+        onClearTap: onClearSelection,
+      );
+    }
 
     return FormField<Farm?>(
       initialValue: selectedFarm,
@@ -410,7 +441,18 @@ class DrawingFarmSearchField extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            content,
+            _buildFarmBody(
+              onFarmTap: (farm) {
+                state.didChange(farm);
+                onSelectFarm(farm);
+              },
+              onClearTap: onClearSelection == null
+                  ? null
+                  : () {
+                      state.didChange(null);
+                      onClearSelection!();
+                    },
+            ),
             if (state.hasError)
               Padding(
                 padding: const EdgeInsets.only(top: 8, left: 12),
