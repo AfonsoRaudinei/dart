@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/core/extensions/context_extensions.dart';
 import 'package:soloforte_app/modules/carteira/domain/oportunidades_aggregation.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_module_scaffold.dart';
@@ -45,7 +46,12 @@ class OportunidadesDetalheScreen extends ConsumerWidget {
               .toList();
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              8,
+              16,
+              context.fabSafeBottomPadding,
+            ),
             children: [
               if (slices.isNotEmpty) ...[
                 OportunidadesChartCard(
