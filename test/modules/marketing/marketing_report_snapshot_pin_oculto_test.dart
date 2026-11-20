@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/core/contracts/marketing_case_reports_list_provider.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/modules/marketing/data/repositories/i_marketing_case_repository.dart';
 import 'package:soloforte_app/modules/marketing/data/services/marketing_sync_service.dart';
 import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.dart';
@@ -65,6 +66,45 @@ void main() {
     final list = container.read(marketingCaseReportsListProvider).requireValue;
     expect(list.single.pinOcultoNoMapa, isFalse);
   });
+
+  test(
+    'published sem liberado_em de outro autor não entra na lista',
+    () async {
+      LocalSessionIdentity.resetForTesting();
+      LocalSessionIdentity.remember('autor-atual');
+      addTearDown(LocalSessionIdentity.resetForTesting);
+
+      Future<int> count(String userId) async {
+        final container = ProviderContainer(
+          overrides: [
+            marketingCaseRepositoryProvider.overrideWithValue(_EmptyRepo()),
+            marketingCasesProvider.overrideWith((ref) {
+              final sync = ref.watch(marketingSyncServiceProvider);
+              return _StubCasesNotifier(sync, [
+                _case(status: 'published', userId: userId),
+              ]);
+            }),
+            currentUserRoleProvider.overrideWith((ref) => UserRole.consultor),
+            planoAtivoProvider.overrideWith(
+              (ref) async => _plan(expiraEm: DateTime.utc(2028, 1, 1)),
+            ),
+            marketingCaseReportsListProvider.overrideWith(
+              (ref) => ref.watch(marketingCaseReportsListImplProvider),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        await container.read(planoAtivoProvider.future);
+        return container
+            .read(marketingCaseReportsListProvider)
+            .requireValue
+            .length;
+      }
+
+      expect(await count('outra-pessoa'), 0);
+      expect(await count('autor-atual'), 1);
+    },
+  );
 }
 
 UserPlan _plan({required DateTime expiraEm}) {
@@ -80,7 +120,7 @@ UserPlan _plan({required DateTime expiraEm}) {
   );
 }
 
-MarketingCase _case({required String status}) {
+MarketingCase _case({required String status, String? userId}) {
   return MarketingCase.fromJson({
     'id': 'c1',
     'tipo': 'resultado',
@@ -91,6 +131,7 @@ MarketingCase _case({required String status}) {
     'produtor_fazenda': 'Fazenda Teste',
     'produto_utilizado': 'Produto X',
     'status': status,
+    if (userId != null) 'user_id': userId,
     'ativo': true,
     'criado_em': '2026-06-04T12:00:00.000Z',
     'atualizado_em': '2026-06-04T12:00:00.000Z',
