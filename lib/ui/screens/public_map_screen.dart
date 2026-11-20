@@ -165,6 +165,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
     final locationState = ref.watch(publicLocationNotifierProvider);
     final tileConfig = _publicTileConfig;
     final publicationsAsync = ref.watch(publicPublicationsProvider);
+    final marketingCasesAsync = ref.watch(marketingCasesProvider);
     // CTA só para visitante confirmado — oculto no bootstrap (SessionUnknown)
     // e quando a sessão autenticada ainda não redirecionou para /map.
     final session = ref.watch(sessionControllerProvider);
@@ -230,53 +231,61 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
               ),
 
               // Pinos de Marketing (Apenas Ouro na tela deslogada)
-              if (ref.watch(marketingCasesProvider).hasValue)
-                MarkerLayer(
-                  rotate: true,
-                  markers: deduplicateHighestMetalPerGroup(
-                    ref
-                        .watch(marketingCasesProvider)
-                        .value!
-                        .where(
-                          (mCase) =>
-                              MarketingCaseVisibility
-                                  .isVisibleOnMapForAnonymous(
-                                marketingCase: mCase,
-                              ),
-                        )
-                        .toList(growable: false),
-                  )
-                      .where(
-                        (mCase) => MarketingCaseMarker.isVisibleAtZoom(
-                          mCase.visibilidade,
-                          _currentZoom,
-                        ),
-                      )
-                      .map((mCase) {
-                        return Marker(
-                          point: LatLng(mCase.lat, mCase.lng),
-                          width: MarketingCaseMarker.pinWidth(
-                            mCase.visibilidade,
-                            zoom: _currentZoom,
-                          ),
-                          height:
-                              MarketingCaseMarker.pinHeight(
-                                mCase.visibilidade,
-                                zoom: _currentZoom,
-                              ) +
-                              MarketingCaseMarker.pointerHeight,
-                          alignment: Alignment.topCenter,
-                          child: MarketingCaseMarker(
-                            marketingCase: mCase,
-                            zoom: _currentZoom,
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              MarketingCaseSheet.show(context, mCase);
-                            },
-                          ),
-                        );
-                      })
-                      .toList(),
+              if (marketingCasesAsync.hasValue)
+                ValueListenableBuilder<int>(
+                  valueListenable: MarketingCaseMarker.aspectRevision,
+                  builder: (_, __, ___) {
+                    return MarkerLayer(
+                      rotate: true,
+                      markers:
+                          deduplicateHighestMetalPerGroup(
+                                marketingCasesAsync.value!
+                                    .where(
+                                      (mCase) =>
+                                          MarketingCaseVisibility.isVisibleOnMapForAnonymous(
+                                            marketingCase: mCase,
+                                          ),
+                                    )
+                                    .toList(growable: false),
+                              )
+                              .where(
+                                (mCase) => MarketingCaseMarker.isVisibleAtZoom(
+                                  mCase.visibilidade,
+                                  _currentZoom,
+                                ),
+                              )
+                              .map((mCase) {
+                                return Marker(
+                                  point: LatLng(mCase.lat, mCase.lng),
+                                  width: MarketingCaseMarker.pinWidth(
+                                    mCase.visibilidade,
+                                    zoom: _currentZoom,
+                                  ),
+                                  height:
+                                      MarketingCaseMarker.pinHeight(
+                                        mCase.visibilidade,
+                                        zoom: _currentZoom,
+                                        aspect: MarketingCaseMarker.cachedAspect(
+                                          MarketingCaseMarker.primaryPhotoUrl(
+                                            mCase,
+                                          ),
+                                        ),
+                                      ) +
+                                      MarketingCaseMarker.pointerHeight,
+                                  alignment: Alignment.topCenter,
+                                  child: MarketingCaseMarker(
+                                    marketingCase: mCase,
+                                    zoom: _currentZoom,
+                                    onTap: () {
+                                      HapticFeedback.lightImpact();
+                                      MarketingCaseSheet.show(context, mCase);
+                                    },
+                                  ),
+                                );
+                              })
+                              .toList(),
+                    );
+                  },
                 ),
 
               // Ponto azul da localização do usuário - iOS style
