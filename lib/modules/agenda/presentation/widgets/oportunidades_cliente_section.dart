@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import 'package:soloforte_app/core/contracts/i_opportunity_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/opportunity_summary.dart';
@@ -165,27 +166,37 @@ class _OportunidadeItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: Text(
-                          oportunidade.monetaryPerHa
-                              ? '${oportunidade.categoryName}  '
-                                    'R\$ ${oportunidade.totalOpportunityValue.toStringAsFixed(0)}'
-                              : '${oportunidade.categoryName}  '
-                                    '${oportunidade.residualPercent.toStringAsFixed(0)}% em aberto',
-                          style: Theme.of(context).textTheme.bodyMedium,
+                          oportunidade.categoryName,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (labelValor != null)
-                        Text(
-                          labelValor,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: Colors.grey[600]),
-                        ),
+                      const SizedBox(width: 8),
+                      Text(
+                        oportunidade.monetaryPerHa
+                            ? 'R\$ ${NumberFormat('#,##0', 'pt_BR').format(oportunidade.totalOpportunityValue)}'
+                            : '${oportunidade.residualPercent.toStringAsFixed(0)}% em aberto',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        maxLines: 1,
+                      ),
                     ],
                   ),
+                  if (labelValor != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      'Referência: $labelValor',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                   const SizedBox(height: 4),
                   Row(
                     children: [
