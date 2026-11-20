@@ -10,6 +10,7 @@ import 'package:soloforte_app/core/contracts/i_visit_client_lookup_provider.dart
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
+import 'package:soloforte_app/modules/map/presentation/widgets/visit_sheet_inline_picker.dart';
 
 final _visitClientsProvider =
     FutureProvider.autoDispose<List<VisitClientSummary>>(
@@ -80,7 +81,7 @@ class VisitSheet extends ConsumerStatefulWidget {
   onNavigateToArea;
 
   /// ID do cliente pré-selecionado via query param modo=visita (P5).
-  /// Quando informado, o dropdown de Produtor já inicia selecionado.
+  /// Quando informado, o buscador de Produtor já inicia com o cliente selecionado.
   final String? preSelectedClienteId;
   // Bug 1: scrollController do DraggableScrollableSheet para expandir via drag.
   final ScrollController? scrollController;
@@ -113,6 +114,8 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
   VisitTalhaoOption? _selectedTalhao;
   _VisitSheetStep _step = _VisitSheetStep.selecaoTalhao;
   String _selectedActivity = 'Monitoramento';
+  String _clientQuery = '';
+  final _clientSearchController = TextEditingController();
   String _talhaoQuery = '';
   final _talhaoSearchController = TextEditingController();
   List<VisitTalhaoOption> _talhoes = const [];
@@ -129,6 +132,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
 
   @override
   void dispose() {
+    _clientSearchController.dispose();
     _talhaoSearchController.dispose();
     super.dispose();
   }
@@ -218,25 +222,15 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildDropdown<VisitClientSummary>(
-                    label: 'Produtor',
-                    value: _selectedClient,
-                    items: clientsAsync.valueOrNull ?? [],
-                    itemLabel: (c) => c.name,
-                    onChanged: (c) {
-                      setState(() {
-                        _selectedClient = c;
-                        _selectedFarm = null;
-                        _selectedTalhao = null;
-                        _talhaoQuery = '';
-                        _talhoes = const [];
-                        _step = _VisitSheetStep.selecaoTalhao;
-                      });
-                      _talhaoSearchController.clear();
-                      _loadTalhoes(null);
-                    },
-                    isLoading: clientsAsync.isLoading,
-                    v: v,
+                  VisitSheetProdutorPicker(
+                    visuals: v,
+                    clientsAsync: clientsAsync,
+                    searchController: _clientSearchController,
+                    clientQuery: _clientQuery,
+                    selectedClientId: _selectedClient?.id,
+                    onQueryChanged: (value) =>
+                        setState(() => _clientQuery = value),
+                    onSelectClient: _selectClient,
                   ),
                   const SizedBox(height: 12),
                   _buildDropdown<VisitFarmSummary>(
@@ -406,6 +400,19 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     );
   }
 
+  void _selectClient(VisitClientSummary client) {
+    setState(() {
+      _selectedClient = client;
+      _selectedFarm = null;
+      _selectedTalhao = null;
+      _talhaoQuery = '';
+      _talhoes = const [];
+      _step = _VisitSheetStep.selecaoTalhao;
+    });
+    _talhaoSearchController.clear();
+    _loadTalhoes(null);
+  }
+
   Future<void> _loadTalhoes(String? farmId) async {
     final generation = ++_talhaoLoadGeneration;
     if (farmId == null || farmId.isEmpty) {
@@ -486,70 +493,36 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
 
   Widget _buildTalhaoPicker(SoloForteSheetVisuals v) {
     final enabled = _selectedFarm != null;
-    final surface = v.cardBackground;
-    final border = v.cardBorder;
-    final radius = v.cardRadius;
     final items = enabled ? _visibleTalhoes() : const <VisitTalhaoOption>[];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Área / Talhão',
-          style: TextStyle(color: v.subtitleColor, fontSize: 12),
-        ),
+        visitSheetFieldLabel(v, 'Área / Talhão'),
         const SizedBox(height: 6),
         TextField(
           controller: _talhaoSearchController,
           enabled: enabled,
           onChanged: (value) => setState(() => _talhaoQuery = value),
           style: TextStyle(color: v.titleColor, fontSize: 16),
-          decoration: InputDecoration(
+          decoration: visitSheetSearchDecoration(
+            v,
             hintText: enabled
                 ? 'Buscar talhão'
                 : 'Selecione a fazenda primeiro',
-            hintStyle: TextStyle(color: v.subtitleColor, fontSize: 16),
-            prefixIcon: Icon(Icons.search, color: v.subtitleColor),
-            filled: true,
-            fillColor: surface,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(radius),
-              borderSide: BorderSide(color: border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(radius),
-              borderSide: BorderSide(color: border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(radius),
-              borderSide: BorderSide(color: v.focusBorder, width: 1.5),
-            ),
-            disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(radius),
-              borderSide: BorderSide(color: border),
-            ),
           ),
         ),
         const SizedBox(height: 8),
         if (!enabled)
-          Text(
+          visitSheetMutedLine(
+            v,
             'Selecione a fazenda para ver os talhões.',
-            style: TextStyle(color: v.subtitleColor, fontSize: 13),
+            padding: EdgeInsets.zero,
           )
         else if (_loadingTalhoes)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Text(
-              'Carregando...',
-              style: TextStyle(color: v.subtitleColor, fontSize: 14),
-            ),
-          )
+          visitSheetMutedLine(v, 'Carregando...')
         else if (items.isEmpty)
-          Text(
-            'Nenhum talhão encontrado',
-            style: TextStyle(color: v.subtitleColor, fontSize: 14),
-          )
+          visitSheetMutedLine(v, 'Nenhum talhão encontrado', padding: EdgeInsets.zero)
         else
           // Com um único talhão o usuário ainda toca o tile (sem auto-pular o passo 1).
           for (final item in items)
