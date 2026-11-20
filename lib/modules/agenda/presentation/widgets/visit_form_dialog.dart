@@ -6,7 +6,7 @@ import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/visit.dart';
 import '../../domain/enums/event_type.dart';
 import '../providers/agenda_provider.dart';
-import 'client_selector_dropdown.dart';
+import 'client_selector_field.dart';
 import 'distance_warning_dialog.dart';
 import 'oportunidades_cliente_section.dart';
 
@@ -233,7 +233,7 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Cliente
-              ClientSelectorDropdown(
+              ClientSelectorField(
                 selectedClientId: _selectedClienteId,
                 onChanged: (id) => setState(() => _selectedClienteId = id),
               ),
