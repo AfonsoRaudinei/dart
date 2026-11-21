@@ -37,6 +37,7 @@ class DrawingBottomToolbar extends StatefulWidget {
     this.canRemoveHoleRing = false,
     this.onRemoveVertex,
     this.canRemoveVertex = false,
+    this.onDeleteFeature,
   });
 
   final VoidCallback onConfirm;
@@ -71,8 +72,14 @@ class DrawingBottomToolbar extends StatefulWidget {
   final VoidCallback? onRemoveVertex;
   final bool canRemoveVertex;
 
+  /// Segunda linha compacta (edição): excluir o desenho inteiro.
+  final VoidCallback? onDeleteFeature;
+
   bool get _showsSecondaryActions =>
-      onStartHoleCut != null || showRemoveHoleRing || onRemoveVertex != null;
+      onStartHoleCut != null ||
+      showRemoveHoleRing ||
+      onRemoveVertex != null ||
+      onDeleteFeature != null;
 
   bool get _showsMeasurement =>
       (vertexDragPreview?.areaHa ?? measurementAreaHa) > 0 ||
@@ -164,6 +171,16 @@ class _DrawingBottomToolbarState extends State<DrawingBottomToolbar>
           semanticsLabel: 'Excluir recorte interno',
           enabled: widget.canRemoveHoleRing,
           onTap: widget.canRemoveHoleRing ? widget.onRemoveHoleRing : null,
+        ),
+      if (widget.onDeleteFeature != null)
+        _ToolbarAction(
+          icon: Icons.delete_outline,
+          label: 'Excluir',
+          iconColor: _iosRed,
+          labelColor: Colors.white70,
+          iconSize: 20,
+          semanticsLabel: 'Excluir desenho',
+          onTap: widget.onDeleteFeature,
         ),
     ];
   }
