@@ -251,7 +251,7 @@ void main() {
     expect(find.textContaining(r'R$'), findsNothing);
     expect(find.text('Restaurar compras'), findsNothing);
     expect(find.text('Grátis'), findsNWidgets(2));
-    expect(find.textContaining('Só você vê'), findsOneWidget);
+    expect(find.textContaining('só para você'), findsOneWidget);
   });
 
   testWidgets('menu descreve o plano tocado', (tester) async {
@@ -262,10 +262,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Seu case fica no mapa. Só você vê.'), findsOneWidget);
+    expect(find.text('Comece sem custo.'), findsOneWidget);
     expect(
       find.text(
-        'Você cria ocorrência. Compartilhar no vínculo só a partir do Bronze.',
+        'Compartilhar ocorrências e cases com o vínculo é exclusivo dos planos pagos.',
       ),
       findsOneWidget,
     );
@@ -280,9 +280,12 @@ void main() {
       find.text('3 meses · preço na loja ao comprar'),
       findsOneWidget,
     );
-    expect(find.text('5 indicações sobem para Prata.'), findsOneWidget);
     expect(
-      find.text('Você compartilha ocorrência no vínculo.'),
+      find.text('A cada 5 indicações, você sobe para o Prata.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Compartilhe ocorrências diretamente com seu vínculo.'),
       findsOneWidget,
     );
     expect(find.text('Restaurar compras'), findsNothing);
@@ -293,9 +296,12 @@ void main() {
       find.text('6 meses · preço na loja ao comprar'),
       findsOneWidget,
     );
-    expect(find.text('10 indicações sobem para Ouro.'), findsOneWidget);
     expect(
-      find.text('Você compartilha ocorrência no vínculo.'),
+      find.text('A cada 10 indicações, você sobe para o Ouro.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Compartilhe cases e ocorrências com seu vínculo.'),
       findsOneWidget,
     );
 
@@ -307,13 +313,13 @@ void main() {
     );
     expect(
       find.text(
-        'O pin Ouro aparece para todos, mesmo sem login, a partir do zoom 8.',
+        'Pin visível para todos, até sem login, a partir do zoom 8.',
       ),
       findsOneWidget,
     );
-    expect(find.text('NDVI refinado.'), findsOneWidget);
+    expect(find.text('NDVI com maior nível de detalhe.'), findsOneWidget);
     expect(
-      find.text('Você compartilha ocorrência no vínculo.'),
+      find.text('Compartilhe ocorrências com seu vínculo.'),
       findsOneWidget,
     );
   });
@@ -330,7 +336,7 @@ void main() {
 
     expect(
       find.text(
-        'O pin Prata aparece para quem está logado, a partir do zoom 12.',
+        'Pin visível para qualquer usuário logado, a partir do zoom 12.',
       ),
       findsOneWidget,
     );
@@ -350,7 +356,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('NDVI refinado.'), findsOneWidget);
+    expect(find.text('NDVI com maior nível de detalhe.'), findsOneWidget);
     expect(find.text('Atual'), findsOneWidget);
     expect(find.text(r'R$ 119,90'), findsNothing);
     expect(find.text('Mudar'), findsNothing);
