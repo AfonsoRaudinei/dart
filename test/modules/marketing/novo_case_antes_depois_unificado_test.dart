@@ -8,6 +8,8 @@ import 'package:soloforte_app/modules/marketing/domain/enums/case_tipo.dart';
 import 'package:soloforte_app/modules/marketing/presentation/screens/novo_case_sheet.dart';
 import 'package:soloforte_app/modules/marketing/presentation/widgets/foto_picker_widget.dart';
 
+import 'fake_teste_execucao_lookup.dart';
+
 void main() {
   testWidgets('Antes/Depois unificado: adicionar e remover comparação extra', (
     tester,
@@ -16,6 +18,7 @@ void main() {
       ProviderScope(
         overrides: [
           clientLookupProvider.overrideWithValue(_FakeClientLookup()),
+          fakeTesteExecucaoLookupOverride,
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -54,6 +57,7 @@ void main() {
       ProviderScope(
         overrides: [
           clientLookupProvider.overrideWithValue(_FakeClientLookup()),
+          fakeTesteExecucaoLookupOverride,
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -89,6 +93,7 @@ void main() {
       ProviderScope(
         overrides: [
           clientLookupProvider.overrideWithValue(_FakeClientLookup()),
+          fakeTesteExecucaoLookupOverride,
         ],
         child: MaterialApp(
           home: Scaffold(

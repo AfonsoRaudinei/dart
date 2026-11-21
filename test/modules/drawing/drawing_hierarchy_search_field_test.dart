@@ -176,6 +176,7 @@ void main() {
     Future<void> mountFarm(
       WidgetTester tester, {
       Farm? selectedFarm,
+      bool clientSelected = true,
     }) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -184,6 +185,7 @@ void main() {
               child: _FarmHarness(
                 farms: _farms,
                 selectedFarm: selectedFarm,
+                clientSelected: clientSelected,
               ),
             ),
           ),
@@ -191,6 +193,12 @@ void main() {
       );
       await tester.pumpAndSettle();
     }
+
+    testWidgets('sem cliente ativo não oferece Nova Fazenda', (tester) async {
+      await mountFarm(tester, clientSelected: false);
+
+      expect(find.text('Nova Fazenda'), findsNothing);
+    });
 
     testWidgets('com cliente ativo exibe Nova Fazenda com busca vazia',
         (tester) async {
