@@ -205,8 +205,23 @@ void main() {
       );
 
       expect(offset.dx, 100);
-      expect(offset.dy, 400 - toolbarHeight - 12);
+      expect(offset.dy, 400 - toolbarHeight - 24);
     });
+
+    test(
+      'painéis extras crescem para baixo: topo ancorado na linha principal',
+      () {
+        final offset = clampMapToolbarOffset(
+          screenPoint: const Offset(200, 400),
+          viewportSize: const Size(400, 800),
+          toolbarWidth: 200,
+          toolbarHeight: 100,
+          anchorHeight: 52,
+        );
+
+        expect(offset.dy, 400 - 52 - 24);
+      },
+    );
 
     test('borda direita: clamp horizontal', () {
       final offset = clampMapToolbarOffset(

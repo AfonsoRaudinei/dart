@@ -227,17 +227,19 @@ class DrawingClientSearchField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
-          controller: searchController,
-          enabled: fieldEnabled,
-          onChanged: onQueryChanged,
-          style: TextStyle(color: v.titleColor, fontSize: 16),
-          decoration: drawingHierarchySearchDecoration(
-            v,
-            hintText: isLoading ? 'Carregando...' : searchHint,
+        if (!(clearable && queryEmpty && selectedClient != null)) ...[
+          TextField(
+            controller: searchController,
+            enabled: fieldEnabled,
+            onChanged: onQueryChanged,
+            style: TextStyle(color: v.titleColor, fontSize: 16),
+            decoration: drawingHierarchySearchDecoration(
+              v,
+              hintText: isLoading ? 'Carregando...' : searchHint,
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
+          const SizedBox(height: 8),
+        ],
         if (isLoading)
           _drawingHierarchyMutedLine(v, 'Carregando...')
         else if (clients.isEmpty)
@@ -373,19 +375,21 @@ class DrawingFarmSearchField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
-          controller: searchController,
-          enabled: fieldEnabled,
-          onChanged: onQueryChanged,
-          style: TextStyle(color: v.titleColor, fontSize: 16),
-          decoration: drawingHierarchySearchDecoration(
-            v,
-            hintText: !clientSelected
-                ? 'Selecione o cliente primeiro'
-                : (isLoading ? 'Carregando...' : searchHint),
+        if (!(clearable && queryEmpty && selectedFarm != null)) ...[
+          TextField(
+            controller: searchController,
+            enabled: fieldEnabled,
+            onChanged: onQueryChanged,
+            style: TextStyle(color: v.titleColor, fontSize: 16),
+            decoration: drawingHierarchySearchDecoration(
+              v,
+              hintText: !clientSelected
+                  ? 'Selecione o cliente primeiro'
+                  : (isLoading ? 'Carregando...' : searchHint),
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
+          const SizedBox(height: 8),
+        ],
         if (!clientSelected)
           const SizedBox.shrink()
         else if (isLoading)

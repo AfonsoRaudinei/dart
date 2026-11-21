@@ -6,6 +6,7 @@ import '../client_list_filter_logic.dart';
 import '../providers/clients_providers.dart';
 import '../widgets/client_list_filters_sheet.dart';
 import '../../../../../core/router/app_routes.dart';
+import '../../domain/client.dart';
 import '../../domain/enums/cultura_tipo.dart';
 import '../../../../../ui/theme/premium/design_tokens.dart';
 import 'package:soloforte_app/core/design/sf_icons.dart';
@@ -118,7 +119,9 @@ class ClientListScreen extends ConsumerWidget {
                         children: [
                           ...['Todos', 'Ativos', 'Inativos'].map((f) {
                             final isSelected = filter == f;
-                            final accent = Theme.of(context).colorScheme.primary;
+                            final accent = Theme.of(
+                              context,
+                            ).colorScheme.primary;
                             return Padding(
                               padding: const EdgeInsets.only(right: 8.0),
                               child: GestureDetector(
@@ -163,7 +166,8 @@ class ClientListScreen extends ConsumerWidget {
                           }),
                           _FiltrosChip(
                             activeCount: advanced.activeChipCount,
-                            onTap: () => showClientListFiltersSheet(context, ref),
+                            onTap: () =>
+                                showClientListFiltersSheet(context, ref),
                           ),
                         ],
                       ),
@@ -228,10 +232,12 @@ class ClientListScreen extends ConsumerWidget {
                               emphasize: true,
                               onRemove: () {
                                 ref
-                                    .read(
-                                      clientAdvancedFiltersProvider.notifier,
-                                    )
-                                    .state = const ClientListAdvancedFilters();
+                                        .read(
+                                          clientAdvancedFiltersProvider
+                                              .notifier,
+                                        )
+                                        .state =
+                                    const ClientListAdvancedFilters();
                               },
                             ),
                           ],
@@ -361,28 +367,32 @@ class ClientListScreen extends ConsumerWidget {
                                               fontWeight: FontWeight.w600,
                                             ),
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '${client.city} - ${client.state}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(
-                                              color: PremiumTokens
-                                                  .textSecondaryLight,
-                                            ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        client.phone,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelMedium
-                                            ?.copyWith(
-                                              color: PremiumTokens
-                                                  .textTertiaryLight,
-                                            ),
-                                      ),
+                                      if (_clientLocation(client) != null) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          _clientLocation(client)!,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: PremiumTokens
+                                                    .textSecondaryLight,
+                                              ),
+                                        ),
+                                      ],
+                                      if (client.phone.trim().isNotEmpty) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          client.phone,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .labelMedium
+                                              ?.copyWith(
+                                                color: PremiumTokens
+                                                    .textTertiaryLight,
+                                              ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),
@@ -436,7 +446,9 @@ class _FiltrosChip extends StatelessWidget {
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: hasBadge ? accent.withValues(alpha: 0.12) : context.premiumSurface,
+          color: hasBadge
+              ? accent.withValues(alpha: 0.12)
+              : context.premiumSurface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: hasBadge ? accent : context.premiumHairline,
@@ -531,4 +543,13 @@ class _ActiveFilterChip extends StatelessWidget {
       ),
     );
   }
+}
+
+/// "Cidade - UF" sem sobras quando algum campo está vazio; null se ambos vazios.
+String? _clientLocation(Client client) {
+  final parts = [
+    client.city,
+    client.state,
+  ].map((e) => e.trim()).where((e) => e.isNotEmpty && e != '-').toList();
+  return parts.isEmpty ? null : parts.join(' - ');
 }

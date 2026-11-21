@@ -99,7 +99,7 @@ class _SideMenuContent extends StatelessWidget {
           const SizedBox(height: 8),
           const _QuickActionsGrid(),
           const SizedBox(height: 18),
-          const _SectionTitle('Resumo de hoje'),
+          const _SectionTitle('Atalhos'),
           const SizedBox(height: 8),
           const _DailySummary(),
           const SizedBox(height: 16),
@@ -276,7 +276,7 @@ class _DailySummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 76,
+      height: 68,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
       decoration: BoxDecoration(
         color: _menuIconBg(context),
@@ -343,18 +343,15 @@ class _SummaryMetric extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, size: 15, color: _menuAccent(context)),
-                const SizedBox(height: 2),
-                const Text(
-                  '--',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                ),
+                Icon(icon, size: 20, color: _menuAccent(context)),
+                const SizedBox(height: 4),
                 Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 9,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
                     color: _menuSecondaryText(context),
                   ),
                 ),
