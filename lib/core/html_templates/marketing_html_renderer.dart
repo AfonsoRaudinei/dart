@@ -150,18 +150,28 @@ class MarketingHtmlRenderer {
     final branding = await _branding(data);
     final dataCase = _parseDate(data['data_case'] as String?);
 
+    final blocos = _MarketingAvaliacaoData.listFrom(data['avaliacoes_json']);
+    final usaBlocos = blocos.isNotEmpty;
+    // Blocos de comparação já trazem parâmetros, fotos e texto por bloco;
+    // sem eles o documento segue o par legado Antes/Depois.
+    tpl = _resolveAllIfBlocks(tpl, 'blocos_avaliacao', include: usaBlocos);
+
     final parametros = _MarketingParametroData.listFrom(
       data['parametros_json'],
     );
+    final temParametros =
+        parametros.isNotEmpty || blocos.any((b) => b.parametros.isNotEmpty);
     tpl = _resolveAllIfBlocks(
       tpl,
       'parametros_comparativos',
       include: parametros.isNotEmpty,
     );
+    final conclusao = _conclusaoTexto(data);
+    tpl = _resolveAllIfBlocks(tpl, 'conclusao', include: conclusao.isNotEmpty);
     final hasGanho =
         (data['ganho_produtividade'] as String?)?.isNotEmpty == true;
     final resultadosLegados =
-        parametros.isEmpty &&
+        !temParametros &&
         (hasGanho ||
             (data['economia_gerada'] as String?)?.isNotEmpty == true ||
             data['produtividade_valor'] != null);
@@ -188,14 +198,18 @@ class MarketingHtmlRenderer {
       include: data['produtividade_valor'] != null,
     );
 
-    final fotoAntes = await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
-      data['foto_antes_url'] as String?,
-      fetchRemoteBytes: fetchRemoteBytes,
-    );
-    final fotoDepois = await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
-      data['foto_depois_url'] as String?,
-      fetchRemoteBytes: fetchRemoteBytes,
-    );
+    final fotoAntes = usaBlocos
+        ? ''
+        : await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
+            data['foto_antes_url'] as String?,
+            fetchRemoteBytes: fetchRemoteBytes,
+          );
+    final fotoDepois = usaBlocos
+        ? ''
+        : await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
+            data['foto_depois_url'] as String?,
+            fetchRemoteBytes: fetchRemoteBytes,
+          );
     tpl = _resolveAllIfBlocks(
       tpl,
       'foto_antes_url',
@@ -227,8 +241,29 @@ class MarketingHtmlRenderer {
       ),
       'media_ganho_percent': _formatSigned(_mediaParametros(parametros)),
       'parametros_comparativos_html': _renderParametrosHtml(parametros),
+      'conclusao': RelatorioHtmlRenderer.escapeHtml(conclusao),
     });
-    return RelatorioHtmlRenderer.completeRender(html, asFragment: asFragment);
+
+    final blocosHtml = StringBuffer();
+    for (var index = 0; index < blocos.length; index++) {
+      blocosHtml.write(
+        await _renderAvaliacaoLivre(
+          blocos[index],
+          index + 1,
+          fetchRemoteBytes: fetchRemoteBytes,
+          ocultarLadosSemFoto: true,
+        ),
+      );
+    }
+    final completo = RelatorioHtmlRenderer.resolveEachBlock(
+      html,
+      'avaliacoes',
+      html: blocosHtml.toString(),
+    );
+    return RelatorioHtmlRenderer.completeRender(
+      completo,
+      asFragment: asFragment,
+    );
   }
 
   static Future<String> _renderAvaliacao(
@@ -244,19 +279,14 @@ class MarketingHtmlRenderer {
     final avaliacoesLivres = _MarketingAvaliacaoData.listFrom(
       data['avaliacoes_json'],
     );
-    final conclusao =
-        data['conclusao_tecnica'] as String? ?? data['conclusao'] as String?;
+    final conclusao = _conclusaoTexto(data);
     final nomeTalhao = (data['nome_talhao'] as String?)?.trim() ?? '';
     final tamanhoHa = RelatorioHtmlRenderer.formatHectares(
       (data['tamanho_ha'] as num?)?.toDouble(),
     );
     final contexto = _contexto(data, extra: nomeTalhao);
 
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'conclusao',
-      include: conclusao?.trim().isNotEmpty == true,
-    );
+    tpl = _resolveAllIfBlocks(tpl, 'conclusao', include: conclusao.isNotEmpty);
     tpl = _resolveAllIfBlocks(tpl, 'roi_calculado', include: false);
     tpl = _resolveAllIfBlocks(
       tpl,
@@ -280,7 +310,7 @@ class MarketingHtmlRenderer {
       'produtividade_unidade': RelatorioHtmlRenderer.escapeHtml(
         data['produtividade_unidade'] as String?,
       ),
-      'conclusao': RelatorioHtmlRenderer.escapeHtml(conclusao ?? ''),
+      'conclusao': RelatorioHtmlRenderer.escapeHtml(conclusao),
       'roi_calculado': data['roi_calculado']?.toString() ?? '',
       'roi_investimento': data['roi_investimento']?.toString() ?? '',
       'roi_retorno': data['roi_retorno']?.toString() ?? '',
@@ -334,6 +364,15 @@ class MarketingHtmlRenderer {
       consultantName: data['nome_vendedor'] as String?,
       consultantRole: 'Consultoria',
     );
+  }
+
+  /// Conclusão técnica do case; `conclusao` só entra quando a técnica está vazia.
+  static String _conclusaoTexto(Map<String, dynamic> data) {
+    for (final key in const ['conclusao_tecnica', 'conclusao']) {
+      final value = (data[key] as String?)?.trim() ?? '';
+      if (value.isNotEmpty) return value;
+    }
+    return '';
   }
 
   static Future<Map<String, dynamic>> _withMunicipioUf(
@@ -497,6 +536,7 @@ class MarketingHtmlRenderer {
     _MarketingAvaliacaoData data,
     int ordem, {
     Future<Uint8List?> Function(String url)? fetchRemoteBytes,
+    bool ocultarLadosSemFoto = false,
   }) async {
     final nomeA = RelatorioHtmlRenderer.escapeHtml(data.nomeLadoA);
     final nomeB = RelatorioHtmlRenderer.escapeHtml(data.nomeLadoB);
@@ -516,16 +556,45 @@ class MarketingHtmlRenderer {
         : data.titulo.trim();
     final observacoes = data.observacoes?.trim() ?? '';
 
+    final lados = [
+      ('a', data.nomeLadoA, data.fotoLadoAPath),
+      ('b', data.nomeLadoB, data.fotoLadoBPath),
+      ('c', data.nomeLadoC, data.fotoLadoCPath),
+    ];
+    final figuras = <String>[];
+    for (var i = 0; i < lados.length; i++) {
+      final (lado, nome, foto) = lados[i];
+      final temFoto = foto?.trim().isNotEmpty == true;
+      // Lado C só existe com foto; A/B mantêm o espaço comparativo na avaliação.
+      final obrigatorio = !ocultarLadosSemFoto && i < 2;
+      if (!temFoto && !obrigatorio) continue;
+      figuras.add(
+        await _ladoFigure(
+          ordem,
+          lado,
+          nome,
+          foto,
+          data.cultura,
+          fetchRemoteBytes: fetchRemoteBytes,
+          larguraTotal: i == 2 && figuras.length == 2,
+        ),
+      );
+    }
+    final fotosHtml = figuras.isEmpty
+        ? ''
+        : '<div class="sf-figure-grid mk-compare${figuras.length == 1 ? ' uma-foto' : ''}">'
+              '${figuras.join()}</div>';
+    final mediaHtml = data.parametros.isEmpty
+        ? ''
+        : '<span class="mk-avaliacao-media">Média <strong>${_formatSigned(data.mediaGanhoPercent)}%</strong></span>';
+
     return '''
     <article class="mk-avaliacao avaliacao-block">
       <div class="mk-avaliacao-head">
         <span class="mk-avaliacao-title">${RelatorioHtmlRenderer.escapeHtml(titulo)}</span>
-        <span class="mk-avaliacao-media">Média <strong>${_formatSigned(data.mediaGanhoPercent)}%</strong></span>
+        $mediaHtml
       </div>
-      <div class="sf-figure-grid mk-compare">
-        ${await _ladoFigure(ordem, 'a', data.nomeLadoA, data.fotoLadoAPath, data.cultura, fetchRemoteBytes: fetchRemoteBytes)}
-        ${await _ladoFigure(ordem, 'b', data.nomeLadoB, data.fotoLadoBPath, data.cultura, fetchRemoteBytes: fetchRemoteBytes)}
-      </div>
+      $fotosHtml
       ${parametrosHtml.isEmpty ? '' : '<div class="sf-sheet">$parametrosHtml</div>'}
       ${observacoes.isEmpty ? '' : '<div class="sf-note"><p class="sf-note-label">Observações</p><p class="sf-prose">${RelatorioHtmlRenderer.escapeHtml(observacoes)}</p></div>'}
     </article>
@@ -575,6 +644,7 @@ class MarketingHtmlRenderer {
     String? fotoUrl,
     String? cultura, {
     Future<Uint8List?> Function(String url)? fetchRemoteBytes,
+    bool larguraTotal = false,
   }) async {
     final resolvedFoto = fotoUrl != null && fotoUrl.isNotEmpty
         ? await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
@@ -596,7 +666,7 @@ class MarketingHtmlRenderer {
         : '<div class="mk-photo-empty">Sem foto</div>';
 
     return '''
-        <figure class="sf-figure lado">
+        <figure class="sf-figure lado"${larguraTotal ? ' style="grid-column: 1 / -1;"' : ''}>
           $fotoHtml
           <figcaption>$legenda</figcaption>
         </figure>
@@ -841,8 +911,10 @@ class _MarketingAvaliacaoData {
   final String titulo;
   final String nomeLadoA;
   final String nomeLadoB;
+  final String nomeLadoC;
   final String? fotoLadoAPath;
   final String? fotoLadoBPath;
+  final String? fotoLadoCPath;
   final String? cultura;
   final List<_MarketingParametroData> parametros;
   final String? observacoes;
@@ -851,8 +923,10 @@ class _MarketingAvaliacaoData {
     required this.titulo,
     required this.nomeLadoA,
     required this.nomeLadoB,
+    required this.nomeLadoC,
     this.fotoLadoAPath,
     this.fotoLadoBPath,
+    this.fotoLadoCPath,
     this.cultura,
     this.parametros = const [],
     this.observacoes,
@@ -878,8 +952,10 @@ class _MarketingAvaliacaoData {
           titulo: map['titulo'] as String? ?? '',
           nomeLadoA: _nonEmpty(map['nome_lado_a'] as String?, 'Lado A'),
           nomeLadoB: _nonEmpty(map['nome_lado_b'] as String?, 'Lado B'),
+          nomeLadoC: _nonEmpty(map['nome_lado_c'] as String?, 'Lado C'),
           fotoLadoAPath: map['foto_lado_a_path'] as String?,
           fotoLadoBPath: map['foto_lado_b_path'] as String?,
+          fotoLadoCPath: map['foto_lado_c_path'] as String?,
           cultura: map['cultura'] as String?,
           parametros: _MarketingParametroData.listFrom(map['parametros']),
           observacoes: map['observacoes'] as String?,
