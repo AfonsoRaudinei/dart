@@ -329,10 +329,14 @@ abstract class RelatorioHtmlRenderer {
   }
 
   static const soloForteLogoAsset = 'assets/images/soloforte_logo.png';
+  static const soloForteQrAsset = 'assets/images/qr_soloforte_ios.png';
+  static const soloForteAppStoreUrl =
+      'https://apps.apple.com/br/app/soloforte/id6759268985';
 
   /// Placeholders de marca SoloForte para todos os HTML de relatório.
   ///
-  /// A marca aparece uma única vez, no rodapé (logo + "SoloForte").
+  /// A marca aparece uma única vez, no rodapé (logo + "SoloForte"), com o
+  /// QR Code de download do app iOS à direita (link para a App Store).
   /// `report_header_signature` fica vazio: o timbre não repete a marca.
   /// O consultor aparece só no bloco de assinatura do template — por isso
   /// [consultantName] / [consultantRole] não entram no rodapé.
@@ -345,6 +349,7 @@ abstract class RelatorioHtmlRenderer {
     String? consultantRole,
   }) async {
     final logoSrc = await assetImageToBase64(soloForteLogoAsset);
+    final qrSrc = await assetImageToBase64(soloForteQrAsset);
 
     return {
       'report_header_signature': '',
@@ -356,6 +361,10 @@ abstract class RelatorioHtmlRenderer {
     <strong>SoloForte</strong>
   </div>
 </div>
+<a class="sf-footer-qr" href="$soloForteAppStoreUrl">
+  <img class="sf-footer-qr-img" src="$qrSrc" alt="QR Code para baixar o SoloForte" width="76" height="76">
+  <span class="sf-footer-qr-caption">Baixe o SoloForte</span>
+</a>
 ''',
     };
   }
