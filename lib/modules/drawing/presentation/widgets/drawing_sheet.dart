@@ -1,5 +1,3 @@
-import 'dart:io' show File;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -8,7 +6,6 @@ import '../coordinators/drawing_close_coordinator.dart';
 import '../controllers/drawing_controller.dart';
 import '../../domain/models/campo_test_photo_draft.dart';
 import '../../domain/models/drawing_models.dart';
-import '../../../../core/widgets/photo/soloforte_photo_picker_sheet.dart';
 import '../../domain/models/gps_walk_session.dart';
 import '../../domain/drawing_state.dart';
 import '../../domain/drawing_feature_actions_mode.dart';
@@ -32,6 +29,7 @@ import 'drawing_hierarchy_search_field.dart';
 import 'drawing_info_edit_sheet.dart';
 import 'drawing_delete_undo_snackbar.dart';
 import 'drawing_review_metrics_panel.dart';
+import 'teste_execucao_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import 'package:soloforte_app/core/domain/talhao_condicao.dart';
 import 'gps_walk_controls_overlay.dart';
@@ -136,8 +134,6 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
   final _nomeController = TextEditingController();
   final _descricaoController = TextEditingController();
-
-  CampoTestPhotoDraft? _campoTestPhotoDraft;
 
   bool get _isCampoTestReview =>
       widget.controller.isSketchingTest ||
@@ -342,24 +338,6 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       return;
     }
     widget.onSaved?.call(null);
-  }
-
-  Future<void> _pickCampoTestPhoto() async {
-    final geo = resolveCampoTestSketchGeo(widget.controller.liveGeometry);
-    await showSoloFortePhotoPicker(
-      context: context,
-      label: 'Foto do teste',
-      onPhotoSelected: (path) async {
-        if (!mounted) return;
-        _rebuild(() {
-          _campoTestPhotoDraft = CampoTestPhotoDraft(
-            localPath: path,
-            lat: geo?.latitude,
-            lng: geo?.longitude,
-          );
-        });
-      },
-    );
   }
 
   Future<void> _handleClosePressed() async {
@@ -675,13 +653,21 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     if (!mounted) return;
     if (savedFeatures.isEmpty) return;
 
+    final saved = savedFeatures.first;
+    if (pendingTipo == DrawingType.teste) {
+      await showTesteExecucaoSheet(
+        context: context,
+        drawingId: saved.id,
+        initialTalhao: _nomeController.text.trim(),
+      );
+      if (!mounted) return;
+    }
+
     _resetReviewForm();
     await _requestClose(
       DrawingCloseIntent.completeSaveAndClose,
       preferSavedCallback: true,
-      savedFeature: savedFeatures.first,
-      campoTestPhoto:
-          _isCampoTestReview ? _campoTestPhotoDraft : null,
+      savedFeature: saved,
     );
   }
 }
