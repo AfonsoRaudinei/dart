@@ -181,6 +181,24 @@ extension DrawingControllerSketch on DrawingController {
     _notify();
   }
 
+  /// Remove o vértice [index] do polígono em andamento.
+  ///
+  /// Sketch vazio volta a idle. Retorna true quando removeu.
+  bool removeSketchVertex(int index) {
+    if (_isDisposed) return false;
+    if (_stateMachine.currentTool != DrawingTool.polygon) return false;
+    if (!_canAcceptSketchInput()) return false;
+    if (index < 0 || index >= _currentPoints.length) return false;
+
+    _currentPoints.removeAt(index);
+    _selectedSketchVertexIndex = null;
+    _isDraggingSketchVertex = false;
+    _updateRealTimeIntersection();
+    revertToIdleIfDrawingSketchEmpty();
+    _notify();
+    return true;
+  }
+
   ({int index, double distancePx})? _findSketchVertexNearestPixels(
     MapCamera camera,
     LatLng tap,
