@@ -194,6 +194,7 @@ class _OccurrenceFiltersPanel extends StatefulWidget {
   final ValueChanged<String?> onFieldChanged;
 
   const _OccurrenceFiltersPanel({
+    super.key,
     required this.categories,
     required this.filters,
     required this.oldestFirst,
@@ -767,6 +768,7 @@ class _OccurrenciasSectionState extends ConsumerState<_OccurrenciasSection> {
             ],
             if (scoped.isNotEmpty) ...[
               _OccurrenceFiltersPanel(
+                key: const ValueKey('relatorios-occurrence-filters'),
                 categories: _occurrenceCategoriesPresent(scoped),
                 filters: _filters,
                 oldestFirst: _oldestFirst,
