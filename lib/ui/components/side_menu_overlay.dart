@@ -34,9 +34,46 @@ Color _menuBorder(BuildContext context) {
       : const Color(0xFFE5E5E7);
 }
 
-Color _menuSecondaryText(BuildContext context) =>
-    context.premiumTextSecondary;
+bool _menuIsDark(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark;
 
+/// Sombra suave dos cartões do menu (iOS premium); sem sombra no escuro.
+List<BoxShadow> _menuCardShadows(BuildContext context) => _menuIsDark(context)
+    ? const []
+    : [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.05),
+          blurRadius: 2,
+          offset: const Offset(0, 1),
+        ),
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.07),
+          blurRadius: 14,
+          offset: const Offset(0, 6),
+        ),
+      ];
+
+/// Relevo discreto dos ícones (efeito 3D suave).
+List<BoxShadow> _menuIconShadows(BuildContext context) => _menuIsDark(context)
+    ? const []
+    : [
+        BoxShadow(
+          color: _menuAccent(context).withValues(alpha: 0.22),
+          blurRadius: 5,
+          offset: const Offset(0, 2),
+        ),
+      ];
+
+/// Fundo do menu em degradê leve (menos "folha branca").
+Gradient? _menuGradient(BuildContext context) => _menuIsDark(context)
+    ? null
+    : const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFFF8F9FB), Color(0xFFECEFF4)],
+      );
+
+Color _menuSecondaryText(BuildContext context) => context.premiumTextSecondary;
 
 class SideMenuOverlay extends ConsumerWidget {
   const SideMenuOverlay({super.key});
@@ -89,24 +126,35 @@ class SideMenuOverlay extends ConsumerWidget {
             },
             child: Drawer(
               width: drawerWidth,
-              backgroundColor: Theme.of(context).colorScheme.surface,
+              backgroundColor: _menuIsDark(context)
+                  ? Theme.of(context).colorScheme.surface
+                  : Colors.transparent,
               shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(22),
                   bottomLeft: Radius.circular(22),
                 ),
               ),
-              child: Column(
-                children: [
-                  _buildHeader(context, ref),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 18),
-                      child: _SideMenuContent(role: role),
-                    ),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: _menuGradient(context),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(22),
+                    bottomLeft: Radius.circular(22),
                   ),
-                  _buildFooter(context, ref),
-                ],
+                ),
+                child: Column(
+                  children: [
+                    _buildHeader(context, ref),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(14, 14, 14, 18),
+                        child: _SideMenuContent(role: role),
+                      ),
+                    ),
+                    _buildFooter(context, ref),
+                  ],
+                ),
               ),
             ),
           ),
@@ -267,8 +315,12 @@ class SideMenuOverlay extends ConsumerWidget {
         MediaQuery.of(context).padding.bottom + 10,
       ),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(top: BorderSide(color: _menuBorder(context), width: 0.7)),
+        color: _menuIsDark(context)
+            ? Theme.of(context).colorScheme.surface
+            : Colors.white.withValues(alpha: 0.7),
+        border: Border(
+          top: BorderSide(color: _menuBorder(context), width: 0.7),
+        ),
       ),
       child: Row(
         children: [
@@ -367,6 +419,7 @@ class _MenuPanel extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _menuBorder(context)),
+        boxShadow: _menuCardShadows(context),
       ),
       child: Column(children: children),
     );
@@ -406,6 +459,7 @@ class _MenuItem extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: _menuIconBg(context),
                     borderRadius: BorderRadius.circular(10),
+                    boxShadow: _menuIconShadows(context),
                   ),
                   child: Icon(icon, color: _menuAccent(context), size: 18),
                 ),
