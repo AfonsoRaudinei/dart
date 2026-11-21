@@ -362,7 +362,7 @@ abstract class RelatorioHtmlRenderer {
   </div>
 </div>
 <a class="sf-footer-qr" href="$soloForteAppStoreUrl">
-  <img class="sf-footer-qr-img" src="$qrSrc" alt="QR Code para baixar o SoloForte" width="76" height="76">
+  <img class="sf-footer-qr-img" src="$qrSrc" alt="QR Code para baixar o SoloForte" width="96" height="96">
   <span class="sf-footer-qr-caption">Baixe o SoloForte</span>
 </a>
 ''',
