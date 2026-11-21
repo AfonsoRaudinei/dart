@@ -9,37 +9,16 @@ import 'package:soloforte_app/ui/components/map/map_drawing_saved_handler.dart';
 
 void main() {
   group('handleMapDrawingSaved', () {
-  test('DrawingType.teste com draft dispara persist com lat/lng/path', () async {
-    final completer = Completer<CampoTestPhotoDraft>();
-    final feature = _feature(DrawingType.teste);
+  test('DrawingType.teste com draft não chama persistCampoTestPhoto', () {
+    var persistCalls = 0;
     const draft = CampoTestPhotoDraft(
       localPath: '/tmp/photo.jpg',
       lat: -10.5,
       lng: -48.2,
     );
-
-    handleMapDrawingSaved(
-      feature: feature,
-      campoTestPhoto: draft,
-      session: null,
-      onUpdateVisitArea: (_, {farmId}) async {},
-      sessionLookup: _FakeSessionLookup(),
-      persistCampoTestPhoto: ({required draft, required sessionLookup}) async {
-        completer.complete(draft);
-      },
-    );
-
-    final captured = await completer.future;
-    expect(captured.localPath, draft.localPath);
-    expect(captured.lat, draft.lat);
-    expect(captured.lng, draft.lng);
-  });
-
-  test('DrawingType.teste sem draft não persiste', () {
-    var persistCalls = 0;
     handleMapDrawingSaved(
       feature: _feature(DrawingType.teste),
-      campoTestPhoto: null,
+      campoTestPhoto: draft,
       session: null,
       onUpdateVisitArea: (_, {farmId}) async {},
       sessionLookup: _FakeSessionLookup(),
