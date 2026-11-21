@@ -44,6 +44,11 @@ class FieldStyle {
     this.fillOpacity = 0.3, // Opacidade padrão
   });
 
+  /// Azul claro só do polígono de teste. Não é o azul de marca.
+  static const Color testeFillColor = Color(0xFF8EBEFF);
+  static const Color testeBorderColor = Color(0xFF2F6FCB);
+  static const double testeFillOpacity = 0.35;
+
   /// Estilo padrão para talhões consolidados (Verde SoloForte)
   static const standard = FieldStyle(
     fillColor: PremiumTokens.brandGreen,
@@ -155,15 +160,14 @@ extension DrawingFeatureStyle on DrawingFeature {
     );
   }
 
-  /// Teste fica azul Samsung por cima do talhão. Nunca cai na paleta de condição.
+  /// Teste fica azul claro por cima do talhão. Nunca cai na paleta de condição.
   FieldStyle _testeFill({required bool dashed, double borderWidth = 3.0}) {
-    const fill = PremiumTokens.blackAccentPrimary;
     return FieldStyle(
-      fillColor: fill,
-      borderColor: PremiumTokens.blackAccentVariant,
+      fillColor: FieldStyle.testeFillColor,
+      borderColor: FieldStyle.testeBorderColor,
       borderWidth: borderWidth,
       isDashed: dashed,
-      fillOpacity: 0.45,
+      fillOpacity: FieldStyle.testeFillOpacity,
     );
   }
 
