@@ -462,20 +462,20 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   child: const MapMarkersWidget(),
                 ),
 
-                // Markers de ocorrências (isolados; suprime pin em correção)
+                // Markers de Marketing (embaixo; a foto não cobre o pino)
+                AbsorbPointer(
+                  absorbing: suppressMapMarkerTaps,
+                  child: IsolatedMarketingMarkersLayer(
+                    excludedMarkerId: excludedMarketingMarkerId,
+                  ),
+                ),
+
+                // Markers de ocorrências (por cima; pin continua tocável)
                 AbsorbPointer(
                   absorbing: suppressMapMarkerTaps,
                   child: IsolatedOccurrenceMarkersLayer(
                     onOccurrenceTap: handleOccurrencePinTap,
                     excludedMarkerId: excludedOccurrenceMarkerId,
-                  ),
-                ),
-
-                // Markers de Marketing (isolados; suprime pin em correção)
-                AbsorbPointer(
-                  absorbing: suppressMapMarkerTaps,
-                  child: IsolatedMarketingMarkersLayer(
-                    excludedMarkerId: excludedMarketingMarkerId,
                   ),
                 ),
 
