@@ -4,19 +4,17 @@ import 'package:soloforte_app/core/contracts/i_visit_client_lookup.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 
 Widget visitSheetFieldLabel(SoloForteSheetVisuals v, String label) {
-  return Text(
-    label,
-    style: TextStyle(color: v.subtitleColor, fontSize: 12),
-  );
+  return Text(label, style: TextStyle(color: v.subtitleColor, fontSize: 12));
 }
 
-Widget visitSheetMutedLine(SoloForteSheetVisuals v, String text, {EdgeInsets? padding}) {
+Widget visitSheetMutedLine(
+  SoloForteSheetVisuals v,
+  String text, {
+  EdgeInsets? padding,
+}) {
   return Padding(
     padding: padding ?? const EdgeInsets.symmetric(vertical: 12),
-    child: Text(
-      text,
-      style: TextStyle(color: v.subtitleColor, fontSize: 14),
-    ),
+    child: Text(text, style: TextStyle(color: v.subtitleColor, fontSize: 14)),
   );
 }
 
@@ -28,7 +26,7 @@ InputDecoration visitSheetSearchDecoration(
   final border = v.cardBorder;
   return InputDecoration(
     hintText: hintText,
-    hintStyle: TextStyle(color: v.subtitleColor, fontSize: 16),
+    hintStyle: TextStyle(color: v.subtitleColor, fontSize: 14),
     prefixIcon: Icon(Icons.search, color: v.subtitleColor),
     filled: true,
     fillColor: v.cardBackground,
@@ -87,6 +85,7 @@ class VisitSheetNameTile extends StatelessWidget {
                 color: selected ? visuals.focusBorder : visuals.cardBorder,
                 width: selected ? 1.5 : 1,
               ),
+              boxShadow: visuals.cardShadows,
             ),
             child: subtitle == null
                 ? Text(
@@ -134,9 +133,7 @@ List<VisitClientSummary> filterVisitClients(
     if (normalized.isEmpty) return true;
     return client.name.toLowerCase().contains(normalized);
   }).toList();
-  items.sort(
-    (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-  );
+  items.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
   return items;
 }
 
@@ -176,7 +173,11 @@ class VisitSheetProdutorPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final clients = clientsAsync.valueOrNull ?? [];
     final queryEmpty = clientQuery.trim().isEmpty;
-    final displayItems = _displayClients(clients, clientQuery, selectedClientId);
+    final displayItems = _displayClients(
+      clients,
+      clientQuery,
+      selectedClientId,
+    );
     final isLoading = clientsAsync.isLoading;
     final v = visuals;
 
@@ -185,21 +186,31 @@ class VisitSheetProdutorPicker extends StatelessWidget {
       children: [
         visitSheetFieldLabel(v, 'Produtor'),
         const SizedBox(height: 6),
-        TextField(
-          controller: searchController,
-          enabled: !isLoading,
-          onChanged: onQueryChanged,
-          style: TextStyle(color: v.titleColor, fontSize: 16),
-          decoration: visitSheetSearchDecoration(
-            v,
-            hintText: isLoading ? 'Carregando...' : 'Buscar produtor',
+        DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(v.cardRadius),
+            boxShadow: v.cardShadows,
+          ),
+          child: TextField(
+            controller: searchController,
+            enabled: !isLoading,
+            onChanged: onQueryChanged,
+            style: TextStyle(color: v.titleColor, fontSize: 14),
+            decoration: visitSheetSearchDecoration(
+              v,
+              hintText: isLoading ? 'Carregando...' : 'Buscar produtor',
+            ),
           ),
         ),
         const SizedBox(height: 8),
         if (isLoading)
           visitSheetMutedLine(v, 'Carregando...')
         else if (clients.isEmpty)
-          visitSheetMutedLine(v, 'Nenhum produtor encontrado', padding: EdgeInsets.zero)
+          visitSheetMutedLine(
+            v,
+            'Nenhum produtor encontrado',
+            padding: EdgeInsets.zero,
+          )
         else if (queryEmpty && selectedClientId == null)
           visitSheetMutedLine(
             v,
