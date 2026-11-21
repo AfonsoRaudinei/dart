@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../utils/local_media_path_resolver.dart';
 import 'report_export_gallery.dart';
 import 'report_map_links.dart';
+import 'report_photo_links.dart';
 
 /// Utilitários base compartilhados por todos os renderers HTML.
 /// Não depende de nenhum módulo de domínio.
@@ -330,8 +331,7 @@ abstract class RelatorioHtmlRenderer {
 
   static const soloForteLogoAsset = 'assets/images/soloforte_logo.png';
   static const soloForteQrAsset = 'assets/images/qr_soloforte_ios.png';
-  static const soloForteAppStoreUrl =
-      'https://apps.apple.com/br/app/soloforte/id6759268985';
+  static String get soloForteAppStoreUrl => ReportPhotoLinks.soloForteAppStoreUrl;
 
   /// Placeholders de marca SoloForte para todos os HTML de relatório.
   ///
