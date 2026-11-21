@@ -157,9 +157,7 @@ void main() {
     expect(controller.currentTool, DrawingTool.none);
   });
 
-  testWidgets('tap Teste fecha modal e mantém ferramenta armed', (
-    tester,
-  ) async {
+  testWidgets('grade de desenho não oferece Teste', (tester) async {
     tester.view.physicalSize = const Size(1179, 2556);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.resetPhysicalSize);
@@ -202,12 +200,10 @@ void main() {
     await tester.tap(find.text('Abrir Desenho'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Teste'));
-    await tester.pumpAndSettle();
-
     expect(find.text('Teste'), findsNothing);
-    expect(controller.currentState, DrawingState.armed);
-    expect(controller.isSketchingTest, isTrue);
+    expect(find.text('Polígono'), findsOneWidget);
+    expect(controller.currentState, DrawingState.idle);
+    expect(controller.isSketchingTest, isFalse);
   });
 
   testWidgets('DrawingSheet não aplica AnimatedPadding de teclado', (
