@@ -24,8 +24,10 @@ class FieldLookupAdapter implements IFieldLookup {
     final all = await _store.getAll();
     return all
         .where(
-          (f) => f.properties.fazendaId == farmId,
-        ) // Usando fazendaId do DrawingProperties
+          (f) =>
+              f.properties.fazendaId == farmId &&
+              f.properties.tipo != DrawingType.teste,
+        )
         .map(_toSummary)
         .toList();
   }
