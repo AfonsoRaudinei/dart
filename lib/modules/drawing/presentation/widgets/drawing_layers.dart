@@ -32,10 +32,6 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
   static const Color _manualOutlineHalo = Color(0xCC111111);
   static const Color _gpsOutlineHalo = Color(0xB3000000);
 
-  /// Azul Samsung (`PremiumTokens.blackAccentPrimary`) e a variante mais escura.
-  static const Color _testFill = Color(0xFF1428A0);
-  static const Color _testBorder = Color(0xFF0F1E7A);
-
   List<Polygon>? _cachedPolygons;
   List<Polyline>? _cachedPolylines;
   List<Marker>? _cachedMarkers;
@@ -305,9 +301,11 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
               ? [liveGeo.coordinates]
               : (liveGeo as DrawingMultiPolygon).coordinates;
           final liveOutlineHalo = sketchingTest
-              ? _testFill.withValues(alpha: 0.85)
+              ? FieldStyle.testeFillColor.withValues(alpha: 0.85)
               : _manualOutlineHalo;
-          final liveOutline = sketchingTest ? _testBorder : _manualOutlineColor;
+          final liveOutline = sketchingTest
+              ? FieldStyle.testeBorderColor
+              : _manualOutlineColor;
           for (final rings in parts) {
             if (rings.isEmpty) continue;
             final outerRing = _toLatLngRing(rings.first);
@@ -332,9 +330,13 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
               _polygonFromRings(
                 rings,
                 color: sketchingTest
-                    ? _testFill.withValues(alpha: 0.45)
+                    ? FieldStyle.testeFillColor.withValues(
+                        alpha: FieldStyle.testeFillOpacity,
+                      )
                     : Colors.white.withValues(alpha: 0.2),
-                borderColor: sketchingTest ? _testBorder : Colors.white,
+                borderColor: sketchingTest
+                    ? FieldStyle.testeBorderColor
+                    : Colors.white,
                 borderStrokeWidth: 3,
                 pattern: const StrokePattern.dotted(),
               ),
