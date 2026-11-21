@@ -45,7 +45,7 @@ void main() {
 
       expect(find.text('Agenda'), findsOneWidget);
       expect(find.text('Clientes'), findsWidgets);
-      expect(find.text('Receber código'), findsOneWidget);
+      expect(find.text('Receber código'), findsNothing);
       expect(find.text('Relatórios'), findsWidgets);
       expect(find.text('Carteira'), findsWidgets);
       expect(find.text('Nova Visita'), findsOneWidget);
