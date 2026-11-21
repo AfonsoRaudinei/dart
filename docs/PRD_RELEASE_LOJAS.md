@@ -169,7 +169,7 @@ Prioridade: **P0** (bloqueador de loja) · **P1** (funcionalidade real) · **P2*
 |----|-----------|-------------------|
 | BUILD-01 | Keystore Android de produção | `signingConfig` release com keystore seguro (CI secrets) |
 | BUILD-02 | Certificados iOS de distribuição | Provisioning profile App Store configurado |
-| BUILD-03 | Bundle ID unificado | Mesmo identificador lógico: `com.soloforte.app` (iOS + Android) |
+| BUILD-03 | Bundle ID por plataforma | iOS: `com.soloforte.soloforteApp` / Android: `com.soloforte.app` |
 | BUILD-04 | Nome do app nas lojas | Label Android: "SoloForte" (não `soloforte_app`) |
 | BUILD-05 | Versão e build number | `1.0.0+1` incrementável; processo documentado |
 | BUILD-06 | ProGuard/R8 Android | Minificação habilitada em release; testes de smoke pós-build |

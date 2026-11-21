@@ -66,6 +66,8 @@ agrícola,campo,consultoria,mapa,visitas,ocorrências,offline,fazenda,talhão,ag
 https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/suporte.html
 ```
 
+*(App Store exige HTTPS no campo Support URL — `mailto:` não é aceito.)*
+
 ## URL política de privacidade
 
 ```
