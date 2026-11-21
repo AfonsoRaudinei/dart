@@ -22,7 +22,7 @@ class MarketingClientSelector extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final clientsAsync = ref.watch(_marketingClientsAtivosProvider);
-        final v = SoloForteSheetVisuals.of(context);
+    final v = SoloForteSheetVisuals.of(context);
     final isIos = v.isIos;
     final surface = v.cardBackground;
     final border = v.cardBorder;
@@ -46,7 +46,7 @@ class MarketingClientSelector extends ConsumerWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               'Carregando clientes…',
-              style: TextStyle(color: muted),
+              style: TextStyle(color: muted, fontSize: 14),
             ),
           ),
         ),
@@ -56,12 +56,13 @@ class MarketingClientSelector extends ConsumerWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               'Erro ao carregar clientes',
-              style: TextStyle(color: muted),
+              style: TextStyle(color: muted, fontSize: 14),
             ),
           ),
         ),
         data: (clients) {
-          final hasSelected = selectedClientId != null &&
+          final hasSelected =
+              selectedClientId != null &&
               clients.any((c) => c.id == selectedClientId);
           final value = hasSelected ? selectedClientId : null;
 
@@ -73,14 +74,14 @@ class MarketingClientSelector extends ConsumerWidget {
               iconEnabledColor: iconColor,
               hint: Text(
                 'Selecionar cliente (opcional)',
-                style: TextStyle(color: muted),
+                style: TextStyle(color: muted, fontSize: 14),
               ),
               items: [
                 DropdownMenuItem<String?>(
                   value: _clearClientValue,
                   child: Text(
                     '—',
-                    style: TextStyle(color: muted),
+                    style: TextStyle(color: muted, fontSize: 14),
                   ),
                 ),
                 ...clients.map(
@@ -89,7 +90,7 @@ class MarketingClientSelector extends ConsumerWidget {
                     child: Text(
                       c.name,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: title),
+                      style: TextStyle(color: title, fontSize: 14),
                     ),
                   ),
                 ),
@@ -114,5 +115,5 @@ class MarketingClientSelector extends ConsumerWidget {
 /// Não exportado — uso exclusivo de widgets em marketing/.
 final _marketingClientsAtivosProvider =
     FutureProvider.autoDispose<List<ClientSummary>>(
-  (ref) => ref.watch(clientLookupProvider).listAtivos(),
-);
+      (ref) => ref.watch(clientLookupProvider).listAtivos(),
+    );

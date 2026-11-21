@@ -80,7 +80,7 @@ class NovoCaseAntesDepoisSection extends StatelessWidget {
           label: const Text('Adicionar comparação'),
           style: novoCaseGhostOutlinedButtonStyle(context),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
         if (!hasConclusao)
           OutlinedButton.icon(
             onPressed: () {
@@ -96,7 +96,7 @@ class NovoCaseAntesDepoisSection extends StatelessWidget {
             conclusaoCtrl: conclusaoCtrl,
             onRemove: onRemoveConclusao,
           ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 14),
       ],
     );
   }
@@ -369,7 +369,6 @@ class _ComparacaoBlocoState extends State<_ComparacaoBloco> {
     final slot = widget.comparacao.fotos[index];
     final controller = _rotulos[slot.id];
     final canRemove = widget.comparacao.fotos.length > 1;
-    final rotulo = slot.rotulo.trim();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -398,10 +397,10 @@ class _ComparacaoBlocoState extends State<_ComparacaoBloco> {
         ),
         const SizedBox(height: 6),
         FotoPickerWidget(
-          label: rotulo.isEmpty ? 'Foto' : rotulo,
+          label: 'Foto',
           url: slot.url,
           folder: 'antes_depois',
-          height: 140,
+          height: 96,
           required: false,
           includeVegetalInversion: true,
           onChanged: (url) => _setUrl(index, url),
