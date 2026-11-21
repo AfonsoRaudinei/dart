@@ -25,6 +25,24 @@ void main() {
     expect(html, isNot(contains('fonts.googleapis.com')), reason: type);
   }
 
+  test('rodape de marca traz QR Code da App Store ao lado do logo', () async {
+    final branding = await RelatorioHtmlRenderer.brandingPlaceholders();
+    final footer = branding['report_footer_signature']!;
+
+    expect(
+      footer,
+      contains('href="https://apps.apple.com/br/app/soloforte/id6759268985"'),
+    );
+    expect(footer, contains('class="sf-footer-qr"'));
+    expect(
+      RegExp(
+        r'class="sf-footer-qr-img" src="data:image/png;base64,',
+      ).hasMatch(footer),
+      isTrue,
+    );
+    expect(RegExp('<strong>SoloForte</strong>').allMatches(footer).length, 1);
+  });
+
   test('renderers oficiais nao vazam placeholders handlebars', () async {
     await initializeDateFormatting('pt_BR');
 
@@ -389,34 +407,40 @@ void main() {
     expect(RegExp('Talhão 7').allMatches(html).length, 1);
   });
 
-  test('ocorrencia detalhada: legenda do usuário em figcaption e alt', () async {
-    await initializeDateFormatting('pt_BR');
+  test(
+    'ocorrencia detalhada: legenda do usuário em figcaption e alt',
+    () async {
+      await initializeDateFormatting('pt_BR');
 
-    final html = await OcorrenciaHtmlRenderer.renderDetalhe({
-      'id': 'occ-caption',
-      'type': 'Alta',
-      'description': 'Broto novos',
-      'category': 'daninhas',
-      'created_at': now.toIso8601String(),
-      'foto_base64': 'https://example.com/capa.jpg',
-      'photo_path': 'https://example.com/capa.jpg',
-      'fotos_categorias_json': jsonEncode({
-        'daninhas': [
-          'https://example.com/capa.jpg',
-          'https://example.com/a.jpg',
-        ],
-        '_captions': {
-          'https://example.com/capa.jpg': 'Capa da infestação',
-          'https://example.com/a.jpg': 'Folha <mancha>',
-        },
-      }),
-    });
+      final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+        'id': 'occ-caption',
+        'type': 'Alta',
+        'description': 'Broto novos',
+        'category': 'daninhas',
+        'created_at': now.toIso8601String(),
+        'foto_base64': 'https://example.com/capa.jpg',
+        'photo_path': 'https://example.com/capa.jpg',
+        'fotos_categorias_json': jsonEncode({
+          'daninhas': [
+            'https://example.com/capa.jpg',
+            'https://example.com/a.jpg',
+          ],
+          '_captions': {
+            'https://example.com/capa.jpg': 'Capa da infestação',
+            'https://example.com/a.jpg': 'Folha <mancha>',
+          },
+        }),
+      });
 
-    expect(html, contains('Capa da infestação · Ervas Daninhas · 03/06/2026'));
-    expect(html, contains('<figcaption>Folha &lt;mancha&gt;</figcaption>'));
-    expect(html, contains('alt="Folha &lt;mancha&gt;"'));
-    expect(html, isNot(contains('<figcaption>Foto 2</figcaption>')));
-  });
+      expect(
+        html,
+        contains('Capa da infestação · Ervas Daninhas · 03/06/2026'),
+      );
+      expect(html, contains('<figcaption>Folha &lt;mancha&gt;</figcaption>'));
+      expect(html, contains('alt="Folha &lt;mancha&gt;"'));
+      expect(html, isNot(contains('<figcaption>Foto 2</figcaption>')));
+    },
+  );
 
   final emoji = RegExp(
     r'[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]',
@@ -599,30 +623,33 @@ void main() {
       expect(RegExp('Urgência alta').allMatches(html).length, 1);
     });
 
-    test('ocorrencia de amostra mostra código, coletor, trâmite e laudo', () async {
-      await initializeDateFormatting('pt_BR');
+    test(
+      'ocorrencia de amostra mostra código, coletor, trâmite e laudo',
+      () async {
+        await initializeDateFormatting('pt_BR');
 
-      final html = await OcorrenciaHtmlRenderer.renderDetalhe({
-        'id': 'occ-amostra',
-        'type': 'Média',
-        'category': 'amostra_solo',
-        'amostra_solo': 1,
-        'status': 'confirmed',
-        'amostra_codigo': 'AS-<14>',
-        'amostra_coletor': 'Equipe campo',
-        'amostra_tramite': 'laudo_pronto',
-        'amostra_laudo_texto': 'pH 5,8',
-        'created_at': now.toIso8601String(),
-      });
+        final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+          'id': 'occ-amostra',
+          'type': 'Média',
+          'category': 'amostra_solo',
+          'amostra_solo': 1,
+          'status': 'confirmed',
+          'amostra_codigo': 'AS-<14>',
+          'amostra_coletor': 'Equipe campo',
+          'amostra_tramite': 'laudo_pronto',
+          'amostra_laudo_texto': 'pH 5,8',
+          'created_at': now.toIso8601String(),
+        });
 
-      expect(html, contains('>Código da amostra</span>'));
-      expect(html, contains('AS-&lt;14&gt;'));
-      expect(html, contains('>Equipe campo</span>'));
-      expect(html, contains('>Laudo pronto</span>'));
-      expect(html, contains('>pH 5,8</span>'));
-      expect(html, isNot(contains('{{')));
-      expect(html, isNot(contains('amostra_')));
-    });
+        expect(html, contains('>Código da amostra</span>'));
+        expect(html, contains('AS-&lt;14&gt;'));
+        expect(html, contains('>Equipe campo</span>'));
+        expect(html, contains('>Laudo pronto</span>'));
+        expect(html, contains('>pH 5,8</span>'));
+        expect(html, isNot(contains('{{')));
+        expect(html, isNot(contains('amostra_')));
+      },
+    );
 
     test('amostra legada sem campos mostra trâmite Coletada', () async {
       await initializeDateFormatting('pt_BR');
@@ -645,51 +672,57 @@ void main() {
       expect(html, isNot(contains('<span class="sf-row-value"></span>')));
     });
 
-    test('ocorrencia sem amostra não deixa resto de markup de amostra', () async {
-      await initializeDateFormatting('pt_BR');
+    test(
+      'ocorrencia sem amostra não deixa resto de markup de amostra',
+      () async {
+        await initializeDateFormatting('pt_BR');
 
-      final html = await OcorrenciaHtmlRenderer.renderDetalhe({
-        'id': 'occ-sem-amostra',
-        'type': 'Alta',
-        'category': 'doenca',
-        'status': 'draft',
-        'amostra_codigo': 'AS-IGNORADO',
-        'amostra_tramite': 'laboratorio',
-        'created_at': now.toIso8601String(),
-      });
+        final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+          'id': 'occ-sem-amostra',
+          'type': 'Alta',
+          'category': 'doenca',
+          'status': 'draft',
+          'amostra_codigo': 'AS-IGNORADO',
+          'amostra_tramite': 'laboratorio',
+          'created_at': now.toIso8601String(),
+        });
 
-      expect(html, isNot(contains('AS-IGNORADO')));
-      expect(html, isNot(contains('Trâmite')));
-      expect(html, isNot(contains('{{')));
-      expect(html, isNot(contains('amostra_')));
-      expect(html, isNot(contains('<span class="sf-row-value"></span>')));
-    });
+        expect(html, isNot(contains('AS-IGNORADO')));
+        expect(html, isNot(contains('Trâmite')));
+        expect(html, isNot(contains('{{')));
+        expect(html, isNot(contains('amostra_')));
+        expect(html, isNot(contains('<span class="sf-row-value"></span>')));
+      },
+    );
 
-    test('ordem de aplicação mostra as três linhas e esconde as vazias', () async {
-      await initializeDateFormatting('pt_BR');
+    test(
+      'ordem de aplicação mostra as três linhas e esconde as vazias',
+      () async {
+        await initializeDateFormatting('pt_BR');
 
-      final html = await OcorrenciaHtmlRenderer.renderDetalhe({
-        'id': 'occ-ordem',
-        'type': 'Alta',
-        'category': 'insetos',
-        'created_at': now.toIso8601String(),
-        'recomendacao_acao': 'Inseticida biológico',
-        'recomendacao_dose': '0,5 L/ha',
-        'recomendacao_quando': 'V4 a V6',
-        'recomendacoes': 'texto legado que não deve substituir os campos',
-      });
+        final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+          'id': 'occ-ordem',
+          'type': 'Alta',
+          'category': 'insetos',
+          'created_at': now.toIso8601String(),
+          'recomendacao_acao': 'Inseticida biológico',
+          'recomendacao_dose': '0,5 L/ha',
+          'recomendacao_quando': 'V4 a V6',
+          'recomendacoes': 'texto legado que não deve substituir os campos',
+        });
 
-      expect(html, contains('Ordem de aplicação'));
-      expect(html, contains('>O que fazer</span>'));
-      expect(html, contains('Inseticida biológico'));
-      expect(html, contains('>Dose</span>'));
-      expect(html, contains('0,5 L/ha'));
-      expect(html, contains('>Quando</span>'));
-      expect(html, contains('V4 a V6'));
-      expect(html, isNot(contains('texto legado')));
-      expect(html, contains('sf-sheet sf-ordem'));
-      expect(html, isNot(contains('{{')));
-    });
+        expect(html, contains('Ordem de aplicação'));
+        expect(html, contains('>O que fazer</span>'));
+        expect(html, contains('Inseticida biológico'));
+        expect(html, contains('>Dose</span>'));
+        expect(html, contains('0,5 L/ha'));
+        expect(html, contains('>Quando</span>'));
+        expect(html, contains('V4 a V6'));
+        expect(html, isNot(contains('texto legado')));
+        expect(html, contains('sf-sheet sf-ordem'));
+        expect(html, isNot(contains('{{')));
+      },
+    );
 
     test('ordem de aplicação escapa HTML dos três campos', () async {
       await initializeDateFormatting('pt_BR');
@@ -1162,10 +1195,9 @@ void main() {
   );
 
   group('data-sf-photo', () {
-    List<int> photoIndices(String html) => RegExp(r'data-sf-photo="(\d+)"')
-        .allMatches(html)
-        .map((match) => int.parse(match.group(1)!))
-        .toList();
+    List<int> photoIndices(String html) => RegExp(
+      r'data-sf-photo="(\d+)"',
+    ).allMatches(html).map((match) => int.parse(match.group(1)!)).toList();
 
     test('ocorrencia detalhada numera capa e galeria em sequência', () async {
       await initializeDateFormatting('pt_BR');
@@ -1187,10 +1219,7 @@ void main() {
         RegExp(r'<script[\s\S]*?</script>'),
         '',
       );
-      expect(
-        withoutScripts,
-        isNot(contains(RegExp(r'data-sf-photo(?!=)'))),
-      );
+      expect(withoutScripts, isNot(contains(RegExp(r'data-sf-photo(?!=)'))));
       expect(
         html,
         contains('<img data-sf-photo="0" src="https://example.com/capa.jpg"'),
