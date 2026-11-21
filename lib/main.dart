@@ -25,6 +25,7 @@ import 'core/contracts/i_drawing_field_writer_provider.dart';
 import 'core/contracts/i_producer_invite_writer_provider.dart';
 import 'core/contracts/i_producer_property_gateway_provider.dart';
 import 'core/contracts/i_field_lookup_provider.dart';
+import 'core/contracts/i_teste_execucao_lookup_provider.dart';
 import 'core/contracts/i_field_lookup_geofence_provider.dart';
 import 'core/contracts/i_opportunity_lookup_provider.dart';
 import 'core/contracts/i_agenda_observable.dart';
@@ -84,6 +85,8 @@ import 'modules/visitas/infra/visit_session_lookup_adapter.dart';
 import 'modules/visitas/infra/visit_session_writer_adapter.dart';
 import 'modules/drawing/infra/drawing_field_writer_adapter.dart';
 import 'modules/drawing/infra/field_lookup_adapter.dart';
+import 'modules/drawing/data/data_sources/drawing_local_store.dart';
+import 'modules/drawing/infra/teste_execucao_lookup_adapter.dart';
 import 'modules/drawing/presentation/providers/drawing_provider.dart';
 import 'modules/ndvi/infra/chained_field_lookup.dart';
 import 'modules/planos/infra/ndvi_refined_entitlement_adapter.dart';
@@ -282,6 +285,13 @@ Future<void> main() async {
                     ref.watch(drawingLocalStoreProvider),
                   ),
                   fallback: FieldLookupGeofenceAdapter(fieldRepository),
+                );
+              }),
+              iTesteExecucaoLookupProvider.overrideWith((ref) {
+                final store = ref.watch(drawingLocalStoreProvider);
+                return TesteExecucaoLookupAdapter(
+                  drawingStore: store,
+                  execucaoStore: TesteExecucaoLocalStore(),
                 );
               }),
               // Contrato neutro para comandos sobre talhoes do mapa.

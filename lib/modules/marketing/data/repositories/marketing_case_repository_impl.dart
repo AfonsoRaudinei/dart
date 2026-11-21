@@ -31,6 +31,7 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
     'conclusao', 'conclusao_tecnica', 'ativo', 'status',
     'criado_em', 'atualizado_em', 'sync_status', 'deletado_em',
     'liberado_em', 'publico_ate', 'source_case_id', 'drawing_id',
+    'teste_execucao_id',
     'title', 'visibility',
   };
 

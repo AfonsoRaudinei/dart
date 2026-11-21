@@ -47,6 +47,9 @@ class MarketingCase {
   /// Polígono `drawings` (`tipo = teste`) que é a área deste case (ADR-064).
   final String? drawingId;
 
+  /// Execução de teste selecionada na avaliação (referência; snapshot no case).
+  final String? testeExecucaoId;
+
   /// Início da janela pública (`liberado_em`). Nulo = pin só do autor.
   final DateTime? liberadoEm;
 
@@ -103,6 +106,7 @@ class MarketingCase {
     this.ownerUserId,
     this.sourceCaseId,
     this.drawingId,
+    this.testeExecucaoId,
     this.liberadoEm,
     this.publicoAte,
     this.fotoAntesUrl,
@@ -158,6 +162,7 @@ class MarketingCase {
       ownerUserId: json['user_id'] as String?,
       sourceCaseId: json['source_case_id'] as String?,
       drawingId: json['drawing_id'] as String?,
+      testeExecucaoId: json['teste_execucao_id'] as String?,
       liberadoEm: json['liberado_em'] != null
           ? DateTime.parse(json['liberado_em'] as String)
           : null,
@@ -220,6 +225,7 @@ class MarketingCase {
       if (ownerUserId != null) 'user_id': ownerUserId,
       if (sourceCaseId != null) 'source_case_id': sourceCaseId,
       if (drawingId != null) 'drawing_id': drawingId,
+      if (testeExecucaoId != null) 'teste_execucao_id': testeExecucaoId,
       if (liberadoEm != null) 'liberado_em': liberadoEm!.toIso8601String(),
       if (publicoAte != null) 'publico_ate': publicoAte!.toIso8601String(),
       'foto_antes_url': fotoAntesUrl,
@@ -323,6 +329,8 @@ class MarketingCase {
     bool clearSourceCaseId = false,
     String? drawingId,
     bool clearDrawingId = false,
+    String? testeExecucaoId,
+    bool clearTesteExecucaoId = false,
     DateTime? liberadoEm,
     bool clearLiberadoEm = false,
     DateTime? publicoAte,
@@ -376,6 +384,9 @@ class MarketingCase {
       sourceCaseId:
           clearSourceCaseId ? null : (sourceCaseId ?? this.sourceCaseId),
       drawingId: clearDrawingId ? null : (drawingId ?? this.drawingId),
+      testeExecucaoId: clearTesteExecucaoId
+          ? null
+          : (testeExecucaoId ?? this.testeExecucaoId),
       liberadoEm: clearLiberadoEm ? null : (liberadoEm ?? this.liberadoEm),
       publicoAte: clearPublicoAte ? null : (publicoAte ?? this.publicoAte),
       fotoAntesUrl: fotoAntesUrl ?? this.fotoAntesUrl,
