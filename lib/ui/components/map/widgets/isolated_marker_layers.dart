@@ -138,6 +138,7 @@ class IsolatedLocalPublicationMarkersLayer extends ConsumerWidget {
 /// cartão de leitura (nome e resultado maiores) a partir desse zoom.
 ///
 /// Otimizações:
+/// ✅ Observa somente [showMarketingCasesProvider] para ligar ou ocultar
 /// ✅ Observa [publishedCasesProvider] (published + gate de plano)
 /// ✅ Não rebuilda o mapa inteiro quando cases mudam
 /// ✅ Filtra e ordena dentro do widget isolado
@@ -149,8 +150,8 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final showMarkers = ref.watch(showMarkersProvider);
-    if (!showMarkers) return const SizedBox.shrink();
+    final showCases = ref.watch(showMarketingCasesProvider);
+    if (!showCases) return const SizedBox.shrink();
 
     // Zoom: snapshot throttled quando disponível; fallback live até onMapReady.
     final snapshotZoom = ref.watch(
@@ -169,14 +170,9 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
         .watch(publishedCasesProvider)
         .where((c) => excludedMarkerId == null || c.id != excludedMarkerId)
         .where((c) {
-          if (MarketingVisibilityPolicy.somenteAutorNoMapa(
-            c,
-            currentUserId,
-          )) {
+          if (MarketingVisibilityPolicy.somenteAutorNoMapa(c, currentUserId)) {
             final owner = c.ownerUserId;
-            return owner != null &&
-                owner.isNotEmpty &&
-                owner == currentUserId;
+            return owner != null && owner.isNotEmpty && owner == currentUserId;
           }
           return true;
         })
@@ -200,9 +196,7 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
             .toList();
 
     final deduped = deduplicateHighestMetalPerGroup(cases)
-      ..sort(
-        (a, b) => b.visibilidade.index.compareTo(a.visibilidade.index),
-      );
+      ..sort((a, b) => b.visibilidade.index.compareTo(a.visibilidade.index));
 
     if (deduped.isEmpty) return const SizedBox.shrink();
 
