@@ -34,6 +34,8 @@ class DrawingBottomToolbarOverlay extends StatelessWidget {
     this.onRemoveHoleRing,
     this.showRemoveHoleRing = false,
     this.canRemoveHoleRing = false,
+    this.onRemoveVertex,
+    this.canRemoveVertex = false,
   });
 
   final VoidCallback onConfirm;
@@ -58,6 +60,8 @@ class DrawingBottomToolbarOverlay extends StatelessWidget {
   final VoidCallback? onRemoveHoleRing;
   final bool showRemoveHoleRing;
   final bool canRemoveHoleRing;
+  final VoidCallback? onRemoveVertex;
+  final bool canRemoveVertex;
 
   @override
   Widget build(BuildContext context) {
@@ -91,6 +95,8 @@ class DrawingBottomToolbarOverlay extends StatelessWidget {
         onRemoveHoleRing: onRemoveHoleRing,
         showRemoveHoleRing: showRemoveHoleRing,
         canRemoveHoleRing: canRemoveHoleRing,
+        onRemoveVertex: onRemoveVertex,
+        canRemoveVertex: canRemoveVertex,
       ),
     );
   }
