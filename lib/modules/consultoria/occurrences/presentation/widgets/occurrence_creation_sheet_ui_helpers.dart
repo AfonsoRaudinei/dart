@@ -400,6 +400,9 @@ extension _OccurrenceCreationSheetAreaVisitadaUi
   }
 
   Widget _compactMapHeader({required Color muted, required Color titleColor}) {
+    // No sheet do mapa, o fechar fica no canto do sheet e "Ponto definido no
+    // mapa" é redundante: só a Área visitada mantém cabeçalho próprio.
+    if (!_isAreaVisitada) return const SizedBox.shrink();
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

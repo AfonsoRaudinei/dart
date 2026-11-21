@@ -493,7 +493,9 @@ class _OccurrenceCreationSheetState
                   titleColor: titleColor,
                 ),
                 _buildLocationLine(muted),
-                const SizedBox(height: 20),
+                SizedBox(
+                  height: widget.compactHeader && !_isAreaVisitada ? 8 : 20,
+                ),
 
                 SheetSectionHeader(
                   icon: Icon(

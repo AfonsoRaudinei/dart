@@ -601,6 +601,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                 tipoLabel: _tipoLabel,
                 onClose: widget.onClose,
                 showTitle: !widget.compactHeader,
+                showClose: !widget.compactHeader,
               ),
               SizedBox(height: widget.compactHeader ? 8 : 20),
               novoCaseSectionLabel('Visibilidade'),

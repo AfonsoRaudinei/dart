@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_close_button.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -157,35 +158,72 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
           decoration: BoxDecoration(gradient: v.sheetGradient),
           child: SizedBox(
             height: height,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: Stack(
               children: [
-                const SizedBox(height: 10),
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: v.handleColor,
-                      borderRadius: BorderRadius.circular(999),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 10),
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: v.handleColor,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
                     ),
+                    const SizedBox(height: 12),
+                    _MarkKindToggleBar(
+                      selected: _kind,
+                      labelFor: _label,
+                      iconFor: _icon,
+                      onSelected: _select,
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(child: _body()),
+                  ],
+                ),
+                // Fechar no canto superior do sheet, em vermelho (toque de destaque).
+                Positioned(
+                  top: 0,
+                  right: 8,
+                  child: SheetCloseButton(
+                    key: const Key('map_mark_sheet_close'),
+                    tooltip: 'Fechar',
+                    color: const Color(0xFFFF3B30),
+                    size: 22,
+                    hitSize: 30,
+                    onPressed: _requestClose,
                   ),
                 ),
-                const SizedBox(height: 12),
-                _MarkKindToggleBar(
-                  selected: _kind,
-                  labelFor: _label,
-                  iconFor: _icon,
-                  onSelected: _select,
-                ),
-                const SizedBox(height: 8),
-                Expanded(child: _body()),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  /// Fecha o sheet; na aba Ocorrência pede confirmação se há dados digitados.
+  Future<void> _requestClose() async {
+    if (_kind == MapMarkKind.ocorrencia) {
+      final guard = _occurrenceGuard;
+      if (guard != null) {
+        final canClose = await OccurrenceCloseCoordinator.confirmDiscardIfDirty(
+          context,
+          guard: guard,
+        );
+        if (!canClose || !mounted) return;
+      }
+      clearOccurrenceDraft(
+        ref,
+        widget.position.latitude,
+        widget.position.longitude,
+      );
+    }
+    widget.onClose();
   }
 
   Widget _body() {

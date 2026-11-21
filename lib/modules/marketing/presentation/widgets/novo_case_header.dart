@@ -9,6 +9,7 @@ class NovoCaseHeader extends StatelessWidget {
   final String tipoLabel;
   final VoidCallback onClose;
   final bool showTitle;
+  final bool showClose;
 
   const NovoCaseHeader({
     super.key,
@@ -17,6 +18,7 @@ class NovoCaseHeader extends StatelessWidget {
     required this.tipoLabel,
     required this.onClose,
     this.showTitle = true,
+    this.showClose = true,
   });
 
   @override
@@ -47,7 +49,7 @@ class NovoCaseHeader extends StatelessWidget {
             ],
           ),
         ),
-        SheetCloseButton(onPressed: onClose),
+        if (showClose) SheetCloseButton(onPressed: onClose),
       ],
     );
   }
