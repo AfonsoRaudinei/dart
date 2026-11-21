@@ -13,6 +13,7 @@ class MapLayerPreferencesSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final showPins = ref.watch(showMarkersProvider);
+    final showCases = ref.watch(showMarketingCasesProvider);
     final labels = ref.watch(mapSatelliteLabelsEnabledProvider);
     final borders = ref.watch(mapStateBoundariesEnabledProvider);
     final wms = ref.watch(externalWmsLayerProvider);
@@ -35,6 +36,20 @@ class MapLayerPreferencesSection extends ConsumerWidget {
           },
         ),
         SwitchListTile(
+          key: const Key('map_settings_show_marketing_cases'),
+          title: const Text('Cases de sucesso'),
+          subtitle: Text(
+            showCases
+                ? 'Mostra os cartões de case no mapa.'
+                : 'Oculta os cases e deixa as ocorrências.',
+          ),
+          value: showCases,
+          onChanged: (enabled) {
+            HapticFeedback.selectionClick();
+            ref.read(showMarketingCasesProvider.notifier).setEnabled(enabled);
+          },
+        ),
+        SwitchListTile(
           title: const Text('Nomes e estradas'),
           subtitle: Text(
             labels
@@ -44,7 +59,9 @@ class MapLayerPreferencesSection extends ConsumerWidget {
           value: labels,
           onChanged: (enabled) {
             HapticFeedback.selectionClick();
-            ref.read(mapSatelliteLabelsEnabledProvider.notifier).setEnabled(enabled);
+            ref
+                .read(mapSatelliteLabelsEnabledProvider.notifier)
+                .setEnabled(enabled);
           },
         ),
         SwitchListTile(
@@ -68,13 +85,13 @@ class MapLayerPreferencesSection extends ConsumerWidget {
             wms.enabled
                 ? 'Ative somente se você tiver a URL de um servidor WMS.'
                 : 'Desativada: o mapa usa apenas as camadas padrão do SoloForte. '
-                    'Ative somente se você tiver a URL de um servidor WMS.',
+                      'Ative somente se você tiver a URL de um servidor WMS.',
           ),
           value: wms.enabled,
           onChanged: (enabled) {
-            ref.read(externalWmsLayerProvider.notifier).update(
-                  wms.copyWith(enabled: enabled),
-                );
+            ref
+                .read(externalWmsLayerProvider.notifier)
+                .update(wms.copyWith(enabled: enabled));
           },
         ),
         ListTile(
@@ -92,14 +109,16 @@ class MapLayerPreferencesSection extends ConsumerWidget {
           ),
           value: raster.enabled,
           onChanged: (enabled) {
-            ref.read(externalRasterLayerProvider.notifier).update(
-                  raster.copyWith(enabled: enabled),
-                );
+            ref
+                .read(externalRasterLayerProvider.notifier)
+                .update(raster.copyWith(enabled: enabled));
           },
         ),
         ListTile(
           title: const Text('Configurar Raster'),
-          subtitle: Text(raster.enabled ? 'GeoTIFF' : 'Toque para definir a fonte'),
+          subtitle: Text(
+            raster.enabled ? 'GeoTIFF' : 'Toque para definir a fonte',
+          ),
           onTap: () => showMapRasterConfigDialog(context, ref, raster),
         ),
       ],
@@ -156,7 +175,9 @@ Future<void> showMapWmsConfigDialog(
         ),
         FilledButton(
           onPressed: () {
-            ref.read(externalWmsLayerProvider.notifier).update(
+            ref
+                .read(externalWmsLayerProvider.notifier)
+                .update(
                   current.copyWith(
                     baseUrl: urlController.text.trim(),
                     layers: layersController.text.trim(),
@@ -250,12 +271,15 @@ Future<void> showMapRasterConfigDialog(
               await const LocalGeoTiffService().deleteImportedOverlay(
                 current.localPngPath,
               );
-              ref.read(externalRasterLayerProvider.notifier).update(
+              ref
+                  .read(externalRasterLayerProvider.notifier)
+                  .update(
                     current.copyWith(
                       urlTemplate: urlController.text.trim(),
                       opacity: opacity.clamp(0.05, 1.0),
                       isGeoTiff: isGeoTiff,
-                      geoTiffTileEndpoint: endpointController.text.trim().isEmpty
+                      geoTiffTileEndpoint:
+                          endpointController.text.trim().isEmpty
                           ? 'https://titiler.xyz'
                           : endpointController.text.trim(),
                       clearLocalGeoTiff: true,
@@ -289,7 +313,9 @@ Future<void> _importLocalGeoTiff(
     await const LocalGeoTiffService().deleteImportedOverlay(
       current.localPngPath,
     );
-    ref.read(externalRasterLayerProvider.notifier).update(
+    ref
+        .read(externalRasterLayerProvider.notifier)
+        .update(
           current.copyWith(
             enabled: true,
             localPngPath: imported.pngPath,
