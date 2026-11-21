@@ -198,15 +198,17 @@ bool farmHasDrawablePolygons(List<FarmLinkedFieldSummary>? fields) {
   return fields.any((field) => field.vertices.length >= 3);
 }
 
-/// Linha própria, abaixo de Talhões. A linha Mapa | NDVI | Novo não tem espaço.
+/// Linha abaixo de Talhões. [trailing] fica ao lado de “Baixar mapa”.
 class FarmMapDownloadButton extends ConsumerWidget {
   final String farmId;
   final List<FarmLinkedFieldSummary>? fields;
+  final Widget? trailing;
 
   const FarmMapDownloadButton({
     super.key,
     required this.farmId,
     required this.fields,
+    this.trailing,
   });
 
   @override
@@ -216,65 +218,73 @@ class FarmMapDownloadButton extends ConsumerWidget {
     final color = enabled ? PremiumTokens.brandGreen : Colors.grey;
     final job = ref.watch(farmMapDownloadControllerProvider)[farmId];
     final isDownloading = job?.isRunning ?? false;
+    final compactStyle = TextButton.styleFrom(
+      visualDensity: VisualDensity.compact,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+    );
+    final extra = trailing;
 
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (saved && !isDownloading)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.download_done_rounded, color: color),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Mapa baixado',
-                    style: TextStyle(color: color, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            )
-          else
-            TextButton.icon(
-              onPressed: enabled
-                  ? () => downloadFarmSatelliteMap(
-                      context: context,
-                      ref: ref,
-                      farmId: farmId,
-                      fields: fields!,
-                    )
-                  : null,
-              icon: Icon(Icons.download_rounded, color: color),
-              label: Text(
-                'Baixar mapa',
-                style: TextStyle(color: color, fontWeight: FontWeight.bold),
-              ),
-            ),
-          if (saved && !isDownloading)
-            TextButton(
-              onPressed: () => _confirmDeleteFarmMap(context, ref, farmId),
-              child: const Text('Excluir mapa'),
-            ),
-          if (isDownloading)
-            Padding(
-              padding: const EdgeInsets.only(left: 12, bottom: 4),
-              child: Text(
-                job!.isPaused
-                    ? 'Sem internet. Retomando quando conectar… ${job.percent}%'
-                    : 'Baixando mapa… ${job.percent}%',
-                style: const TextStyle(
-                  color: PremiumTokens.brandGreen,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+    final Widget downloadAction = saved && !isDownloading
+        ? Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.download_done_rounded, color: color),
+                const SizedBox(width: 8),
+                Text(
+                  'Mapa baixado',
+                  style: TextStyle(color: color, fontWeight: FontWeight.bold),
                 ),
+              ],
+            ),
+          )
+        : TextButton.icon(
+            style: compactStyle,
+            onPressed: enabled
+                ? () => downloadFarmSatelliteMap(
+                    context: context,
+                    ref: ref,
+                    farmId: farmId,
+                    fields: fields!,
+                  )
+                : null,
+            icon: Icon(Icons.download_rounded, color: color),
+            label: Text(
+              'Baixar mapa',
+              style: TextStyle(color: color, fontWeight: FontWeight.bold),
+            ),
+          );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [downloadAction, if (extra != null) extra],
+        ),
+        if (saved && !isDownloading)
+          TextButton(
+            onPressed: () => _confirmDeleteFarmMap(context, ref, farmId),
+            child: const Text('Excluir mapa'),
+          ),
+        if (isDownloading)
+          Padding(
+            padding: const EdgeInsets.only(left: 12, bottom: 4),
+            child: Text(
+              job!.isPaused
+                  ? 'Sem internet. Retomando quando conectar… ${job.percent}%'
+                  : 'Baixando mapa… ${job.percent}%',
+              style: const TextStyle(
+                color: PremiumTokens.brandGreen,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }
