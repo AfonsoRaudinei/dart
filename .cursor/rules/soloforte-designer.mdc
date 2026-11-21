@@ -83,7 +83,8 @@ Regra dura — aplicar em HTML **e** Flutter (sheets, cards, pins):
 
 ## Rodapé
 
-- UM único bloco: logo SoloForte (imagem) + "SoloForte" — **nada mais**
+- UM único bloco em duas colunas: **à esquerda** logo SoloForte (imagem) + "SoloForte"; **à direita** QR Code App Store (`<a class="sf-footer-qr">` → https://apps.apple.com/br/app/soloforte/id6759268985, legenda "Baixe o SoloForte")
+- No app (`HtmlReportViewer`), toque no QR abre a App Store via `url_launcher` (`LaunchMode.externalApplication`) — não WebView genérico
 - SEM nome/cargo do consultor, SEM tagline "Responsável: …"
 - SEM `footer-meta` (ID, Sync, Sessão, Status técnico, Gerado em)
 - SEM emoji 🌱 no rodapé — usar a imagem do logo oficial (cores originais, sem `filter: invert`)
@@ -107,6 +108,6 @@ Regra dura — aplicar em HTML **e** Flutter (sheets, cards, pins):
 - [ ] Base `_sf_document_base.css` via `{{sf_base_css}}`, sem Google Fonts
 - [ ] Zero ícones genéricos decorativos
 - [ ] Localização = inline resumido OU “Ver no mapa” (sem lat/long)
-- [ ] Rodapé = 1 bloco SoloForte (logo + nome), sem consultor, sem meta ID/Sync
+- [ ] Rodapé = marca SoloForte à esquerda (logo + nome) + QR App Store à direita ("Baixe o SoloForte"); no app, toque no QR abre App Store; sem consultor, sem meta ID/Sync
 - [ ] Cores: samsung + petróleo
 - [ ] Export passa `sharePositionOrigin`
