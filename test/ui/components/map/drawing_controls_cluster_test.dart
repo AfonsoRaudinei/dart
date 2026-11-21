@@ -301,9 +301,11 @@ void main() {
       drawingTool: DrawingTool.polygon,
       canStartHoleCutFromSketch: true,
       onStartHoleCutFromDrawing: _noop,
+      onDeleteEditingFeature: _noop,
     );
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('Recortar'), findsOneWidget);
+    expect(find.text('Excluir'), findsNothing);
   });
 
   testWidgets('modo editing continua exibindo Recortar', (tester) async {
@@ -312,9 +314,11 @@ void main() {
       drawingState: DrawingState.editing,
       isDrawMode: true,
       onStartHoleCutFromEdit: _noop,
+      onDeleteEditingFeature: _noop,
     );
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('Recortar'), findsOneWidget);
+    expect(find.text('Excluir'), findsOneWidget);
   });
 
   testWidgets('Cancelar no modo drawing dispara onCancelDrawing', (
@@ -372,6 +376,7 @@ Future<void> _pumpMapControlsOverlay(
   VoidCallback? onStartHoleCutFromEdit,
   VoidCallback? onStartHoleCutFromDrawing,
   bool canStartHoleCutFromSketch = false,
+  VoidCallback? onDeleteEditingFeature,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final settingsRepository = SettingsRepository(
@@ -419,6 +424,7 @@ Future<void> _pumpMapControlsOverlay(
             onStartHoleCutFromEdit: onStartHoleCutFromEdit,
             onStartHoleCutFromDrawing: onStartHoleCutFromDrawing,
             canStartHoleCutFromSketch: canStartHoleCutFromSketch,
+            onDeleteEditingFeature: onDeleteEditingFeature,
           ),
         ),
       ),
