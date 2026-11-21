@@ -338,6 +338,7 @@ lib/
 | 061 | Calendário do produtor só após confirmação da visita pelo consultor |
 | 062 | Calendário do produtor: estádios da soja e plantio do talhão |
 | 063 | Plantio em duas fases (execução + validação / só emergência) |
+| 064 | Campo de teste é a área do case Resultado/Avaliação (`marketing_cases.drawing_id`) |
 
 Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 
