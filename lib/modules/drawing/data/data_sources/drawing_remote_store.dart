@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
 import '../../domain/models/drawing_models.dart';
+import '../../domain/models/teste_execucao.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 
 /// Sincronização remota de [DrawingFeature] via Supabase.
@@ -213,4 +214,77 @@ int? _cicloDiasFromRemote(Object? value) {
   if (value is int) return value;
   if (value is num) return value.toInt();
   return null;
+}
+
+/// Sincronização remota de [TesteExecucao] via Supabase.
+class TesteExecucaoRemoteStore {
+  final SupabaseClient _supabase;
+
+  TesteExecucaoRemoteStore({SupabaseClient? supabase})
+    : _supabase = supabase ?? Supabase.instance.client;
+
+  Future<void> push(TesteExecucao row) async {
+    final userId = _requireUserId();
+    await _supabase.from('teste_execucoes').upsert(
+      _toRemoteRow(row, userId: userId),
+      onConflict: 'id',
+    );
+  }
+
+  Future<List<TesteExecucao>> fetchUpdates(DateTime? lastSync) async {
+    final userId = _requireUserId();
+    var query = _supabase
+        .from('teste_execucoes')
+        .select(
+          'id, drawing_id, talhao, implementacao, foto_url, '
+          'created_at, updated_at, deleted_at',
+        )
+        .eq('user_id', userId);
+
+    if (lastSync != null) {
+      query = query.gt('updated_at', lastSync.toUtc().toIso8601String());
+    }
+
+    final rows = await query.order('updated_at', ascending: false);
+    return rows.map((row) => _fromRemoteRow(Map<String, dynamic>.from(row))).toList();
+  }
+
+  String _requireUserId() {
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty) {
+      throw StateError('TesteExecucaoRemoteStore requires an authenticated user.');
+    }
+    return userId;
+  }
+
+  Map<String, dynamic> _toRemoteRow(TesteExecucao row, {required String userId}) {
+    return {
+      'id': row.id,
+      'user_id': userId,
+      'drawing_id': row.drawingId,
+      'talhao': row.talhao,
+      'implementacao': row.implementacao,
+      'foto_url': row.fotoUrl,
+      'created_at': row.criadoEm.toUtc().toIso8601String(),
+      'updated_at': row.atualizadoEm.toUtc().toIso8601String(),
+      'deleted_at': row.deletedAt?.toUtc().toIso8601String(),
+    };
+  }
+
+  TesteExecucao _fromRemoteRow(Map<String, dynamic> row) {
+    return TesteExecucao(
+      id: row['id'] as String,
+      drawingId: row['drawing_id'] as String,
+      userId: LocalSessionIdentity.resolveUserId(),
+      syncStatus: SyncStatus.synced,
+      talhao: row['talhao'] as String?,
+      implementacao: row['implementacao'] as String?,
+      fotoUrl: row['foto_url'] as String?,
+      criadoEm: DateTime.parse(row['created_at'] as String),
+      atualizadoEm: DateTime.parse(row['updated_at'] as String),
+      deletedAt: row['deleted_at'] != null
+          ? DateTime.tryParse(row['deleted_at'] as String)
+          : null,
+    );
+  }
 }
