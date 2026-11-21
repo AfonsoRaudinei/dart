@@ -553,11 +553,28 @@ extension DrawingControllerVertexEditing on DrawingController {
   /// undo restaurá-lo (arrasto e inserção só empilham o estado de partida).
   void _pushEditHistoryBeforeChange(DrawingPolygon before) {
     final current = _history.currentFullPolygon;
-    if (current != null &&
-        _serializeGeometry(current) == _serializeGeometry(before)) {
-      return;
+    if (current != null) {
+      if (_serializeGeometry(current) == _serializeGeometry(before)) return;
+    } else if (before.coordinates.length == 1) {
+      final currentVertices = _history.current;
+      final beforeVertices = _geomToVertices(before);
+      if (currentVertices != null &&
+          _sameVertices(currentVertices, beforeVertices)) {
+        return;
+      }
     }
     _history.push(_geomToVertices(before), fullPolygonSnapshot: before);
+  }
+
+  bool _sameVertices(List<LatLng> a, List<LatLng> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if ((a[i].latitude - b[i].latitude).abs() > 1e-10 ||
+          (a[i].longitude - b[i].longitude).abs() > 1e-10) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// Exclui o vértice selecionado (sketch de polígono ou edição não-pivô).
