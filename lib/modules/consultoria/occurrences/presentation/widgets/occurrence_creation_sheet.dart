@@ -345,26 +345,8 @@ class _OccurrenceCreationSheetState
 
   bool get _isPlantio => _selectedCategoryValue == 'plantio';
 
-  Color _catColor(OccurrenceCategory cat) {
-    switch (cat) {
-      case OccurrenceCategory.doenca:
-        return const Color(0xFF34C759);
-      case OccurrenceCategory.insetos:
-        return const Color(0xFFFF2D55);
-      case OccurrenceCategory.daninhas:
-        return const Color(0xFFFF9500);
-      case OccurrenceCategory.nutricional:
-        return const Color(0xFF8E8E93);
-      case OccurrenceCategory.agua:
-        return const Color(0xFF30B0C7);
-      case OccurrenceCategory.amostraSolo:
-        return const Color(0xFF8B5CF6);
-      case OccurrenceCategory.plantio:
-        return const Color(0xFFA16207);
-      case OccurrenceCategory.areaVisitada:
-        return const Color(0xFF607D8B);
-    }
-  }
+  // Mesma cor do chip da categoria e do pino no mapa.
+  Color _catColor(OccurrenceCategory cat) => cat.markerColor;
 
   int _metricValue(OccurrenceCategory cat, String key) =>
       _metrics[cat.name]?[key] ?? 0;
@@ -541,7 +523,33 @@ class _OccurrenceCreationSheetState
                   ),
                   const SizedBox(height: 8),
                   _buildCategoryPicker(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
+                  // Card da categoria colado nos chips; abre em sanfona.
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOutCubic,
+                    alignment: Alignment.topCenter,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ..._cats
+                            .where(
+                              (cat) => cat != OccurrenceCategory.areaVisitada,
+                            )
+                            .map((cat) => _buildCategorySection(cat)),
+                      ],
+                    ),
+                  ),
+                  if (_cats.any(
+                    (c) => c != OccurrenceCategory.areaVisitada,
+                  )) ...[
+                    OccurrenceOrdemAplicacaoFields(
+                      acao: _ordem.acao,
+                      dose: _ordem.dose,
+                      quando: _ordem.quando,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 ],
 
                 if (!_isAreaVisitada) ...[
@@ -562,10 +570,6 @@ class _OccurrenceCreationSheetState
                   ),
                   if (_buildEstadioSugeridoHint(muted) case final hint?) hint,
                   const SizedBox(height: 20),
-
-                  ..._cats
-                      .where((cat) => cat != OccurrenceCategory.areaVisitada)
-                      .map((cat) => _buildCategorySection(cat)),
 
                   const OccurrenceSectionHeader(title: 'Urgência'),
                   const SizedBox(height: 8),
@@ -601,12 +605,6 @@ class _OccurrenceCreationSheetState
                     },
                   ),
                   const SizedBox(height: 20),
-                  OccurrenceOrdemAplicacaoFields(
-                    acao: _ordem.acao,
-                    dose: _ordem.dose,
-                    quando: _ordem.quando,
-                  ),
-                  const SizedBox(height: 24),
                   _buildPhotoActionSection(),
                   const SizedBox(height: 20),
                 ],
@@ -641,8 +639,8 @@ class _OccurrenceCreationSheetState
                       style: ElevatedButton.styleFrom(
                         backgroundColor: v.ctaBackground,
                         foregroundColor: v.ctaText,
-                        minimumSize: const Size(48, 44),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        minimumSize: const Size(48, 40),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(v.ctaRadius),
                         ),
@@ -659,8 +657,9 @@ class _OccurrenceCreationSheetState
                           : Text(
                               _primarySaveButtonLabel,
                               style: const TextStyle(
+                                fontSize: 14,
                                 fontWeight: FontWeight.w600,
-                                letterSpacing: -0.4,
+                                letterSpacing: -0.2,
                               ),
                             ),
                     ),

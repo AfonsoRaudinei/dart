@@ -302,7 +302,7 @@ class OccurrencePhotoGalleryStatus extends StatelessWidget {
   Widget build(BuildContext context) {
     if (registeredCount == 0) {
       return Text(
-        'Anexe foto para aparecer no relatório. Selecione a categoria e toque abaixo.',
+        'Anexe fotos para o relatório.',
         style: TextStyle(
           color: Theme.of(context).colorScheme.onSurfaceVariant,
           fontSize: 12,

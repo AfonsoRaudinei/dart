@@ -44,7 +44,7 @@ class OccurrenceClientSelector extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'Carregando clientes…',
-                  style: TextStyle(color: muted),
+                  style: TextStyle(color: muted, fontSize: 14),
                 ),
               ),
             );
@@ -64,7 +64,7 @@ class OccurrenceClientSelector extends StatelessWidget {
               iconEnabledColor: iconColor,
               hint: Text(
                 'Selecionar cliente (opcional)',
-                style: TextStyle(color: muted),
+                style: TextStyle(color: muted, fontSize: 14),
               ),
               items: clients
                   .map(
@@ -73,7 +73,7 @@ class OccurrenceClientSelector extends StatelessWidget {
                       child: Text(
                         c.name,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: title),
+                        style: TextStyle(color: title, fontSize: 14),
                       ),
                     ),
                   )
