@@ -61,10 +61,12 @@ class _ClientHarnessState extends State<_ClientHarness> {
 class _FarmHarness extends StatefulWidget {
   const _FarmHarness({
     required this.farms,
+    required this.clientSelected,
     this.selectedFarm,
   });
 
   final List<Farm> farms;
+  final bool clientSelected;
   final Farm? selectedFarm;
 
   @override
@@ -96,7 +98,7 @@ class _FarmHarnessState extends State<_FarmHarness> {
       searchController: _searchController,
       query: _query,
       selectedFarm: widget.selectedFarm,
-      clientSelected: true,
+      clientSelected: widget.clientSelected,
       onQueryChanged: (q) => setState(() => _query = q),
       onSelectFarm: (_) {},
       onNewFarm: () {},
