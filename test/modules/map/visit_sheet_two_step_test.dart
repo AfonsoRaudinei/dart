@@ -110,4 +110,43 @@ void main() {
       expect(find.text('Fazenda Sul'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'editar o produtor pré-selecionado desabilita confirmar chegada',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        _wrap(
+          VisitSheet(
+            preSelectedClienteId: 'client-1',
+            loadTalhoes: _mockLoadTalhoes,
+            onRateTalhao: (_, __) async {},
+            onConfirm: (_, __, ___, ____) {},
+            onNavigateToArea: (_, __, ___, ____, _____, ______) {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final produtor = find.byType(TextField).first;
+      expect(
+        tester.widget<TextField>(produtor).controller?.text,
+        'Produtor Alfa',
+      );
+
+      ElevatedButton confirm() => tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'CONFIRMAR CHEGADA'),
+      );
+      expect(confirm().onPressed, isNotNull);
+
+      await tester.enterText(produtor, 'zzz');
+      await tester.pumpAndSettle();
+
+      expect(confirm().onPressed, isNull);
+    },
+  );
 }
