@@ -177,10 +177,10 @@ class FarmDetailScreen extends ConsumerWidget {
                         FarmMapDownloadButton(
                           farmId: farmId,
                           fields: linkedFields,
-                        ),
-                        FarmGeometryExportButton(
-                          documentName: farm.name,
-                          fields: linkedFields,
+                          trailing: FarmGeometryExportButton(
+                            documentName: farm.name,
+                            fields: linkedFields,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         linkedFieldsAsync.when(
