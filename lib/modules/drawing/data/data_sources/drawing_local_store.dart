@@ -7,6 +7,7 @@ import '../../../../core/infra/preferences_service.dart';
 import '../../../../core/session/local_session_identity.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../domain/models/drawing_models.dart';
+import '../../domain/models/teste_execucao.dart';
 
 class DrawingOwnershipPolicy {
   const DrawingOwnershipPolicy._();
@@ -539,4 +540,120 @@ int? _corFromRow(Object? value) {
   if (value is int) return value;
   if (value is num) return value.toInt();
   return null;
+}
+
+/// Persistência local de [TesteExecucao].
+class TesteExecucaoLocalStore {
+  TesteExecucaoLocalStore({
+    DatabaseHelper? dbHelper,
+    DrawingLocalIdentityStore? identityStore,
+  })  : _dbHelper = dbHelper ?? DatabaseHelper.instance,
+        _identityStore = identityStore ?? DrawingLocalIdentityStore();
+
+  final DatabaseHelper _dbHelper;
+  final DrawingLocalIdentityStore _identityStore;
+
+  Future<void> insert(TesteExecucao row) async {
+    final db = await _dbHelper.database;
+    final userId = _resolveScopedUserId();
+    await db.insert('teste_execucoes', {
+      ..._toRow(row),
+      'user_id': userId,
+      'sync_status': DrawingOwnershipPolicy.normalizeSyncStatusForWrite(
+        persistedUserId: userId,
+        currentSyncStatus: row.syncStatus,
+      ),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> update(TesteExecucao row) async {
+    final db = await _dbHelper.database;
+    final userId = _resolveScopedUserId();
+    await db.update(
+      'teste_execucoes',
+      {
+        ..._toRow(row),
+        'user_id': userId,
+        'sync_status': DrawingOwnershipPolicy.normalizeSyncStatusForWrite(
+          persistedUserId: userId,
+          currentSyncStatus: row.syncStatus,
+        ),
+      },
+      where: 'id = ?',
+      whereArgs: [row.id],
+    );
+  }
+
+  Future<TesteExecucao?> getById(String id) async {
+    if (id.trim().isEmpty) return null;
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'teste_execucoes',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return _fromRow(rows.first);
+  }
+
+  Future<List<TesteExecucao>> findByDrawingId(String drawingId) async {
+    if (drawingId.trim().isEmpty) return const [];
+    final db = await _dbHelper.database;
+    final userId = _resolveScopedUserId();
+    final rows = await db.query(
+      'teste_execucoes',
+      where: 'drawing_id = ? AND user_id = ? AND deleted_at IS NULL',
+      whereArgs: [drawingId, userId],
+      orderBy: 'atualizado_em DESC',
+    );
+    return rows.map(_fromRow).toList();
+  }
+
+  Future<List<TesteExecucao>> getPendingSync() async {
+    final db = await _dbHelper.database;
+    final userId = _resolveScopedUserId();
+    final rows = await db.query(
+      'teste_execucoes',
+      where: 'user_id = ? AND sync_status = ?',
+      whereArgs: [userId, SyncStatus.pending_sync.toJson()],
+    );
+    return rows.map(_fromRow).toList();
+  }
+
+  String _resolveScopedUserId() {
+    return _identityStore.resolveScopedUserId(
+      currentUserId: LocalSessionIdentity.resolveUserId(),
+    );
+  }
+
+  Map<String, dynamic> _toRow(TesteExecucao row) {
+    return {
+      'id': row.id,
+      'drawing_id': row.drawingId,
+      'talhao': row.talhao,
+      'implementacao': row.implementacao,
+      'foto_url': row.fotoUrl,
+      'criado_em': row.criadoEm.toIso8601String(),
+      'atualizado_em': row.atualizadoEm.toIso8601String(),
+      'deleted_at': row.deletedAt?.toIso8601String(),
+    };
+  }
+
+  TesteExecucao _fromRow(Map<String, dynamic> row) {
+    return TesteExecucao(
+      id: row['id'] as String,
+      drawingId: row['drawing_id'] as String,
+      userId: (row['user_id'] as String?) ?? '',
+      syncStatus: SyncStatus.fromJson(row['sync_status'] as String),
+      talhao: row['talhao'] as String?,
+      implementacao: row['implementacao'] as String?,
+      fotoUrl: row['foto_url'] as String?,
+      criadoEm: DateTime.parse(row['criado_em'] as String),
+      atualizadoEm: DateTime.parse(row['atualizado_em'] as String),
+      deletedAt: row['deleted_at'] != null
+          ? DateTime.tryParse(row['deleted_at'] as String)
+          : null,
+    );
+  }
 }
