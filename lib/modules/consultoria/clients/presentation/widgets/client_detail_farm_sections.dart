@@ -252,10 +252,13 @@ class _ClientFarmWithTalhoesSectionState
               ),
             ],
           ),
-          FarmMapDownloadButton(farmId: farm.id, fields: linkedFields),
-          FarmGeometryExportButton(
-            documentName: farm.name,
+          FarmMapDownloadButton(
+            farmId: farm.id,
             fields: linkedFields,
+            trailing: FarmGeometryExportButton(
+              documentName: farm.name,
+              fields: linkedFields,
+            ),
           ),
           const SizedBox(height: 8),
           fieldsAsync.when(
