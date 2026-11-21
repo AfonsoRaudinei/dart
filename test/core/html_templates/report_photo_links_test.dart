@@ -141,6 +141,7 @@ void main() {
       final decision = ReportPhotoLinks.decideNavigation(url);
       expect(decision.action, action, reason: url);
       expect(decision.photoIndex, isNull, reason: url);
+      expect(decision.externalUrl, isNull, reason: url);
     }
 
     test('sfphoto com índice abre o visualizador', () {
@@ -162,9 +163,26 @@ void main() {
       }
     });
 
+    test('URL App Store SoloForte abre fora do WebView', () {
+      for (final url in [
+        ReportPhotoLinks.soloForteAppStoreUrl,
+        '${ReportPhotoLinks.soloForteAppStoreUrl}/',
+        ' ${ReportPhotoLinks.soloForteAppStoreUrl} ',
+      ]) {
+        final decision = ReportPhotoLinks.decideNavigation(url);
+        expect(decision.action, ReportNavigationAction.openExternalUrl, reason: url);
+        expect(
+          decision.externalUrl,
+          ReportPhotoLinks.soloForteAppStoreUrl,
+          reason: url,
+        );
+      }
+    });
+
     test('qualquer outra URL é bloqueada (WebView sem voltar)', () {
       for (final url in [
         'https://soloforte.app',
+        'https://apps.apple.com/br/app/other/id0000000000',
         'http://example.com/x',
         'file:///tmp/relatorio.html',
         'mailto:contato@soloforte.app',
