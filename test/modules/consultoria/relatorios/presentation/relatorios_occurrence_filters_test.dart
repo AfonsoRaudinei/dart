@@ -153,7 +153,7 @@ void main() {
     expect(find.text('03/05/2026'), findsOneWidget);
     expect(find.text('04/06/2026'), findsOneWidget);
     expect(find.text('3 ocorrência(s)'), findsOneWidget);
-    expect(_dropdownLabels(tester, 1), ['Todos']);
+    expect(await _dropdownLabels(tester, 1), ['Todos']);
 
     await _openDropdown(tester, 0);
     expect(find.text('Talhão Sul'), findsNothing);
@@ -165,7 +165,7 @@ void main() {
     expect(find.text('03/05/2026'), findsNothing);
     expect(find.text('04/06/2026'), findsNothing);
     expect(find.text('1 ocorrência(s)'), findsOneWidget);
-    expect(_dropdownLabels(tester, 1), ['Todos', 'Talhão Sul']);
+    expect(await _dropdownLabels(tester, 1), ['Todos', 'Talhão Sul']);
 
     await _openDropdown(tester, 1);
     expect(find.text('Talhão Norte'), findsNothing);
@@ -245,6 +245,72 @@ void main() {
       expect(visits.calls, greaterThan(1));
     },
   );
+
+  testWidgets('filtros começam recolhidos e expandem ao toque', (tester) async {
+    await _pumpOccurrences(tester, [
+      _occurrence(
+        id: 'occ-nova',
+        category: 'nutricional',
+        createdAt: DateTime(2026, 11, 4, 12),
+      ),
+    ]);
+
+    expect(find.text('Filtros'), findsOneWidget);
+    expect(find.text('Fazenda'), findsNothing);
+    expect(find.text('Categoria'), findsNothing);
+    expect(find.text('Situação'), findsNothing);
+    expect(find.text('Andamento'), findsNothing);
+    expect(find.text('Ordem'), findsNothing);
+    expect(find.text('04/11/2026'), findsOneWidget);
+
+    await tester.tap(find.text('Filtros'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Fazenda'), findsOneWidget);
+    expect(find.text('Categoria'), findsOneWidget);
+
+    await tester.tap(find.text('Filtros'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Fazenda'), findsNothing);
+    expect(find.text('Categoria'), findsNothing);
+    expect(find.text('Situação'), findsNothing);
+    expect(find.text('Andamento'), findsNothing);
+    expect(find.text('Ordem'), findsNothing);
+    expect(find.text('04/11/2026'), findsOneWidget);
+  });
+
+  testWidgets('filtro aplicado mostra ativos com o painel recolhido', (
+    tester,
+  ) async {
+    await _pumpOccurrences(tester, [
+      _occurrence(
+        id: 'occ-nutri',
+        category: 'nutricional',
+        createdAt: DateTime(2026, 11, 4, 12),
+      ),
+      _occurrence(
+        id: 'occ-daninha',
+        category: 'daninhas',
+        createdAt: DateTime(2026, 4, 1, 12),
+      ),
+    ]);
+
+    expect(find.text('ativos'), findsNothing);
+
+    await _tapChip(tester, 'Nutrientes');
+    expect(find.text('ativos'), findsOneWidget);
+    expect(find.text('Limpar'), findsOneWidget);
+
+    await tester.tap(find.text('Filtros'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ativos'), findsOneWidget);
+    expect(find.text('Limpar'), findsNothing);
+    expect(find.text('Categoria'), findsNothing);
+    expect(find.text('04/11/2026'), findsOneWidget);
+    expect(find.text('01/04/2026'), findsNothing);
+  });
 }
 
 Occurrence _occurrence({
@@ -273,7 +339,8 @@ double _dateOffset(WidgetTester tester, String label) {
   return tester.getTopLeft(finder).dy;
 }
 
-List<String> _dropdownLabels(WidgetTester tester, int index) {
+Future<List<String>> _dropdownLabels(WidgetTester tester, int index) async {
+  await _revealFiltersIfClosed(tester);
   final dropdown = tester.widget<DropdownButton<String>>(
     find.byType(DropdownButton<String>).at(index),
   );
@@ -284,12 +351,24 @@ List<String> _dropdownLabels(WidgetTester tester, int index) {
 }
 
 Future<void> _openDropdown(WidgetTester tester, int index) async {
+  await _revealFiltersIfClosed(tester);
   final target = find.byType(DropdownButton<String>).at(index);
   await _ensureTapped(tester, target);
 }
 
 Future<void> _tapChip(WidgetTester tester, String label) async {
+  await _revealFiltersIfClosed(tester);
   await _ensureTapped(tester, find.widgetWithText(FilterChip, label));
+}
+
+/// Abre o painel se `Filtros` está na tela e as opções ainda não foram montadas.
+Future<void> _revealFiltersIfClosed(WidgetTester tester) async {
+  if (find.text('Categoria', skipOffstage: false).evaluate().isNotEmpty) {
+    return;
+  }
+  final toggle = find.text('Filtros');
+  if (toggle.evaluate().isEmpty) return;
+  await _ensureTapped(tester, toggle);
 }
 
 Future<void> _ensureTapped(WidgetTester tester, Finder target) async {
