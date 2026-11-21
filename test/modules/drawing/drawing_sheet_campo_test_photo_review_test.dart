@@ -123,7 +123,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Salvar Polígono'), findsOneWidget);
+    expect(find.text('Salvar talhão'), findsOneWidget);
     expect(find.byKey(const Key('drawing_campo_test_photo_section')), findsNothing);
   });
 }

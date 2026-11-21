@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_close_button.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import '../../domain/repositories/i_clients_repository.dart';
 
@@ -15,8 +16,7 @@ List<T> filterDrawingHierarchyByName<T>(
     return nameOf(item).toLowerCase().contains(normalized);
   }).toList();
   filtered.sort(
-    (a, b) =>
-        nameOf(a).toLowerCase().compareTo(nameOf(b).toLowerCase()),
+    (a, b) => nameOf(a).toLowerCase().compareTo(nameOf(b).toLowerCase()),
   );
   return filtered;
 }
@@ -73,6 +73,7 @@ class DrawingHierarchyNameTile extends StatelessWidget {
     this.subtitle,
     this.leading,
     this.titleColor,
+    this.onClear,
   });
 
   final String title;
@@ -82,6 +83,9 @@ class DrawingHierarchyNameTile extends StatelessWidget {
   final VoidCallback onTap;
   final Widget? leading;
   final Color? titleColor;
+
+  /// Quando informado, mostra um "x" discreto para limpar a seleção.
+  final VoidCallback? onClear;
 
   @override
   Widget build(BuildContext context) {
@@ -106,10 +110,7 @@ class DrawingHierarchyNameTile extends StatelessWidget {
             ),
             child: Row(
               children: [
-                if (leading != null) ...[
-                  leading!,
-                  const SizedBox(width: 8),
-                ],
+                if (leading != null) ...[leading!, const SizedBox(width: 8)],
                 Expanded(
                   child: subtitle == null
                       ? Text(
@@ -142,6 +143,13 @@ class DrawingHierarchyNameTile extends StatelessWidget {
                           ],
                         ),
                 ),
+                if (onClear != null)
+                  SheetCloseButton(
+                    onPressed: onClear,
+                    tooltip: 'Limpar',
+                    size: 22,
+                    hitSize: 32,
+                  ),
               ],
             ),
           ),
@@ -158,10 +166,7 @@ Widget _drawingHierarchyMutedLine(
 }) {
   return Padding(
     padding: padding,
-    child: Text(
-      text,
-      style: TextStyle(color: v.subtitleColor, fontSize: 14),
-    ),
+    child: Text(text, style: TextStyle(color: v.subtitleColor, fontSize: 14)),
   );
 }
 
@@ -242,21 +247,18 @@ class DrawingClientSearchField extends StatelessWidget {
         else if (!queryEmpty && displayItems.isEmpty)
           _drawingHierarchyMutedLine(v, 'Nenhum cliente para esta busca')
         else ...[
-          if (clearable &&
-              onClearTap != null &&
-              (!queryEmpty || selectedClient != null))
-            DrawingHierarchyNameTile(
-              title: '— Nenhum —',
-              selected: selectedClient == null,
-              visuals: v,
-              onTap: onClearTap,
-            ),
           for (final client in displayItems)
             DrawingHierarchyNameTile(
               title: client.name,
               selected: client.id == selectedClient?.id,
               visuals: v,
               onTap: () => onClientTap(client),
+              onClear:
+                  clearable &&
+                      onClearTap != null &&
+                      client.id == selectedClient?.id
+                  ? onClearTap
+                  : null,
             ),
         ],
       ],
@@ -385,7 +387,7 @@ class DrawingFarmSearchField extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         if (!clientSelected)
-          _drawingHierarchyMutedLine(v, 'Selecione o cliente primeiro')
+          const SizedBox.shrink()
         else if (isLoading)
           _drawingHierarchyMutedLine(v, 'Carregando...')
         else if (farms.isEmpty && !showNewFarm)
@@ -395,21 +397,16 @@ class DrawingFarmSearchField extends StatelessWidget {
         else if (!queryEmpty && displayItems.isEmpty && !showNewFarm)
           _drawingHierarchyMutedLine(v, 'Nenhuma fazenda para esta busca')
         else ...[
-          if (clearable &&
-              onClearTap != null &&
-              (!queryEmpty || selectedFarm != null))
-            DrawingHierarchyNameTile(
-              title: '— Nenhuma —',
-              selected: selectedFarm == null,
-              visuals: v,
-              onTap: onClearTap,
-            ),
           for (final farm in displayItems)
             DrawingHierarchyNameTile(
               title: farm.name,
               selected: farm.id == selectedFarm?.id,
               visuals: v,
               onTap: () => onFarmTap(farm),
+              onClear:
+                  clearable && onClearTap != null && farm.id == selectedFarm?.id
+                  ? onClearTap
+                  : null,
             ),
           if (showNewFarm)
             DrawingHierarchyNameTile(
@@ -417,7 +414,11 @@ class DrawingFarmSearchField extends StatelessWidget {
               selected: false,
               visuals: v,
               titleColor: v.accent,
-              leading: Icon(Icons.add_circle_outline, size: 18, color: v.accent),
+              leading: Icon(
+                Icons.add_circle_outline,
+                size: 18,
+                color: v.accent,
+              ),
               onTap: onNewFarm!,
             ),
         ],

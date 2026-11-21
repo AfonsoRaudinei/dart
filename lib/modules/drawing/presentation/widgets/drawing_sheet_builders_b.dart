@@ -12,6 +12,17 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
         controller: widget.controller,
         embedded: true,
         onCancel: () => _rebuild(() => _isEditingMetadata = false),
+        onDelete: () {
+          final deletedFeature = feature;
+          widget.controller.deleteFeature(feature.id);
+          _rebuild(() => _isEditingMetadata = false);
+          widget.onSaved?.call(null);
+          showDrawingDeleteUndoSnackBar(
+            context: context,
+            deletedFeature: deletedFeature,
+            controller: widget.controller,
+          );
+        },
         onSaved: () {
           _rebuild(() => _isEditingMetadata = false);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -172,7 +183,6 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       fontSize: v.sectionFontSize,
       fontWeight: v.sectionWeight,
     );
-    final titleColor = v.titleColor;
     final muted = isIos ? v.subtitleColor : v.sectionLabel;
     final panelBg = v.cardBackground;
     final panelBorder = v.cardBorder;
@@ -180,7 +190,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     final inputHint = v.subtitleColor;
     final inputFill = v.cardBackground;
     final focusBorder = v.accent;
-  final isCampoTest = _isCampoTestReview;
+    final isCampoTest = _isCampoTestReview;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Form(
@@ -188,56 +198,6 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              isCampoTest ? 'Salvar teste' : 'Salvar Polígono',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: titleColor,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              key: const Key('drawing_review_save_hint'),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: context.themeAccent.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: context.themeAccent.withValues(alpha: 0.2),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.save_outlined, color: context.themeAccent),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Revise os dados e toque em salvar para criar o desenho no mapa.',
-                      style: TextStyle(fontSize: 13.5, color: muted),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  ElevatedButton(
-                    key: const Key('drawing_review_save_cta_top'),
-                    onPressed: _isSaving ? null : _submitReview,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.themeAccent,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                    ),
-                    child: const Text(
-                      'Salvar',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
             if (widget.controller.hasSelfIntersection ||
                 widget.controller.intersectionWarningMessage != null) ...[
               _buildSelfIntersectionWarning(),
@@ -286,8 +246,6 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
               decoration: InputDecoration(
                 hintText: isMultiPartSave ? 'Ex: Talhão' : 'Ex: Talhão Norte',
                 hintStyle: TextStyle(color: inputHint),
-                suffixText: '${f.format(area)} ha',
-                suffixStyle: TextStyle(color: inputHint),
                 filled: true,
                 fillColor: inputFill,
                 contentPadding: const EdgeInsets.symmetric(
@@ -559,8 +517,9 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
         }
         _showCreateFarmDialog();
       },
-      validator: (value) =>
-          value == null && _selectedFarm == null ? 'Selecione uma fazenda' : null,
+      validator: (value) => value == null && _selectedFarm == null
+          ? 'Selecione uma fazenda'
+          : null,
     );
   }
 

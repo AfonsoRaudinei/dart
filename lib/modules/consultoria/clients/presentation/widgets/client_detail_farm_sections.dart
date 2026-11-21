@@ -344,29 +344,41 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
                   talhaoCardNdviEnabledProvider(field.id),
                 );
                 final actions = <Widget>[
-                  TalhaoCardNdviModeIconButton(
-                    fieldId: field.id,
-                    fieldName: field.name,
-                    areaHa: field.areaHa,
-                    onAfterSheetClosed: () =>
-                        ref.invalidate(talhaoCardNdviLatestProvider(field.id)),
-                  ),
-                  IconButton(
-                    tooltip: 'Vincular à fazenda',
-                    icon: Icon(
-                      Icons.link,
-                      size: 20,
-                      color: context.themeAccent,
+                  _labeledAction(
+                    'NDVI',
+                    TalhaoCardNdviModeIconButton(
+                      fieldId: field.id,
+                      fieldName: field.name,
+                      areaHa: field.areaHa,
+                      onAfterSheetClosed: () => ref.invalidate(
+                        talhaoCardNdviLatestProvider(field.id),
+                      ),
                     ),
-                    onPressed: () => _linkDrawingToFarm(context, ref, field),
                   ),
-                  IconButton(
-                    tooltip: 'Abrir no mapa',
-                    icon: const Icon(Icons.open_in_full, size: 20),
-                    onPressed: () => context.go(
-                      _mapViewUri(
-                        field,
-                        ndvi: ref.read(talhaoCardNdviEnabledProvider(field.id)),
+                  _labeledAction(
+                    'Vincular',
+                    IconButton(
+                      tooltip: 'Vincular à fazenda',
+                      icon: Icon(
+                        Icons.link,
+                        size: 20,
+                        color: context.themeAccent,
+                      ),
+                      onPressed: () => _linkDrawingToFarm(context, ref, field),
+                    ),
+                  ),
+                  _labeledAction(
+                    'Mapa',
+                    IconButton(
+                      tooltip: 'Abrir no mapa',
+                      icon: const Icon(Icons.open_in_full, size: 20),
+                      onPressed: () => context.go(
+                        _mapViewUri(
+                          field,
+                          ndvi: ref.read(
+                            talhaoCardNdviEnabledProvider(field.id),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -374,29 +386,36 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
                     geojson: field.geojson,
                     vertexCount: field.vertices.length,
                   ))
-                    IconButton(
-                      tooltip: 'Exportar KML',
-                      icon: const Icon(Icons.ios_share_outlined, size: 20),
-                      onPressed: () => exportFieldGeometries(
-                        context: context,
-                        documentName: field.name,
-                        items: [
-                          FarmGeometryExportItem(
-                            name: field.name,
-                            areaHa: field.areaHa,
-                            geojson: field.geojson,
-                          ),
-                        ],
+                    _labeledAction(
+                      'KML',
+                      IconButton(
+                        tooltip: 'Exportar KML',
+                        icon: const Icon(Icons.ios_share_outlined, size: 20),
+                        onPressed: () => exportFieldGeometries(
+                          context: context,
+                          documentName: field.name,
+                          items: [
+                            FarmGeometryExportItem(
+                              name: field.name,
+                              areaHa: field.areaHa,
+                              geojson: field.geojson,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  IconButton(
-                    tooltip: 'Excluir talhão',
-                    icon: const Icon(
-                      Icons.delete_outline,
-                      size: 20,
-                      color: Colors.red,
+                  _labeledAction(
+                    'Excluir',
+                    IconButton(
+                      tooltip: 'Excluir talhão',
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: 20,
+                        color: Colors.red,
+                      ),
+                      onPressed: () =>
+                          _confirmDeleteDrawing(context, ref, field),
                     ),
-                    onPressed: () => _confirmDeleteDrawing(context, ref, field),
                   ),
                 ];
 
@@ -597,4 +616,18 @@ class _DrawingTalhaoNdviCard extends ConsumerWidget {
       onNdviImageTap: onNdviImageTap,
     );
   }
+}
+
+/// Ação do cartão com texto visível abaixo do ícone (antes só havia tooltip).
+Widget _labeledAction(String label, Widget action) {
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      action,
+      Text(
+        label,
+        style: const TextStyle(fontSize: 10.5, color: Colors.black54),
+      ),
+    ],
+  );
 }

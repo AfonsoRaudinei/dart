@@ -407,10 +407,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(controller.currentState, DrawingState.reviewing);
-      expect(find.byKey(const Key('drawing_review_save_hint')), findsOneWidget);
+      // Um único Salvar e título contextual (sem repetir "Ferramentas de Desenho").
+      expect(find.text('Salvar talhão'), findsOneWidget);
       expect(
         find.byKey(const Key('drawing_review_save_cta_top')),
-        findsOneWidget,
+        findsNothing,
       );
       expect(
         find.byKey(const Key('drawing_review_save_cta_bottom')),
@@ -515,11 +516,12 @@ void main() {
       );
       addTearDown(container.dispose);
       await container.read(drawingClientProvider.notifier).loadClients();
-      container.read(drawingClientProvider.notifier).setClienteAtivo(
-            'cli-flow',
-            clientName: 'Cliente Fluxo',
-          );
-      await container.read(drawingClientProvider.notifier).loadFarms('cli-flow');
+      container
+          .read(drawingClientProvider.notifier)
+          .setClienteAtivo('cli-flow', clientName: 'Cliente Fluxo');
+      await container
+          .read(drawingClientProvider.notifier)
+          .loadFarms('cli-flow');
 
       await tester.pumpWidget(
         UncontrolledProviderScope(
@@ -546,7 +548,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(controller.currentState, DrawingState.reviewing);
 
-      await tester.tap(find.byKey(const Key('drawing_review_save_cta_top')));
+      await tester.tap(find.byKey(const Key('drawing_review_save_cta_bottom')));
       await tester.pumpAndSettle();
 
       expect(repository.savedFeatures, hasLength(1));

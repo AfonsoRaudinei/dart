@@ -13,11 +13,9 @@ class _SelectedModeFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-        final v = SoloForteSheetVisuals.of(context);
+    final v = SoloForteSheetVisuals.of(context);
     final isIos = v.isIos;
-    final footerBg = isIos
-        ? v.sheetBackground
-        : v.sheetBackground;
+    final footerBg = isIos ? v.sheetBackground : v.sheetBackground;
     final topBorder = v.cardBorder;
 
     return Container(
@@ -46,9 +44,7 @@ class _SelectedModeFooter extends StatelessWidget {
               style: isIos
                   ? OutlinedButton.styleFrom(
                       foregroundColor: v.ghostText,
-                      side: BorderSide(
-                        color: v.ghostBorder,
-                      ),
+                      side: BorderSide(color: v.ghostBorder),
                     )
                   : null,
               child: const Text('Editar'),
@@ -60,9 +56,7 @@ class _SelectedModeFooter extends StatelessWidget {
               key: const Key('drawing_selected_exit_button'),
               onPressed: onExit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: isIos
-                    ? v.ctaBackground
-                    : context.themeAccent,
+                backgroundColor: isIos ? v.ctaBackground : context.themeAccent,
               ),
               child: const Text(
                 'Sair da seleção',
@@ -80,11 +74,19 @@ class _SheetHeader extends StatelessWidget {
   final VoidCallback? onBack;
   final VoidCallback? onClose;
 
-  const _SheetHeader({this.onBack, this.onClose});
+  /// Título contextual: evita repetir "Ferramentas de Desenho" dentro de
+  /// telas que já têm título próprio (salvar, dados do talhão).
+  final String title;
+
+  const _SheetHeader({
+    this.onBack,
+    this.onClose,
+    this.title = 'Ferramentas de Desenho',
+  });
 
   @override
   Widget build(BuildContext context) {
-        final v = SoloForteSheetVisuals.of(context);
+    final v = SoloForteSheetVisuals.of(context);
     final isIos = v.isIos;
     final titleColor = v.titleColor;
     final iconColor = isIos
@@ -111,7 +113,7 @@ class _SheetHeader extends StatelessWidget {
                 ),
               Expanded(
                 child: Text(
-                  'Ferramentas de Desenho',
+                  title,
                   style: TextStyle(
                     color: titleColor,
                     fontSize: isIos ? 16 : 18,
@@ -210,9 +212,7 @@ class _MetricItem extends StatelessWidget {
     final v = SoloForteSheetVisuals.of(context);
     final isIos = v.isIos;
     final valueColor = v.isIos ? v.titleColor : null;
-    final labelColor = isIos
-        ? v.subtitleColor
-        : Colors.grey;
+    final labelColor = isIos ? v.subtitleColor : Colors.grey;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,30 +247,20 @@ class _FormatButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
     final isIos = v.isIos;
-    final surface = isIos
-        ? v.cardBackground
-        : Colors.grey[50];
+    final surface = isIos ? v.cardBackground : Colors.grey[50];
     final border = isIos ? v.cardBorder : Colors.grey[300]!;
-    final iconColor = isIos
-        ? v.iconStroke
-        : Theme.of(context).primaryColor;
+    final iconColor = isIos ? v.iconStroke : Theme.of(context).primaryColor;
     final labelColor = v.isIos ? v.titleColor : null;
-    final sublabelColor = isIos
-        ? v.subtitleColor
-        : Colors.grey;
+    final sublabelColor = isIos ? v.subtitleColor : Colors.grey;
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(
-        v.cardRadius,
-      ),
+      borderRadius: BorderRadius.circular(v.cardRadius),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 24),
         decoration: BoxDecoration(
           color: surface,
-          borderRadius: BorderRadius.circular(
-            v.cardRadius,
-          ),
+          borderRadius: BorderRadius.circular(v.cardRadius),
           border: Border.all(color: border),
         ),
         child: Column(
@@ -294,4 +284,3 @@ class _FormatButton extends StatelessWidget {
     );
   }
 }
-
