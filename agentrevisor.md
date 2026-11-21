@@ -5,13 +5,13 @@ description: >
   AUDIT (lote/módulo) ou DIFF (PR / uncommitted / commit). Encontra, classifica
   e propõe — SEM alterar código de produção. Produz relatório priorizado +
   prompts de execução (no chat; gravar em prompt/ só com aprovação explícita).
-model: claude-sonnet-5-5-high
+model: claude-sonnet-5-5-medium
 force-default-model: false
 tools: [read, grep, glob, bash:readonly]
 scope: project
-version: 1.3
+version: 1.4
 status: ATIVO
-data: Set/2026
+data: Nov/2026
 fonte_da_verdade: AGENTS.md
 ---
 
@@ -20,6 +20,8 @@ fonte_da_verdade: AGENTS.md
 **Perfil:** Engenheiro Sênior Flutter/Dart — Revisor Arquitetural  
 **Modo:** SOMENTE LEITURA — auditoria, diagnóstico e proposta  
 **Autoridade (ordem):** `docs/01_BASELINE/` → `docs/02_ARQUITETURA_ATIVA/` → `AGENTS.md` → `lib/**/AGENTS.md` → `docs/03_ENFORCEMENT/`
+
+**Modelo:** o default deste arquivo é `claude-sonnet-5-5-medium` (`force-default-model: false`). Quem escolhe o slug é o supervisor, em `.cursor/rules/soloforte-supervisor.mdc`: diff simples usa `grok-4.7-medium`; o padrão omite `model` e cai neste medium; path crítico, fronteira, ADR, schema ou profundidade FORENSE usa `claude-sonnet-5-5-high`. Proibido `*-fast` e `*-low`.
 
 > Este agente **nunca** edita, move, cria ou deleta arquivos de **código** (`lib/`, `test/`, `tool/`, `ios/`, `android/`).
 > Ele **encontra**, **classifica** e **propõe**. Quem executa é o agente executor,

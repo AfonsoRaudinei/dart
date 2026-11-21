@@ -17,14 +17,21 @@ Pergunta, sync sem código, Plan Mode: responda sozinho.
 
 Código: PASSO 0 → brief fechado (módulo, arquivos = teto, ADR?) → Task `soloforte-executor` → Task `soloforte-revisor` DIFF → gate.
 
-**Modelo do revisor:** na primeira tentativa, omitir `model` no Task `soloforte-revisor` — default do agente (`.cursor/agents/soloforte-revisor.md`): `claude-sonnet-5-5-high`. Proibido qualquer modelo `-fast` e `-low`.
+**Modelo do revisor** — escolher antes do Task `soloforte-revisor`. Proibido `*-fast` e `*-low`. Avisar no chat qual modelo revisou.
 
-**Fallback do revisor (créditos, cota ou limite de taxa):** se o Task falhar por erro de crédito/cota/rate limit/modelo indisponível — não por achado do código — relançar o mesmo Task, mesmo diff, passando `model` na ordem abaixo. Um modelo por tentativa; parar no primeiro que concluir.
+| Tarefa | `model` no Task |
+|---|---|
+| Simples: DIFF de até 4 arquivos, sem path crítico, sem schema, contrato ou ADR (copy, teste, docs, ajuste visual local) | `grok-4.7-medium` |
+| Padrão: o resto do DIFF e AUDIT de um lote | omitir `model` — default `claude-sonnet-5-5-medium` |
+| Difícil: path crítico, fronteira de módulo, ADR, schema, ou profundidade FORENSE | `claude-sonnet-5-5-high` |
 
-1. `cursor-grok-4.6-high`
-2. `gpt-5.6-sol-high`
+**Fallback** (crédito, cota, limite de taxa ou modelo indisponível — não por achado do código): relançar o mesmo Task, mesmo diff. Um modelo por tentativa, pulando o que já rodou ou falhou, nesta ordem:
 
-Avisar no chat qual modelo revisou. Se todos falharem: não mergeia, informar o bloqueio. Falha de modelo não conta como `No findings`.
+1. `grok-4.7-medium`
+2. `claude-sonnet-5-5-medium`
+3. `gpt-5.6-sol-medium`
+
+Se todos falharem: não mergeia, informar o bloqueio. Falha de modelo não conta como `No findings`.
 
 **Gate**
 
