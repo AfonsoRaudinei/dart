@@ -790,14 +790,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                 label: Text(
                   _isLoading ? 'Salvando...' : 'Salvar rascunho (Relatórios)',
                 ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: context.themeAccent,
-                  side: BorderSide(color: context.themeAccent),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
+                style: novoCaseGhostOutlinedButtonStyle(context),
               ),
               const SizedBox(height: 8),
               TextButton(

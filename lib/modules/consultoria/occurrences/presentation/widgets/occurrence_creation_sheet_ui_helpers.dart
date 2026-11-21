@@ -432,13 +432,7 @@ extension _OccurrenceCreationSheetAreaVisitadaUi
             ],
           ),
         ),
-        if (widget.onCancel != null)
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: _handleCancel,
-            color: muted,
-            visualDensity: VisualDensity.compact,
-          ),
+        if (widget.onCancel != null) SheetCloseButton(onPressed: _handleCancel),
       ],
     );
   }
@@ -488,12 +482,7 @@ extension _OccurrenceCreationSheetFormSections
             ],
           ),
         ),
-        if (widget.onCancel != null)
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: _handleCancel,
-            color: muted,
-          ),
+        if (widget.onCancel != null) SheetCloseButton(onPressed: _handleCancel),
       ],
     );
   }

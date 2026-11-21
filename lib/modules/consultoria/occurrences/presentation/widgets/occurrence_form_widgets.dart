@@ -79,35 +79,41 @@ class OccurrenceDarkField extends StatelessWidget {
     final focus = v.focusBorder;
     final radius = v.cardRadius;
 
-    return TextField(
-      controller: controller,
-      maxLines: maxLines,
-      enabled: enabled,
-      readOnly: !enabled,
-      onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-      style: TextStyle(color: textColor, fontSize: 14),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: labelColor, fontSize: 13),
-        hintText: hint,
-        hintStyle: TextStyle(color: hintColor, fontSize: 13),
-        filled: true,
-        fillColor: fill,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 12,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius),
-          borderSide: BorderSide(color: border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius),
-          borderSide: BorderSide(color: border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius),
-          borderSide: BorderSide(color: focus, width: 1.5),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(radius),
+        boxShadow: v.cardShadows,
+      ),
+      child: TextField(
+        controller: controller,
+        maxLines: maxLines,
+        enabled: enabled,
+        readOnly: !enabled,
+        onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+        style: TextStyle(color: textColor, fontSize: 14),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(color: labelColor, fontSize: 13),
+          hintText: hint,
+          hintStyle: TextStyle(color: hintColor, fontSize: 13),
+          filled: true,
+          fillColor: fill,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 12,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(radius),
+            borderSide: BorderSide(color: border),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(radius),
+            borderSide: BorderSide(color: border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(radius),
+            borderSide: BorderSide(color: focus, width: 1.5),
+          ),
         ),
       ),
     );
@@ -329,6 +335,7 @@ class _OccurrenceAccordionState extends State<OccurrenceAccordion> {
         color: v.cardBackground,
         borderRadius: BorderRadius.circular(v.cardRadius),
         border: Border.all(color: v.cardBorder),
+        boxShadow: v.cardShadows,
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
