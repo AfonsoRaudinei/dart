@@ -23,6 +23,7 @@ import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../modules/drawing/domain/drawing_feature_actions_mode.dart';
 import '../../../../modules/drawing/domain/drawing_utils.dart';
 import '../../../../modules/drawing/domain/models/drawing_models.dart';
+import '../../../../modules/drawing/presentation/widgets/drawing_delete_undo_snackbar.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_layers.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_map_gesture_overlay.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_state_indicator.dart';
@@ -723,6 +724,38 @@ class _MapControlsHost extends ConsumerWidget {
       canRemoveVertex: ref.watch(
         drawingControllerProvider.select((c) => c.canRemoveSelectedVertex),
       ),
+      onDeleteEditingFeature: () async {
+        final controller = ref.read(drawingControllerProvider);
+        final feature = controller.selectedFeature;
+        if (feature == null) return;
+        final nome = feature.properties.nome;
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Excluir talhão?'),
+            content: Text('O talhão "$nome" será removido do mapa.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Excluir'),
+              ),
+            ],
+          ),
+        );
+        if (ok != true || !context.mounted) return;
+        controller.cancelEdit();
+        controller.deleteFeature(feature.id);
+        showDrawingDeleteUndoSnackBar(
+          context: context,
+          deletedFeature: feature,
+          controller: controller,
+        );
+      },
       onUndoDrawing: () =>
           ref.read(drawingControllerProvider).undoDrawingPoint(),
       canUndo: drawingMetrics.canUndo,
