@@ -219,6 +219,33 @@ void main() {
       expect(outerRing(), hasLength(6));
     });
 
+    test(
+      'remover após arrasto e toque em outro vértice não cria passo de undo morto',
+      () async {
+        await startEdit(_feature('pentagono', _pentagon));
+        final initial = outerRing().map((p) => [...p]).toList();
+
+        controller.beginEditVertexDrag(1);
+        controller.updateVertexPosition(0, 1, const LatLng(-15.79, -47.91));
+        controller.onDragEnd();
+        final dragged = outerRing().map((p) => [...p]).toList();
+        expect(dragged, isNot(initial));
+
+        controller.beginEditVertexDrag(2);
+        controller.onDragEnd();
+        controller.selectEditVertex(0, 2);
+        controller.removeSelectedVertex();
+        expect(outerRing(), hasLength(5));
+
+        controller.undoEdit();
+        expect(outerRing(), dragged);
+
+        controller.undoEdit();
+        expect(outerRing(), initial);
+        expect(controller.canUndo, isFalse);
+      },
+    );
+
     test('anel mínimo gera errorMessage e mantém a geometria', () async {
       await startEdit(_feature('triangulo', _triangle));
       final before = outerRing().map((p) => [...p]).toList();
