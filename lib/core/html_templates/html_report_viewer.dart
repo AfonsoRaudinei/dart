@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../design/sf_icons.dart';
@@ -227,6 +228,19 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
             );
           });
           WidgetsBinding.instance.scheduleFrame();
+        }
+        return NavigationDecision.prevent;
+      case ReportNavigationAction.openExternalUrl:
+        final externalUrl = decision.externalUrl;
+        if (externalUrl != null) {
+          final uri = Uri.tryParse(externalUrl);
+          if (uri != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              launchUrl(uri, mode: LaunchMode.externalApplication);
+            });
+            WidgetsBinding.instance.scheduleFrame();
+          }
         }
         return NavigationDecision.prevent;
     }
