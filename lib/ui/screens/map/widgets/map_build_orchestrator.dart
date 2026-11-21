@@ -718,6 +718,11 @@ class _MapControlsHost extends ConsumerWidget {
       canRemoveHoleRing: ref.watch(
         drawingControllerProvider.select((c) => c.canRemoveHoleRing),
       ),
+      onRemoveVertex: () =>
+          ref.read(drawingControllerProvider).removeSelectedVertex(),
+      canRemoveVertex: ref.watch(
+        drawingControllerProvider.select((c) => c.canRemoveSelectedVertex),
+      ),
       onUndoDrawing: () =>
           ref.read(drawingControllerProvider).undoDrawingPoint(),
       canUndo: drawingMetrics.canUndo,
