@@ -173,7 +173,7 @@ List<Occurrence> _filterRelatorioOccurrences({
   ];
 }
 
-class _OccurrenceFiltersPanel extends StatelessWidget {
+class _OccurrenceFiltersPanel extends StatefulWidget {
   final List<OccurrenceCategory> categories;
   final OccurrenceFilters filters;
   final bool oldestFirst;
@@ -213,160 +213,259 @@ class _OccurrenceFiltersPanel extends StatelessWidget {
     required this.onFieldChanged,
   });
 
+  @override
+  State<_OccurrenceFiltersPanel> createState() =>
+      _OccurrenceFiltersPanelState();
+}
+
+class _OccurrenceFiltersPanelState extends State<_OccurrenceFiltersPanel> {
+  /// pi. O part não importa `dart:math`; 180° aponta o chevron para cima.
+  static const _chevronFlip = 3.141592653589793;
+
+  bool _expanded = false;
+
   bool get _dirty =>
-      filters.hasAnyFilter || farmId != null || fieldId != null || oldestFirst;
+      widget.filters.hasAnyFilter ||
+      widget.farmId != null ||
+      widget.fieldId != null ||
+      widget.oldestFirst;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (showPlaceFilters) ...[
-          _label(context, 'Fazenda'),
-          if (placesLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: LinearProgressIndicator(minHeight: 2),
-            )
-          else
+        _filtersToggle(context),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          alignment: Alignment.topCenter,
+          child: _expanded
+              ? _filterOptions(context)
+              : const SizedBox(width: double.infinity, height: 0),
+        ),
+      ],
+    );
+  }
+
+  Widget _filtersToggle(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => setState(() => _expanded = !_expanded),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: _panelSurfaceDecoration(context),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Filtros',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: context.premiumTextPrimary,
+                ),
+              ),
+            ),
+            if (_dirty) ...[
+              Text(
+                'ativos',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: context.themeAccent,
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Transform.rotate(
+              angle: _expanded ? _chevronFlip : 0,
+              child: Icon(
+                SFIcons.chevronDown,
+                color: context.premiumTextSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _filterOptions(BuildContext context) {
+    final categories = widget.categories;
+    final filters = widget.filters;
+    final oldestFirst = widget.oldestFirst;
+    final showPlaceFilters = widget.showPlaceFilters;
+    final placesLoading = widget.placesLoading;
+    final farms = widget.farms;
+    final fields = widget.fields;
+    final farmId = widget.farmId;
+    final fieldId = widget.fieldId;
+    final onClear = widget.onClear;
+    final onToggleCategory = widget.onToggleCategory;
+    final onClearCategories = widget.onClearCategories;
+    final onToggleStatus = widget.onToggleStatus;
+    final onToggleAndamento = widget.onToggleAndamento;
+    final onOldestFirst = widget.onOldestFirst;
+    final onFarmChanged = widget.onFarmChanged;
+    final onFieldChanged = widget.onFieldChanged;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (showPlaceFilters) ...[
+            _label(context, 'Fazenda'),
+            if (placesLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: LinearProgressIndicator(minHeight: 2),
+              )
+            else
+              _placeDropdown(
+                context,
+                value: farmId ?? _kOccurrencePlaceAll,
+                items: [
+                  const DropdownMenuItem<String>(
+                    value: _kOccurrencePlaceAll,
+                    child: Text('Todas'),
+                  ),
+                  for (final farm in farms)
+                    if (farm.id.isNotEmpty)
+                      DropdownMenuItem<String>(
+                        value: farm.id,
+                        child: Text(farm.name, overflow: TextOverflow.ellipsis),
+                      ),
+                ],
+                onChanged: (value) => onFarmChanged(
+                  value == null || value == _kOccurrencePlaceAll ? null : value,
+                ),
+              ),
+            const SizedBox(height: 12),
+            _label(context, 'Talhão'),
             _placeDropdown(
               context,
-              value: farmId ?? _kOccurrencePlaceAll,
+              value: fieldId ?? _kOccurrencePlaceAll,
               items: [
                 const DropdownMenuItem<String>(
                   value: _kOccurrencePlaceAll,
-                  child: Text('Todas'),
+                  child: Text('Todos'),
                 ),
-                for (final farm in farms)
-                  if (farm.id.isNotEmpty)
-                    DropdownMenuItem<String>(
-                      value: farm.id,
-                      child: Text(farm.name, overflow: TextOverflow.ellipsis),
-                    ),
+                if (farmId != null)
+                  for (final field in fields)
+                    if (field.id.isNotEmpty)
+                      DropdownMenuItem<String>(
+                        value: field.id,
+                        child: Text(
+                          field.name,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
               ],
-              onChanged: (value) => onFarmChanged(
-                value == null || value == _kOccurrencePlaceAll ? null : value,
-              ),
-            ),
-          const SizedBox(height: 12),
-          _label(context, 'Talhão'),
-          _placeDropdown(
-            context,
-            value: fieldId ?? _kOccurrencePlaceAll,
-            items: [
-              const DropdownMenuItem<String>(
-                value: _kOccurrencePlaceAll,
-                child: Text('Todos'),
-              ),
-              if (farmId != null)
-                for (final field in fields)
-                  if (field.id.isNotEmpty)
-                    DropdownMenuItem<String>(
-                      value: field.id,
-                      child: Text(field.name, overflow: TextOverflow.ellipsis),
+              onChanged: farmId == null
+                  ? null
+                  : (value) => onFieldChanged(
+                      value == null || value == _kOccurrencePlaceAll
+                          ? null
+                          : value,
                     ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          _label(context, 'Categoria'),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _filterChip(
+                context,
+                label: 'Todas',
+                selected: filters.categories.isEmpty,
+                onSelected: (_) => onClearCategories(),
+              ),
+              for (final category in categories)
+                _filterChip(
+                  context,
+                  label: category.label,
+                  selected: filters.categories.contains(category),
+                  onSelected: (selected) =>
+                      onToggleCategory(category, selected),
+                ),
             ],
-            onChanged: farmId == null
-                ? null
-                : (value) => onFieldChanged(
-                    value == null || value == _kOccurrencePlaceAll
-                        ? null
-                        : value,
-                  ),
           ),
           const SizedBox(height: 12),
-        ],
-        _label(context, 'Categoria'),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _filterChip(
-              context,
-              label: 'Todas',
-              selected: filters.categories.isEmpty,
-              onSelected: (_) => onClearCategories(),
-            ),
-            for (final category in categories)
+          _label(context, 'Situação'),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
               _filterChip(
                 context,
-                label: category.label,
-                selected: filters.categories.contains(category),
-                onSelected: (selected) => onToggleCategory(category, selected),
+                label: 'Rascunho',
+                selected: filters.statuses.contains('draft'),
+                onSelected: (selected) => onToggleStatus('draft', selected),
               ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _label(context, 'Situação'),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _filterChip(
-              context,
-              label: 'Rascunho',
-              selected: filters.statuses.contains('draft'),
-              onSelected: (selected) => onToggleStatus('draft', selected),
-            ),
-            _filterChip(
-              context,
-              label: 'Confirmada',
-              selected: filters.statuses.contains('confirmed'),
-              onSelected: (selected) => onToggleStatus('confirmed', selected),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _label(context, 'Andamento'),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final step in OccurrenceAndamento.values)
               _filterChip(
                 context,
-                label: step.label,
-                selected: filters.andamentos.contains(step.storageValue),
-                onSelected: (selected) =>
-                    onToggleAndamento(step.storageValue, selected),
+                label: 'Confirmada',
+                selected: filters.statuses.contains('confirmed'),
+                onSelected: (selected) => onToggleStatus('confirmed', selected),
               ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _label(context, 'Ordem'),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _filterChip(
-              context,
-              label: 'Mais recentes',
-              selected: !oldestFirst,
-              onSelected: (_) => onOldestFirst(false),
-            ),
-            _filterChip(
-              context,
-              label: 'Linha do tempo',
-              selected: oldestFirst,
-              onSelected: (_) => onOldestFirst(true),
-            ),
-          ],
-        ),
-        if (_dirty)
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: onClear,
-              child: Text(
-                'Limpar',
-                style: TextStyle(
-                  color: context.themeAccent,
-                  fontWeight: FontWeight.w600,
+            ],
+          ),
+          const SizedBox(height: 12),
+          _label(context, 'Andamento'),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final step in OccurrenceAndamento.values)
+                _filterChip(
+                  context,
+                  label: step.label,
+                  selected: filters.andamentos.contains(step.storageValue),
+                  onSelected: (selected) =>
+                      onToggleAndamento(step.storageValue, selected),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _label(context, 'Ordem'),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _filterChip(
+                context,
+                label: 'Mais recentes',
+                selected: !oldestFirst,
+                onSelected: (_) => onOldestFirst(false),
+              ),
+              _filterChip(
+                context,
+                label: 'Linha do tempo',
+                selected: oldestFirst,
+                onSelected: (_) => onOldestFirst(true),
+              ),
+            ],
+          ),
+          if (_dirty)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: onClear,
+                child: Text(
+                  'Limpar',
+                  style: TextStyle(
+                    color: context.themeAccent,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -384,6 +483,15 @@ class _OccurrenceFiltersPanel extends StatelessWidget {
     );
   }
 
+  BoxDecoration _panelSurfaceDecoration(BuildContext context) {
+    return BoxDecoration(
+      color: context.premiumSurface,
+      borderRadius: BorderRadius.circular(PremiumTokens.borderRadiusSm),
+      border: Border.all(color: context.premiumHairline),
+      boxShadow: PremiumTokens.premiumShadow,
+    );
+  }
+
   Widget _placeDropdown(
     BuildContext context, {
     required String value,
@@ -392,20 +500,12 @@ class _OccurrenceFiltersPanel extends StatelessWidget {
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-      decoration: BoxDecoration(
-        color: context.premiumSurface,
-        borderRadius: BorderRadius.circular(PremiumTokens.borderRadiusSm),
-        border: Border.all(color: context.premiumHairline),
-        boxShadow: PremiumTokens.premiumShadow,
-      ),
+      decoration: _panelSurfaceDecoration(context),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           isExpanded: true,
           value: value,
-          icon: Icon(
-            SFIcons.chevronDown,
-            color: context.premiumTextSecondary,
-          ),
+          icon: Icon(SFIcons.chevronDown, color: context.premiumTextSecondary),
           borderRadius: BorderRadius.circular(PremiumTokens.borderRadiusSm),
           dropdownColor: context.premiumSurface,
           style: TextStyle(
