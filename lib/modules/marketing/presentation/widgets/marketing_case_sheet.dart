@@ -122,6 +122,24 @@ class MarketingCaseSheet extends ConsumerWidget {
     }
   }
 
+  String _campoTesteResumo(MarketingCase marketingCase) {
+    final nome = marketingCase.nomeTalhao?.trim();
+    final ha = marketingCase.tamanhoHa;
+    final partes = <String>[
+      if (nome != null && nome.isNotEmpty) nome,
+      if (ha != null) '${_formatHa(ha)} ha',
+    ];
+    if (partes.isEmpty) return 'Área vinculada ao mapa';
+    return partes.join(' · ');
+  }
+
+  String _formatHa(double ha) {
+    var text = ha.toStringAsFixed(2);
+    text = text.replaceFirst(RegExp(r'0+$'), '');
+    text = text.replaceFirst(RegExp(r'\.$'), '');
+    return text;
+  }
+
   String get _tipoLabel {
     switch (marketingCase.tipo) {
       case CaseTipo.resultado:
@@ -319,6 +337,14 @@ class MarketingCaseSheet extends ConsumerWidget {
                       titleColor: titleColor,
                       hintColor: hintColor,
                     ),
+                    if (marketingCase.drawingId != null)
+                      _buildInfoSection(
+                        context,
+                        'Campo de teste',
+                        _campoTesteResumo(marketingCase),
+                        titleColor: titleColor,
+                        hintColor: hintColor,
+                      ),
                     if (marketingCase.descricao != null) ...[
                       _buildInfoSection(
                         context,

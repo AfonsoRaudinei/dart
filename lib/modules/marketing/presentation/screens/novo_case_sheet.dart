@@ -9,6 +9,7 @@ import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/contracts/i_active_visit_context_lookup.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/avaliacao_item.dart';
+import '../../domain/entities/campo_teste_case_seed.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/entities/parametro_comparativo.dart';
 import '../../domain/enums/case_tipo.dart';
@@ -34,6 +35,7 @@ class NovoCaseSheet extends ConsumerStatefulWidget {
   final double lng;
   final CaseTipo tipo;
   final ActiveVisitContext? initialVisitContext;
+  final CampoTesteCaseSeed? campoTeste;
   final VoidCallback onClose;
   final void Function(MarketingCase) onPublicar;
   final bool compactHeader;
@@ -44,6 +46,7 @@ class NovoCaseSheet extends ConsumerStatefulWidget {
     required this.lng,
     required this.tipo,
     this.initialVisitContext,
+    this.campoTeste,
     required this.onClose,
     required this.onPublicar,
     this.compactHeader = false,
@@ -70,6 +73,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
   DateTime? _dataCase;
   String? _clientId;
   String? _selectedClientNameForFallback;
+  String? _campoTesteDrawingId;
 
   // ── Produtividade ──────────────────────────────────────────────
   final _produtividadeCtrl = TextEditingController();
@@ -107,16 +111,42 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
     _comparacoes = [NovoCaseComparacao(id: _uuid.v4())];
     _dataCase = DateTime.now();
     final initialContext = widget.initialVisitContext;
-    if (initialContext == null) return;
-    _clientId = initialContext.clientId;
-    _selectedClientNameForFallback = initialContext.clientName?.trim();
-    _produtorCtrl.text = marketingVisitInitialProdutorFieldText(
-      producerFarmLabel: initialContext.producerFarmLabel,
-      clientName: initialContext.clientName,
-    );
-    _localizacaoCtrl.text = initialContext.locationLabel ?? '';
-    _nomeTalhaoCtrl.text = initialContext.fieldName ?? '';
-    _tamanhoHaCtrl.text = initialContext.fieldAreaHa?.toString() ?? '';
+    if (initialContext != null) {
+      _clientId = initialContext.clientId;
+      _selectedClientNameForFallback = initialContext.clientName?.trim();
+      _produtorCtrl.text = marketingVisitInitialProdutorFieldText(
+        producerFarmLabel: initialContext.producerFarmLabel,
+        clientName: initialContext.clientName,
+      );
+      _localizacaoCtrl.text = initialContext.locationLabel ?? '';
+      _nomeTalhaoCtrl.text = initialContext.fieldName ?? '';
+      _tamanhoHaCtrl.text = initialContext.fieldAreaHa?.toString() ?? '';
+    }
+    _applyCampoTesteSeed(widget.campoTeste);
+  }
+
+  void _applyCampoTesteSeed(CampoTesteCaseSeed? seed) {
+    if (seed == null) return;
+    _campoTesteDrawingId = seed.drawingId;
+    final clienteId = seed.clienteId?.trim();
+    if (clienteId != null && clienteId.isNotEmpty) {
+      _clientId = clienteId;
+    }
+    final fazenda = seed.fazendaNome?.trim();
+    if (fazenda != null && fazenda.isNotEmpty) {
+      _produtorCtrl.text = fazenda;
+    }
+    if (seed.nome.trim().isNotEmpty) {
+      _nomeTalhaoCtrl.text = seed.nome.trim();
+    }
+    _tamanhoHaCtrl.text = seed.areaHaText;
+    final photo = seed.photoPath?.trim();
+    if (photo == null || photo.isEmpty) return;
+    if (_tipo == CaseTipo.resultado) {
+      _fotoPrincipalUrl = photo;
+    } else if (_comparacoes.isNotEmpty) {
+      _comparacoes[0] = _comparacoes.first.copyWith(fotoAntesUrl: photo);
+    }
   }
 
   @override
@@ -295,12 +325,13 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
           _tipo == CaseTipo.antesDepois && primeira.parametros.isNotEmpty
           ? jsonEncode(primeira.parametros.map((p) => p.toJson()).toList())
           : null,
-      nomeTalhao: _tipo == CaseTipo.antesDepois
+      nomeTalhao: _campoTesteDrawingId != null || _tipo == CaseTipo.antesDepois
           ? _optionalText(_nomeTalhaoCtrl.text)
           : null,
-      tamanhoHa: _tipo == CaseTipo.antesDepois
+      tamanhoHa: _campoTesteDrawingId != null || _tipo == CaseTipo.antesDepois
           ? _parseDouble(_tamanhoHaCtrl.text)
           : null,
+      drawingId: _campoTesteDrawingId,
       avaliacoes: const [],
       avaliacoesJson: avaliacoes.isNotEmpty
           ? jsonEncode(avaliacoes.map((item) => item.toJson()).toList())
@@ -544,6 +575,19 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                   'A visibilidade para outros usuários fica disponível com plano pago.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: SoloForteSheetVisuals.of(context).subtitleColor,
+                  ),
+                ),
+              ],
+              if (_campoTesteDrawingId != null) ...[
+                const SizedBox(height: 20),
+                novoCaseSectionLabel('Campo de teste'),
+                const SizedBox(height: 8),
+                Text(
+                  '${_nomeTalhaoCtrl.text.trim().isEmpty ? 'Teste' : _nomeTalhaoCtrl.text.trim()}'
+                  ' · ${_tamanhoHaCtrl.text.trim()} ha',
+                  key: const Key('novo_case_campo_teste_resumo'),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: SoloForteSheetVisuals.of(context).titleColor,
                   ),
                 ),
               ],

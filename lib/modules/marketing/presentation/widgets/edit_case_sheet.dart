@@ -161,6 +161,7 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
       valorGrao: casoOriginal.valorGrao,
       clientId: _clientId,
       ownerUserId: casoOriginal.ownerUserId,
+      drawingId: casoOriginal.drawingId,
       fotoAntesUrl: _fotoAntesUrl,
       fotoDepoisUrl: _fotoDepoisUrl,
       ganhoProdutividade: casoOriginal.ganhoProdutividade,

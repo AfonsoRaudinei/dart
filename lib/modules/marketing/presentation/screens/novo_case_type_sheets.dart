@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/contracts/i_active_visit_context_lookup.dart';
+import '../../domain/entities/campo_teste_case_seed.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/case_tipo.dart';
 import 'novo_case_sheet.dart';
@@ -13,6 +14,7 @@ class NovoResultadoCaseSheet extends StatelessWidget {
   final double lat;
   final double lng;
   final ActiveVisitContext? initialVisitContext;
+  final CampoTesteCaseSeed? campoTeste;
   final VoidCallback onClose;
   final void Function(MarketingCase) onPublicar;
   final bool compactHeader;
@@ -22,6 +24,7 @@ class NovoResultadoCaseSheet extends StatelessWidget {
     required this.lat,
     required this.lng,
     this.initialVisitContext,
+    this.campoTeste,
     required this.onClose,
     required this.onPublicar,
     this.compactHeader = false,
@@ -34,6 +37,7 @@ class NovoResultadoCaseSheet extends StatelessWidget {
       lng: lng,
       tipo: CaseTipo.resultado,
       initialVisitContext: initialVisitContext,
+      campoTeste: campoTeste,
       onClose: onClose,
       onPublicar: onPublicar,
       compactHeader: compactHeader,
@@ -45,6 +49,7 @@ class NovoAntesDepoisCaseSheet extends StatelessWidget {
   final double lat;
   final double lng;
   final ActiveVisitContext? initialVisitContext;
+  final CampoTesteCaseSeed? campoTeste;
   final VoidCallback onClose;
   final void Function(MarketingCase) onPublicar;
   final bool compactHeader;
@@ -54,6 +59,7 @@ class NovoAntesDepoisCaseSheet extends StatelessWidget {
     required this.lat,
     required this.lng,
     this.initialVisitContext,
+    this.campoTeste,
     required this.onClose,
     required this.onPublicar,
     this.compactHeader = false,
@@ -66,6 +72,7 @@ class NovoAntesDepoisCaseSheet extends StatelessWidget {
       lng: lng,
       tipo: CaseTipo.antesDepois,
       initialVisitContext: initialVisitContext,
+      campoTeste: campoTeste,
       onClose: onClose,
       onPublicar: onPublicar,
       compactHeader: compactHeader,
