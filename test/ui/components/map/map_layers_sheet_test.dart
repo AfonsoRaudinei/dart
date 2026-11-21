@@ -83,9 +83,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: SingleChildScrollView(
-                child: MapLayerPreferencesSection(),
-              ),
+              body: SingleChildScrollView(child: MapLayerPreferencesSection()),
             ),
           ),
         ),
@@ -94,6 +92,11 @@ void main() {
 
       expect(find.text('Pinos no mapa'), findsOneWidget);
       expect(find.byKey(const Key('map_settings_show_pins')), findsOneWidget);
+      expect(find.text('Cases de sucesso'), findsOneWidget);
+      expect(
+        find.byKey(const Key('map_settings_show_marketing_cases')),
+        findsOneWidget,
+      );
       expect(find.text('WMS Externa'), findsOneWidget);
       expect(find.textContaining('servidor WMS'), findsOneWidget);
       expect(find.text('Raster Custom (XYZ/GeoTIFF)'), findsOneWidget);
@@ -122,9 +125,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: SingleChildScrollView(
-                child: MapLayerPreferencesSection(),
-              ),
+              body: SingleChildScrollView(child: MapLayerPreferencesSection()),
             ),
           ),
         ),
@@ -140,6 +141,41 @@ void main() {
       await tester.pump();
 
       expect(container.read(showMarkersProvider), isFalse);
+    });
+
+    testWidgets('alterna cases de sucesso em Configurações do mapa', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final preferencesService = PreferencesService(
+        await SharedPreferences.getInstance(),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            preferencesServiceProvider.overrideWithValue(preferencesService),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(child: MapLayerPreferencesSection()),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(MapLayerPreferencesSection)),
+      );
+      expect(container.read(showMarketingCasesProvider), isTrue);
+
+      await tester.tap(
+        find.byKey(const Key('map_settings_show_marketing_cases')),
+      );
+      await tester.pump();
+
+      expect(container.read(showMarketingCasesProvider), isFalse);
     });
 
     testWidgets('não exibe toggle de chuva/radar no sheet de camadas', (
