@@ -258,6 +258,46 @@ body {
 .sf-dot.ok    { background: var(--sf-urg-baixa); }
 .sf-dot.draft { background: var(--sf-text-tertiary); }
 
+/* ═══ Barras de nível (urgência e intensidade) ═══
+   Segmentos preenchidos seguem a cor do nível:
+   verde (ok/baixa) · amarelo · laranja · vermelho (alta). */
+.sf-bar {
+  display: inline-flex;
+  gap: 3px;
+  vertical-align: middle;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.sf-bar-seg {
+  width: 22px;
+  height: 7px;
+  border-radius: 4px;
+  background: rgba(142, 142, 147, 0.28);
+}
+.sf-bar-verde    .sf-bar-seg.on { background: #2E9E4F; }
+.sf-bar-amarelo  .sf-bar-seg.on { background: #F2C200; }
+.sf-bar-laranja  .sf-bar-seg.on { background: #F28C00; }
+.sf-bar-vermelho .sf-bar-seg.on { background: #D93025; }
+.sf-status .sf-bar { margin-left: 4px; }
+.sf-status-line > .sf-bar { margin-left: 10px; align-self: center; }
+.sf-row-value .sf-bar { margin-right: 8px; }
+
+/* Distribuição: barra proporcional ao percentual. */
+.sf-dist {
+  display: block;
+  height: 7px;
+  margin-top: 6px;
+  border-radius: 4px;
+  background: rgba(142, 142, 147, 0.22);
+  overflow: hidden;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.sf-dist > i { display: block; height: 100%; border-radius: 4px; }
+.sf-dist.alta  > i { background: #D93025; }
+.sf-dist.media > i { background: #F28C00; }
+.sf-dist.baixa > i { background: #2E9E4F; }
+
 /* Selo de status/urgência: leitura imediata sem depender só da bolinha. */
 .sf-pill {
   padding: 4px 10px;
