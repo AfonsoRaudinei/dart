@@ -29,6 +29,8 @@ import '../widgets/novo_case_header.dart';
 import '../widgets/novo_case_publicar_button.dart';
 import '../widgets/novo_case_resultado_section.dart';
 import '../../../../core/contracts/i_client_lookup.dart';
+import '../../../../core/contracts/i_teste_execucao_lookup.dart';
+import '../widgets/marketing_teste_execucao_selector.dart';
 
 class NovoCaseSheet extends ConsumerStatefulWidget {
   final double lat;
@@ -74,6 +76,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
   String? _clientId;
   String? _selectedClientNameForFallback;
   String? _campoTesteDrawingId;
+  String? _testeExecucaoId;
 
   // ── Produtividade ──────────────────────────────────────────────
   final _produtividadeCtrl = TextEditingController();
@@ -332,6 +335,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
           ? _parseDouble(_tamanhoHaCtrl.text)
           : null,
       drawingId: _campoTesteDrawingId,
+      testeExecucaoId: _testeExecucaoId,
       avaliacoes: const [],
       avaliacoesJson: avaliacoes.isNotEmpty
           ? jsonEncode(avaliacoes.map((item) => item.toJson()).toList())
@@ -511,11 +515,49 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
       if (client == null) {
         _clientId = null;
         _selectedClientNameForFallback = null;
+        _clearTesteExecucaoLink(clearFields: true);
         return;
       }
 
       _clientId = client.id;
       _selectedClientNameForFallback = client.name.trim();
+      _clearTesteExecucaoLink(clearFields: true);
+    });
+  }
+
+  void _clearTesteExecucaoLink({required bool clearFields}) {
+    _testeExecucaoId = null;
+    if (_campoTesteDrawingId != null && widget.campoTeste == null) {
+      _campoTesteDrawingId = null;
+    }
+    if (!clearFields) return;
+    if (widget.campoTeste != null) return;
+  }
+
+  void _applyTesteExecucaoSelection(TesteExecucaoOption option) {
+    setState(() {
+      _testeExecucaoId = option.id;
+      _campoTesteDrawingId = option.drawingId;
+      final talhao = option.talhao?.trim() ?? '';
+      if (talhao.isNotEmpty) {
+        _nomeTalhaoCtrl.text = talhao;
+      }
+      final area = option.areaHa;
+      if (area != null) {
+        _tamanhoHaCtrl.text = area == area.roundToDouble()
+            ? area.toStringAsFixed(0)
+            : area.toStringAsFixed(2);
+      }
+      final foto = option.fotoUrl?.trim();
+      if (foto != null && foto.isNotEmpty && _comparacoes.isNotEmpty) {
+        _comparacoes[0] = _comparacoes.first.copyWith(fotoAntesUrl: foto);
+      }
+    });
+  }
+
+  void _handleTesteExecucaoCleared() {
+    setState(() {
+      _clearTesteExecucaoLink(clearFields: false);
     });
   }
 
@@ -598,6 +640,16 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                 selectedClientId: _clientId,
                 onChanged: _handleClientChanged,
               ),
+              if (_tipo == CaseTipo.antesDepois) ...[
+                const SizedBox(height: 12),
+                MarketingTesteExecucaoSelector(
+                  clientId: _clientId,
+                  farmId: widget.initialVisitContext?.farmId,
+                  selectedExecucaoId: _testeExecucaoId,
+                  onSelected: _applyTesteExecucaoSelection,
+                  onCleared: _handleTesteExecucaoCleared,
+                ),
+              ],
               const SizedBox(height: 4),
               novoCaseFieldBox(
                 child: Column(
