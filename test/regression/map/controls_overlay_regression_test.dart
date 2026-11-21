@@ -581,7 +581,8 @@ void main() {
 
       expect(overlay.contains('class _MapRoundToggleButton'), isTrue);
       expect(overlay.contains('class _IconOffSlash'), isTrue);
-      expect(overlay.contains('BoxShape.circle'), isTrue);
+      // Botão redondo usa o visual 3D suave compartilhado (círculo).
+      expect(overlay.contains('map3dButtonDecoration(circle: true)'), isTrue);
       expect(overlay.contains('class _CerradoInpeToggleButton'), isFalse);
       expect(overlay.contains('class _BasemapToggleButton'), isTrue);
       expect(overlay.contains('class _PinsToggleButton'), isTrue);

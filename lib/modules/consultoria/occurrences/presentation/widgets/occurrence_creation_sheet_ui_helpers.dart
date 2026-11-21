@@ -313,78 +313,81 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: .07),
+          color: color.withValues(alpha: .045),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: .3)),
+          border: Border.all(color: color.withValues(alpha: .22)),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  Text(
-                    cat.label,
-                    style: TextStyle(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (cat == OccurrenceCategory.nutricional)
-              _buildNutrientGrid(color)
-            else if (cat == OccurrenceCategory.agua)
-              _buildAguaSection(color)
-            else if (cat == OccurrenceCategory.plantio)
-              _buildPlantioSection(color)
-            else if (cat == OccurrenceCategory.amostraSolo)
-              _buildAmostraSection(color)
-            else
-              ...metrics.map(
-                (metric) => OccurrenceSliderRow(
-                  label: metricLabel(metric),
-                  value: _metricValue(cat, metric),
-                  color: color,
-                  onChanged: (v) => _setMetric(cat, metric, v),
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
-              child: OccurrenceDarkField(
-                controller: _notaCtrl(cat.name),
-                label: 'Notas (${cat.label})',
-                hint: 'Observações específicas…',
-                maxLines: 2,
-              ),
-            ),
-            if (_fotos[cat.name]?.isNotEmpty == true)
+        // Campos planos dentro do card: sem sombra própria.
+        child: OccurrenceFlatFields(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-                child: OccurrencePhotoGallery(
-                  paths: List<String>.from(_fotos[cat.name]!),
-                  captions: Map<String, String>.from(_photoCaptions),
-                  thumbnailSize: 72,
-                  readOnly: false,
-                  onRemove: (index) => _patchForm(() {
-                    final list = _fotos[cat.name]!;
-                    if (index < 0 || index >= list.length) return;
-                    final path = list.removeAt(index);
-                    _dropCaptionIfOrphan(path);
-                  }),
-                  onCaptionChanged: (index, caption) {
-                    final list = _fotos[cat.name];
-                    if (list == null || index < 0 || index >= list.length) {
-                      return;
-                    }
-                    _setPhotoCaption(list[index], caption);
-                  },
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Text(
+                      cat.label,
+                      style: TextStyle(
+                        color: color,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-          ],
+              if (cat == OccurrenceCategory.nutricional)
+                _buildNutrientGrid(color)
+              else if (cat == OccurrenceCategory.agua)
+                _buildAguaSection(color)
+              else if (cat == OccurrenceCategory.plantio)
+                _buildPlantioSection(color)
+              else if (cat == OccurrenceCategory.amostraSolo)
+                _buildAmostraSection(color)
+              else
+                ...metrics.map(
+                  (metric) => OccurrenceSliderRow(
+                    label: metricLabel(metric),
+                    value: _metricValue(cat, metric),
+                    color: color,
+                    onChanged: (v) => _setMetric(cat, metric, v),
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+                child: OccurrenceDarkField(
+                  controller: _notaCtrl(cat.name),
+                  label: 'Notas (${cat.label})',
+                  hint: 'Observações específicas…',
+                  maxLines: 2,
+                ),
+              ),
+              if (_fotos[cat.name]?.isNotEmpty == true)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                  child: OccurrencePhotoGallery(
+                    paths: List<String>.from(_fotos[cat.name]!),
+                    captions: Map<String, String>.from(_photoCaptions),
+                    thumbnailSize: 72,
+                    readOnly: false,
+                    onRemove: (index) => _patchForm(() {
+                      final list = _fotos[cat.name]!;
+                      if (index < 0 || index >= list.length) return;
+                      final path = list.removeAt(index);
+                      _dropCaptionIfOrphan(path);
+                    }),
+                    onCaptionChanged: (index, caption) {
+                      final list = _fotos[cat.name];
+                      if (list == null || index < 0 || index >= list.length) {
+                        return;
+                      }
+                      _setPhotoCaption(list[index], caption);
+                    },
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

@@ -52,6 +52,19 @@ class OccurrenceSectionHeader extends StatelessWidget {
 
 // ── Campo de texto estilo dark ────────────────────────────────────────────
 
+/// Dentro de um card, os campos ficam planos (sem sombra), para não parecer
+/// "caixa dentro de caixa".
+class OccurrenceFlatFields extends InheritedWidget {
+  const OccurrenceFlatFields({super.key, required super.child});
+
+  static bool of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<OccurrenceFlatFields>() !=
+      null;
+
+  @override
+  bool updateShouldNotify(OccurrenceFlatFields oldWidget) => false;
+}
+
 class OccurrenceDarkField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
@@ -82,7 +95,7 @@ class OccurrenceDarkField extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
-        boxShadow: v.cardShadows,
+        boxShadow: OccurrenceFlatFields.of(context) ? null : v.cardShadows,
       ),
       child: TextField(
         controller: controller,
@@ -330,14 +343,12 @@ class _OccurrenceAccordionState extends State<OccurrenceAccordion> {
   @override
   Widget build(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
-    return Container(
+    final divider = v.cardBorder.withValues(alpha: 0.9);
+    // Sanfona plana: só linhas finas e o título, sem caixa em volta.
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: v.cardBackground,
-        borderRadius: BorderRadius.circular(v.cardRadius),
-        border: Border.all(color: v.cardBorder),
-        boxShadow: v.cardShadows,
+        border: Border.symmetric(horizontal: BorderSide(color: divider)),
       ),
-      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -345,35 +356,32 @@ class _OccurrenceAccordionState extends State<OccurrenceAccordion> {
             key: const Key('occurrence_accordion_header'),
             onTap: () => setState(() => _open = !_open),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 12),
               child: Row(
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.title,
-                          style: TextStyle(
-                            color: v.onSheetPrimary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
+                    child: Text.rich(
+                      TextSpan(
+                        text: widget.title,
+                        style: TextStyle(
+                          color: v.onSheetPrimary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
                         ),
-                        if (!_open && (widget.summary?.isNotEmpty ?? false))
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              widget.summary!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                        children: [
+                          if (!_open && (widget.summary?.isNotEmpty ?? false))
+                            TextSpan(
+                              text: '   ${widget.summary}',
                               style: TextStyle(
                                 color: v.subtitleColor,
+                                fontWeight: FontWeight.w400,
                                 fontSize: 12,
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   AnimatedRotation(
@@ -381,6 +389,7 @@ class _OccurrenceAccordionState extends State<OccurrenceAccordion> {
                     duration: const Duration(milliseconds: 200),
                     child: Icon(
                       Icons.keyboard_arrow_down,
+                      size: 20,
                       color: v.subtitleColor,
                     ),
                   ),
@@ -394,7 +403,7 @@ class _OccurrenceAccordionState extends State<OccurrenceAccordion> {
             alignment: Alignment.topCenter,
             child: _open
                 ? Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                    padding: const EdgeInsets.only(bottom: 14),
                     child: widget.child,
                   )
                 : const SizedBox(width: double.infinity),

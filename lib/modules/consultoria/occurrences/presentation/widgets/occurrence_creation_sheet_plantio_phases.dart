@@ -2,7 +2,8 @@ part of 'occurrence_creation_sheet.dart';
 
 enum _PlantioPhaseChip { validacaoPendente, execucaoNaoAcompanhada, completo }
 
-extension _OccurrenceCreationSheetPlantioPhases on _OccurrenceCreationSheetState {
+extension _OccurrenceCreationSheetPlantioPhases
+    on _OccurrenceCreationSheetState {
   bool _hasPlantioExecucaoContent() {
     if (_dataPlantio != null || _dataFimPlantio != null) return true;
     if (_sementesPorMetroCtrl.text.trim().isNotEmpty) return true;
@@ -21,8 +22,7 @@ extension _OccurrenceCreationSheetPlantioPhases on _OccurrenceCreationSheetState
   bool _canSavePlantioOccurrence() {
     final exec = _hasPlantioExecucaoContent();
     final emerg = _hasPlantioEmergenciaContent();
-    final cultivarEmerg =
-        _cultivarCtrl.text.trim().isNotEmpty && emerg;
+    final cultivarEmerg = _cultivarCtrl.text.trim().isNotEmpty && emerg;
     return exec || emerg || cultivarEmerg;
   }
 
@@ -32,11 +32,11 @@ extension _OccurrenceCreationSheetPlantioPhases on _OccurrenceCreationSheetState
   }
 
   _PlantioPhaseChip? _plantioPhaseChip() {
-  final execCore =
-      _dataPlantio != null ||
-      _dataFimPlantio != null ||
-      _sementesPorMetroCtrl.text.trim().isNotEmpty ||
-      _avaliacaoPlantio != null;
+    final execCore =
+        _dataPlantio != null ||
+        _dataFimPlantio != null ||
+        _sementesPorMetroCtrl.text.trim().isNotEmpty ||
+        _avaliacaoPlantio != null;
     final emerg = _hasPlantioEmergenciaContent();
 
     if (emerg && !execCore) {
@@ -168,234 +168,247 @@ extension _OccurrenceCreationSheetPlantioPhases on _OccurrenceCreationSheetState
     const avaliacoes = [('Boa', 'boa'), ('Ruim', 'ruim')];
     final chip = _plantioPhaseChip();
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            _plantioSummaryLine(muted),
-            style: TextStyle(
-              color: idleText,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              height: 1.35,
-            ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (chip != null) ...[
-            const SizedBox(height: 8),
+    return OccurrenceFlatFields(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_plantioSummaryLine(muted) != 'Plantio')
+              Text(
+                _plantioSummaryLine(muted),
+                style: TextStyle(
+                  color: idleText,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  height: 1.35,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            if (chip != null) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: color.withValues(alpha: 0.45)),
+                  ),
+                  child: Text(
+                    _plantioPhaseChipLabel(chip),
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 10),
             Align(
               alignment: Alignment.centerLeft,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: color.withValues(alpha: 0.45)),
+              child: TextButton(
+                key: const Key('occurrence_plantio_emergencia_shortcut'),
+                onPressed: _focusEmergenciaPhase,
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 0),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
-                  _plantioPhaseChipLabel(chip),
+                  'Acompanhar emergência',
                   style: TextStyle(
                     color: color,
-                    fontSize: 11,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ),
-          ],
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton(
-              key: const Key('occurrence_plantio_emergencia_shortcut'),
-              onPressed: _focusEmergenciaPhase,
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 0),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                'Acompanhar emergência',
-                style: TextStyle(
-                  color: color,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+            const SizedBox(height: 4),
+            Theme(
+              data: Theme.of(
+                context,
+              ).copyWith(dividerColor: Colors.transparent),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: idleBorder)),
                 ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Card(
-            margin: EdgeInsets.zero,
-            color: idleSurface,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(v.cardRadius),
-              side: BorderSide(color: idleBorder),
-            ),
-            child: ExpansionTile(
-              key: ValueKey(
-                'occurrence_plantio_execucao_tile_$_plantioExecucaoExpanded',
-              ),
-              initiallyExpanded: _plantioExecucaoExpanded,
-              onExpansionChanged: (expanded) => _patchForm(
-                () => _plantioExecucaoExpanded = expanded,
-              ),
-              title: Text(
-                'Execução',
-                style: TextStyle(
-                  color: idleText,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              children: [
-                OccurrenceDarkField(
-                  controller: _cultivarCtrl,
-                  label: 'Cultivar',
-                  hint: 'ex.: Intacta 2 IPRO, M6410 IPRO…',
-                ),
-                ..._buildCulturaSafraFields(),
-                const SizedBox(height: 10),
-                OccurrenceDateField(
-                  key: const Key('occurrence_plantio_inicio_field'),
-                  label: 'Início do plantio',
-                  value: _dataPlantio,
-                  helperText: occurrenceDapLabel(_dataPlantio),
-                  onChanged: _setDataPlantio,
-                ),
-                const SizedBox(height: 10),
-                OccurrenceDateField(
-                  key: const Key('occurrence_plantio_termino_field'),
-                  label: 'Término do plantio',
-                  value: _dataFimPlantio,
-                  firstDate: _dataPlantio,
-                  onChanged: (d) => _patchForm(() => _dataFimPlantio = d),
-                ),
-                const SizedBox(height: 10),
-                OccurrenceDarkField(
-                  controller: _cicloDiasCtrl,
-                  label: 'Ciclo (dias)',
-                  hint: 'ex.: 115',
-                ),
-                if (occurrenceCicloLabel(
-                      parseOccurrenceCicloDias(_cicloDiasCtrl.text),
-                    )
-                    case final cicloLabel?)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      cicloLabel,
-                      style: TextStyle(color: muted, fontSize: 12),
+                child: ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  shape: const Border(),
+                  collapsedShape: const Border(),
+                  key: ValueKey(
+                    'occurrence_plantio_execucao_tile_$_plantioExecucaoExpanded',
+                  ),
+                  initiallyExpanded: _plantioExecucaoExpanded,
+                  onExpansionChanged: (expanded) =>
+                      _patchForm(() => _plantioExecucaoExpanded = expanded),
+                  title: Text(
+                    'Execução',
+                    style: TextStyle(
+                      color: idleText,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                const SizedBox(height: 10),
-                OccurrenceDarkField(
-                  controller: _sementesPorMetroCtrl,
-                  label: 'Sementes por metro',
-                  hint: 'ex.: 14.5',
+                  childrenPadding: const EdgeInsets.only(bottom: 12),
+                  children: [
+                    OccurrenceDarkField(
+                      controller: _cultivarCtrl,
+                      label: 'Cultivar',
+                      hint: 'ex.: Intacta 2 IPRO, M6410 IPRO…',
+                    ),
+                    ..._buildCulturaSafraFields(),
+                    const SizedBox(height: 10),
+                    OccurrenceDateField(
+                      key: const Key('occurrence_plantio_inicio_field'),
+                      label: 'Início do plantio',
+                      value: _dataPlantio,
+                      helperText: occurrenceDapLabel(_dataPlantio),
+                      onChanged: _setDataPlantio,
+                    ),
+                    const SizedBox(height: 10),
+                    OccurrenceDateField(
+                      key: const Key('occurrence_plantio_termino_field'),
+                      label: 'Término do plantio',
+                      value: _dataFimPlantio,
+                      firstDate: _dataPlantio,
+                      onChanged: (d) => _patchForm(() => _dataFimPlantio = d),
+                    ),
+                    const SizedBox(height: 10),
+                    OccurrenceDarkField(
+                      controller: _cicloDiasCtrl,
+                      label: 'Ciclo (dias)',
+                      hint: 'ex.: 115',
+                    ),
+                    if (occurrenceCicloLabel(
+                          parseOccurrenceCicloDias(_cicloDiasCtrl.text),
+                        )
+                        case final cicloLabel?)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          cicloLabel,
+                          style: TextStyle(color: muted, fontSize: 12),
+                        ),
+                      ),
+                    const SizedBox(height: 10),
+                    OccurrenceDarkField(
+                      controller: _sementesPorMetroCtrl,
+                      label: 'Sementes por metro',
+                      hint: 'ex.: 14.5',
+                    ),
+                    if (_dataPlantio != null &&
+                        !_plantioEmergenciaExpanded) ...[
+                      const SizedBox(height: 10),
+                      OccurrenceDarkField(
+                        controller: _estandePlantasCtrl,
+                        label: 'Estande (planejado)',
+                        hint: 'ex.: 12',
+                      ),
+                    ],
+                    if (_showAvaliacaoPlantioRow()) ...[
+                      const SizedBox(height: 12),
+                      _buildPlantioAvaliacaoRow(
+                        color,
+                        idleSurface,
+                        idleBorder,
+                        muted,
+                        avaliacoes,
+                        selected: _avaliacaoPlantio,
+                        onChanged: (value) =>
+                            _patchForm(() => _avaliacaoPlantio = value),
+                        title: 'Avaliação do plantio',
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                    OccurrenceDarkField(
+                      controller: _objetivoPlantioCtrl,
+                      label: 'Objetivo',
+                      hint: 'Objetivo do plantio…',
+                      maxLines: 2,
+                    ),
+                  ],
                 ),
-                if (_dataPlantio != null && !_plantioEmergenciaExpanded) ...[
-                  const SizedBox(height: 10),
-                  OccurrenceDarkField(
-                    controller: _estandePlantasCtrl,
-                    label: 'Estande (planejado)',
-                    hint: 'ex.: 12',
-                  ),
-                ],
-                if (_showAvaliacaoPlantioRow()) ...[
-                  const SizedBox(height: 12),
-                  _buildPlantioAvaliacaoRow(
-                    color,
-                    idleSurface,
-                    idleBorder,
-                    muted,
-                    avaliacoes,
-                    selected: _avaliacaoPlantio,
-                    onChanged: (value) =>
-                        _patchForm(() => _avaliacaoPlantio = value),
-                    title: 'Avaliação do plantio',
-                  ),
-                ],
-                const SizedBox(height: 10),
-                OccurrenceDarkField(
-                  controller: _objetivoPlantioCtrl,
-                  label: 'Objetivo',
-                  hint: 'Objetivo do plantio…',
-                  maxLines: 2,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            margin: EdgeInsets.zero,
-            color: idleSurface,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(v.cardRadius),
-              side: BorderSide(color: idleBorder),
-            ),
-            child: ExpansionTile(
-              key: ValueKey(
-                'occurrence_plantio_emergencia_tile_$_plantioEmergenciaExpanded',
               ),
-              initiallyExpanded: _plantioEmergenciaExpanded,
-              onExpansionChanged: (expanded) => _patchForm(
-                () => _plantioEmergenciaExpanded = expanded,
-              ),
-              title: Text(
-                'Emergência',
-                style: TextStyle(
-                  color: idleText,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              children: [
-                OccurrenceDateField(
-                  key: const Key('occurrence_plantio_validacao_field'),
-                  label: 'Data da validação',
-                  value: _dataValidacao,
-                  onChanged: (d) => _patchForm(() => _dataValidacao = d),
-                ),
-                const SizedBox(height: 10),
-                OccurrenceDateField(
-                  key: const Key('occurrence_plantio_emergencia_field'),
-                  label: 'Data de emergência',
-                  value: _dataEmergencia,
-                  helperText: occurrenceSoyAgeLabel(_dataEmergencia),
-                  onChanged: (d) => _patchForm(() => _dataEmergencia = d),
-                ),
-                if (!_plantioExecucaoExpanded || _dataPlantio == null) ...[
-                  const SizedBox(height: 10),
-                  OccurrenceDarkField(
-                    controller: _estandePlantasCtrl,
-                    label: 'Estande observado',
-                    hint: 'ex.: 12',
-                  ),
-                ],
-                const SizedBox(height: 12),
-                _buildPlantioAvaliacaoRow(
-                  color,
-                  idleSurface,
-                  idleBorder,
-                  muted,
-                  avaliacoes,
-                  selected: _avaliacaoEmergencia,
-                  onChanged: (value) =>
-                      _patchForm(() => _avaliacaoEmergencia = value),
-                  title: 'Avaliação da emergência',
-                ),
-              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Theme(
+              data: Theme.of(
+                context,
+              ).copyWith(dividerColor: Colors.transparent),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: idleBorder)),
+                ),
+                child: ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  shape: const Border(),
+                  collapsedShape: const Border(),
+                  key: ValueKey(
+                    'occurrence_plantio_emergencia_tile_$_plantioEmergenciaExpanded',
+                  ),
+                  initiallyExpanded: _plantioEmergenciaExpanded,
+                  onExpansionChanged: (expanded) =>
+                      _patchForm(() => _plantioEmergenciaExpanded = expanded),
+                  title: Text(
+                    'Emergência',
+                    style: TextStyle(
+                      color: idleText,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  childrenPadding: const EdgeInsets.only(bottom: 12),
+                  children: [
+                    OccurrenceDateField(
+                      key: const Key('occurrence_plantio_validacao_field'),
+                      label: 'Data da validação',
+                      value: _dataValidacao,
+                      onChanged: (d) => _patchForm(() => _dataValidacao = d),
+                    ),
+                    const SizedBox(height: 10),
+                    OccurrenceDateField(
+                      key: const Key('occurrence_plantio_emergencia_field'),
+                      label: 'Data de emergência',
+                      value: _dataEmergencia,
+                      helperText: occurrenceSoyAgeLabel(_dataEmergencia),
+                      onChanged: (d) => _patchForm(() => _dataEmergencia = d),
+                    ),
+                    if (!_plantioExecucaoExpanded || _dataPlantio == null) ...[
+                      const SizedBox(height: 10),
+                      OccurrenceDarkField(
+                        controller: _estandePlantasCtrl,
+                        label: 'Estande observado',
+                        hint: 'ex.: 12',
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    _buildPlantioAvaliacaoRow(
+                      color,
+                      idleSurface,
+                      idleBorder,
+                      muted,
+                      avaliacoes,
+                      selected: _avaliacaoEmergencia,
+                      onChanged: (value) =>
+                          _patchForm(() => _avaliacaoEmergencia = value),
+                      title: 'Avaliação da emergência',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

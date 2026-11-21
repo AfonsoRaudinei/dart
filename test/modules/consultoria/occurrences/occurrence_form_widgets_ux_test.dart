@@ -62,7 +62,7 @@ void main() {
       ),
     );
     expect(find.text('conteudo'), findsNothing);
-    expect(find.text('Opcional'), findsOneWidget);
+    expect(find.textContaining('Opcional', findRichText: true), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('occurrence_accordion_header')));
     await tester.pumpAndSettle();
