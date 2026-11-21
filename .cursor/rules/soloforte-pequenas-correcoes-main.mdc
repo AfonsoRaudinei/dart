@@ -1,0 +1,33 @@
+---
+description: Pequenas correções — sempre entregar na main via PR (REGRA-PEQUENAS-CORRECOES-1)
+alwaysApply: true
+---
+
+# Pequenas correções → sempre na `main`
+
+Complementa **REGRA-ENTREGA-1** (`AGENTS.md`, `.agent/AGENT_REGRAS.md`).
+
+## Definição — pequena correção
+
+- Objetivo único e escopo fechado (ex.: remover item de menu, ajuste de label, teste alinhado).
+- Poucos arquivos, **sem** ADR novo, **sem** schema SQLite, **sem** rota nova, **sem** contrato cross-module.
+- **Fora** dos paths críticos: drawing, agenda, `core/database`, `core/ui/sheets`, `ui/screens/map`, `ui/components/map`.
+
+## Obrigatório
+
+1. Executor implementa + `arch_check` Exit 0.
+2. Branch `cursor/*` → push → PR → revisor DIFF.
+3. Supervisor arma `gh pr merge --auto --rebase` no mesmo turno (não deixar “só na branch”).
+4. Encerrar só com `mergedAt` em `origin/main` **ou** texto explícito de auto-merge pendente + URL do PR.
+
+## Proibido
+
+- Encerrar pequena correção como “pronto” com código só na branch.
+- `git push origin main` ou `gh pr merge --admin` (mesmo sendo “pequeno”).
+
+## Gate
+
+- Pequena correção + fora de path crítico + revisor **No findings** → `--auto --rebase` **sem** perguntar no chat.
+- P0/P1, path crítico ou P2/P3 → política normal do supervisor (`soloforte-supervisor.mdc`).
+
+Detalhe: `docs/03_ENFORCEMENT/supervisor-merge-gate.md` → “Pequenas correções”.

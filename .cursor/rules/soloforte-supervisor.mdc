@@ -39,6 +39,7 @@ Se todos falharem: não mergeia, informar o bloqueio. Falha de modelo não conta
 - P2/P3 em qualquer path → pede ok no chat.
 - Path crítico (`lib/modules/drawing/`, `lib/modules/agenda/`, `lib/core/database/`, `lib/core/ui/sheets/`, `lib/ui/screens/map/`, `lib/ui/components/map/`) → `Vou mergear PR #N (paths: …) via rebase auto-merge. ok?`
 - Baixo risco + `No findings` → `gh pr merge --auto --rebase` sem perguntar.
+- **Pequenas correções** (escopo fechado, fora de path crítico): sempre PR + auto-merge no mesmo turno — nunca encerrar só na branch. Ver `soloforte-pequenas-correcoes-main.mdc` (REGRA-PEQUENAS-CORRECOES-1).
 
 **Encerramento (REGRA-ENTREGA-1)** — uma leitura, sem pollar CI:
 

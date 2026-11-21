@@ -60,6 +60,16 @@ Não exigir os outros jobs do `architecture.yml` (NDVI, coverage, radar, shield)
 - **Crítico** (pede ok): `lib/modules/drawing/`, `lib/modules/agenda/`, `lib/core/database/`, `lib/core/ui/sheets/`, `lib/ui/screens/map/`, `lib/ui/components/map/`.
 - P2/P3 → pede ok. P0/P1 → não mergeia.
 
+## Pequenas correções (REGRA-PEQUENAS-CORRECOES-1)
+
+Ajustes pontuais (ex.: item de menu, label, teste) **sempre** seguem o pipeline até a `main` — não param na branch.
+
+- Critério: escopo fechado; sem ADR, schema, rota ou contrato; fora dos paths críticos acima.
+- Fluxo: executor → revisor → PR → `--auto --rebase` no mesmo turno do supervisor.
+- Gate: trata como **baixo risco** quando o revisor der `No findings`.
+- Encerramento: igual REGRA-ENTREGA-1 (`mergedAt` ou pendente explícito).
+- Rule Cursor: `.cursor/rules/soloforte-pequenas-correcoes-main.mdc` · memória: `.agent/AGENT_REGRAS.md`.
+
 ## Encerramento (REGRA-ENTREGA-1)
 
 ```bash

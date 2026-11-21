@@ -38,6 +38,21 @@ gh pr view <n> --json state,mergedAt,mergeStateStatus,autoMergeRequest,url
 
 ---
 
+## REGRA-PEQUENAS-CORRECOES-1 — Ajuste pequeno também vai para a `main`
+
+Correções pontuais (menu, copy, teste, UI fora de path crítico) **não** ficam só na branch.
+
+| Obrigatório | Proibido |
+|---|---|
+| Mesmo turno: PR + `gh pr merge --auto --rebase` após gate | Encerrar “feito” sem PR ou só com push na `cursor/*` |
+| Entrega honesta: SHA em `origin/main` ou pendente CI + URL | Atalho direto na `main` (`git push origin main`) |
+
+Critérios de “pequena”: escopo fechado, sem ADR/schema/rota/contrato novo, fora dos paths críticos do merge gate.
+
+Rule ativa: `.cursor/rules/soloforte-pequenas-correcoes-main.mdc`
+
+---
+
 ## Restore pós-reinstall (mesmo login)
 
 Checklist: `.agent/CHECKLIST_RESTORE_REINSTALL.md` · PRD: `docs/PRD_RESTORE_REINSTALL_IPA.md`.  
