@@ -47,10 +47,11 @@ part 'drawing_sheet_widgets.dart';
 // Os itens de ferramenta ficam em:
 // lib/modules/drawing/presentation/widgets/components/drawing_tool_selector.dart
 
-typedef DrawingSheetSavedCallback = void Function(
-  DrawingFeature? savedFeature, {
-  CampoTestPhotoDraft? campoTestPhoto,
-});
+typedef DrawingSheetSavedCallback =
+    void Function(
+      DrawingFeature? savedFeature, {
+      CampoTestPhotoDraft? campoTestPhoto,
+    });
 
 const _kDefaultTalhaoSketchName = 'Talhão Novo';
 const _kDefaultTesteSketchName = 'Teste';
@@ -328,10 +329,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     CampoTestPhotoDraft? campoTestPhoto,
   }) {
     if (preferSavedCallback && widget.onSaved != null) {
-      widget.onSaved!.call(
-        savedFeature,
-        campoTestPhoto: campoTestPhoto,
-      );
+      widget.onSaved!.call(savedFeature, campoTestPhoto: campoTestPhoto);
       return;
     }
     if (widget.onClose != null) {
@@ -567,11 +565,15 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // 4. Cabeçalho Fixo (Fonte Única)
-              _SheetHeader(
-                onBack: _isEditingMetadata
-                    ? () => setState(() => _isEditingMetadata = false)
-                    : null,
-                onClose: _handleClosePressed,
+              ListenableBuilder(
+                listenable: widget.controller,
+                builder: (context, _) => _SheetHeader(
+                  title: _headerTitle,
+                  onBack: _isEditingMetadata
+                      ? () => setState(() => _isEditingMetadata = false)
+                      : null,
+                  onClose: _handleClosePressed,
+                ),
               ),
 
               // Conteúdo Dinâmico
@@ -598,6 +600,14 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
         },
       ),
     );
+  }
+
+  String get _headerTitle {
+    if (_isEditingMetadata) return 'Dados do talhão';
+    if (widget.controller.currentState == DrawingState.reviewing) {
+      return _isCampoTestReview ? 'Salvar teste' : 'Salvar talhão';
+    }
+    return 'Ferramentas de Desenho';
   }
 
   bool get _showsSelectedStickyFooter =>

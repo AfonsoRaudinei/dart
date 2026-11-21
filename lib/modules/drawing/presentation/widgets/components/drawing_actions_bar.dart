@@ -179,6 +179,20 @@ class DrawingActionsBar extends StatelessWidget {
               },
             ),
           ],
+          if (onDelete != null &&
+              actionsMode == DrawingFeatureActionsMode.compact) ...[
+            const SizedBox(height: 12),
+            _ActionButton(
+              icon: Icons.delete_outline,
+              label: 'Excluir',
+              description: 'Remover este talhão do mapa',
+              isDestructive: true,
+              onTap: () {
+                HapticFeedback.mediumImpact();
+                _showDeleteConfirmation(context);
+              },
+            ),
+          ],
           if (actionsMode == DrawingFeatureActionsMode.full) ...[
           const SizedBox(height: 16),
           const Divider(height: 1),

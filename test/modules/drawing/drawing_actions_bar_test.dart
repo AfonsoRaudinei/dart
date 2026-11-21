@@ -5,6 +5,32 @@ import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart'
 import 'package:soloforte_app/modules/drawing/presentation/widgets/components/drawing_actions_bar.dart';
 
 void main() {
+  testWidgets('modo compacto também oferece Excluir, com confirmação', (
+    tester,
+  ) async {
+    var deleted = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: DrawingActionsBar(
+              selectedFeature: _feature(),
+              actionsMode: DrawingFeatureActionsMode.compact,
+              onDelete: () => deleted = true,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Excluir'));
+    await tester.pumpAndSettle();
+    expect(deleted, isFalse);
+    await tester.tap(find.widgetWithText(TextButton, 'Excluir'));
+    await tester.pumpAndSettle();
+    expect(deleted, isTrue);
+  });
+
   testWidgets('dispara todas as ações contextuais do talhão', (tester) async {
     tester.view.physicalSize = const Size(800, 3000);
     tester.view.devicePixelRatio = 1;
@@ -150,59 +176,57 @@ void main() {
     expect(tapped, isTrue);
   });
 
-  testWidgets(
-    'modo compacto com onUnion e tipo talhao exibe Unir talhões',
-    (tester) async {
-      var unionTapped = false;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: DrawingActionsBar(
-              selectedFeature: _feature(),
-              actionsMode: DrawingFeatureActionsMode.compact,
-              onUnion: () => unionTapped = true,
-            ),
+  testWidgets('modo compacto com onUnion e tipo talhao exibe Unir talhões', (
+    tester,
+  ) async {
+    var unionTapped = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DrawingActionsBar(
+            selectedFeature: _feature(),
+            actionsMode: DrawingFeatureActionsMode.compact,
+            onUnion: () => unionTapped = true,
           ),
         ),
-      );
+      ),
+    );
 
-      expect(find.text('Unir talhões'), findsOneWidget);
-      expect(find.text('União'), findsNothing);
-      expect(find.text('Diferença'), findsNothing);
-      expect(find.text('Interseção'), findsNothing);
-      expect(find.text('Exportar este talhão'), findsNothing);
-      expect(find.text('Excluir'), findsNothing);
+    expect(find.text('Unir talhões'), findsOneWidget);
+    expect(find.text('União'), findsNothing);
+    expect(find.text('Diferença'), findsNothing);
+    expect(find.text('Interseção'), findsNothing);
+    expect(find.text('Exportar este talhão'), findsNothing);
+    expect(find.text('Excluir'), findsNothing);
 
-      await tester.tap(find.text('Unir talhões'));
-      expect(unionTapped, isTrue);
-    },
-  );
+    await tester.tap(find.text('Unir talhões'));
+    expect(unionTapped, isTrue);
+  });
 
-  testWidgets(
-    'modo compacto com onUnion e tipo teste não exibe Unir talhões',
-    (tester) async {
-      final base = _feature();
-      final testeFeature = DrawingFeature(
-        id: base.id,
-        geometry: base.geometry,
-        properties: base.properties.copyWith(tipo: DrawingType.teste),
-      );
+  testWidgets('modo compacto com onUnion e tipo teste não exibe Unir talhões', (
+    tester,
+  ) async {
+    final base = _feature();
+    final testeFeature = DrawingFeature(
+      id: base.id,
+      geometry: base.geometry,
+      properties: base.properties.copyWith(tipo: DrawingType.teste),
+    );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: DrawingActionsBar(
-              selectedFeature: testeFeature,
-              actionsMode: DrawingFeatureActionsMode.compact,
-              onUnion: () {},
-            ),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DrawingActionsBar(
+            selectedFeature: testeFeature,
+            actionsMode: DrawingFeatureActionsMode.compact,
+            onUnion: () {},
           ),
         ),
-      );
+      ),
+    );
 
-      expect(find.text('Unir talhões'), findsNothing);
-    },
-  );
+    expect(find.text('Unir talhões'), findsNothing);
+  });
 }
 
 DrawingFeature _feature() {

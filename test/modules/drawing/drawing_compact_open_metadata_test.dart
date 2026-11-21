@@ -101,7 +101,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Editar Informações'), findsOneWidget);
+      expect(find.text('Dados do talhão'), findsOneWidget);
       final container = ProviderScope.containerOf(
         tester.element(find.byType(DrawingSheet)),
       );
@@ -142,12 +142,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Editar Informações'), findsNothing);
+      expect(find.text('Dados do talhão'), findsNothing);
 
       container.read(drawingCompactOpenMetadataProvider.notifier).state = true;
       await tester.pumpAndSettle();
 
-      expect(find.text('Editar Informações'), findsOneWidget);
+      expect(find.text('Dados do talhão'), findsOneWidget);
       expect(container.read(drawingCompactOpenMetadataProvider), isFalse);
     });
   });

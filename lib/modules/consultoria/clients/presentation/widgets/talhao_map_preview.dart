@@ -102,7 +102,7 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
                         if (!showFieldNameOnMap)
                           Text(
                             nome,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 15,
@@ -158,14 +158,19 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
                         size: 20,
                       ),
                     ],
-                  ] else ...[
-                    const SizedBox(width: 8),
-                    Row(mainAxisSize: MainAxisSize.min, children: actions),
                   ],
                 ],
               ),
             ),
           ),
+          if (actions.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: actions,
+              ),
+            ),
         ],
       ),
     );
@@ -221,9 +226,7 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
           Positioned.fill(
             child: Material(
               color: Colors.transparent,
-              child: InkWell(
-                onTap: opensNdvi ? openHistory : onTap,
-              ),
+              child: InkWell(onTap: opensNdvi ? openHistory : onTap),
             ),
           ),
           if (showFieldNameOnMap && nome.trim().isNotEmpty)
@@ -235,7 +238,8 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
                 label: buildTalhaoMapPreviewTitleChipLabel(nome, areaHa),
               ),
             ),
-          if (ndviLoading) const Positioned.fill(child: _NdviPremiumLoadingOverlay()),
+          if (ndviLoading)
+            const Positioned.fill(child: _NdviPremiumLoadingOverlay()),
           if (showNdvi && openHistory != null && !ndviLoading)
             Positioned(
               right: 8,
@@ -379,9 +383,7 @@ class _NdviPremiumLoadingOverlay extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFF1C1C1E).withValues(alpha: 0.72),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.12),
-                ),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(

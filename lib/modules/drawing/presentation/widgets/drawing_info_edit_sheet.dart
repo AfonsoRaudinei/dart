@@ -31,6 +31,9 @@ class DrawingInfoEditSheet extends ConsumerStatefulWidget {
   final VoidCallback? onCancel;
   final VoidCallback? onSaved;
 
+  /// Exclui o talhão (após confirmação). Sem ele, o botão não aparece.
+  final VoidCallback? onDelete;
+
   const DrawingInfoEditSheet({
     super.key,
     required this.feature,
@@ -38,6 +41,7 @@ class DrawingInfoEditSheet extends ConsumerStatefulWidget {
     this.embedded = false,
     this.onCancel,
     this.onSaved,
+    this.onDelete,
   });
 
   @override
@@ -140,6 +144,30 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
       return;
     }
     Navigator.of(context).pop();
+  }
+
+  Future<void> _confirmDelete() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Excluir talhão?'),
+        content: Text(
+          'O talhão "${widget.feature.properties.nome}" será removido do mapa.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && mounted) widget.onDelete?.call();
   }
 
   void _save() {
@@ -245,8 +273,10 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                 ),
               ),
 
-            Text('Editar Informações', style: titleStyle),
-            const SizedBox(height: 20),
+            if (!widget.embedded) ...[
+              Text('Editar Informações', style: titleStyle),
+              const SizedBox(height: 20),
+            ],
 
             // Nome
             Text('Nome do talhão *', style: labelStyle),
@@ -301,8 +331,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
               isLoading: clientState.isLoadingClients,
               clearable: true,
               onClearSelection: () => _onClientChanged(null),
-              onQueryChanged: (value) =>
-                  setState(() => _clientQuery = value),
+              onQueryChanged: (value) => setState(() => _clientQuery = value),
               onSelectClient: _onClientChanged,
             ),
             const SizedBox(height: 16),
@@ -400,6 +429,20 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                 ),
               ],
             ),
+            if (widget.onDelete != null) ...[
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton.icon(
+                  key: const Key('drawing_info_delete'),
+                  onPressed: _confirmDelete,
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: const Text('Excluir talhão'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFFF3B30),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
