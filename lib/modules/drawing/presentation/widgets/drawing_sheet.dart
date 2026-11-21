@@ -650,9 +650,9 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
         clienteId: _selectedClient!.id,
         fazendaId: _selectedFarm?.id,
         grupo: _selectedFarm?.name,
-        // Teste grava azul Samsung. Talhão segue a condição (Bom por padrão).
+        // Teste grava azul claro. Talhão segue a condição (Bom por padrão).
         cor: pendingTipo == DrawingType.teste
-            ? 0xFF1428A0
+            ? 0xFF8EBEFF
             : TalhaoCondicao.bom.argb,
       );
     } finally {
