@@ -114,7 +114,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
   VisitTalhaoOption? _selectedTalhao;
   _VisitSheetStep _step = _VisitSheetStep.selecaoTalhao;
   String _selectedActivity = 'Monitoramento';
-  String _clientQuery = '';
+  bool _appliedPreselection = false;
   final _clientSearchController = TextEditingController();
   String _talhaoQuery = '';
   final _talhaoSearchController = TextEditingController();
@@ -162,20 +162,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     final ctaDisabled = v.cardBackground;
     final ctaRadius = v.ctaRadius;
 
-    // P5: Pré-selecionar cliente quando aberto via /map?modo=visita&clienteId=X
-    if (widget.preSelectedClienteId != null && _selectedClient == null) {
-      final clients = clientsAsync.valueOrNull;
-      if (clients != null) {
-        final match = clients
-            .where((c) => c.id == widget.preSelectedClienteId)
-            .firstOrNull;
-        if (match != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) setState(() => _selectedClient = match);
-          });
-        }
-      }
-    }
+    _schedulePreselectedClient(clientsAsync.valueOrNull);
 
     return Container(
       decoration: BoxDecoration(
@@ -224,11 +211,10 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                     visuals: v,
                     clientsAsync: clientsAsync,
                     searchController: _clientSearchController,
-                    clientQuery: _clientQuery,
                     selectedClientId: _selectedClient?.id,
-                    onQueryChanged: (value) =>
-                        setState(() => _clientQuery = value),
                     onSelectClient: _selectClient,
+                    onClearClient: _clearClient,
+                    onRetry: () => ref.invalidate(_visitClientsProvider),
                   ),
                   const SizedBox(height: 12),
                   _buildDropdown<VisitFarmSummary>(
@@ -403,9 +389,44 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     );
   }
 
+  /// Pré-seleção escreve o nome no campo só depois que o id já está no picker,
+  /// para o autocomplete não reabrir a lista.
+  void _schedulePreselectedClient(List<VisitClientSummary>? clients) {
+    if (_appliedPreselection || widget.preSelectedClienteId == null) return;
+    if (clients == null) return;
+    _appliedPreselection = true;
+    final match = clients
+        .where((client) => client.id == widget.preSelectedClienteId)
+        .firstOrNull;
+    if (match == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _selectedClient != null) return;
+      setState(() => _selectedClient = match);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (_clientSearchController.text.isEmpty) {
+          _clientSearchController.text = match.name;
+        }
+      });
+    });
+  }
+
   void _selectClient(VisitClientSummary client) {
     setState(() {
       _selectedClient = client;
+      _selectedFarm = null;
+      _selectedTalhao = null;
+      _talhaoQuery = '';
+      _talhoes = const [];
+      _step = _VisitSheetStep.selecaoTalhao;
+    });
+    _talhaoSearchController.clear();
+    _loadTalhoes(null);
+  }
+
+  void _clearClient() {
+    setState(() {
+      _selectedClient = null;
       _selectedFarm = null;
       _selectedTalhao = null;
       _talhaoQuery = '';
