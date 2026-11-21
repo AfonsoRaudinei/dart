@@ -11,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../constants/layout_constants.dart';
 import '../design/sf_icons.dart';
 import '../utils/share_position.dart';
 import 'report_export_service.dart';
@@ -46,6 +47,29 @@ audio,
 </style>
 ''';
   if (html.contains('id="sf-pdf-print"')) return html;
+  if (html.contains('</head>')) {
+    return html.replaceFirst('</head>', '$style</head>');
+  }
+  return '$style$html';
+}
+
+/// Cópia do HTML só para o WebView: reserva no fim do documento a altura do
+/// FAB global ([kFabSafeArea] + safe-area do aparelho) para que o botão não
+/// cubra o rodapé do relatório. Export, PDF e compartilhamento usam o HTML
+/// original.
+@visibleForTesting
+String withFabSafeAreaForInApp(String html) {
+  const style =
+      '''
+<style id="sf-fab-safe-area">
+body::after {
+  content: "";
+  display: block;
+  height: calc(${kFabSafeArea}px + env(safe-area-inset-bottom, 0px));
+}
+</style>
+''';
+  if (html.contains('id="sf-fab-safe-area"')) return html;
   if (html.contains('</head>')) {
     return html.replaceFirst('</head>', '$style</head>');
   }
@@ -189,7 +213,11 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
           onPageFinished: (_) => setState(() => _loading = false),
         ),
       )
-      ..loadHtmlString(ReportPhotoLinks.prepareInAppHtml(widget.htmlContent));
+      ..loadHtmlString(
+        withFabSafeAreaForInApp(
+          ReportPhotoLinks.prepareInAppHtml(widget.htmlContent),
+        ),
+      );
   }
 
   NavigationDecision _onNavigationRequest(NavigationRequest request) {
