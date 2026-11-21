@@ -53,6 +53,25 @@ final showMarkersProvider = NotifierProvider<ShowMarkers, bool>.internal(
 );
 
 typedef _$ShowMarkers = Notifier<bool>;
+String _$showMarketingCasesHash() =>
+    r'c4e8a1b07d2f9e6a3b5c8d1f0a7e4b9c2d6f1a83';
+
+/// Cases de sucesso no mapa. Independente dos pinos de ocorrência e publicação.
+///
+/// Copied from [ShowMarketingCases].
+@ProviderFor(ShowMarketingCases)
+final showMarketingCasesProvider =
+    NotifierProvider<ShowMarketingCases, bool>.internal(
+      ShowMarketingCases.new,
+      name: r'showMarketingCasesProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$showMarketingCasesHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$ShowMarketingCases = Notifier<bool>;
 String _$mapSatelliteLabelsEnabledHash() =>
     r'ddb405b7da93c2c2e867fc853223d2d38f765b5d';
 
