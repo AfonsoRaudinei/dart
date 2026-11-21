@@ -34,6 +34,14 @@
 
   <main>
 
+    <!-- {{#if blocos_avaliacao}} -->
+    <section class="sf-section">
+      <h2 class="sf-section-title"><span class="sf-section-num"></span>Comparativo visual</h2>
+      <!-- {{#each avaliacoes}} -->
+      <!-- AvaliacaoItem[] / avaliacoes_json renderizado no Dart -->
+      <!-- {{/each}} -->
+    </section>
+    <!-- {{else}} -->
     <section class="sf-section">
       <h2 class="sf-section-title"><span class="sf-section-num"></span>Comparativo visual</h2>
       <div class="sf-figure-grid mk-compare">
@@ -74,6 +82,7 @@
       </div>
     </section>
     <!-- {{/if}} -->
+    <!-- {{/if}} -->
 
     <!-- {{#if resultados_legados}} -->
     <section class="sf-section">
@@ -101,6 +110,13 @@
         </div>
         <!-- {{/if}} -->
       </div>
+    </section>
+    <!-- {{/if}} -->
+
+    <!-- {{#if conclusao}} -->
+    <section class="sf-section">
+      <h2 class="sf-section-title"><span class="sf-section-num"></span>Conclusão técnica</h2>
+      <div class="sf-callout"><p class="sf-prose">{{conclusao}}</p></div>
     </section>
     <!-- {{/if}} -->
 
