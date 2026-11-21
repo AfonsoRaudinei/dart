@@ -35,6 +35,8 @@ class DrawingBottomToolbar extends StatefulWidget {
     this.onRemoveHoleRing,
     this.showRemoveHoleRing = false,
     this.canRemoveHoleRing = false,
+    this.onRemoveVertex,
+    this.canRemoveVertex = false,
   });
 
   final VoidCallback onConfirm;
@@ -65,8 +67,12 @@ class DrawingBottomToolbar extends StatefulWidget {
   final bool showRemoveHoleRing;
   final bool canRemoveHoleRing;
 
+  /// Segunda linha compacta: excluir o vértice selecionado.
+  final VoidCallback? onRemoveVertex;
+  final bool canRemoveVertex;
+
   bool get _showsSecondaryActions =>
-      onStartHoleCut != null || showRemoveHoleRing;
+      onStartHoleCut != null || showRemoveHoleRing || onRemoveVertex != null;
 
   bool get _showsMeasurement =>
       (vertexDragPreview?.areaHa ?? measurementAreaHa) > 0 ||
@@ -122,6 +128,44 @@ class _DrawingBottomToolbarState extends State<DrawingBottomToolbar>
     widget.vertexDragPreview?.removeListener(_onDragPreview);
     _entryController.dispose();
     super.dispose();
+  }
+
+  List<Widget> _secondaryActions() {
+    return [
+      if (widget.onStartHoleCut != null)
+        _ToolbarAction(
+          icon: Icons.content_cut,
+          label: 'Recortar',
+          iconColor: Colors.white,
+          labelColor: Colors.white70,
+          iconSize: 20,
+          semanticsLabel: 'Recortar área interna do talhão',
+          enabled: widget.canStartHoleCut,
+          onTap: widget.onStartHoleCut,
+        ),
+      if (widget.onRemoveVertex != null)
+        _ToolbarAction(
+          icon: Icons.remove_circle_outline,
+          label: 'Excluir ponto',
+          iconColor: _iosRed,
+          labelColor: Colors.white70,
+          iconSize: 20,
+          semanticsLabel: 'Excluir ponto selecionado',
+          enabled: widget.canRemoveVertex,
+          onTap: widget.canRemoveVertex ? widget.onRemoveVertex : null,
+        ),
+      if (widget.showRemoveHoleRing)
+        _ToolbarAction(
+          icon: Icons.remove_circle_outline,
+          label: 'Excluir recorte',
+          iconColor: _iosRed,
+          labelColor: Colors.white70,
+          iconSize: 20,
+          semanticsLabel: 'Excluir recorte interno',
+          enabled: widget.canRemoveHoleRing,
+          onTap: widget.canRemoveHoleRing ? widget.onRemoveHoleRing : null,
+        ),
+    ];
   }
 
   @override
@@ -206,37 +250,11 @@ class _DrawingBottomToolbarState extends State<DrawingBottomToolbar>
                     padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
                     child: Row(
                       children: [
-                        if (widget.onStartHoleCut != null)
-                          Expanded(
-                            child: _ToolbarAction(
-                              icon: Icons.content_cut,
-                              label: 'Recortar',
-                              iconColor: Colors.white,
-                              labelColor: Colors.white70,
-                              iconSize: 20,
-                              semanticsLabel: 'Recortar área interna do talhão',
-                              enabled: widget.canStartHoleCut,
-                              onTap: widget.onStartHoleCut,
-                            ),
-                          ),
-                        if (widget.onStartHoleCut != null &&
-                            widget.showRemoveHoleRing)
-                          const _ToolbarDivider(),
-                        if (widget.showRemoveHoleRing)
-                          Expanded(
-                            child: _ToolbarAction(
-                              icon: Icons.remove_circle_outline,
-                              label: 'Excluir recorte',
-                              iconColor: const Color(0xFFFF3B30),
-                              labelColor: Colors.white70,
-                              iconSize: 20,
-                              semanticsLabel: 'Excluir recorte interno',
-                              enabled: widget.canRemoveHoleRing,
-                              onTap: widget.canRemoveHoleRing
-                                  ? widget.onRemoveHoleRing
-                                  : null,
-                            ),
-                          ),
+                        for (final (i, action)
+                            in _secondaryActions().indexed) ...[
+                          if (i > 0) const _ToolbarDivider(),
+                          Expanded(child: action),
+                        ],
                       ],
                     ),
                   ),
