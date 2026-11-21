@@ -20,12 +20,18 @@ class DrawingSyncResult {
 class DrawingSyncService {
   final DrawingLocalStore _localStore;
   final DrawingRemoteStore _remoteStore;
+  final TesteExecucaoLocalStore _testeLocalStore;
+  final TesteExecucaoRemoteStore _testeRemoteStore;
 
   DrawingSyncService({
     DrawingLocalStore? localStore,
     DrawingRemoteStore? remoteStore,
+    TesteExecucaoLocalStore? testeLocalStore,
+    TesteExecucaoRemoteStore? testeRemoteStore,
   }) : _localStore = localStore ?? DrawingLocalStore(),
-       _remoteStore = remoteStore ?? DrawingRemoteStore();
+       _remoteStore = remoteStore ?? DrawingRemoteStore(),
+       _testeLocalStore = testeLocalStore ?? TesteExecucaoLocalStore(),
+       _testeRemoteStore = testeRemoteStore ?? TesteExecucaoRemoteStore();
 
   Future<DrawingSyncResult> synchronize() async {
     final resultUpdates = <DrawingFeature>[];
@@ -217,6 +223,8 @@ class DrawingSyncService {
       }
     }
 
+    errorCount += await _synchronizeTesteExecucoes();
+
     AppLogger.debug(
       'Drawing sync finished '
       '[updated=${resultUpdates.length} conflicts=${resultConflicts.length} '
@@ -229,6 +237,72 @@ class DrawingSyncService {
       conflicts: resultConflicts,
       errors: errorCount,
     );
+  }
+
+  Future<int> _synchronizeTesteExecucoes() async {
+    var errorCount = 0;
+    final pending = await _testeLocalStore.getPendingSync();
+
+    for (final row in pending) {
+      try {
+        await SyncRetryRunner.execute(
+          operation: () => _testeRemoteStore.push(row),
+          tag: 'DrawingSync',
+          stage: 'teste_execucao_push_remote',
+          entityId: row.id,
+        );
+        await _testeLocalStore.update(
+          row.copyWith(
+            syncStatus: SyncStatus.synced,
+            atualizadoEm: DateTime.now(),
+          ),
+        );
+      } catch (error) {
+        errorCount++;
+        AppLogger.warning(
+          'TesteExecucao push falhou; pendencia preservada [id=${row.id}]',
+          tag: 'DrawingSync',
+          error: error,
+        );
+      }
+    }
+
+    try {
+      final remoteRows = await SyncRetryRunner.execute(
+        operation: () => _testeRemoteStore.fetchUpdates(null),
+        tag: 'DrawingSync',
+        stage: 'teste_execucao_pull_remote',
+      );
+      for (final remote in remoteRows) {
+        final local = await _testeLocalStore.getById(remote.id);
+        if (local == null) {
+          await _testeLocalStore.insert(
+            remote.copyWith(syncStatus: SyncStatus.synced),
+          );
+          continue;
+        }
+        if (local.syncStatus != SyncStatus.synced &&
+            remote.atualizadoEm.isAfter(local.atualizadoEm)) {
+          await _testeLocalStore.insert(
+            remote.copyWith(syncStatus: SyncStatus.synced),
+          );
+        } else if (local.syncStatus == SyncStatus.synced &&
+            remote.atualizadoEm.isAfter(local.atualizadoEm)) {
+          await _testeLocalStore.update(
+            remote.copyWith(syncStatus: SyncStatus.synced),
+          );
+        }
+      }
+    } catch (error) {
+      errorCount++;
+      AppLogger.warning(
+        'TesteExecucao pull skipped after recoverable error',
+        tag: 'DrawingSync',
+        error: error,
+      );
+    }
+
+    return errorCount;
   }
 
   // Resolve conflict: "Use Local"
