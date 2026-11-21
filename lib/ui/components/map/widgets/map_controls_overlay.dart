@@ -74,6 +74,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final bool canRemoveHoleRing;
   final VoidCallback? onRemoveVertex;
   final bool canRemoveVertex;
+  final VoidCallback? onDeleteEditingFeature;
 
   final double measurementAreaHa;
   final double measurementPerimeterKm;
@@ -114,6 +115,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     this.canRemoveHoleRing = false,
     this.onRemoveVertex,
     this.canRemoveVertex = false,
+    this.onDeleteEditingFeature,
     this.measurementAreaHa = 0,
     this.measurementPerimeterKm = 0,
     this.vertexDragPreview,
@@ -162,6 +164,11 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
       return widget.onRemoveVertex;
     }
     return null;
+  }
+
+  VoidCallback? _deleteEditingFeatureCallback() {
+    if (widget.drawingState != DrawingState.editing) return null;
+    return widget.onDeleteEditingFeature;
   }
 
   bool _holeCutEnabled() {
@@ -259,6 +266,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                   canRemoveHoleRing: widget.canRemoveHoleRing,
                   onRemoveVertex: _removeVertexCallback(),
                   canRemoveVertex: widget.canRemoveVertex,
+                  onDeleteFeature: _deleteEditingFeatureCallback(),
                 ),
               ] else
                 SizedBox(height: safeBottom + kMapContextCardBottomInset),
