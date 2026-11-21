@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 import 'dart:async';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_close_button.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

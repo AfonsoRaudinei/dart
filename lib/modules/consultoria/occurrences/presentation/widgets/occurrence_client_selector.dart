@@ -33,6 +33,7 @@ class OccurrenceClientSelector extends StatelessWidget {
         color: surface,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: border),
+        boxShadow: v.cardShadows,
       ),
       child: FutureBuilder<List<ClientSummary>>(
         future: clientsFuture,

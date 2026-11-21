@@ -158,6 +158,7 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
             width: isEmpty ? 1.5 : 1,
           ),
           color: hasPhoto ? null : bg,
+          boxShadow: hasPhoto ? null : v.cardShadows,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(radius - 1),

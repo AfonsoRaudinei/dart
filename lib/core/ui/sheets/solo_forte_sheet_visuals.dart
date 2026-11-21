@@ -172,6 +172,40 @@ class SoloForteSheetVisuals {
         SoloForteSheetVariant.dark => Colors.transparent,
       };
 
+  /// Sombra suave de cards e campos: dá profundidade sem pesar (iOS premium).
+  List<BoxShadow> get cardShadows => isDark
+      ? const []
+      : [
+          BoxShadow(
+            color: titleColor.withValues(alpha: 0.05),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+          BoxShadow(
+            color: titleColor.withValues(alpha: 0.07),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ];
+
+  /// Fundo do sheet em degradê leve: menos "folha branca", mais suave p/ a vista.
+  Gradient? get sheetGradient => isDark
+      ? null
+      : const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFF7F8FA), Color(0xFFEBEEF3)],
+        );
+
+  /// Sombra projetada para cima, separando o sheet do mapa.
+  List<BoxShadow> get sheetShadows => const [
+        BoxShadow(
+          color: Color(0x2E000000),
+          blurRadius: 28,
+          offset: Offset(0, -8),
+        ),
+      ];
+
   Color get rowDivider => dividerColor;
 
   Color get ctaBackground => switch (variant) {

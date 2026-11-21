@@ -38,6 +38,7 @@ class MarketingClientSelector extends ConsumerWidget {
         color: surface,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: border),
+        boxShadow: v.cardShadows,
       ),
       child: clientsAsync.when(
         loading: () => SizedBox(

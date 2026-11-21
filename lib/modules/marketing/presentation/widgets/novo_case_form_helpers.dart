@@ -90,14 +90,16 @@ BoxDecoration novoCaseInnerCardDecoration(
 
 ButtonStyle novoCaseGhostOutlinedButtonStyle(BuildContext context) {
   final v = SoloForteSheetVisuals.of(context);
+  // Botão "tonal" estilo iOS: fundo suave, hairline discreta, baixo e leve.
   return OutlinedButton.styleFrom(
     foregroundColor: v.ghostText,
-    side: BorderSide(color: v.ghostBorder),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(v.isIos ? v.ghostRadius : 16),
-    ),
-    minimumSize: const Size.fromHeight(40),
-    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+    backgroundColor: v.ghostText.withValues(alpha: 0.07),
+    side: BorderSide(color: v.ghostBorder.withValues(alpha: 0.45), width: 0.8),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    minimumSize: const Size.fromHeight(36),
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+    iconSize: 18,
+    textStyle: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
   );
 }
 

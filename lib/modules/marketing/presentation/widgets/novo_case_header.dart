@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_close_button.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 
 /// Header do NovoCaseSheet com título e coordenadas.
@@ -23,7 +24,6 @@ class NovoCaseHeader extends StatelessWidget {
     final v = SoloForteSheetVisuals.of(context);
     final titleColor = v.titleColor;
     final subtitleColor = v.subtitleColor;
-    final iconColor = v.iconStroke;
 
     return Row(
       children: [
@@ -47,11 +47,7 @@ class NovoCaseHeader extends StatelessWidget {
             ],
           ),
         ),
-        IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: onClose,
-          color: iconColor,
-        ),
+        SheetCloseButton(onPressed: onClose),
       ],
     );
   }

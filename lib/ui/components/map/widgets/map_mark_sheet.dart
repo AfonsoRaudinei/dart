@@ -116,10 +116,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
         ? CampoTesteCaseKind.resultado
         : CampoTesteCaseKind.avaliacao;
     hostRef.read(campoTesteCaseResumeProvider.notifier).state =
-        CampoTesteCaseResume(
-          kind: kind,
-          fallbackPosition: widget.position,
-        );
+        CampoTesteCaseResume(kind: kind, fallbackPosition: widget.position);
     widget.onClose();
     unawaited(
       MapSheetController.armCampoTeste(hostContext, hostRef, (state, reason) {
@@ -129,8 +126,9 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
   }
 
   void _select(MapMarkKind kind) {
-    final resolved =
-        kind == MapMarkKind.avaliacao ? MapMarkKind.antesDepois : kind;
+    final resolved = kind == MapMarkKind.avaliacao
+        ? MapMarkKind.antesDepois
+        : kind;
     if (resolved == _kind) return;
     HapticFeedback.selectionClick();
     setState(() {
@@ -146,36 +144,45 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
     final height = MediaQuery.sizeOf(context).height * 0.88;
     final v = SoloForteSheetVisuals.of(context);
     final bg = v.sheetBackground;
-    return Material(
-      color: bg,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      clipBehavior: Clip.antiAlias,
-      child: SizedBox(
-        height: height,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 10),
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: v.handleColor,
-                  borderRadius: BorderRadius.circular(999),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: v.sheetShadows,
+      ),
+      child: Material(
+        color: bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        clipBehavior: Clip.antiAlias,
+        child: Ink(
+          decoration: BoxDecoration(gradient: v.sheetGradient),
+          child: SizedBox(
+            height: height,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 10),
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: v.handleColor,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 12),
+                _MarkKindToggleBar(
+                  selected: _kind,
+                  labelFor: _label,
+                  iconFor: _icon,
+                  onSelected: _select,
+                ),
+                const SizedBox(height: 8),
+                Expanded(child: _body()),
+              ],
             ),
-            const SizedBox(height: 12),
-            _MarkKindToggleBar(
-              selected: _kind,
-              labelFor: _label,
-              iconFor: _icon,
-              onSelected: _select,
-            ),
-            const SizedBox(height: 8),
-            Expanded(child: _body()),
-          ],
+          ),
         ),
       ),
     );
@@ -383,6 +390,7 @@ class _DrawCampoTesteButton extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(v.cardRadius),
             border: Border.all(color: v.cardBorder),
+            boxShadow: v.cardShadows,
           ),
           child: Row(
             children: [

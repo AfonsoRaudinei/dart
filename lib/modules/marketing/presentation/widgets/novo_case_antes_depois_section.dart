@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_close_button.dart';
 
 import '../models/novo_case_comparacao.dart';
 import '../../domain/entities/parametro_comparativo.dart';
@@ -387,11 +388,10 @@ class _ComparacaoBlocoState extends State<_ComparacaoBloco> {
                     ),
             ),
             if (canRemove)
-              IconButton(
+              SheetCloseButton(
                 onPressed: () => _removeFoto(index),
-                icon: const Icon(Icons.close_rounded),
                 tooltip: 'Remover foto',
-                visualDensity: VisualDensity.compact,
+                size: 24,
               ),
           ],
         ),
