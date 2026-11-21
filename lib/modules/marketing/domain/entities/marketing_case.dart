@@ -44,6 +44,9 @@ class MarketingCase {
   /// Publicação original quando este registro é republicação (`source_case_id`).
   final String? sourceCaseId;
 
+  /// Polígono `drawings` (`tipo = teste`) que é a área deste case (ADR-064).
+  final String? drawingId;
+
   /// Início da janela pública (`liberado_em`). Nulo = pin só do autor.
   final DateTime? liberadoEm;
 
@@ -99,6 +102,7 @@ class MarketingCase {
     this.clientId,
     this.ownerUserId,
     this.sourceCaseId,
+    this.drawingId,
     this.liberadoEm,
     this.publicoAte,
     this.fotoAntesUrl,
@@ -153,6 +157,7 @@ class MarketingCase {
       clientId: json['client_id'] as String?,
       ownerUserId: json['user_id'] as String?,
       sourceCaseId: json['source_case_id'] as String?,
+      drawingId: json['drawing_id'] as String?,
       liberadoEm: json['liberado_em'] != null
           ? DateTime.parse(json['liberado_em'] as String)
           : null,
@@ -214,6 +219,7 @@ class MarketingCase {
       'client_id': clientId,
       if (ownerUserId != null) 'user_id': ownerUserId,
       if (sourceCaseId != null) 'source_case_id': sourceCaseId,
+      if (drawingId != null) 'drawing_id': drawingId,
       if (liberadoEm != null) 'liberado_em': liberadoEm!.toIso8601String(),
       if (publicoAte != null) 'publico_ate': publicoAte!.toIso8601String(),
       'foto_antes_url': fotoAntesUrl,
@@ -315,6 +321,8 @@ class MarketingCase {
     String? ownerUserId,
     String? sourceCaseId,
     bool clearSourceCaseId = false,
+    String? drawingId,
+    bool clearDrawingId = false,
     DateTime? liberadoEm,
     bool clearLiberadoEm = false,
     DateTime? publicoAte,
@@ -367,6 +375,7 @@ class MarketingCase {
       ownerUserId: ownerUserId ?? this.ownerUserId,
       sourceCaseId:
           clearSourceCaseId ? null : (sourceCaseId ?? this.sourceCaseId),
+      drawingId: clearDrawingId ? null : (drawingId ?? this.drawingId),
       liberadoEm: clearLiberadoEm ? null : (liberadoEm ?? this.liberadoEm),
       publicoAte: clearPublicoAte ? null : (publicoAte ?? this.publicoAte),
       fotoAntesUrl: fotoAntesUrl ?? this.fotoAntesUrl,
