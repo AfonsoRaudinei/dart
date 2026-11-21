@@ -8,6 +8,7 @@ import '../../../../core/services/sync_orchestrator.dart';
 import '../../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../../../core/session/local_session_identity.dart';
 import '../../../../core/session/user_role.dart';
+import '../../../../core/state/map_ndvi_overlay.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/domain/publicacao.dart';
@@ -137,6 +138,9 @@ class IsolatedLocalPublicationMarkersLayer extends ConsumerWidget {
 /// Tamanho: compacto abaixo de [MarketingCaseMarker.readingZoom];
 /// cartão de leitura (nome e resultado maiores) a partir desse zoom.
 ///
+/// Ocultação automática enquanto [mapNdviOverlayFieldIdProvider] estiver ativo
+/// (overlay NDVI no talhão), sem alterar a preferência [showMarketingCasesProvider].
+///
 /// Otimizações:
 /// ✅ Observa somente [showMarketingCasesProvider] para ligar ou ocultar
 /// ✅ Observa [publishedCasesProvider] (published + gate de plano)
@@ -152,6 +156,9 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showCases = ref.watch(showMarketingCasesProvider);
     if (!showCases) return const SizedBox.shrink();
+
+    final ndviFieldId = ref.watch(mapNdviOverlayFieldIdProvider);
+    if (ndviFieldId != null) return const SizedBox.shrink();
 
     // Zoom: snapshot throttled quando disponível; fallback live até onMapReady.
     final snapshotZoom = ref.watch(
