@@ -960,8 +960,8 @@ body.sf-export-gallery-open { overflow: hidden; }
 
 .sf-footer-qr-img {
   display: block;
-  width: 76px;
-  height: 76px;
+  width: 96px;
+  height: 96px;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
