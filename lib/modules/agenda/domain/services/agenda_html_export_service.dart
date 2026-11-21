@@ -118,7 +118,10 @@ class AgendaHtmlExportService {
   .otick{width:14px;height:14px;border-radius:50%;background:var(--sf-samsung)!important;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;}
   .otick svg{width:8px;height:8px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;}
   .ot{font-size:12px;color:var(--sf-text)!important;line-height:1.4;}
-  .ftr{padding:16px 20px;margin-top:8px;background:#fff;border-top:1px solid var(--sep);}
+  .ftr{padding:16px 20px;margin-top:8px;background:#fff;border-top:1px solid var(--sep);display:flex;align-items:center;justify-content:space-between;gap:16px;break-inside:avoid;page-break-inside:avoid;}
+  .sf-footer-qr{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;color:inherit;text-decoration:none;break-inside:avoid;page-break-inside:avoid;}
+  .sf-footer-qr-img{display:block;width:96px;height:96px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .sf-footer-qr-caption{font-size:10px;line-height:1.2;color:var(--grey);text-align:center;}
   .sf-brand{display:flex;align-items:center;gap:10px;}
   .sf-brand-logo{width:22px;height:22px;object-fit:contain;}
   .sf-brand-copy{display:flex;flex-direction:column;gap:2px;}
