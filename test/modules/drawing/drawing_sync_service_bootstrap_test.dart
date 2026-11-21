@@ -7,6 +7,7 @@ import 'package:soloforte_app/modules/drawing/data/data_sources/drawing_local_st
 import 'package:soloforte_app/modules/drawing/data/data_sources/drawing_remote_store.dart';
 import 'package:soloforte_app/modules/drawing/data/data_sources/drawing_sync_service.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
+import 'package:soloforte_app/modules/drawing/domain/models/teste_execucao.dart';
 
 void main() {
   setUpAll(() async {
@@ -28,6 +29,8 @@ void main() {
       final service = DrawingSyncService(
         localStore: _FakeDrawingLocalStore(),
         remoteStore: _FailingDrawingRemoteStore(),
+        testeLocalStore: _FakeTesteExecucaoLocalStore(),
+        testeRemoteStore: _FakeTesteExecucaoRemoteStore(),
       );
 
       final result = await service.synchronize();
@@ -72,6 +75,8 @@ void main() {
       final service = DrawingSyncService(
         localStore: localStore,
         remoteStore: _PushFailingDrawingRemoteStore(),
+        testeLocalStore: _FakeTesteExecucaoLocalStore(),
+        testeRemoteStore: _FakeTesteExecucaoRemoteStore(),
       );
 
       final result = await service.synchronize();
@@ -120,5 +125,25 @@ class _PushFailingDrawingRemoteStore extends DrawingRemoteStore {
 
   @override
   Future<List<DrawingFeature>> fetchUpdates(DateTime? lastSync) async =>
+      const [];
+}
+
+class _FakeTesteExecucaoLocalStore extends TesteExecucaoLocalStore {
+  @override
+  Future<List<TesteExecucao>> getPendingSync() async => const [];
+
+  @override
+  Future<TesteExecucao?> getById(String id) async => null;
+
+  @override
+  Future<void> insert(TesteExecucao row) async {}
+
+  @override
+  Future<void> update(TesteExecucao row) async {}
+}
+
+class _FakeTesteExecucaoRemoteStore extends TesteExecucaoRemoteStore {
+  @override
+  Future<List<TesteExecucao>> fetchUpdates(DateTime? lastSync) async =>
       const [];
 }
