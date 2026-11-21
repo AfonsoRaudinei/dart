@@ -233,11 +233,6 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
       fontSize: 12,
       fontWeight: FontWeight.w500,
     );
-    final titleStyle = TextStyle(
-      color: v.onSheetPrimary,
-      fontSize: 17,
-      fontWeight: FontWeight.w600,
-    );
     final mutedText = textStyle.copyWith(color: v.onSheetSecondary);
 
     return Container(
@@ -272,11 +267,6 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                   ),
                 ),
               ),
-
-            if (!widget.embedded) ...[
-              Text('Editar Informações', style: titleStyle),
-              const SizedBox(height: 20),
-            ],
 
             // Nome
             Text('Nome do talhão *', style: labelStyle),
