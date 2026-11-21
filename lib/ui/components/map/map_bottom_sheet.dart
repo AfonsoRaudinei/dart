@@ -295,8 +295,9 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       session: visitSessionToSummary(
         ref.read(visitControllerProvider).valueOrNull,
       ),
-      onUpdateVisitArea: (id, {farmId}) =>
-          ref.read(visitControllerProvider.notifier).updateArea(id, farmId: farmId),
+      onUpdateVisitArea: (id, {farmId}) => ref
+          .read(visitControllerProvider.notifier)
+          .updateArea(id, farmId: farmId),
       sessionLookup: ref.read(visitSessionLookupProvider),
     );
     _closeDrawingSheetChrome();
@@ -798,73 +799,82 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
               );
               return SizedBox(
                 height: _heightAnimation.value,
-                child: PremiumGlassPanel(
-                  isDark: !isIos,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(sheetRadius),
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: sheetBg,
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(sheetRadius),
-                      ),
-                      border: Border(
-                        top: BorderSide(color: topBorder, width: 0.5),
-                      ),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(sheetRadius),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Handle (alça) - área de drag expandida
-                        GestureDetector(
-                          key: const Key('map_bottom_sheet_handle'),
-                          onTap: _handleHandleTap,
-                          child: Container(
-                            padding: const EdgeInsets.only(
-                              top: 14,
-                              bottom: 20,
-                            ), // Hit area + margin
-                            child: Center(
-                              child: Container(
-                                width: handleWidth,
-                                height: handleHeight,
-                                decoration: BoxDecoration(
-                                  color: handleColor,
-                                  borderRadius: BorderRadius.circular(10),
+                    boxShadow: visuals.sheetShadows,
+                  ),
+                  child: PremiumGlassPanel(
+                    isDark: !isIos,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(sheetRadius),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: sheetBg,
+                        gradient: visuals.sheetGradient,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(sheetRadius),
+                        ),
+                        border: Border(
+                          top: BorderSide(color: topBorder, width: 0.5),
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Handle (alça) - área de drag expandida
+                          GestureDetector(
+                            key: const Key('map_bottom_sheet_handle'),
+                            onTap: _handleHandleTap,
+                            child: Container(
+                              padding: const EdgeInsets.only(
+                                top: 14,
+                                bottom: 20,
+                              ), // Hit area + margin
+                              child: Center(
+                                child: Container(
+                                  width: handleWidth,
+                                  height: handleHeight,
+                                  decoration: BoxDecoration(
+                                    color: handleColor,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
 
-                        // Conteúdo da tab selecionada com cross-fade
-                        if (showContent)
-                          Expanded(
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              switchInCurve: Curves.easeOut,
-                              switchOutCurve: Curves.easeIn,
-                              transitionBuilder: (child, animation) {
-                                return FadeTransition(
-                                  opacity: animation,
-                                  child: SlideTransition(
-                                    position: Tween<Offset>(
-                                      begin: const Offset(0.05, 0),
-                                      end: Offset.zero,
-                                    ).animate(animation),
-                                    child: child,
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                key: ValueKey(_tabContentKey()),
-                                child: _buildTabContent(),
+                          // Conteúdo da tab selecionada com cross-fade
+                          if (showContent)
+                            Expanded(
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                switchInCurve: Curves.easeOut,
+                                switchOutCurve: Curves.easeIn,
+                                transitionBuilder: (child, animation) {
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: SlideTransition(
+                                      position: Tween<Offset>(
+                                        begin: const Offset(0.05, 0),
+                                        end: Offset.zero,
+                                      ).animate(animation),
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  key: ValueKey(_tabContentKey()),
+                                  child: _buildTabContent(),
+                                ),
                               ),
                             ),
-                          ),
-                        // Navegação agora no FloatingDockWidget externo
-                      ],
+                          // Navegação agora no FloatingDockWidget externo
+                        ],
+                      ),
                     ),
                   ),
                 ),

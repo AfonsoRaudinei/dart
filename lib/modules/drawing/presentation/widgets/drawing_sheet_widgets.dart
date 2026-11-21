@@ -120,11 +120,12 @@ class _SheetHeader extends StatelessWidget {
                 ),
               ),
               if (onClose != null)
-                IconButton(
+                SheetCloseButton(
                   key: const Key('drawing_sheet_close'),
                   tooltip: 'Fechar',
                   onPressed: onClose,
-                  icon: Icon(Icons.close, color: iconColor),
+                  color: const Color(0xFFFF3B30),
+                  size: 26,
                 ),
             ],
           ),
