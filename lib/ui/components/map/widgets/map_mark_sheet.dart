@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
@@ -6,6 +8,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../../core/contracts/i_active_visit_context_lookup.dart';
 import '../../../../core/design/sf_icons.dart';
+import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_close_coordinator.dart';
 import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_form_guard.dart';
@@ -14,8 +17,11 @@ import '../../../../modules/consultoria/occurrences/presentation/providers/occur
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../occurrence_talhao_prefill.dart';
+import '../../../../modules/marketing/domain/entities/campo_teste_case_seed.dart';
 import '../../../../modules/marketing/domain/entities/marketing_case.dart';
 import '../../../../modules/marketing/domain/enums/case_tipo.dart';
+import '../../../screens/map/campo_teste_case_handoff.dart';
+import '../../../screens/map/controllers/map_sheet_controller.dart';
 import '../../../../modules/marketing/presentation/screens/novo_case_type_sheets.dart';
 import '../../../screens/map/handlers/novo_case_modal_launcher.dart';
 import '../map_occurrence_post_create.dart';
@@ -34,6 +40,10 @@ class MapMarkSheet extends ConsumerStatefulWidget {
   final LatLng position;
   final ActiveVisitContext? visitContext;
   final VoidCallback onClose;
+  final BuildContext hostContext;
+  final WidgetRef hostRef;
+  final MapMarkKind? initialKind;
+  final CampoTesteCaseSeed? campoTeste;
 
   /// Chamado só quando a ocorrência é salva (não nos cases de marketing).
   final Future<void> Function(String occurrenceId)? onOccurrenceCreated;
@@ -43,6 +53,10 @@ class MapMarkSheet extends ConsumerStatefulWidget {
     required this.position,
     required this.visitContext,
     required this.onClose,
+    required this.hostContext,
+    required this.hostRef,
+    this.initialKind,
+    this.campoTeste,
     this.onOccurrenceCreated,
   });
 
@@ -51,6 +65,8 @@ class MapMarkSheet extends ConsumerStatefulWidget {
     required WidgetRef ref,
     required LatLng position,
     Future<void> Function(String occurrenceId)? onOccurrenceCreated,
+    MapMarkKind? initialKind,
+    CampoTesteCaseSeed? campoTeste,
   }) async {
     final visit = await NovoCaseModalLauncher.loadActiveVisitContext(ref);
     if (!context.mounted) return;
@@ -64,6 +80,10 @@ class MapMarkSheet extends ConsumerStatefulWidget {
         position: position,
         visitContext: visit,
         onOccurrenceCreated: onOccurrenceCreated,
+        hostContext: context,
+        hostRef: ref,
+        initialKind: initialKind,
+        campoTeste: campoTeste,
         onClose: () => Navigator.of(sheetContext).pop(),
       ),
     );
@@ -74,8 +94,39 @@ class MapMarkSheet extends ConsumerStatefulWidget {
 }
 
 class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
-  MapMarkKind _kind = MapMarkKind.ocorrencia;
-  OccurrenceFormGuard? _occurrenceGuard = OccurrenceFormGuard();
+  late MapMarkKind _kind;
+  OccurrenceFormGuard? _occurrenceGuard;
+
+  @override
+  void initState() {
+    super.initState();
+    _kind = widget.initialKind ?? MapMarkKind.ocorrencia;
+    if (_kind == MapMarkKind.avaliacao) {
+      _kind = MapMarkKind.antesDepois;
+    }
+    _occurrenceGuard = _kind == MapMarkKind.ocorrencia
+        ? OccurrenceFormGuard()
+        : null;
+  }
+
+  void _startCampoTeste() {
+    final hostRef = widget.hostRef;
+    final hostContext = widget.hostContext;
+    final kind = _kind == MapMarkKind.resultado
+        ? CampoTesteCaseKind.resultado
+        : CampoTesteCaseKind.avaliacao;
+    hostRef.read(campoTesteCaseResumeProvider.notifier).state =
+        CampoTesteCaseResume(
+          kind: kind,
+          fallbackPosition: widget.position,
+        );
+    widget.onClose();
+    unawaited(
+      MapSheetController.armCampoTeste(hostContext, hostRef, (state, reason) {
+        hostRef.read(mapSheetStateProvider.notifier).state = state;
+      }),
+    );
+  }
 
   void _select(MapMarkKind kind) {
     final resolved =
@@ -170,6 +221,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
         lat: lat,
         lng: lng,
         initialVisitContext: widget.visitContext,
+        campoTeste: widget.campoTeste,
         onClose: widget.onClose,
         onPublicar: publicar,
         compactHeader: true,
@@ -178,6 +230,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
         lat: lat,
         lng: lng,
         initialVisitContext: widget.visitContext,
+        campoTeste: widget.campoTeste,
         onClose: widget.onClose,
         onPublicar: publicar,
         compactHeader: true,
@@ -186,12 +239,22 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
         lat: lat,
         lng: lng,
         initialVisitContext: widget.visitContext,
+        campoTeste: widget.campoTeste,
         onClose: widget.onClose,
         onPublicar: publicar,
         compactHeader: true,
       ),
     };
-    return sheet;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+          child: _DrawCampoTesteButton(onPressed: _startCampoTeste),
+        ),
+        Expanded(child: sheet),
+      ],
+    );
   }
 
   Widget _occurrenceForm({required double lat, required double lng}) {
@@ -297,6 +360,52 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
 }
 
 /// Pílulas horizontais (estilo Mail): peek na borda + fade quando há mais conteúdo.
+class _DrawCampoTesteButton extends StatelessWidget {
+  const _DrawCampoTesteButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
+    return Material(
+      color: v.cardBackground,
+      borderRadius: BorderRadius.circular(v.cardRadius),
+      child: InkWell(
+        key: const Key('desenhar_campo_teste_btn'),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onPressed();
+        },
+        borderRadius: BorderRadius.circular(v.cardRadius),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(v.cardRadius),
+            border: Border.all(color: v.cardBorder),
+          ),
+          child: Row(
+            children: [
+              Icon(SFIcons.science, color: v.accent),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Desenhar campo de teste',
+                  style: TextStyle(
+                    color: v.titleColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right, color: v.subtitleColor),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MarkKindToggleBar extends StatefulWidget {
   final MapMarkKind? selected;
   final String Function(MapMarkKind) labelFor;

@@ -8,6 +8,7 @@ import '../premium/premium_glass_panel.dart';
 import 'package:latlong2/latlong.dart';
 import 'map_layers_sheet.dart';
 import '../../../modules/drawing/domain/models/campo_test_photo_draft.dart';
+import '../../screens/map/campo_teste_case_handoff.dart';
 import '../../../modules/drawing/presentation/widgets/drawing_sheet.dart';
 import 'map_drawing_saved_handler.dart';
 import '../../../modules/settings/presentation/providers/user_profile_provider.dart';
@@ -287,6 +288,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     DrawingFeature? feature, {
     CampoTestPhotoDraft? campoTestPhoto,
   }) {
+    queueCampoTesteCaseReopen(ref, feature, campoTestPhoto: campoTestPhoto);
     handleMapDrawingSaved(
       feature: feature,
       campoTestPhoto: campoTestPhoto,

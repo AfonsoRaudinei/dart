@@ -94,7 +94,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
   final void Function(TapPosition tapPos, LatLng latLng) handleMapLongPress;
   final Future<void> Function() finishDrawing;
   final void Function() toggleDrawMode;
-  final Future<void> Function() armCampoTeste;
   final void Function() centerOnUser;
   final ValueChanged<MapLocationMode> onLocationModeChanged;
   final VoidCallback stopFollowing;
@@ -118,7 +117,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
     required this.handleMapLongPress,
     required this.finishDrawing,
     required this.toggleDrawMode,
-    required this.armCampoTeste,
     required this.centerOnUser,
     required this.onLocationModeChanged,
     required this.stopFollowing,
@@ -543,7 +541,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
               centerOnUser: centerOnUser,
               onLocationModeChanged: onLocationModeChanged,
               toggleDrawMode: toggleDrawMode,
-              armCampoTeste: armCampoTeste,
               openCoordinateSearch: openCoordinateSearch,
               openMunicipalitySearch: openMunicipalitySearch,
               downloadOfflineArea: downloadOfflineArea,
@@ -604,7 +601,6 @@ class _MapControlsHost extends ConsumerWidget {
     required this.centerOnUser,
     required this.onLocationModeChanged,
     required this.toggleDrawMode,
-    required this.armCampoTeste,
     required this.openCoordinateSearch,
     required this.openMunicipalitySearch,
     required this.downloadOfflineArea,
@@ -618,7 +614,6 @@ class _MapControlsHost extends ConsumerWidget {
   final VoidCallback centerOnUser;
   final ValueChanged<MapLocationMode> onLocationModeChanged;
   final VoidCallback toggleDrawMode;
-  final Future<void> Function() armCampoTeste;
   final Future<void> Function() openCoordinateSearch;
   final Future<void> Function() openMunicipalitySearch;
   final Future<void> Function() downloadOfflineArea;
@@ -655,12 +650,6 @@ class _MapControlsHost extends ConsumerWidget {
         onMapUserInteraction?.call();
         toggleDrawMode();
       },
-      onArmCampoTeste: drawingMetrics.state == DrawingState.editing
-          ? null
-          : () {
-              onMapUserInteraction?.call();
-              unawaited(armCampoTeste());
-            },
       isCampoTestArmed: isCampoTestArmed,
       onLongPressMapTools: () {
         if (drawingMetrics.state == DrawingState.editing) {
