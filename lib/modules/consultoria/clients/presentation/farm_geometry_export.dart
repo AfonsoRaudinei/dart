@@ -35,7 +35,7 @@ bool canOfferFieldGeometryExport({String? geojson, int vertexCount = 0}) {
   return vertexCount >= 3;
 }
 
-/// Abaixo de “Baixar mapa”. Compartilha os polígonos da fazenda.
+/// Na mesma linha de “Baixar mapa”. Compartilha os polígonos da fazenda.
 class FarmGeometryExportButton extends StatelessWidget {
   const FarmGeometryExportButton({
     super.key,
@@ -57,28 +57,30 @@ class FarmGeometryExportButton extends StatelessWidget {
     );
     final color = enabled ? PremiumTokens.brandGreen : Colors.grey;
 
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: TextButton.icon(
-        onPressed: enabled
-            ? () => exportFieldGeometries(
-                context: context,
-                documentName: documentName,
-                items: [
-                  for (final field in list)
-                    FarmGeometryExportItem(
-                      name: field.name,
-                      areaHa: field.areaHa,
-                      geojson: field.geojson,
-                    ),
-                ],
-              )
-            : null,
-        icon: Icon(Icons.ios_share_outlined, color: color),
-        label: Text(
-          'Exportar KML',
-          style: TextStyle(color: color, fontWeight: FontWeight.bold),
-        ),
+    return TextButton.icon(
+      style: TextButton.styleFrom(
+        visualDensity: VisualDensity.compact,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+      ),
+      onPressed: enabled
+          ? () => exportFieldGeometries(
+              context: context,
+              documentName: documentName,
+              items: [
+                for (final field in list)
+                  FarmGeometryExportItem(
+                    name: field.name,
+                    areaHa: field.areaHa,
+                    geojson: field.geojson,
+                  ),
+              ],
+            )
+          : null,
+      icon: Icon(Icons.ios_share_outlined, color: color),
+      label: Text(
+        'Exportar KML',
+        style: TextStyle(color: color, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -89,15 +91,31 @@ Future<void> exportFieldGeometries({
   required String documentName,
   required List<FarmGeometryExportItem> items,
 }) async {
-  final placemarks = <KmlPlacemark>[];
-  for (final item in items) {
-    final geojson = item.geojson;
-    if (geojson == null || geojson.trim().isEmpty) continue;
-    if (!kmlGeometryHasValidPolygon(geojson)) continue;
-    placemarks.add(
-      KmlPlacemark(name: item.name, areaHa: item.areaHa, geometry: geojson),
+  final exportable = <FarmGeometryExportItem>[
+    for (final item in items)
+      if (_hasExportablePolygon(item)) item,
+  ];
+  if (exportable.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Nenhum talhão desenhado para exportar.')),
     );
+    return;
   }
+
+  final chosen = exportable.length == 1
+      ? exportable
+      : await _selectMapsToExport(context, exportable);
+  if (chosen == null || chosen.isEmpty || !context.mounted) return;
+
+  final placemarks = <KmlPlacemark>[
+    for (final item in chosen)
+      if (item.geojson != null)
+        KmlPlacemark(
+          name: item.name,
+          areaHa: item.areaHa,
+          geometry: item.geojson,
+        ),
+  ];
   if (placemarks.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Nenhum talhão desenhado para exportar.')),
@@ -184,6 +202,150 @@ Future<_FarmGeometryExportFormat?> _selectExportFormat(BuildContext context) {
             ),
           ],
         ),
+      );
+    },
+  );
+}
+
+bool _hasExportablePolygon(FarmGeometryExportItem item) {
+  final geojson = item.geojson;
+  if (geojson == null || geojson.trim().isEmpty) return false;
+  return kmlGeometryHasValidPolygon(geojson);
+}
+
+String? _exportAreaLabel(double? areaHa) {
+  if (areaHa == null) return null;
+  final digits = areaHa >= 100 ? 1 : 2;
+  return '${areaHa.toStringAsFixed(digits)} ha';
+}
+
+Future<List<FarmGeometryExportItem>?> _selectMapsToExport(
+  BuildContext context,
+  List<FarmGeometryExportItem> items,
+) {
+  final selected = List<bool>.filled(items.length, false);
+  return showSoloForteSheet<List<FarmGeometryExportItem>>(
+    context: context,
+    maxHeightFraction: 0.6,
+    builder: (_) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          final visuals = SoloForteSheetVisuals.of(context);
+          final anySelected = selected.contains(true);
+          final allSelected = selected.every((value) => value);
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                  child: Text(
+                    'Quais mapas enviar',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: visuals.titleColor,
+                      fontSize: visuals.titleFontSize,
+                    ),
+                  ),
+                ),
+                CheckboxListTile(
+                  value: allSelected ? true : (anySelected ? null : false),
+                  tristate: true,
+                  onChanged: (_) {
+                    final markAll = !allSelected;
+                    setState(() {
+                      for (var i = 0; i < selected.length; i++) {
+                        selected[i] = markAll;
+                      }
+                    });
+                  },
+                  controlAffinity: ListTileControlAffinity.leading,
+                  visualDensity: VisualDensity.compact,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                  activeColor: visuals.accent,
+                  checkColor: visuals.ctaText,
+                  side: BorderSide(color: visuals.subtitleColor),
+                  title: Text(
+                    'Todos',
+                    style: TextStyle(
+                      color: visuals.titleColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Divider(height: 1, color: visuals.dividerColor),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      final area = _exportAreaLabel(item.areaHa);
+                      return CheckboxListTile(
+                        value: selected[index],
+                        onChanged: (value) {
+                          setState(() => selected[index] = value ?? false);
+                        },
+                        controlAffinity: ListTileControlAffinity.leading,
+                        visualDensity: VisualDensity.compact,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                        ),
+                        activeColor: visuals.accent,
+                        checkColor: visuals.ctaText,
+                        side: BorderSide(color: visuals.subtitleColor),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                item.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(color: visuals.titleColor),
+                              ),
+                            ),
+                            if (area != null) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                area,
+                                style: TextStyle(color: visuals.subtitleColor),
+                              ),
+                            ],
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: FilledButton(
+                    onPressed: anySelected
+                        ? () {
+                            final chosen = <FarmGeometryExportItem>[
+                              for (var i = 0; i < items.length; i++)
+                                if (selected[i]) items[i],
+                            ];
+                            _popLocalDialog(context, chosen);
+                          }
+                        : null,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: visuals.ctaBackground,
+                      foregroundColor: visuals.ctaText,
+                      disabledBackgroundColor: visuals.inputFill,
+                      disabledForegroundColor: visuals.subtitleColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(visuals.ctaRadius),
+                      ),
+                    ),
+                    child: const Text('Continuar'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       );
     },
   );
