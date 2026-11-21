@@ -75,18 +75,23 @@ void main() {
       expect(find.text('Salvar'), findsOneWidget);
       expect(find.byType(BottomSheet), findsNothing);
 
-      final clientField = find.byType(DropdownButtonFormField<Client>).first;
-      await tester.ensureVisible(clientField);
-      await tester.tap(clientField);
+      final clientSearch = find.byWidgetPredicate(
+        (w) => w is TextField && w.decoration?.hintText == 'Buscar cliente',
+      );
+      await tester.ensureVisible(clientSearch);
+      await tester.enterText(clientSearch, 'Cliente');
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Cliente Real').last);
+      await tester.tap(find.text('Cliente Real'));
       await tester.pumpAndSettle();
 
-      final farmField = find.byType(DropdownButtonFormField<Farm>).first;
-      await tester.ensureVisible(farmField);
-      await tester.tap(farmField);
+      final farmSearch = find.byWidgetPredicate(
+        (w) =>
+            w is TextField && w.decoration?.hintText == 'Buscar fazenda / grupo',
+      );
+      await tester.ensureVisible(farmSearch);
+      await tester.enterText(farmSearch, 'Fazenda');
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Fazenda Real').last);
+      await tester.tap(find.text('Fazenda Real'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Salvar'));

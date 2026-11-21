@@ -12,6 +12,7 @@ import 'package:soloforte_app/modules/drawing/data/data_sources/drawing_local_st
 import 'package:soloforte_app/modules/drawing/data/data_sources/drawing_remote_store.dart';
 import 'package:soloforte_app/modules/drawing/data/data_sources/drawing_sync_service.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
+import 'package:soloforte_app/modules/drawing/domain/models/teste_execucao.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +44,7 @@ void main() {
     DrawingLocalIdentityStore.resetEphemeralStateForTest();
     final db = await DatabaseHelper.instance.database;
     await db.delete('drawings');
+    await db.delete('teste_execucoes');
   });
 
   tearDown(LocalSessionIdentity.resetForTesting);
@@ -63,6 +65,7 @@ void main() {
       final service = DrawingSyncService(
         localStore: localStore,
         remoteStore: remoteStore,
+        testeRemoteStore: _NoopTesteExecucaoRemoteStore(),
       );
 
       final feature = _syncedFeature('drawing-roundtrip-1');
@@ -122,6 +125,14 @@ DrawingFeature _syncedFeature(String id) {
       updatedAt: DateTime.utc(2026, 8, 6, 10),
     ),
   );
+}
+
+class _NoopTesteExecucaoRemoteStore extends TesteExecucaoRemoteStore {
+  @override
+  Future<void> push(TesteExecucao row) async {}
+
+  @override
+  Future<List<TesteExecucao>> fetchUpdates(DateTime? lastSync) async => [];
 }
 
 class _RoundTripDrawingRemoteStore extends DrawingRemoteStore {

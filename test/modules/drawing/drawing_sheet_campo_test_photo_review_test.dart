@@ -86,9 +86,8 @@ void main() {
 
     expect(find.text('Salvar teste'), findsOneWidget);
     expect(find.text('Nome do teste'), findsOneWidget);
-    expect(find.byKey(const Key('drawing_campo_test_photo_section')), findsOneWidget);
-    expect(find.text('Adicionar foto'), findsOneWidget);
-    expect(find.text('Foto do teste (opcional)'), findsOneWidget);
+    // Foto do teste migrou para TesteExecucaoSheet após o primeiro save.
+    expect(find.byKey(const Key('drawing_campo_test_photo_section')), findsNothing);
   });
 
   testWidgets('revisão de talhão não mostra seção de foto', (tester) async {
