@@ -311,6 +311,44 @@ void main() {
     expect(find.text('04/11/2026'), findsOneWidget);
     expect(find.text('01/04/2026'), findsNothing);
   });
+
+  testWidgets('painel aberto segue aberto quando a lista some e ao limpar', (
+    tester,
+  ) async {
+    await _pumpOccurrences(tester, [
+      _occurrence(
+        id: 'occ-nutri',
+        category: 'nutricional',
+        createdAt: DateTime(2026, 11, 4, 12),
+      ),
+      _occurrence(
+        id: 'occ-daninha',
+        category: 'daninhas',
+        createdAt: DateTime(2026, 4, 1, 12),
+      ),
+    ]);
+
+    await tester.tap(find.text('Filtros'));
+    await tester.pumpAndSettle();
+    expect(find.text('Categoria'), findsOneWidget);
+
+    final resolvida = find.widgetWithText(FilterChip, 'Resolvida');
+    await tester.ensureVisible(resolvida);
+    await tester.tap(resolvida);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nenhuma ocorrência neste filtro.'), findsOneWidget);
+    expect(find.text('Categoria'), findsOneWidget);
+
+    final limpar = find.text('Limpar');
+    await tester.ensureVisible(limpar);
+    await tester.tap(limpar);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Categoria'), findsOneWidget);
+    expect(find.text('01/04/2026'), findsOneWidget);
+    expect(find.text('04/11/2026'), findsOneWidget);
+  });
 }
 
 Occurrence _occurrence({
