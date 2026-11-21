@@ -107,6 +107,7 @@ void main() {
       String? selectedClientId,
       AsyncValue<List<VisitClientSummary>>? clientsAsync,
       VoidCallback? onRetry,
+      VoidCallback? onClearClient,
     }) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -117,6 +118,7 @@ void main() {
                 selectedClientId: selectedClientId,
                 clientsAsync: clientsAsync,
                 onRetry: onRetry,
+                onClearClient: onClearClient,
               ),
             ),
           ),
@@ -171,6 +173,27 @@ void main() {
       expect(field.controller?.text, 'Produtor Beta');
       expect(find.text('Produtor Beta'), findsOneWidget);
       expect(find.text('Produtor Alfa'), findsNothing);
+    });
+
+    testWidgets('editar o nome selecionado limpa o produtor', (tester) async {
+      var cleared = false;
+      await mount(
+        tester,
+        selectedClientId: 'a',
+        onClearClient: () => cleared = true,
+      );
+
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller?.text,
+        'Produtor Alfa',
+      );
+
+      await tester.enterText(find.byType(TextField), 'Al');
+      await tester.pumpAndSettle();
+
+      expect(cleared, isTrue);
+      expect(find.text('Produtor Alfa'), findsOneWidget);
+      expect(find.text('Produtor Beta'), findsNothing);
     });
 
     testWidgets('produtor selecionado fica dentro do campo', (tester) async {
