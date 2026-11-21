@@ -27,10 +27,7 @@ bool occurrenceFormIsIos(BuildContext context) =>
 class OccurrenceSectionHeader extends StatelessWidget {
   final String title;
 
-  const OccurrenceSectionHeader({
-    super.key,
-    required this.title,
-  });
+  const OccurrenceSectionHeader({super.key, required this.title});
 
   @override
   Widget build(BuildContext context) {
@@ -47,11 +44,7 @@ class OccurrenceSectionHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Expanded(
-          child: Divider(
-            color: v.onSheetDivider,
-          ),
-        ),
+        Expanded(child: Divider(color: v.onSheetDivider)),
       ],
     );
   }
@@ -168,12 +161,15 @@ class OccurrenceSliderRow extends StatelessWidget {
               ),
             ],
           ),
+          // A barra acompanha a intensidade: verde em "Nenhum", amarela,
+          // laranja e vermelha em "Alta". O [color] da categoria não pinta
+          // mais a barra, só o card que a contém.
           SliderTheme(
             data: SliderThemeData(
-              activeTrackColor: color,
+              activeTrackColor: _trackColor(value),
               inactiveTrackColor: inactive,
-              thumbColor: color,
-              overlayColor: color.withValues(alpha: .2),
+              thumbColor: _trackColor(value),
+              overlayColor: _trackColor(value).withValues(alpha: .2),
               trackHeight: 4,
             ),
             child: Slider(
@@ -200,6 +196,205 @@ class OccurrenceSliderRow extends StatelessWidget {
       default:
         return const Color(0xFF8E8E93);
     }
+  }
+
+  static Color _trackColor(int v) =>
+      v == 0 ? const Color(0xFF34C759) : _sliderColor(v);
+}
+
+// ── Barra de urgência (Baixa / Média / Alta) ─────────────────────────────
+
+class OccurrenceUrgencySlider extends StatelessWidget {
+  final String urgency;
+  final ValueChanged<String> onChanged;
+
+  const OccurrenceUrgencySlider({
+    super.key,
+    required this.urgency,
+    required this.onChanged,
+  });
+
+  static const levels = ['Baixa', 'Média', 'Alta'];
+
+  static Color colorFor(String level) => switch (level) {
+    'Alta' => const Color(0xFFFF3B30),
+    'Média' => const Color(0xFFFF9500),
+    _ => const Color(0xFF34C759),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
+    final index = levels.indexOf(urgency).clamp(0, levels.length - 1);
+    final color = colorFor(levels[index]);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  'Prioridade de atendimento',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: v.onSheetSecondary, fontSize: 13),
+                ),
+              ),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: .2),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  levels[index],
+                  key: const Key('occurrence_urgency_label'),
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SliderTheme(
+            data: SliderThemeData(
+              activeTrackColor: color,
+              inactiveTrackColor: v.onSheetDivider,
+              thumbColor: color,
+              overlayColor: color.withValues(alpha: .2),
+              trackHeight: 4,
+            ),
+            child: Slider(
+              key: const Key('occurrence_urgency_slider'),
+              value: index.toDouble(),
+              min: 0,
+              max: 2,
+              divisions: 2,
+              onChanged: (value) => onChanged(levels[value.round()]),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                for (final level in levels)
+                  Text(
+                    level,
+                    style: TextStyle(color: v.subtitleColor, fontSize: 11),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Bloco expansível (sanfona) ───────────────────────────────────────────
+
+class OccurrenceAccordion extends StatefulWidget {
+  final String title;
+  final String? summary;
+  final bool initiallyExpanded;
+  final Widget child;
+
+  const OccurrenceAccordion({
+    super.key,
+    required this.title,
+    required this.child,
+    this.summary,
+    this.initiallyExpanded = false,
+  });
+
+  @override
+  State<OccurrenceAccordion> createState() => _OccurrenceAccordionState();
+}
+
+class _OccurrenceAccordionState extends State<OccurrenceAccordion> {
+  late bool _open = widget.initiallyExpanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final v = SoloForteSheetVisuals.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: v.cardBackground,
+        borderRadius: BorderRadius.circular(v.cardRadius),
+        border: Border.all(color: v.cardBorder),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            key: const Key('occurrence_accordion_header'),
+            onTap: () => setState(() => _open = !_open),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.title,
+                          style: TextStyle(
+                            color: v.onSheetPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        if (!_open && (widget.summary?.isNotEmpty ?? false))
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              widget.summary!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: v.subtitleColor,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: _open ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      color: v.subtitleColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: _open
+                ? Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                    child: widget.child,
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -229,12 +424,9 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
     final title = v.onSheetPrimary;
     final dropdownBg = isIos
         ? v.sheetBackground
-        : (v.isLight
-            ? v.cardBackground
-            : const Color(0xFF2C2C2E));
+        : (v.isLight ? v.cardBackground : const Color(0xFF2C2C2E));
     final radius = v.cardRadius;
-    final accent =
-        v.accent;
+    final accent = v.accent;
 
     return Column(
       children: [
@@ -310,9 +502,7 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                     color: isIos
                         ? v.cardBackground
                         : context.themeAccent.withValues(alpha: .07),
-                    borderRadius: BorderRadius.circular(
-                      v.cardRadius,
-                    ),
+                    borderRadius: BorderRadius.circular(v.cardRadius),
                     border: Border.all(
                       color: isIos
                           ? v.cardBorder
@@ -332,9 +522,7 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: isIos
                                   ? v.iconBackground
-                                  : context.themeAccent.withValues(
-                                      alpha: .2,
-                                    ),
+                                  : context.themeAccent.withValues(alpha: .2),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -350,18 +538,12 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                           Expanded(
                             child: Text(
                               selected!.description,
-                              style: TextStyle(
-                                color: title,
-                                fontSize: 12,
-                              ),
+                              style: TextStyle(color: title, fontSize: 12),
                             ),
                           ),
                           Text(
                             '~${selected!.dap} DAP',
-                            style: TextStyle(
-                              color: muted,
-                              fontSize: 11,
-                            ),
+                            style: TextStyle(color: muted, fontSize: 11),
                           ),
                         ],
                       ),
@@ -383,18 +565,12 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                             children: [
                               Text(
                                 '• ',
-                                style: TextStyle(
-                                  color: accent,
-                                  fontSize: 12,
-                                ),
+                                style: TextStyle(color: accent, fontSize: 12),
                               ),
                               Expanded(
                                 child: Text(
                                   a,
-                                  style: TextStyle(
-                                    color: muted,
-                                    fontSize: 11,
-                                  ),
+                                  style: TextStyle(color: muted, fontSize: 11),
                                 ),
                               ),
                             ],
@@ -488,18 +664,21 @@ class OccurrencePhotoOriginToolbar extends StatelessWidget {
       children: [
         _OccurrencePhotoOriginButton(
           tooltip: 'Galeria',
+          label: 'Galeria',
           icon: SFIcons.photoLibrary,
           accent: accent,
           onTap: () => onOriginSelected(SoloFortePhotoPickerOrigin.gallery),
         ),
         _OccurrencePhotoOriginButton(
           tooltip: 'Câmera',
+          label: 'Câmera',
           icon: Icons.camera_alt_outlined,
           accent: accent,
           onTap: () => onOriginSelected(SoloFortePhotoPickerOrigin.camera),
         ),
         _OccurrencePhotoOriginButton(
           tooltip: 'Inversão vegetal',
+          label: 'Vegetal',
           icon: SFIcons.leaf,
           accent: accent,
           onTap: () => onOriginSelected(SoloFortePhotoPickerOrigin.vegetal),
@@ -511,12 +690,14 @@ class OccurrencePhotoOriginToolbar extends StatelessWidget {
 
 class _OccurrencePhotoOriginButton extends StatelessWidget {
   final String tooltip;
+  final String label;
   final IconData icon;
   final Color accent;
   final VoidCallback onTap;
 
   const _OccurrencePhotoOriginButton({
     required this.tooltip,
+    required this.label,
     required this.icon,
     required this.accent,
     required this.onTap,
@@ -526,28 +707,38 @@ class _OccurrencePhotoOriginButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
     final isIos = occurrenceFormIsIos(context);
-    final surface = isIos
-        ? v.iconBackground
-        : accent.withValues(alpha: 0.12);
+    final surface = isIos ? v.iconBackground : accent.withValues(alpha: 0.12);
     return Tooltip(
       message: tooltip,
       child: Material(
         color: surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            v.ctaRadius,
-          ),
+          borderRadius: BorderRadius.circular(v.ctaRadius),
           side: BorderSide(color: accent.withValues(alpha: 0.55)),
         ),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(
-            v.ctaRadius,
-          ),
+          borderRadius: BorderRadius.circular(v.ctaRadius),
           child: SizedBox(
-            width: 72,
-            height: 52,
-            child: Icon(icon, color: accent, size: 26),
+            width: 88,
+            height: 56,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: accent, size: 22),
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -577,9 +768,7 @@ class OccurrenceCatPickerSheet extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(radius),
-        border: isIos
-            ? Border.all(color: v.cardBorder)
-            : null,
+        border: isIos ? Border.all(color: v.cardBorder) : null,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -621,33 +810,44 @@ class OccurrenceOrdemAplicacaoFields extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const OccurrenceSectionHeader(
+    return ListenableBuilder(
+      listenable: Listenable.merge([acao, dose, quando]),
+      builder: (context, _) {
+        final resumo = [
+          acao.text.trim(),
+          dose.text.trim(),
+          quando.text.trim(),
+        ].where((t) => t.isNotEmpty).join(' · ');
+        return OccurrenceAccordion(
           title: OccurrenceRecomendacaoOrdem.sectionTitle,
-        ),
-        const SizedBox(height: 8),
-        OccurrenceDarkField(
-          controller: acao,
-          label: OccurrenceRecomendacaoOrdem.labelAcao,
-          hint: 'Ação, produto ou manejo',
-          maxLines: 3,
-        ),
-        const SizedBox(height: 12),
-        OccurrenceDarkField(
-          controller: dose,
-          label: OccurrenceRecomendacaoOrdem.labelDose,
-          hint: 'Quantidade e unidade',
-        ),
-        const SizedBox(height: 12),
-        OccurrenceDarkField(
-          controller: quando,
-          label: OccurrenceRecomendacaoOrdem.labelQuando,
-          hint: 'Janela ou estádio',
-          maxLines: 2,
-        ),
-      ],
+          summary: resumo.isEmpty ? 'Opcional' : resumo,
+          initiallyExpanded: resumo.isNotEmpty,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              OccurrenceDarkField(
+                controller: acao,
+                label: OccurrenceRecomendacaoOrdem.labelAcao,
+                hint: 'Ação, produto ou manejo',
+                maxLines: 3,
+              ),
+              const SizedBox(height: 12),
+              OccurrenceDarkField(
+                controller: dose,
+                label: OccurrenceRecomendacaoOrdem.labelDose,
+                hint: 'Quantidade e unidade',
+              ),
+              const SizedBox(height: 12),
+              OccurrenceDarkField(
+                controller: quando,
+                label: OccurrenceRecomendacaoOrdem.labelQuando,
+                hint: 'Janela ou estádio',
+                maxLines: 2,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

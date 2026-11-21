@@ -270,14 +270,11 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const OccurrenceSectionHeader(
-            title: 'Fotos da ocorrência',
-          ),
+          const OccurrenceSectionHeader(title: 'Fotos da ocorrência'),
           const SizedBox(height: 6),
           OccurrencePhotoStatusText(
             paths: _flatFotoPaths(),
-            emptyHint:
-                'Anexe foto para aparecer no relatório. Selecione a categoria e toque em um ícone abaixo.',
+            emptyHint: 'Anexe fotos para o relatório.',
             hintColor: hint,
           ),
           if (total > 0) ...[
@@ -627,45 +624,8 @@ extension _OccurrenceCreationSheetFormSections
     );
   }
 
-  Widget _buildUrgencySelector() {
-    final v = SoloForteSheetVisuals.of(context);
-    return Row(
-      children: ['Baixa', 'Média', 'Alta'].map((u) {
-        final sel = _urgency == u;
-        final color = u == 'Baixa'
-            ? const Color(0xFFFFCC00)
-            : u == 'Média'
-            ? const Color(0xFFFF9500)
-            : const Color(0xFFFF3B30);
-        return Expanded(
-          child: GestureDetector(
-            onTap: () => _patchForm(() => _urgency = u),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(right: 6),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: sel ? color.withValues(alpha: .18) : v.cardBackground,
-                borderRadius: BorderRadius.circular(v.cardRadius),
-                border: Border.all(
-                  color: sel ? color : v.chipBorderInactive,
-                  width: sel ? 1.5 : 1,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  u,
-                  style: TextStyle(
-                    color: sel ? color : v.chipTextInactive,
-                    fontWeight: sel ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
+  Widget _buildUrgencySelector() => OccurrenceUrgencySlider(
+    urgency: _urgency,
+    onChanged: (u) => _patchForm(() => _urgency = u),
+  );
 }

@@ -65,8 +65,9 @@ void main() {
 
       // Asserção na ordem do ListView: urgência aparece antes da descrição e
       // sai da viewport (deixando de existir na árvore) ao rolar adiante.
-      await _scrollUntilVisible(tester, find.text('Alta'));
-      expect(find.text('Alta'), findsWidgets);
+      final urgencia = find.byKey(const Key('occurrence_urgency_slider'));
+      await _scrollUntilVisible(tester, urgencia);
+      expect(urgencia, findsOneWidget);
 
       await _scrollUntilVisible(
         tester,
