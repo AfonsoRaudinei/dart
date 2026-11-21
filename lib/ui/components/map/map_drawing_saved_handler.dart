@@ -86,7 +86,6 @@ void handleMapDrawingSaved({
   required IVisitSessionLookup sessionLookup,
   PersistCampoTestPhotoFn? persistCampoTestPhoto,
 }) {
-  final persist = persistCampoTestPhoto ?? persistCampoTestPhotoFromDraft;
   final areaId = session?.areaId;
   if (feature != null &&
       feature.properties.tipo == DrawingType.talhao &&
@@ -99,14 +98,6 @@ void handleMapDrawingSaved({
         farmId: (farmId == null || farmId.isEmpty)
             ? session.farmId
             : farmId,
-      ),
-    );
-  }
-  if (feature?.properties.tipo == DrawingType.teste && campoTestPhoto != null) {
-    unawaited(
-      persist(
-        draft: campoTestPhoto,
-        sessionLookup: sessionLookup,
       ),
     );
   }
