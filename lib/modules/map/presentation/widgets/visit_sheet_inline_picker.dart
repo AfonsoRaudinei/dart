@@ -50,188 +50,331 @@ InputDecoration visitSheetSearchDecoration(
   );
 }
 
-class VisitSheetNameTile extends StatelessWidget {
-  const VisitSheetNameTile({
-    super.key,
-    required this.title,
-    required this.selected,
-    required this.visuals,
-    required this.onTap,
-    this.subtitle,
-  });
+const _comAcento = 'áàâãäéèêëíìîïóòôõöúùûüçñ';
+const _semAcento = 'aaaaaeeeeiiiiooooouuuucn';
 
-  final String title;
-  final String? subtitle;
-  final bool selected;
-  final SoloForteSheetVisuals visuals;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final radius = visuals.cardRadius;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: visuals.cardBackground,
-        borderRadius: BorderRadius.circular(radius),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(radius),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(radius),
-              border: Border.all(
-                color: selected ? visuals.focusBorder : visuals.cardBorder,
-                width: selected ? 1.5 : 1,
-              ),
-              boxShadow: visuals.cardShadows,
-            ),
-            child: subtitle == null
-                ? Text(
-                    title,
-                    style: TextStyle(
-                      color: visuals.titleColor,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          color: visuals.titleColor,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle!,
-                        style: TextStyle(
-                          color: visuals.subtitleColor,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
-        ),
-      ),
-    );
+String _normalizeVisitSearch(String texto) {
+  final buffer = StringBuffer();
+  for (final rune in texto.toLowerCase().runes) {
+    final char = String.fromCharCode(rune);
+    final i = _comAcento.indexOf(char);
+    buffer.write(i >= 0 ? _semAcento[i] : char);
   }
+  return buffer.toString();
 }
 
+/// Nomes não vazios, sem diferenciar maiúsculas nem acentos.
+/// Consulta vazia devolve todos, ordenados. Cada palavra da consulta
+/// precisa aparecer no nome, em qualquer ordem.
 List<VisitClientSummary> filterVisitClients(
   List<VisitClientSummary> clients,
   String query,
 ) {
-  final normalized = query.trim().toLowerCase();
+  final tokens = _normalizeVisitSearch(
+    query.trim(),
+  ).split(RegExp(r'\s+')).where((token) => token.isNotEmpty).toList();
   final items = clients.where((client) {
-    if (normalized.isEmpty) return true;
-    return client.name.toLowerCase().contains(normalized);
+    final name = _normalizeVisitSearch(client.name.trim());
+    if (name.isEmpty) return false;
+    if (tokens.isEmpty) return true;
+    return tokens.every(name.contains);
   }).toList();
-  items.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  items.sort(
+    (a, b) =>
+        _normalizeVisitSearch(a.name).compareTo(_normalizeVisitSearch(b.name)),
+  );
   return items;
 }
 
-class VisitSheetProdutorPicker extends StatelessWidget {
+class VisitSheetProdutorPicker extends StatefulWidget {
   const VisitSheetProdutorPicker({
     super.key,
     required this.visuals,
     required this.clientsAsync,
     required this.searchController,
-    required this.clientQuery,
     required this.selectedClientId,
-    required this.onQueryChanged,
     required this.onSelectClient,
+    required this.onClearClient,
+    required this.onRetry,
   });
 
   final SoloForteSheetVisuals visuals;
   final AsyncValue<List<VisitClientSummary>> clientsAsync;
   final TextEditingController searchController;
-  final String clientQuery;
   final String? selectedClientId;
-  final ValueChanged<String> onQueryChanged;
   final ValueChanged<VisitClientSummary> onSelectClient;
+  final VoidCallback onClearClient;
+  final VoidCallback onRetry;
 
-  List<VisitClientSummary> _displayClients(
-    List<VisitClientSummary> clients,
-    String query,
-    String? selectedId,
-  ) {
-    if (query.trim().isEmpty) {
-      if (selectedId == null) return const [];
-      return clients.where((c) => c.id == selectedId).toList();
+  @override
+  State<VisitSheetProdutorPicker> createState() =>
+      _VisitSheetProdutorPickerState();
+}
+
+class _VisitSheetProdutorPickerState extends State<VisitSheetProdutorPicker> {
+  final _fieldKey = GlobalKey();
+  final _focusNode = FocusNode();
+  bool _nameSyncScheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleSelectedNameSync();
+  }
+
+  @override
+  void didUpdateWidget(VisitSheetProdutorPicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _scheduleSelectedNameSync();
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  VisitClientSummary? _clientById(String? id) {
+    if (id == null) return null;
+    final clients =
+        widget.clientsAsync.valueOrNull ?? const <VisitClientSummary>[];
+    for (final client in clients) {
+      if (client.id == id) return client;
     }
-    return filterVisitClients(clients, query);
+    return null;
+  }
+
+  /// Com produtor já escolhido e o campo vazio, o nome entra no controller
+  /// uma vez. Não apaga o que a pessoa está digitando.
+  void _scheduleSelectedNameSync() {
+    if (_nameSyncScheduled) return;
+    final selected = _clientById(widget.selectedClientId);
+    if (selected == null || selected.name.trim().isEmpty) return;
+    if (widget.searchController.text.isNotEmpty) return;
+    _nameSyncScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _nameSyncScheduled = false;
+      if (!mounted) return;
+      final current = _clientById(widget.selectedClientId);
+      if (current == null || current.name.trim().isEmpty) return;
+      if (widget.searchController.text.isNotEmpty) return;
+      widget.searchController.text = current.name;
+    });
+  }
+
+  Iterable<VisitClientSummary> _optionsFor(String text) {
+    final selected = _clientById(widget.selectedClientId);
+    if (selected != null && text == selected.name) {
+      return const <VisitClientSummary>[];
+    }
+    if (text.trim().isEmpty) return const <VisitClientSummary>[];
+    final clients =
+        widget.clientsAsync.valueOrNull ?? const <VisitClientSummary>[];
+    return filterVisitClients(clients, text);
+  }
+
+  double _fieldWidth() {
+    final render = _fieldKey.currentContext?.findRenderObject();
+    if (render is RenderBox && render.hasSize && render.size.width > 0) {
+      return render.size.width;
+    }
+    return 280;
   }
 
   @override
   Widget build(BuildContext context) {
-    final clients = clientsAsync.valueOrNull ?? [];
-    final queryEmpty = clientQuery.trim().isEmpty;
-    final displayItems = _displayClients(
-      clients,
-      clientQuery,
-      selectedClientId,
-    );
-    final isLoading = clientsAsync.isLoading;
-    final v = visuals;
+    final v = widget.visuals;
+    return ListenableBuilder(
+      listenable: widget.searchController,
+      builder: (context, _) {
+        final asyncClients = widget.clientsAsync;
+        final clients =
+            asyncClients.valueOrNull ?? const <VisitClientSummary>[];
+        final initialLoad = asyncClients.isLoading && !asyncClients.hasValue;
+        final loadFailed = asyncClients.hasError && !asyncClients.hasValue;
+        final query = widget.searchController.text;
+        final queryEmpty = query.trim().isEmpty;
+        final selected = _clientById(widget.selectedClientId);
+        final showingSelectedName = selected != null && query == selected.name;
+        final matches = filterVisitClients(clients, query);
+        final namedClients = filterVisitClients(clients, '');
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        visitSheetFieldLabel(v, 'Produtor'),
-        const SizedBox(height: 6),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(v.cardRadius),
-            boxShadow: v.cardShadows,
-          ),
-          child: TextField(
-            controller: searchController,
-            enabled: !isLoading,
-            onChanged: onQueryChanged,
-            style: TextStyle(color: v.titleColor, fontSize: 14),
-            decoration: visitSheetSearchDecoration(
-              v,
-              hintText: isLoading ? 'Carregando...' : 'Buscar produtor',
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            visitSheetFieldLabel(v, 'Produtor'),
+            const SizedBox(height: 6),
+            RawAutocomplete<VisitClientSummary>(
+              focusNode: _focusNode,
+              textEditingController: widget.searchController,
+              displayStringForOption: (client) => client.name,
+              optionsBuilder: (value) => _optionsFor(value.text),
+              onSelected: (client) {
+                widget.onSelectClient(client);
+                _focusNode.unfocus();
+              },
+              fieldViewBuilder: (context, controller, focusNode, onSubmit) {
+                return DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(v.cardRadius),
+                    boxShadow: v.cardShadows,
+                  ),
+                  child: TextField(
+                    key: _fieldKey,
+                    controller: controller,
+                    focusNode: focusNode,
+                    enabled: !initialLoad && !loadFailed,
+                    style: TextStyle(color: v.titleColor, fontSize: 14),
+                    textInputAction: TextInputAction.search,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    onChanged: (text) {
+                      final current = _clientById(widget.selectedClientId);
+                      if (current != null && text != current.name) {
+                        widget.onClearClient();
+                      }
+                    },
+                    decoration: visitSheetSearchDecoration(
+                      v,
+                      hintText: initialLoad
+                          ? 'Carregando...'
+                          : 'Buscar produtor',
+                    ),
+                  ),
+                );
+              },
+              optionsViewBuilder: (context, onSelected, options) {
+                if (_optionsFor(widget.searchController.text).isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                final width = _fieldWidth();
+                final items = options.toList(growable: false);
+                return Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    color: v.cardBackground,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      side: BorderSide(color: v.cardBorder),
+                      borderRadius: BorderRadius.circular(v.cardRadius),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: 220,
+                        minWidth: width,
+                        maxWidth: width,
+                      ),
+                      child: ListView.builder(
+                        padding: EdgeInsets.zero,
+                        shrinkWrap: true,
+                        itemCount: items.length,
+                        itemBuilder: (context, index) {
+                          final client = items[index];
+                          return InkWell(
+                            onTap: () => onSelected(client),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              child: Text(
+                                client.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: v.titleColor,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
+            ..._statusLines(
+              v,
+              initialLoad: initialLoad,
+              loadFailed: loadFailed,
+              namedClients: namedClients,
+              queryEmpty: queryEmpty,
+              matches: matches,
+              showingSelectedName: showingSelectedName,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  List<Widget> _statusLines(
+    SoloForteSheetVisuals v, {
+    required bool initialLoad,
+    required bool loadFailed,
+    required List<VisitClientSummary> namedClients,
+    required bool queryEmpty,
+    required List<VisitClientSummary> matches,
+    required bool showingSelectedName,
+  }) {
+    if (loadFailed) {
+      return [
+        const SizedBox(height: 8),
+        visitSheetMutedLine(
+          v,
+          'Não foi possível carregar os produtores.',
+          padding: EdgeInsets.zero,
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            onPressed: widget.onRetry,
+            style: TextButton.styleFrom(
+              foregroundColor: v.titleColor,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              alignment: Alignment.centerLeft,
+            ),
+            child: const Text('Tentar de novo'),
           ),
         ),
+      ];
+    }
+    if (initialLoad) return const [];
+    if (namedClients.isEmpty) {
+      return [
         const SizedBox(height: 8),
-        if (isLoading)
-          visitSheetMutedLine(v, 'Carregando...')
-        else if (clients.isEmpty)
-          visitSheetMutedLine(
-            v,
-            'Nenhum produtor encontrado',
-            padding: EdgeInsets.zero,
-          )
-        else if (queryEmpty && selectedClientId == null)
-          visitSheetMutedLine(
-            v,
-            'Digite para buscar o produtor',
-            padding: EdgeInsets.zero,
-          )
-        else if (!queryEmpty && displayItems.isEmpty)
-          visitSheetMutedLine(
-            v,
-            'Nenhum produtor para esta busca',
-            padding: EdgeInsets.zero,
-          )
-        else
-          for (final client in displayItems)
-            VisitSheetNameTile(
-              title: client.name,
-              selected: client.id == selectedClientId,
-              visuals: v,
-              onTap: () => onSelectClient(client),
-            ),
-      ],
-    );
+        visitSheetMutedLine(
+          v,
+          'Nenhum produtor encontrado',
+          padding: EdgeInsets.zero,
+        ),
+      ];
+    }
+    if (queryEmpty && !showingSelectedName) {
+      return [
+        const SizedBox(height: 8),
+        visitSheetMutedLine(
+          v,
+          'Digite para buscar o produtor',
+          padding: EdgeInsets.zero,
+        ),
+      ];
+    }
+    if (!queryEmpty && matches.isEmpty && !showingSelectedName) {
+      return [
+        const SizedBox(height: 8),
+        visitSheetMutedLine(
+          v,
+          'Nenhum produtor para esta busca',
+          padding: EdgeInsets.zero,
+        ),
+      ];
+    }
+    return const [];
   }
 }
