@@ -314,14 +314,6 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Informe o nome' : null,
             ),
-            if (isCampoTest) ...[
-              const SizedBox(height: 16),
-              _CampoTestPhotoReviewSection(
-                key: const Key('drawing_campo_test_photo_section'),
-                draft: _campoTestPhotoDraft,
-                onPick: _pickCampoTestPhoto,
-              ),
-            ],
             const SizedBox(height: 24),
 
             // Actions Buttons
@@ -582,7 +574,6 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     _rebuild(() {
       if (!preserveContextClient) _selectedClient = null;
       if (!preserveContextFarm) _selectedFarm = null;
-      _campoTestPhotoDraft = null;
       _clientQuery = '';
       _farmQuery = '';
     });
