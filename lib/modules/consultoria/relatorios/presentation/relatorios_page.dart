@@ -649,6 +649,9 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
       date: widget.dateFormat.format(occurrence.createdAt.toLocal()),
       statusLabel: _occStatusLabel(occurrence.status),
       statusColor: _occStatusColor(occurrence.status),
+      bar: (occurrence.category ?? '').trim().isEmpty
+          ? null
+          : _UrgencyBar(urgency: _occurrenceUrgencyLabel(occurrence.type)),
       onTapAsync: () => _openHtml(context),
     );
   }

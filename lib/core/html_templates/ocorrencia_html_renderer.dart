@@ -97,6 +97,7 @@ class OcorrenciaHtmlRenderer {
       'category': category,
       'type': RelatorioHtmlRenderer.escapeHtml(type),
       'urgencia_class': urgenciaClass,
+      'urgencia_barra': _barraUrgencia(urgenciaClass),
       'urgencia_label':
           'Urgência ${_urgenciaValor(urgenciaClass).toLowerCase()}',
       'andamento_label': andamento,
@@ -535,7 +536,8 @@ class OcorrenciaHtmlRenderer {
     final label = urgenciaClass == null
         ? RelatorioHtmlRenderer.escapeHtml(raw)
         : _urgenciaValor(urgenciaClass);
-    return '<span class="sf-status"><span class="sf-dot ${urgenciaClass ?? ''}"></span>$label</span>';
+    final barra = urgenciaClass == null ? '' : _barraUrgencia(urgenciaClass);
+    return '<span class="sf-status"><span class="sf-dot ${urgenciaClass ?? ''}"></span>$label$barra</span>';
   }
 
   static String? _urgenciaClassOrNull(Object? type) {
@@ -669,6 +671,8 @@ class OcorrenciaHtmlRenderer {
     return _section('Notas técnicas', sb.toString());
   }
 
+  static const _nivelLabels = ['Nenhum', 'Baixa', 'Média', 'Alta'];
+
   static String _renderMetricas(String? metricasJson) {
     if (metricasJson == null || metricasJson == '{}') return '';
     final map = _decodeMap(metricasJson);
@@ -690,10 +694,17 @@ class OcorrenciaHtmlRenderer {
       );
       sb.write('<div class="sf-sheet">');
       for (final metric in visibleMetrics) {
+        final nivel = int.tryParse(metric.value.toString());
+        final valor = RelatorioHtmlRenderer.escapeHtml(metric.value.toString());
+        // Escala 0–3 vira barra colorida + rótulo; outros valores ficam em texto.
+        final conteudo = nivel != null && nivel >= 0 && nivel <= 3
+            ? '${RelatorioHtmlRenderer.nivelBar(filled: nivel, total: 3, cor: RelatorioHtmlRenderer.corIntensidade(nivel), rotulo: _nivelLabels[nivel])}'
+                  '${_nivelLabels[nivel]}'
+            : valor;
         sb.write(
           '<div class="sf-row">'
           '<span class="sf-row-label">${RelatorioHtmlRenderer.escapeHtml(RelatorioHtmlRenderer.humanizeKey(metric.key.toString()))}</span>'
-          '<span class="sf-row-value">${RelatorioHtmlRenderer.escapeHtml(metric.value.toString())}</span>'
+          '<span class="sf-row-value">$conteudo</span>'
           '</div>',
         );
       }
@@ -788,6 +799,16 @@ class OcorrenciaHtmlRenderer {
       default:
         return 'baixa';
     }
+  }
+
+  /// Barra de 3 segmentos: Baixa (verde, 1) · Média (laranja, 2) · Alta (vermelho, 3).
+  static String _barraUrgencia(String urgenciaClass) {
+    final (filled, cor) = switch (urgenciaClass) {
+      'alta' => (3, 'vermelho'),
+      'media' => (2, 'laranja'),
+      _ => (1, 'verde'),
+    };
+    return RelatorioHtmlRenderer.nivelBar(filled: filled, total: 3, cor: cor);
   }
 
   static String _urgenciaValor(String urgenciaClass) {

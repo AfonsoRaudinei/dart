@@ -490,6 +490,32 @@ abstract class RelatorioHtmlRenderer {
 
   /// Converte chave técnica (`altura_cm`, `incidencia_pct`) em rótulo legível
   /// (`Altura (cm)`, `Incidência (%)`). Não escapa HTML.
+  /// Barra de nível em segmentos: [filled] de [total] acesos, na cor [cor]
+  /// (`verde`, `amarelo`, `laranja`, `vermelho`). [rotulo] vira texto acessível.
+  static String nivelBar({
+    required int filled,
+    required int total,
+    required String cor,
+    String rotulo = '',
+  }) {
+    final segs = List.generate(
+      total,
+      (i) => '<span class="sf-bar-seg${i < filled ? ' on' : ''}"></span>',
+    ).join();
+    final aria = rotulo.isEmpty
+        ? ''
+        : ' role="img" aria-label="${escapeHtml(rotulo)}"';
+    return '<span class="sf-bar sf-bar-$cor"$aria>$segs</span>';
+  }
+
+  /// Cor do nível de intensidade 0–3 (verde, amarelo, laranja, vermelho).
+  static String corIntensidade(int nivel) => switch (nivel) {
+    <= 0 => 'verde',
+    1 => 'amarelo',
+    2 => 'laranja',
+    _ => 'vermelho',
+  };
+
   static String humanizeKey(String key) {
     final normalized = key.trim().toLowerCase();
     if (normalized.isEmpty) return key.trim();

@@ -54,6 +54,38 @@ String? _occurrenceCardSubtitle(Occurrence occurrence, {String? clientName}) {
   return parts.join(' · ');
 }
 
+/// Barra de 3 segmentos da urgência: Baixa (verde) · Média (laranja) · Alta (vermelho).
+class _UrgencyBar extends StatelessWidget {
+  final String urgency;
+
+  const _UrgencyBar({required this.urgency});
+
+  @override
+  Widget build(BuildContext context) {
+    final (filled, color) = switch (urgency.toLowerCase()) {
+      'alta' => (3, const Color(0xFFD93025)),
+      'média' || 'media' => (2, const Color(0xFFF28C00)),
+      _ => (1, const Color(0xFF2E9E4F)),
+    };
+    return Row(
+      key: const Key('relatorios_urgency_bar'),
+      children: [
+        for (var i = 0; i < 3; i++) ...[
+          Container(
+            width: 26,
+            height: 6,
+            decoration: BoxDecoration(
+              color: i < filled ? color : const Color(0xFFE5E5EA),
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+          if (i < 2) const SizedBox(width: 3),
+        ],
+      ],
+    );
+  }
+}
+
 // ── Menu assíncrono ──────────────────────────────────────────────────────────
 
 class _AsyncActionMenu extends StatefulWidget {
@@ -346,6 +378,7 @@ class _DataCard extends StatelessWidget {
   final String statusLabel;
   final Color statusColor;
   final Widget? trailing;
+  final Widget? bar;
   final VoidCallback? onTap;
 
   const _DataCard({
@@ -357,6 +390,7 @@ class _DataCard extends StatelessWidget {
     required this.statusLabel,
     required this.statusColor,
     this.trailing,
+    this.bar,
     this.onTap,
   });
 
@@ -417,6 +451,7 @@ class _DataCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
+                if (bar != null) ...[const SizedBox(height: 8), bar!],
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -477,6 +512,7 @@ class _AsyncDataCard extends StatefulWidget {
   final String date;
   final String statusLabel;
   final Color statusColor;
+  final Widget? bar;
   final Future<void> Function()? onTapAsync;
 
   const _AsyncDataCard({
@@ -487,6 +523,7 @@ class _AsyncDataCard extends StatefulWidget {
     required this.date,
     required this.statusLabel,
     required this.statusColor,
+    this.bar,
     this.onTapAsync,
   });
 
@@ -517,6 +554,7 @@ class _AsyncDataCardState extends State<_AsyncDataCard> {
       date: widget.date,
       statusLabel: widget.statusLabel,
       statusColor: widget.statusColor,
+      bar: widget.bar,
       trailing: _busy
           ? const SizedBox.square(
               dimension: 40,

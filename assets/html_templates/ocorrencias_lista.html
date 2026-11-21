@@ -46,9 +46,9 @@
       <!-- {{#if total_ocorrencias > 0}} -->
       <p class="sf-group-label">Distribuição por urgência</p>
       <div class="sf-sheet urgencia-sheet">
-        <div class="sf-row"><span class="sf-row-label"><span class="sf-status"><span class="sf-dot alta"></span>Alta</span></span><span class="sf-row-value">{{count_alta}} · {{pct_alta}}%</span></div>
-        <div class="sf-row"><span class="sf-row-label"><span class="sf-status"><span class="sf-dot media"></span>Média</span></span><span class="sf-row-value">{{count_media}} · {{pct_media}}%</span></div>
-        <div class="sf-row"><span class="sf-row-label"><span class="sf-status"><span class="sf-dot baixa"></span>Baixa</span></span><span class="sf-row-value">{{count_baixa}} · {{pct_baixa}}%</span></div>
+        <div class="sf-row"><span class="sf-row-label"><span class="sf-status"><span class="sf-dot alta"></span>Alta</span></span><span class="sf-row-value">{{count_alta}} · {{pct_alta}}%<span class="sf-dist alta"><i style="width:{{pct_alta}}%"></i></span></span></div>
+        <div class="sf-row"><span class="sf-row-label"><span class="sf-status"><span class="sf-dot media"></span>Média</span></span><span class="sf-row-value">{{count_media}} · {{pct_media}}%<span class="sf-dist media"><i style="width:{{pct_media}}%"></i></span></span></div>
+        <div class="sf-row"><span class="sf-row-label"><span class="sf-status"><span class="sf-dot baixa"></span>Baixa</span></span><span class="sf-row-value">{{count_baixa}} · {{pct_baixa}}%<span class="sf-dist baixa"><i style="width:{{pct_baixa}}%"></i></span></span></div>
       </div>
       <!-- {{/if}} -->
     </section>
