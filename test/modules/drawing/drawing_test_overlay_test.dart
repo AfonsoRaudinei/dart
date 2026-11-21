@@ -123,7 +123,7 @@ void main() {
   });
 
   group('estilo do teste', () {
-    test('preenchimento é azul Samsung e não o verde de Bom', () {
+    test('preenchimento é azul claro e não o verde de Bom', () {
       final teste = _feature(
         id: 'teste',
         tipo: DrawingType.teste,
@@ -131,9 +131,10 @@ void main() {
         cor: TalhaoCondicao.bom.argb,
       );
 
-      expect(teste.style.fillColor, const Color(0xFF1428A0));
+      expect(teste.style.fillColor, const Color(0xFF8EBEFF));
+      expect(teste.style.borderColor, const Color(0xFF2F6FCB));
       expect(teste.style.fillColor, isNot(Color(TalhaoCondicao.bom.argb)));
-      expect(teste.style.fillOpacity, 0.45);
+      expect(teste.style.fillOpacity, 0.35);
 
       final sincronizando = _feature(
         id: 'teste-sync',
@@ -143,7 +144,7 @@ void main() {
         syncStatus: SyncStatus.pending_sync,
       );
 
-      expect(sincronizando.style.fillColor, const Color(0xFF1428A0));
+      expect(sincronizando.style.fillColor, const Color(0xFF8EBEFF));
       expect(
         sincronizando.style.fillColor,
         isNot(Color(TalhaoCondicao.ruim.argb)),
