@@ -35,40 +35,30 @@ String marketingVisitInitialProdutorFieldText({
 /// Funções top-level e widget auxiliar — sem estado, sem providers.
 
 Color novoCasePrimaryTextColor(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
-  return soloForteSheetIsIos(context)
-      ? v.titleColor
-      : v.inputText;
+  final v = SoloForteSheetVisuals.of(context);
+  return soloForteSheetIsIos(context) ? v.titleColor : v.inputText;
 }
 
 Color novoCaseSecondaryTextColor(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
-  return soloForteSheetIsIos(context)
-      ? v.subtitleColor
-      : v.inputHint;
+  final v = SoloForteSheetVisuals.of(context);
+  return soloForteSheetIsIos(context) ? v.subtitleColor : v.inputHint;
 }
 
 Color novoCaseAccentColor(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
-  return soloForteSheetIsIos(context)
-      ? v.iconStroke
-      : context.themeAccent;
+  final v = SoloForteSheetVisuals.of(context);
+  return soloForteSheetIsIos(context) ? v.iconStroke : context.themeAccent;
 }
 
 BoxDecoration novoCaseInnerCardDecoration(
   BuildContext context, {
   bool selected = false,
 }) {
-    final v = SoloForteSheetVisuals.of(context);
+  final v = SoloForteSheetVisuals.of(context);
   if (soloForteSheetIsIos(context)) {
     return BoxDecoration(
       color: v.cardBackground,
       borderRadius: BorderRadius.circular(v.cardRadius),
-      border: Border.all(
-        color: selected
-            ? v.iconStroke
-            : v.cardBorder,
-      ),
+      border: Border.all(color: selected ? v.iconStroke : v.cardBorder),
       boxShadow: selected
           ? const [
               BoxShadow(
@@ -84,9 +74,7 @@ BoxDecoration novoCaseInnerCardDecoration(
     color: v.inputFill,
     borderRadius: BorderRadius.circular(16),
     border: Border.all(
-      color: selected
-          ? context.themeAccent
-          : PremiumTokens.hairlineLight,
+      color: selected ? context.themeAccent : PremiumTokens.hairlineLight,
     ),
     boxShadow: selected
         ? const [
@@ -104,15 +92,12 @@ ButtonStyle novoCaseGhostOutlinedButtonStyle(BuildContext context) {
   final v = SoloForteSheetVisuals.of(context);
   return OutlinedButton.styleFrom(
     foregroundColor: v.ghostText,
-    side: BorderSide(
-      color: v.ghostBorder,
-    ),
+    side: BorderSide(color: v.ghostBorder),
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(
-        v.isIos ? v.ghostRadius : 16,
-      ),
+      borderRadius: BorderRadius.circular(v.isIos ? v.ghostRadius : 16),
     ),
-    minimumSize: const Size.fromHeight(48),
+    minimumSize: const Size.fromHeight(40),
+    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
   );
 }
 
@@ -137,15 +122,11 @@ Widget novoCaseFieldBox({required Widget child}) {
     builder: (context) {
       final v = SoloForteSheetVisuals.of(context);
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
           color: v.cardBackground,
-          borderRadius: BorderRadius.circular(
-            v.cardRadius,
-          ),
-          border: Border.all(
-            color: v.cardBorder,
-          ),
+          borderRadius: BorderRadius.circular(v.cardRadius),
+          border: Border.all(color: v.cardBorder),
         ),
         child: child,
       );
@@ -175,13 +156,10 @@ Widget novoCaseTextInput(
         keyboardType: keyboardType,
         maxLines: maxLines,
         onChanged: onChanged,
-        style: TextStyle(color: textColor),
+        style: TextStyle(color: textColor, fontSize: 14),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(
-            color: hintColor,
-            fontSize: 14,
-          ),
+          hintStyle: TextStyle(color: hintColor, fontSize: 14),
           filled: true,
           fillColor: fill,
           border: InputBorder.none,
@@ -190,12 +168,12 @@ Widget novoCaseTextInput(
           errorBorder: InputBorder.none,
           focusedErrorBorder: InputBorder.none,
           disabledBorder: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(vertical: 10),
           isDense: true,
         ),
         validator: required
             ? (v) =>
-                (v == null || v.trim().isEmpty) ? 'Campo obrigatório' : null
+                  (v == null || v.trim().isEmpty) ? 'Campo obrigatório' : null
             : null,
       );
     },
@@ -209,10 +187,6 @@ class NovoCaseFDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
-    return Divider(
-      height: 0.5,
-      thickness: 0.5,
-      color: v.dividerColor,
-    );
+    return Divider(height: 0.5, thickness: 0.5, color: v.dividerColor);
   }
 }

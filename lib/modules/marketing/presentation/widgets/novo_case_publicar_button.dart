@@ -19,13 +19,11 @@ class NovoCasePublicarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-        final v = SoloForteSheetVisuals.of(context);
+    final v = SoloForteSheetVisuals.of(context);
     final isIos = v.isIos;
-    final bg =
-        isIos ? v.ctaBackground : context.themeAccent;
+    final bg = isIos ? v.ctaBackground : context.themeAccent;
     final fg = v.ctaText;
-    final radius =
-        v.ctaRadius;
+    final radius = v.ctaRadius;
 
     return ElevatedButton.icon(
       onPressed: isLoading ? null : onPressed,
@@ -33,10 +31,7 @@ class NovoCasePublicarButton extends StatelessWidget {
           ? SizedBox(
               width: 16,
               height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: fg,
-              ),
+              child: CircularProgressIndicator(strokeWidth: 2, color: fg),
             )
           : const Icon(Icons.campaign_rounded, size: 20),
       label: Text(
@@ -47,14 +42,11 @@ class NovoCasePublicarButton extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         backgroundColor: bg,
         foregroundColor: fg,
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radius),
         ),
-        textStyle: const TextStyle(
-          fontWeight: FontWeight.w700,
-          fontSize: 16,
-        ),
+        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
       ),
     );
   }

@@ -591,7 +591,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
         key: _formKey,
         child: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -602,9 +602,9 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                 onClose: widget.onClose,
                 showTitle: !widget.compactHeader,
               ),
-              SizedBox(height: widget.compactHeader ? 12 : 24),
+              SizedBox(height: widget.compactHeader ? 8 : 20),
               novoCaseSectionLabel('Visibilidade'),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               PlanoMarketingSelector(
                 selectedPlano: selectedVisibilidadeUi,
                 enabledMetals: enabledMetals,
@@ -621,7 +621,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                 ),
               ],
               if (_campoTesteDrawingId != null) ...[
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
                 novoCaseSectionLabel('Campo de teste'),
                 const SizedBox(height: 8),
                 Text(
@@ -633,7 +633,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                   ),
                 ),
               ],
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
               novoCaseSectionLabel('Identificação'),
               const SizedBox(height: 8),
               MarketingClientSelector(
@@ -693,11 +693,11 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
               novoCaseSectionLabel('Data do Case'),
               const SizedBox(height: 8),
               _buildDataCasePicker(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
               if (_tipo == CaseTipo.antesDepois) ...[
                 novoCaseSectionLabel('Produtividade'),
                 const SizedBox(height: 8),
@@ -717,7 +717,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
               ],
               if (_tipo == CaseTipo.resultado)
                 NovoCaseResultadoSection(
@@ -769,7 +769,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
               novoCaseFieldBox(
                 child: novoCaseTextInput(
                   _descricaoCtrl,
@@ -777,7 +777,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                   maxLines: 3,
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 20),
               NovoCasePublicarButton(
                 isLoading: _isLoading,
                 criarCasePrivado: seletorTravado,
@@ -793,7 +793,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: context.themeAccent,
                   side: BorderSide(color: context.themeAccent),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -850,7 +850,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
       onTap: _selectDataCase,
       child: novoCaseFieldBox(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           child: Row(
             children: [
               Icon(

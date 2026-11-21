@@ -92,7 +92,11 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
         }
       }
     } catch (e, st) {
-      AppLogger.error('FotoPickerWidget upload error', error: e, stackTrace: st);
+      AppLogger.error(
+        'FotoPickerWidget upload error',
+        error: e,
+        stackTrace: st,
+      );
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -130,7 +134,7 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
 
   @override
   Widget build(BuildContext context) {
-        final v = SoloForteSheetVisuals.of(context);
+    final v = SoloForteSheetVisuals.of(context);
     final isIos = v.isIos;
     final hasPhoto = widget.url != null && widget.url!.isNotEmpty;
     final isEmpty = !hasPhoto && widget.required;
@@ -299,23 +303,14 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
 
   Widget _buildPlaceholder(bool isError, bool isIos) {
     final v = SoloForteSheetVisuals.of(context);
-    final iconColor = isError
-        ? Colors.red.shade400
-        : v.subtitleColor;
-    final labelColor = isError
-        ? Colors.red.shade400
-        : v.titleColor;
-    final hintColor = v.subtitleColor;
+    final iconColor = isError ? Colors.red.shade400 : v.subtitleColor;
+    final labelColor = isError ? Colors.red.shade400 : v.titleColor;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          Icons.add_photo_alternate_outlined,
-          size: 28,
-          color: iconColor,
-        ),
-        const SizedBox(height: 6),
+        Icon(Icons.photo_camera_outlined, size: 24, color: iconColor),
+        const SizedBox(height: 4),
         Text(
           widget.label,
           style: TextStyle(
@@ -324,11 +319,6 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
             color: labelColor,
           ),
           textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Toque para selecionar',
-          style: TextStyle(fontSize: 11, color: hintColor),
         ),
         if (isError) ...[
           const SizedBox(height: 4),

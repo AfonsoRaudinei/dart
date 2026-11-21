@@ -249,7 +249,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
           child: _DrawCampoTesteButton(onPressed: _startCampoTeste),
         ),
         Expanded(child: sheet),
@@ -352,7 +352,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
   IconData _icon(MapMarkKind kind) {
     return switch (kind) {
       MapMarkKind.resultado => SFIcons.barChart,
-      MapMarkKind.antesDepois => SFIcons.compareArrows,
+      MapMarkKind.antesDepois => SFIcons.beforeAfter,
       MapMarkKind.avaliacao => SFIcons.science,
       MapMarkKind.ocorrencia => SFIcons.warning,
     };
@@ -379,25 +379,26 @@ class _DrawCampoTesteButton extends StatelessWidget {
         },
         borderRadius: BorderRadius.circular(v.cardRadius),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(v.cardRadius),
             border: Border.all(color: v.cardBorder),
           ),
           child: Row(
             children: [
-              Icon(SFIcons.science, color: v.accent),
-              const SizedBox(width: 12),
+              Icon(SFIcons.science, color: v.accent, size: 20),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'Desenhar campo de teste',
                   style: TextStyle(
                     color: v.titleColor,
                     fontWeight: FontWeight.w600,
+                    fontSize: 14,
                   ),
                 ),
               ),
-              Icon(Icons.chevron_right, color: v.subtitleColor),
+              Icon(Icons.chevron_right, color: v.subtitleColor, size: 20),
             ],
           ),
         ),

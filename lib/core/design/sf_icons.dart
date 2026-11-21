@@ -50,6 +50,7 @@ class SFIcons {
   static const IconData chevronRight = CupertinoIcons.chevron_right;
   static const IconData chevronLeft = CupertinoIcons.chevron_left;
   static const IconData compareArrows = CupertinoIcons.arrow_right_arrow_left;
+  static const IconData beforeAfter = Icons.compare_rounded;
   static const IconData syncAlt = CupertinoIcons.arrow_2_circlepath;
 
   // Content & Tabs
