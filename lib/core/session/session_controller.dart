@@ -609,6 +609,7 @@ class SessionController extends _$SessionController {
     final List<ProviderOrFamily> userScopedProviders = [
       activeLayerProvider,
       showMarkersProvider,
+      showMarketingCasesProvider,
       publicationsDataProvider,
       publicacoesDataProvider,
     ];
