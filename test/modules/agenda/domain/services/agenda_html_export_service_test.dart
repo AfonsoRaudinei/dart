@@ -60,6 +60,11 @@ void main() {
         contains(RegExp(r'class="sf-brand-logo" src="data:image/png;base64,')),
       );
       expect(footer, contains('<strong>SoloForte</strong>'));
+      expect(footer, contains('sf-footer-qr'));
+      expect(
+        footer,
+        contains('https://apps.apple.com/br/app/soloforte/id6759268985'),
+      );
       expect(footer, isNot(contains('Agronomo Teste')));
       expect(footer, isNot(contains('Responsável')));
       expect(html, contains('Cliente Teste'));
