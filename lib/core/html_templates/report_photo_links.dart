@@ -30,7 +30,13 @@ class ReportPhoto {
   }
 }
 
-enum ReportNavigationAction { allow, prevent, openPhoto, openMap }
+enum ReportNavigationAction {
+  allow,
+  prevent,
+  openPhoto,
+  openMap,
+  openExternalUrl,
+}
 
 /// Decisão de [ReportPhotoLinks.decideNavigation].
 class ReportNavigation {
@@ -38,24 +44,34 @@ class ReportNavigation {
     : action = ReportNavigationAction.allow,
       photoIndex = null,
       mapLat = null,
-      mapLng = null;
+      mapLng = null,
+      externalUrl = null;
 
   const ReportNavigation.prevent()
     : action = ReportNavigationAction.prevent,
       photoIndex = null,
       mapLat = null,
-      mapLng = null;
+      mapLng = null,
+      externalUrl = null;
 
   const ReportNavigation.openPhoto(int this.photoIndex)
     : action = ReportNavigationAction.openPhoto,
       mapLat = null,
-      mapLng = null;
+      mapLng = null,
+      externalUrl = null;
 
   const ReportNavigation.openMap({required double lat, required double lng})
     : action = ReportNavigationAction.openMap,
       photoIndex = null,
       mapLat = lat,
-      mapLng = lng;
+      mapLng = lng,
+      externalUrl = null;
+
+  const ReportNavigation.openExternalUrl(String this.externalUrl)
+    : action = ReportNavigationAction.openExternalUrl,
+      photoIndex = null,
+      mapLat = null,
+      mapLng = null;
 
   final ReportNavigationAction action;
 
@@ -64,12 +80,19 @@ class ReportNavigation {
 
   final double? mapLat;
   final double? mapLng;
+
+  /// URL https quando [action] é `openExternalUrl` (ex.: App Store).
+  final String? externalUrl;
 }
 
 /// Ponte HTML ↔ visualizador nativo de fotos (WebView com JavaScript
 /// desabilitado). Funções puras: o HTML exportado não passa por aqui.
 abstract final class ReportPhotoLinks {
   static const scheme = 'sfphoto';
+
+  /// Link canônico do app na App Store (rodapé QR dos relatórios).
+  static const soloForteAppStoreUrl =
+      'https://apps.apple.com/br/app/soloforte/id6759268985';
 
   static final _imgTag = RegExp(r'<img\b[^>]*>', caseSensitive: false);
   static final _photoIndexAttr = RegExp(r'\sdata-sf-photo="(\d+)"');
@@ -112,6 +135,7 @@ abstract final class ReportPhotoLinks {
 
   /// Política de navegação do WebView do relatório (sem botão voltar):
   /// - `sfphoto` com índice → abrir visualizador (a navegação é bloqueada);
+  /// - App Store SoloForte (`sf-footer-qr`) → abrir fora do WebView;
   /// - `about:*` / `data:` → permitir (documento inicial do `loadHtmlString`);
   /// - qualquer outra URL (inclusive `sfphoto` malformado) → bloquear.
   static ReportNavigation decideNavigation(String url) {
@@ -124,11 +148,26 @@ abstract final class ReportPhotoLinks {
         lng: mapCoords.lng,
       );
     }
+    if (_isSoloForteAppStoreUrl(url)) {
+      return ReportNavigation.openExternalUrl(_normalizeHttpUrl(url));
+    }
     final scheme = Uri.tryParse(url.trim())?.scheme;
     if (scheme == 'about' || scheme == 'data') {
       return const ReportNavigation.allow();
     }
     return const ReportNavigation.prevent();
+  }
+
+  static String _normalizeHttpUrl(String url) {
+    var normalized = url.trim();
+    if (normalized.endsWith('/')) {
+      normalized = normalized.substring(0, normalized.length - 1);
+    }
+    return normalized;
+  }
+
+  static bool _isSoloForteAppStoreUrl(String url) {
+    return _normalizeHttpUrl(url) == soloForteAppStoreUrl;
   }
 
   /// Cópia do HTML para exibição no app: cada foto numerada vira link
