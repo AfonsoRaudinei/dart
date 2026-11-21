@@ -180,14 +180,12 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     return Container(
       decoration: BoxDecoration(
         color: sheetBg,
+        gradient: v.sheetGradient,
+        boxShadow: v.sheetShadows,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(v.sheetRadius),
         ),
-        border: isIos
-            ? Border(
-                top: BorderSide(color: v.sheetBorder),
-              )
-            : null,
+        border: isIos ? Border(top: BorderSide(color: v.sheetBorder)) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -307,7 +305,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
               children: [
                 SizedBox(
                   width: double.infinity,
-                  height: 52,
+                  height: 44,
                   child: OutlinedButton(
                     onPressed: _selectedClient != null
                         ? () {
@@ -336,9 +334,14 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                           }
                         : null,
                     style: OutlinedButton.styleFrom(
+                      backgroundColor: isNavigateEnabled
+                          ? v.iconStroke.withValues(alpha: 0.07)
+                          : null,
                       side: BorderSide(
-                        color: isNavigateEnabled ? v.iconStroke : v.cardBorder,
-                        width: 1.5,
+                        color: isNavigateEnabled
+                            ? v.iconStroke.withValues(alpha: 0.45)
+                            : v.cardBorder,
+                        width: 0.8,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(ctaRadius),
@@ -352,8 +355,8 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                             ? v.titleColor
                             : v.subtitleColor,
                         fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        letterSpacing: 0.8,
+                        fontSize: 12.5,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ),
@@ -361,7 +364,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                 const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
-                  height: 52,
+                  height: 44,
                   child: ElevatedButton(
                     onPressed: isConfirmEnabled
                         ? () {
@@ -386,8 +389,8 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                       style: TextStyle(
                         color: isConfirmEnabled ? v.ctaText : v.subtitleColor,
                         fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                        letterSpacing: 1.2,
+                        fontSize: 14,
+                        letterSpacing: 0.6,
                       ),
                     ),
                   ),
@@ -500,17 +503,23 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
       children: [
         visitSheetFieldLabel(v, 'Área / Talhão'),
         const SizedBox(height: 6),
-        TextField(
+        DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(v.cardRadius),
+            boxShadow: v.cardShadows,
+          ),
+          child: TextField(
           controller: _talhaoSearchController,
           enabled: enabled,
           onChanged: (value) => setState(() => _talhaoQuery = value),
-          style: TextStyle(color: v.titleColor, fontSize: 16),
+          style: TextStyle(color: v.titleColor, fontSize: 14),
           decoration: visitSheetSearchDecoration(
             v,
             hintText: enabled
                 ? 'Buscar talhão'
                 : 'Selecione a fazenda primeiro',
           ),
+        ),
         ),
         const SizedBox(height: 8),
         if (!enabled)
@@ -522,7 +531,11 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
         else if (_loadingTalhoes)
           visitSheetMutedLine(v, 'Carregando...')
         else if (items.isEmpty)
-          visitSheetMutedLine(v, 'Nenhum talhão encontrado', padding: EdgeInsets.zero)
+          visitSheetMutedLine(
+            v,
+            'Nenhum talhão encontrado',
+            padding: EdgeInsets.zero,
+          )
         else
           // Com um único talhão o usuário ainda toca o tile (sem auto-pular o passo 1).
           for (final item in items)
@@ -637,71 +650,77 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     final iconColor = v.isIos ? v.arrowColor : v.subtitleColor;
     final radius = v.cardRadius;
 
-    final baseField = SizedBox(
-      height: 56,
-      child: DropdownButtonFormField<T>(
-        initialValue: value,
-        icon: Icon(Icons.keyboard_arrow_down, color: iconColor),
-        style: TextStyle(color: textColor, fontSize: 16),
-        dropdownColor: surface,
+    final baseField = DecoratedBox(
+      decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
-        isExpanded: true,
-        decoration: InputDecoration(
-          filled: true,
-          fillColor: surface,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(radius),
-            borderSide: BorderSide(color: border, width: 1),
+        boxShadow: v.cardShadows,
+      ),
+      child: SizedBox(
+        height: 48,
+        child: DropdownButtonFormField<T>(
+          initialValue: value,
+          icon: Icon(Icons.keyboard_arrow_down, color: iconColor),
+          style: TextStyle(color: textColor, fontSize: 14),
+          dropdownColor: surface,
+          borderRadius: BorderRadius.circular(radius),
+          isExpanded: true,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: surface,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(radius),
+              borderSide: BorderSide(color: border, width: 1),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(radius),
+              borderSide: BorderSide(color: border, width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(radius),
+              borderSide: BorderSide(color: focus, width: 1.5),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(radius),
+              borderSide: BorderSide(color: border, width: 1),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 10,
+            ),
           ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(radius),
-            borderSide: BorderSide(color: border, width: 1),
+          items: items.isEmpty
+              ? null
+              : items.map((T item) {
+                  return DropdownMenuItem<T>(
+                    value: item,
+                    child: Text(
+                      itemLabel(item),
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: textColor, fontSize: 14),
+                    ),
+                  );
+                }).toList(),
+          onChanged: enabled ? onChanged : null,
+          hint: isLoading
+              ? Text(
+                  'Carregando...',
+                  style: TextStyle(color: muted, fontSize: 14),
+                )
+              : (!enabled
+                    ? Text(
+                        'Selecione o anterior primeiro',
+                        style: TextStyle(color: muted, fontSize: 14),
+                      )
+                    : (items.isEmpty
+                          ? Text(
+                              emptyMessage,
+                              style: TextStyle(color: muted, fontSize: 14),
+                            )
+                          : null)),
+          disabledHint: Text(
+            items.isEmpty && enabled ? emptyMessage : 'Selecione...',
+            style: TextStyle(color: muted, fontSize: 14),
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(radius),
-            borderSide: BorderSide(color: focus, width: 1.5),
-          ),
-          disabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(radius),
-            borderSide: BorderSide(color: border, width: 1),
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
-        ),
-        items: items.isEmpty
-            ? null
-            : items.map((T item) {
-                return DropdownMenuItem<T>(
-                  value: item,
-                  child: Text(
-                    itemLabel(item),
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: textColor, fontSize: 16),
-                  ),
-                );
-              }).toList(),
-        onChanged: enabled ? onChanged : null,
-        hint: isLoading
-            ? Text(
-                'Carregando...',
-                style: TextStyle(color: muted, fontSize: 16),
-              )
-            : (!enabled
-                  ? Text(
-                      'Selecione o anterior primeiro',
-                      style: TextStyle(color: muted, fontSize: 16),
-                    )
-                  : (items.isEmpty
-                        ? Text(
-                            emptyMessage,
-                            style: TextStyle(color: muted, fontSize: 16),
-                          )
-                        : null)),
-        disabledHint: Text(
-          items.isEmpty && enabled ? emptyMessage : 'Selecione...',
-          style: TextStyle(color: muted, fontSize: 16),
         ),
       ),
     );
@@ -751,6 +770,7 @@ class _TalhaoTile extends StatelessWidget {
                 color: selected ? visuals.focusBorder : visuals.cardBorder,
                 width: selected ? 1.5 : 1,
               ),
+              boxShadow: visuals.cardShadows,
             ),
             child: Row(
               children: [
