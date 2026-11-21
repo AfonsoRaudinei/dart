@@ -515,13 +515,20 @@ extension DrawingControllerVertexEditing on DrawingController {
   /// Removes a vertex at the specified index.
   /// Delega para [DrawingVertexEditService.removeVertex].
   void removeVertex(int ringIndex, int pointIndex) {
+    if (_isDisposed) return;
     if (_editGeometry is! DrawingPolygon) return;
+    final poly = _editGeometry as DrawingPolygon;
+    if (ringIndex < 0 || ringIndex >= poly.coordinates.length) return;
+    final ring = poly.coordinates[ringIndex];
+    if (pointIndex < 0 || pointIndex >= ring.length) return;
+    final isClosed =
+        ring.length > 1 &&
+        ring.first[0] == ring.last[0] &&
+        ring.first[1] == ring.last[1];
+    final logicalLength = isClosed ? ring.length - 1 : ring.length;
+    if (pointIndex >= logicalLength) return;
 
-    final result = _vertexService.removeVertex(
-      _editGeometry as DrawingPolygon,
-      ringIndex,
-      pointIndex,
-    );
+    final result = _vertexService.removeVertex(poly, ringIndex, pointIndex);
 
     if (result.error != null) {
       _errorMessage = result.error;
@@ -529,12 +536,74 @@ extension DrawingControllerVertexEditing on DrawingController {
       return;
     }
 
-    if (result.geometry == null) return;
+    final updated = result.geometry;
+    if (updated == null) return;
 
-    onDragStart(); // salva estado para undo
-    _editGeometry = result.geometry;
+    _pushEditHistoryBeforeChange(poly);
+    _editGeometry = updated;
+    _history.push(_geomToVertices(updated), fullPolygonSnapshot: updated);
+    _selectedEditRingIndex = null;
+    _selectedEditPointIndex = null;
     _updateRealTimeIntersection();
     validateGeometry(_editGeometry);
     _notify();
+  }
+
+  /// Garante que o estado anterior à mudança é o atual do histórico, para o
+  /// undo restaurá-lo (arrasto e inserção só empilham o estado de partida).
+  void _pushEditHistoryBeforeChange(DrawingPolygon before) {
+    final current = _history.currentFullPolygon;
+    if (current != null &&
+        _serializeGeometry(current) == _serializeGeometry(before)) {
+      return;
+    }
+    _history.push(_geomToVertices(before), fullPolygonSnapshot: before);
+  }
+
+  /// Exclui o vértice selecionado (sketch de polígono ou edição não-pivô).
+  void removeSelectedVertex() {
+    if (_isDisposed) return;
+    final sketchIndex = _selectedSketchVertexIndex;
+    if (sketchIndex != null) {
+      removeSketchVertex(sketchIndex);
+      return;
+    }
+    if (_stateMachine.currentState != DrawingState.editing) return;
+    if (isEditingPivot) return;
+    final ring = _selectedEditRingIndex;
+    final point = _selectedEditPointIndex;
+    if (ring == null || point == null) return;
+    removeVertex(ring, point);
+  }
+
+  /// Há vértice selecionado que [removeSelectedVertex] pode excluir.
+  bool get canRemoveSelectedVertex {
+    if (_isDisposed) return false;
+    final state = _stateMachine.currentState;
+    final sketchIndex = _selectedSketchVertexIndex;
+    if (sketchIndex != null &&
+        (state == DrawingState.drawing || state == DrawingState.armed)) {
+      return _stateMachine.currentTool == DrawingTool.polygon &&
+          sketchIndex >= 0 &&
+          sketchIndex < _currentPoints.length;
+    }
+    if (state != DrawingState.editing || isEditingPivot) return false;
+    final geometry = _editGeometry;
+    final ringIndex = _selectedEditRingIndex;
+    final pointIndex = _selectedEditPointIndex;
+    if (geometry is! DrawingPolygon ||
+        ringIndex == null ||
+        pointIndex == null ||
+        ringIndex < 0 ||
+        ringIndex >= geometry.coordinates.length) {
+      return false;
+    }
+    final ring = geometry.coordinates[ringIndex];
+    final isClosed =
+        ring.length > 1 &&
+        ring.first[0] == ring.last[0] &&
+        ring.first[1] == ring.last[1];
+    final logicalLength = isClosed ? ring.length - 1 : ring.length;
+    return pointIndex >= 0 && pointIndex < logicalLength;
   }
 }
