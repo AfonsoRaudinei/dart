@@ -25,6 +25,7 @@ import '../../modules/dashboard/providers/location_providers.dart';
 import '../../modules/dashboard/services/location_service.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
 import '../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
+import '../../modules/marketing/domain/entities/campo_teste_case_seed.dart';
 import '../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../components/map/map_camera_ease.dart';
 import '../components/map/map_coordinate_search_sheet.dart';
@@ -33,6 +34,7 @@ import '../components/map/map_offline_download_sheet.dart';
 import '../components/map/map_sheet_state.dart';
 import '../components/map/widgets/location_export_bottom_sheet.dart';
 import '../components/map/widgets/map_mark_sheet.dart';
+import 'map/campo_teste_case_handoff.dart';
 import '../theme/premium/design_tokens.dart';
 import 'map/utils/map_camera_snapshot_throttle.dart';
 import 'map/utils/map_empty_area_hit_test.dart';
@@ -480,13 +482,19 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     _openMapMarkSheet(latLng);
   }
 
-  void _openMapMarkSheet(LatLng latLng) {
+  void _openMapMarkSheet(
+    LatLng latLng, {
+    MapMarkKind? initialKind,
+    CampoTesteCaseSeed? campoTeste,
+  }) {
     if (_actionsSheetOpen) return;
     setState(() => _actionsSheetOpen = true);
     MapMarkSheet.show(
       context: context,
       ref: ref,
       position: latLng,
+      initialKind: initialKind,
+      campoTeste: campoTeste,
     ).whenComplete(() {
       if (!mounted) return;
       setState(() => _actionsSheetOpen = false);
@@ -588,10 +596,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   // ── _toggleDrawMode ── delegate ADR-031 F4 ────────────────────────────
   void _toggleDrawMode() {
     MapSheetController.toggleDrawMode(context, ref, _setSheetState);
-  }
-
-  Future<void> _armCampoTeste() async {
-    await MapSheetController.armCampoTeste(context, ref, _setSheetState);
   }
 
   // HARDENING DEFINITIVO: Máquina de Decisão de Viewport
@@ -997,6 +1001,23 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     final pinCorrectionActive =
         ref.watch(pinPositionCorrectionProvider) != null;
 
+    ref.listen(campoTesteCaseOpenRequestProvider, (previous, next) {
+      if (next == null) return;
+      final request = next;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (ref.read(campoTesteCaseOpenRequestProvider) != request) return;
+        ref.read(campoTesteCaseOpenRequestProvider.notifier).state = null;
+        _openMapMarkSheet(
+          request.position,
+          initialKind: request.kind == CampoTesteCaseKind.resultado
+              ? MapMarkKind.resultado
+              : MapMarkKind.antesDepois,
+          campoTeste: request.seed,
+        );
+      });
+    });
+
     ref.listen<PinPositionCorrectionSession?>(pinPositionCorrectionProvider, (
       previous,
       next,
@@ -1032,7 +1053,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           handleMapLongPress: _handleMapLongPress,
           finishDrawing: _finishDrawing,
           toggleDrawMode: _toggleDrawMode,
-          armCampoTeste: _armCampoTeste,
           centerOnUser: _centerOnUser,
           onLocationModeChanged: _handleLocationModeChanged,
           stopFollowing: () =>
