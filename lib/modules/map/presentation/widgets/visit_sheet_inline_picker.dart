@@ -26,7 +26,7 @@ InputDecoration visitSheetSearchDecoration(
   final border = v.cardBorder;
   return InputDecoration(
     hintText: hintText,
-    hintStyle: TextStyle(color: v.subtitleColor, fontSize: 14),
+    hintStyle: TextStyle(color: v.subtitleColor, fontSize: 16),
     prefixIcon: Icon(Icons.search, color: v.subtitleColor),
     filled: true,
     fillColor: v.cardBackground,
@@ -214,32 +214,24 @@ class _VisitSheetProdutorPickerState extends State<VisitSheetProdutorPicker> {
                 _focusNode.unfocus();
               },
               fieldViewBuilder: (context, controller, focusNode, onSubmit) {
-                return DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(v.cardRadius),
-                    boxShadow: v.cardShadows,
-                  ),
-                  child: TextField(
-                    key: _fieldKey,
-                    controller: controller,
-                    focusNode: focusNode,
-                    enabled: !initialLoad && !loadFailed,
-                    style: TextStyle(color: v.titleColor, fontSize: 14),
-                    textInputAction: TextInputAction.search,
-                    autocorrect: false,
-                    enableSuggestions: false,
-                    onChanged: (text) {
-                      final current = _clientById(widget.selectedClientId);
-                      if (current != null && text != current.name) {
-                        widget.onClearClient();
-                      }
-                    },
-                    decoration: visitSheetSearchDecoration(
-                      v,
-                      hintText: initialLoad
-                          ? 'Carregando...'
-                          : 'Buscar produtor',
-                    ),
+                return TextField(
+                  key: _fieldKey,
+                  controller: controller,
+                  focusNode: focusNode,
+                  enabled: !initialLoad && !loadFailed,
+                  style: TextStyle(color: v.titleColor, fontSize: 16),
+                  textInputAction: TextInputAction.search,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  onChanged: (text) {
+                    final current = _clientById(widget.selectedClientId);
+                    if (current != null && text != current.name) {
+                      widget.onClearClient();
+                    }
+                  },
+                  decoration: visitSheetSearchDecoration(
+                    v,
+                    hintText: initialLoad ? 'Carregando...' : 'Buscar produtor',
                   ),
                 );
               },
