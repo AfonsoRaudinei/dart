@@ -83,6 +83,23 @@ void main() {
 
     expect(row.containsKey('deletado_em'), isTrue);
     expect(row['deletado_em'], isNull);
+    expect(row.containsKey('drawing_id'), isFalse);
+  });
+
+  test('toRemoteRow envia drawing_id do campo de teste', () {
+    final row = MarketingCaseRepositoryImpl.toRemoteRow(
+      _filledCase().copyWith(drawingId: 'draw-teste-1'),
+      userId: 'user-1',
+      syncStatus: 'synced',
+    );
+    expect(row['drawing_id'], 'draw-teste-1');
+    final restored = MarketingCase.fromJson({
+      ..._filledCase().toJson(),
+      'drawing_id': 'draw-teste-1',
+      'criado_em': _filledCase().criadoEm.toIso8601String(),
+      'atualizado_em': _filledCase().atualizadoEm.toIso8601String(),
+    });
+    expect(restored.drawingId, 'draw-teste-1');
   });
 
   test('toRemoteRow preserva client_id null para limpar no upsert', () {
