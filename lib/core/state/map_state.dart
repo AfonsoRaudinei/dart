@@ -22,7 +22,9 @@ MapRepository mapRepository(Ref ref) {
   );
 }
 
-final offlineTileCacheServiceProvider = Provider<OfflineTileCacheService>((ref) {
+final offlineTileCacheServiceProvider = Provider<OfflineTileCacheService>((
+  ref,
+) {
   ref.watch(sessionControllerProvider);
   return OfflineTileCacheService(
     scopedUserId: LocalSessionIdentity.resolveUserId(),
@@ -100,8 +102,8 @@ class ActiveLayer extends _$ActiveLayer {
     if (saved != null) {
       return inpe_overlay.InpeSatelliteOverlayMode.fromPersisted(saved);
     }
-    final legacyOn = prefs.getBool(InpeSatelliteOverlayModeCtrl._kLegacyBoolKey) ??
-        false;
+    final legacyOn =
+        prefs.getBool(InpeSatelliteOverlayModeCtrl._kLegacyBoolKey) ?? false;
     return legacyOn
         ? inpe_overlay.InpeSatelliteOverlayMode.cerradoInpe
         : inpe_overlay.InpeSatelliteOverlayMode.off;
@@ -118,6 +120,22 @@ class ShowMarkers extends _$ShowMarkers {
     final prefs = ref.read(preferencesServiceProvider);
     return prefs.getBool(_kKey) ?? true;
   }
+
+  void setEnabled(bool enabled) {
+    state = enabled;
+    ref.read(preferencesServiceProvider).setBool(_kKey, enabled);
+  }
+
+  void toggle() => setEnabled(!state);
+}
+
+/// Cases de sucesso no mapa. Independente dos pinos de ocorrência e publicação.
+@Riverpod(keepAlive: true)
+class ShowMarketingCases extends _$ShowMarketingCases {
+  static const _kKey = 'map_show_marketing_cases_v1';
+
+  @override
+  bool build() => ref.read(preferencesServiceProvider).getBool(_kKey) ?? true;
 
   void setEnabled(bool enabled) {
     state = enabled;
@@ -173,9 +191,7 @@ class InpeSatelliteOverlayModeCtrl extends _$InpeSatelliteOverlayModeCtrl {
     );
   }
 
-  void cycleMode() {
-    setMode(state.cycle());
-  }
+  void cycleMode() => setMode(state.cycle());
 }
 
 /// Divisas estaduais (UF) — malha IBGE sobre o mapa.
@@ -197,12 +213,8 @@ class MapStateBoundariesEnabled extends _$MapStateBoundariesEnabled {
 
 class ExternalWmsLayerConfig {
   final bool enabled;
-  final String baseUrl;
-  final String layers;
-  final String format;
+  final String baseUrl, layers, format, version, crs;
   final bool transparent;
-  final String version;
-  final String crs;
 
   const ExternalWmsLayerConfig({
     this.enabled = false,
@@ -264,10 +276,7 @@ class ExternalRasterLayerConfig {
   final bool isGeoTiff;
   final String geoTiffTileEndpoint;
   final String? localPngPath;
-  final double? localSouth;
-  final double? localWest;
-  final double? localNorth;
-  final double? localEast;
+  final double? localSouth, localWest, localNorth, localEast;
 
   const ExternalRasterLayerConfig({
     this.enabled = false,
@@ -399,14 +408,9 @@ class ExternalRasterLayerNotifier extends Notifier<ExternalRasterLayerConfig> {
 class OfflineMapAreaConfig {
   final String id;
   final String layerKey;
-  final double south;
-  final double west;
-  final double north;
-  final double east;
-  final double minZoom;
-  final double maxZoom;
+  final double south, west, north, east;
+  final double minZoom, maxZoom;
   final DateTime createdAt;
-
   final String? ownerUserId;
 
   const OfflineMapAreaConfig({
@@ -664,17 +668,15 @@ final externalRasterLayerProvider =
       ExternalRasterLayerNotifier.new,
     );
 
-final offlineMapAreasProvider = NotifierProvider<OfflineMapAreasNotifier,
-    List<OfflineMapAreaConfig>>(OfflineMapAreasNotifier.new);
+final offlineMapAreasProvider =
+    NotifierProvider<OfflineMapAreasNotifier, List<OfflineMapAreaConfig>>(
+      OfflineMapAreasNotifier.new,
+    );
 
 class OfflineCoverageQuery {
   final String layerKey;
-  final double lat;
-  final double lng;
-  final double south;
-  final double west;
-  final double north;
-  final double east;
+  final double lat, lng;
+  final double south, west, north, east;
   final int zoom;
 
   const OfflineCoverageQuery({
