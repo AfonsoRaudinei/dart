@@ -165,6 +165,7 @@ class _MapTalhaoSelectionToolbarState
       viewportSize: size,
       toolbarWidth: toolbarWidth,
       toolbarHeight: resolvedToolbarHeight,
+      anchorHeight: MapTalhaoSelectionToolbar.toolbarHeight,
       topInset: topInset,
       bottomInset: bottomInset,
       edgeMargin: MapTalhaoSelectionToolbar.edgeMargin,
@@ -441,10 +442,13 @@ Offset clampMapToolbarOffset({
   double topInset = 0,
   double bottomInset = 0,
   double edgeMargin = MapTalhaoSelectionToolbar.edgeMargin,
-  double anchorGap = 12,
+  double anchorGap = 24,
+  double? anchorHeight,
 }) {
   var left = screenPoint.dx - toolbarWidth / 2;
-  var top = screenPoint.dy - toolbarHeight - anchorGap;
+  // A linha principal fica fixa acima do ponto; painéis extras (status, datas
+  // NDVI) crescem para baixo, sem fazer a barra "pular" ao abrir/fechar.
+  var top = screenPoint.dy - (anchorHeight ?? toolbarHeight) - anchorGap;
 
   final minLeft = edgeMargin;
   final rightColumnReserve =
