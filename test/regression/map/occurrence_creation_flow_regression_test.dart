@@ -177,13 +177,15 @@ void main() {
           'lib/ui/components/map/widgets/map_mark_sheet.dart',
         ).readAsStringSync();
 
+        expect(markSheetSource, contains('late MapMarkKind _kind'));
         expect(
           markSheetSource,
-          contains('MapMarkKind _kind = MapMarkKind.ocorrencia'),
+          contains('_kind = widget.initialKind ?? MapMarkKind.ocorrencia'),
         );
+        expect(markSheetSource, contains('OccurrenceFormGuard? _occurrenceGuard'));
         expect(
           markSheetSource,
-          contains('OccurrenceFormGuard? _occurrenceGuard = OccurrenceFormGuard()'),
+          contains('_occurrenceGuard = _kind == MapMarkKind.ocorrencia'),
         );
         expect(markSheetSource, isNot(contains('MapMarkKind? _kind;')));
         expect(markSheetSource, contains('if (resolved == _kind)'));
@@ -200,10 +202,8 @@ void main() {
           'lib/ui/components/map/map_bottom_sheet.dart',
         ).readAsStringSync();
 
-        expect(
-          drawingSheetSource,
-          contains('savedFeature: savedFeatures.first'),
-        );
+        expect(drawingSheetSource, contains('final saved = savedFeatures.first'));
+        expect(drawingSheetSource, contains('savedFeature: saved'));
         expect(
           drawingSheetSource,
           contains('typedef DrawingSheetSavedCallback'),
