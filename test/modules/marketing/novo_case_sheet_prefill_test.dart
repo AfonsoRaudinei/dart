@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_client_search_field.dart';
 import 'package:soloforte_app/core/contracts/i_active_visit_context_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
@@ -111,7 +112,10 @@ void main() {
         'José Augusto Miranda / Fazenda Boa Vista',
       );
 
-      await tester.tap(find.byType(DropdownButton<String?>));
+      await tester.enterText(
+        find.byKey(const Key('sheet_client_search')),
+        'Cliente',
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Cliente Selecionável').last);
       await tester.pumpAndSettle();
@@ -198,7 +202,7 @@ void main() {
       find.widgetWithText(TextFormField, 'Produtor / Fazenda *'),
       findsOneWidget,
     );
-    expect(find.text('Selecionar cliente (opcional)'), findsOneWidget);
+    expect(find.text('Buscar cliente (opcional)'), findsOneWidget);
     expect(find.byType(DropdownButton<String>), findsNothing);
   });
 
@@ -226,9 +230,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Selecionar cliente (opcional)'), findsOneWidget);
+    expect(find.text('Buscar cliente (opcional)'), findsOneWidget);
 
-    await tester.tap(find.byType(DropdownButton<String?>));
+    await tester.enterText(
+        find.byKey(const Key('sheet_client_search')),
+        'Cliente',
+      );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cliente Selecionável').last);
     await tester.pumpAndSettle();
@@ -243,9 +250,10 @@ void main() {
       '',
     );
 
-    final dropdown =
-        tester.widget<DropdownButton<String?>>(find.byType(DropdownButton<String?>));
-    expect(dropdown.value, 'client-2');
+    final busca = tester.widget<SheetClientSearchField>(
+      find.byType(SheetClientSearchField),
+    );
+    expect(busca.selectedClientId, 'client-2');
   });
 
   testWidgets('Antes/Depois: selecionar cliente não duplica Produtor/Fazenda', (
@@ -272,7 +280,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(DropdownButton<String?>));
+    await tester.enterText(
+        find.byKey(const Key('sheet_client_search')),
+        'Cliente',
+      );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cliente Selecionável').last);
     await tester.pumpAndSettle();
@@ -321,7 +332,10 @@ void main() {
       await tester.enterText(produtorField, 'Nome manual do produtor');
       await tester.pump();
 
-      await tester.tap(find.byType(DropdownButton<String?>));
+      await tester.enterText(
+        find.byKey(const Key('sheet_client_search')),
+        'Cliente',
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Cliente Selecionável').last);
       await tester.pumpAndSettle();

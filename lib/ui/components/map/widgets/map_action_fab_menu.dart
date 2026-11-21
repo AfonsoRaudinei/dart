@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'map_button_3d.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/design/sf_icons.dart';
@@ -273,17 +274,9 @@ class _MasterFab extends StatelessWidget {
           curve: Curves.easeOutCubic,
           width: 44,
           height: 44,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+          decoration: map3dButtonDecoration(
+                borderRadius: BorderRadius.circular(12),
               ),
-            ],
-          ),
           child: AnimatedRotation(
             turns: isOpen ? 0.125 : 0,
             duration: const Duration(milliseconds: 180),

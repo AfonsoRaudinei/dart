@@ -47,10 +47,10 @@ void main() {
           .text,
       'Produtor livre',
     );
-    expect(find.text('Selecionar cliente (opcional)'), findsOneWidget);
+    expect(find.text('Buscar cliente (opcional)'), findsOneWidget);
   });
 
-  testWidgets('MarketingClientSelector exibe hint e lista clientes', (
+  testWidgets('MarketingClientSelector exibe hint e acha cliente digitando', (
     tester,
   ) async {
     ClientSummary? selected;
@@ -72,10 +72,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Selecionar cliente (opcional)'), findsOneWidget);
+    expect(find.text('Buscar cliente (opcional)'), findsOneWidget);
 
-    await tester.tap(find.byType(DropdownButton<String?>));
+    await tester.enterText(find.byKey(const Key('sheet_client_search')), 'alf');
     await tester.pumpAndSettle();
+    expect(find.text('Fazenda Beta'), findsNothing);
     await tester.tap(find.text('Fazenda Alfa').last);
     await tester.pumpAndSettle();
 

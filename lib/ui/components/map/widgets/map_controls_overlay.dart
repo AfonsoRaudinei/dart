@@ -23,6 +23,7 @@ import '../../../../modules/drawing/presentation/widgets/drawing_bottom_toolbar_
 import '../../../../modules/drawing/presentation/widgets/vertex_handle_drag_preview.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../modules/map/presentation/widgets/visit_active_card.dart';
+import 'map_button_3d.dart';
 import 'selected_talhao_card.dart';
 
 part 'map_controls_location_button.dart';
@@ -419,16 +420,8 @@ class _MapActionButtonState extends State<_MapActionButton> {
               key: widget.buttonKey,
               width: kMapActionColumnButtonSize,
               height: kMapActionColumnButtonSize,
-              decoration: BoxDecoration(
-                color: Colors.white,
+              decoration: map3dButtonDecoration(
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
               ),
               child: Icon(
                 widget.icon,
@@ -488,17 +481,9 @@ class _MapToolsFab extends StatelessWidget {
             curve: Curves.easeOutCubic,
             width: kMapActionColumnButtonSize,
             height: kMapActionColumnButtonSize,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
+            decoration: map3dButtonDecoration(
+                borderRadius: BorderRadius.circular(12),
+              ),
             child: Icon(
               SFIcons.edit,
               color: isActive ? activeColor : Colors.grey.shade600,
@@ -775,17 +760,7 @@ class _MapRoundToggleButton extends StatelessWidget {
         key: buttonKey,
         width: kMapActionColumnButtonSize,
         height: kMapActionColumnButtonSize,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
+        decoration: map3dButtonDecoration(circle: true),
         child: ClipOval(
           child: Stack(
             alignment: Alignment.center,

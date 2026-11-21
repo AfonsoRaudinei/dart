@@ -122,7 +122,7 @@ void main() {
       find.descendant(
         of: find.ancestor(
           of: find.byKey(const Key('occurrence_plantio_validacao_field')),
-          matching: find.byType(Card),
+          matching: find.byType(ExpansionTile),
         ),
         matching: find.text('Boa'),
       ),
