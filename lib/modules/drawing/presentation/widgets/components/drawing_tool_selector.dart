@@ -117,6 +117,7 @@ class DrawingToolSelector extends StatelessWidget {
         color: v.cardBackground,
         borderRadius: BorderRadius.circular(v.cardRadius),
         border: Border.all(color: v.cardBorder),
+        boxShadow: v.cardShadows,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -181,12 +182,16 @@ class _ToolButton extends StatelessWidget {
             decoration: BoxDecoration(
               color: v.iconBackground,
               shape: BoxShape.circle,
+              // relevo discreto no ícone (efeito 3D suave)
+              boxShadow: [
+                BoxShadow(
+                  color: v.iconStroke.withValues(alpha: 0.22),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: Icon(
-              icon,
-              color: v.iconStroke,
-              size: 18,
-            ),
+            child: Icon(icon, color: v.iconStroke, size: 18),
           ),
           title: Text(
             label,
@@ -196,11 +201,7 @@ class _ToolButton extends StatelessWidget {
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
             ),
           ),
-          trailing: Icon(
-            Icons.chevron_right,
-            color: v.arrowColor,
-            size: 18,
-          ),
+          trailing: Icon(Icons.chevron_right, color: v.arrowColor, size: 18),
         ),
       );
     }

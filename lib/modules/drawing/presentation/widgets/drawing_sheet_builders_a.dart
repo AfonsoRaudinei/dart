@@ -33,6 +33,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
           color: panelBorder,
           width: PremiumTokens.hairlineThickness,
         ),
+        boxShadow: v.cardShadows,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -33,6 +33,7 @@ import 'teste_execucao_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import 'package:soloforte_app/core/domain/talhao_condicao.dart';
 import 'gps_walk_controls_overlay.dart';
+import '../../../../core/ui/sheets/sheet_close_button.dart';
 import '../../../../core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import '../../../../ui/components/sync/conflict_resolution_dialog.dart';
