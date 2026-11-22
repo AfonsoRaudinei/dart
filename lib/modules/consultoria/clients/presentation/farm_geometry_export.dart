@@ -55,12 +55,10 @@ class FarmGeometryExportButton extends StatelessWidget {
         vertexCount: field.vertices.length,
       ),
     );
-    final color = enabled ? PremiumTokens.brandGreen : Colors.grey;
+    final color = enabled ? PremiumTokens.brandGreenAccessible : Colors.grey;
 
     return TextButton.icon(
       style: TextButton.styleFrom(
-        visualDensity: VisualDensity.compact,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         padding: const EdgeInsets.symmetric(horizontal: 8),
       ),
       onPressed: enabled

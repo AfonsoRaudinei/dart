@@ -220,7 +220,7 @@ extension _OccurrenceCreationSheetPlantioPhases
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 0),
                   minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  tapTargetSize: MaterialTapTargetSize.padded,
                 ),
                 child: Text(
                   'Acompanhar emergência',

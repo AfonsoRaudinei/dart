@@ -6,6 +6,10 @@ class PremiumTokens {
 
   // A 'Tint Color' única. Verde vibrante iOS que comanda as ações do App
   static const Color brandGreen = Color(0xFF34C759);
+
+  /// Verde de marca com contraste AA (≥4.5:1) com texto/ícone branco. Usar em
+  /// botões, chips e textos sobre fundo claro; `brandGreen` fica decorativo.
+  static const Color brandGreenAccessible = Color(0xFF20883A);
   static const Color brandGreenDark = Color(0xFF32D74B);
 
   // Gradiente vibrante para Call to Actions principais
@@ -33,7 +37,7 @@ class PremiumTokens {
   static const Color surfaceDark = Color(
     0xFF1C1C1E,
   ); // Cinza chumbo claro (cards)
-  static const Color blackAccentPrimary = Color(0xFF4F6BFF); // Azul Samsung claro (contraste AA no preto)
+  static const Color blackAccentPrimary = Color(0xFF4963F8); // Azul Samsung claro (contraste AA no preto)
   static const Color blackAccentVariant = Color(0xFF3A55E0); // pressed/hover
 
   // === VIDROS (GLASSMORPHISM) ===

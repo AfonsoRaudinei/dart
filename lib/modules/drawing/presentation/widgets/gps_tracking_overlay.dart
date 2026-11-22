@@ -367,7 +367,7 @@ class _QuietAction extends StatelessWidget {
         foregroundColor: color,
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        tapTargetSize: MaterialTapTargetSize.padded,
       ),
       child: Text(
         label,

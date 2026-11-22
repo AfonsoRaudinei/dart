@@ -142,7 +142,7 @@ class _OptionCard extends StatelessWidget {
                 backgroundColor: color,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                minimumSize: const Size(0, 32),
+                minimumSize: const Size(0, 44),
               ),
               child: const Text('Usar esta', style: TextStyle(fontSize: 12)),
             ),
