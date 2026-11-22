@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/extensions/context_extensions.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
@@ -13,6 +13,7 @@ import 'package:soloforte_app/core/contracts/i_field_lookup_provider.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/enums/event_status.dart';
 import '../providers/agenda_provider.dart';
+import '../services/agenda_visit_share.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/event_type_badge.dart';
 import '../widgets/visit_edit_dialog.dart';
@@ -81,7 +82,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, context.fabSafeBottomPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -125,6 +126,18 @@ class AgendaEventDetailPage extends ConsumerWidget {
                 eventFieldName: fieldNome,
                 eventFarmName: farmNome,
               ),
+              if (event.visitSessionId!.trim().isNotEmpty) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () =>
+                        openAgendaVisitShare(context, ref, event: event),
+                    icon: const Icon(Icons.ios_share_outlined),
+                    label: const Text('Enviar'),
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
             ],
 
@@ -155,7 +168,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
             if (event.status == EventStatus.concluido &&
                 event.visitSessionId != null)
               _buildKeepOrDelete(context, ref, event),
-            const SizedBox(height: kFabSafeArea),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -279,17 +292,13 @@ class AgendaEventDetailPage extends ConsumerWidget {
     if (session == null) return const SizedBox.shrink();
 
     return _buildInfoSection('Sessão de Visita', [
-      _buildInfoRow(
+      _buildSessionTimeRow(
         Icons.play_arrow,
         'Início Real',
-        _formatDateTime(session.startAtReal),
+        session.startAtReal,
       ),
       if (session.endAtReal != null)
-        _buildInfoRow(
-          Icons.stop,
-          'Fim Real',
-          _formatDateTime(session.endAtReal!),
-        ),
+        _buildSessionTimeRow(Icons.stop, 'Fim Real', session.endAtReal!),
       _buildInfoRow(
         Icons.timer,
         'Duração',
@@ -328,9 +337,9 @@ class AgendaEventDetailPage extends ConsumerWidget {
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text(userFacingError(e, action: 'Erro'))));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(userFacingError(e, action: 'Erro'))),
+                  );
                 }
               }
             },
@@ -366,9 +375,9 @@ class AgendaEventDetailPage extends ConsumerWidget {
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text(userFacingError(e, action: 'Erro'))));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(userFacingError(e, action: 'Erro'))),
+                  );
                 }
               }
             },
@@ -393,9 +402,9 @@ class AgendaEventDetailPage extends ConsumerWidget {
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text(userFacingError(e, action: 'Erro'))));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(userFacingError(e, action: 'Erro'))),
+                  );
                 }
               }
             },
@@ -424,9 +433,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
                   ),
                   TextButton(
                     onPressed: () => Navigator.pop(context, true),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.red,
-                    ),
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
                     child: const Text('Excluir'),
                   ),
                 ],
@@ -435,9 +442,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
 
             if (confirm == true && context.mounted) {
               try {
-                await ref
-                    .read(agendaProvider.notifier)
-                    .deleteEvent(event.id);
+                await ref.read(agendaProvider.notifier).deleteEvent(event.id);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Evento excluído.')),
@@ -447,7 +452,11 @@ class AgendaEventDetailPage extends ConsumerWidget {
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(userFacingError(e, action: 'Erro ao excluir'))),
+                    SnackBar(
+                      content: Text(
+                        userFacingError(e, action: 'Erro ao excluir'),
+                      ),
+                    ),
                   );
                 }
               }
@@ -464,11 +473,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildKeepOrDelete(
-    BuildContext context,
-    WidgetRef ref,
-    Event event,
-  ) {
+  Widget _buildKeepOrDelete(BuildContext context, WidgetRef ref, Event event) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -529,15 +534,17 @@ class AgendaEventDetailPage extends ConsumerWidget {
     try {
       await ref.read(agendaProvider.notifier).deleteEvent(event.id);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(success)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(success)));
         context.go(AppRoutes.agendaDay(event.dataInicioPlanejada));
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(userFacingError(e, action: 'Erro ao excluir'))),
+          SnackBar(
+            content: Text(userFacingError(e, action: 'Erro ao excluir')),
+          ),
         );
       }
     }
@@ -572,24 +579,62 @@ class AgendaEventDetailPage extends ConsumerWidget {
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
-  String _formatDateTime(DateTime dateTime) {
-    return '${_formatDate(dateTime)} às ${_formatTime(dateTime)}';
+  /// Data e hora em linhas separadas para o horário não ficar sob o botão flutuante.
+  Widget _buildSessionTimeRow(IconData icon, String label, DateTime value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: Colors.grey.shade600),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  _formatDate(value),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.right,
+                ),
+                Text(
+                  'às ${_formatTime(value)}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.right,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
 /// Provider privado — resolve ClientSummary por ID via IClientLookup (ADR-015).
 /// Padrão idêntico ao adotado em client_selector_dropdown.dart.
-final _clientByIdProvider =
-    FutureProvider.autoDispose.family<ClientSummary?, String>(
-  (ref, id) => ref.watch(clientLookupProvider).findById(id),
-);
+final _clientByIdProvider = FutureProvider.autoDispose
+    .family<ClientSummary?, String>(
+      (ref, id) => ref.watch(clientLookupProvider).findById(id),
+    );
 
-final _farmByIdProvider =
-    FutureProvider.autoDispose.family<FarmSummary?, String>(
-  (ref, id) => ref.watch(iFarmLookupProvider).findById(id),
-);
+final _farmByIdProvider = FutureProvider.autoDispose
+    .family<FarmSummary?, String>(
+      (ref, id) => ref.watch(iFarmLookupProvider).findById(id),
+    );
 
-final _fieldByIdProvider =
-    FutureProvider.autoDispose.family<FieldSummary?, String>(
-  (ref, id) => ref.watch(iFieldLookupProvider).findById(id),
-);
+final _fieldByIdProvider = FutureProvider.autoDispose
+    .family<FieldSummary?, String>(
+      (ref, id) => ref.watch(iFieldLookupProvider).findById(id),
+    );
