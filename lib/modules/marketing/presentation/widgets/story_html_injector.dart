@@ -3,6 +3,35 @@ import '../../domain/entities/marketing_case.dart';
 import '../../domain/entities/marketing_roi_calculation.dart';
 import '../../domain/enums/case_tipo.dart';
 
+/// Par de fotos do slide Antes/Depois da story.
+typedef StoryFotosAntesDepois = ({String? antes, String? depois});
+
+/// Escolhe as fotos do slide Antes/Depois.
+///
+/// Usa as fotos preenchidas da Comparação 1 (`avaliacoes_json`) na ordem dos
+/// lados: a primeira é o antes, a segunda o depois. Sem blocos, usa o par
+/// legado (`foto_antes_url`/`foto_depois_url`), também só as preenchidas.
+/// Com uma única foto, `depois` fica nulo — [injectStoryData] então mostra o
+/// slide só com essa foto, sem o lado vazio.
+StoryFotosAntesDepois storyFotosAntesDepois(MarketingCase marketingCase) {
+  final blocos = marketingCase.avaliacoesLivres;
+  final candidatas = blocos.isNotEmpty
+      ? [
+          blocos.first.fotoLadoAPath,
+          blocos.first.fotoLadoBPath,
+          blocos.first.fotoLadoCPath,
+        ]
+      : [marketingCase.fotoAntesUrl, marketingCase.fotoDepoisUrl];
+  final preenchidas = [
+    for (final url in candidatas)
+      if (url != null && url.trim().isNotEmpty) url.trim(),
+  ];
+  return (
+    antes: preenchidas.isNotEmpty ? preenchidas.first : null,
+    depois: preenchidas.length > 1 ? preenchidas[1] : null,
+  );
+}
+
 /// Injeta dados do [MarketingCase] nos marcadores do `assets/story.html`.
 ///
 /// Ordem:
@@ -157,7 +186,28 @@ String injectStoryData(
     );
   }
 
+  if (marketingCase.tipo == CaseTipo.antesDepois &&
+      antes.isNotEmpty &&
+      depois.isEmpty) {
+    out = _withSingleComparePhoto(out);
+  }
+
   return out;
+}
+
+/// Uma só foto no slide: some o lado "Depois" vazio e o divisor.
+String _withSingleComparePhoto(String html) {
+  const style = '''
+<style id="sf-story-single-photo">
+.compare-photos { grid-template-columns: 1fr; }
+.compare-side.after, .compare-divider { display: none; }
+</style>
+''';
+  if (html.contains('id="sf-story-single-photo"')) return html;
+  if (html.contains('</head>')) {
+    return html.replaceFirst('</head>', '$style</head>');
+  }
+  return html;
 }
 
 String _stripFalseIfs(String html, Map<String, bool> flags) {
