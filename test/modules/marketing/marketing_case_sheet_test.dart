@@ -244,6 +244,66 @@ void main() {
         semantics.dispose();
       });
 
+      testWidgets('fonte ampliada (2.0x) não estoura o carrossel com rótulos', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _wrapSheet(
+            marketingCase: _antesDepoisCase(),
+            themeId: null,
+            textScale: 2.0,
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.byType(PageView).first,
+          120,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('Antes'), findsOneWidget);
+        final rotulo = tester.getRect(find.text('Antes'));
+        final pagina = tester.getRect(find.byType(PageView));
+        expect(rotulo.bottom, lessThanOrEqualTo(pagina.bottom));
+      });
+
+      testWidgets('fonte ampliada (2.0x) com rótulos vazios não estoura', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _wrapSheet(
+            marketingCase: _antesDepoisCase(
+              blocos: [
+                _bloco(
+                  'av-1',
+                  'Comparação 1',
+                  rotulos: ['', '', ''],
+                  fotos: [
+                    'https://example.com/a.jpg',
+                    'https://example.com/b.jpg',
+                    'https://example.com/c.jpg',
+                  ],
+                ),
+              ],
+            ),
+            themeId: null,
+            textScale: 2.0,
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.byType(PageView).first,
+          120,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.byType(PageView), findsOneWidget);
+      });
+
       testWidgets('tipo avaliação legado também usa o carrossel', (
         tester,
       ) async {
@@ -320,6 +380,7 @@ void main() {
 Widget _wrapSheet({
   required MarketingCase marketingCase,
   required String? themeId,
+  double textScale = 1.0,
 }) {
   final extensions = themeId == null
       ? const <ThemeExtension<dynamic>>[]
@@ -341,6 +402,12 @@ Widget _wrapSheet({
     ],
     child: MaterialApp(
       theme: ThemeData(extensions: extensions),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(
+          context,
+        ).copyWith(textScaler: TextScaler.linear(textScale)),
+        child: child!,
+      ),
       home: Scaffold(body: MarketingCaseSheet(marketingCase: marketingCase)),
     ),
   );
