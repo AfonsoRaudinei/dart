@@ -164,7 +164,9 @@ class _RelatoriosSegmentBar extends StatelessWidget {
       height: 40,
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: const Color(0xFFE5E5EA),
+        color: context.isPremiumDark
+            ? const Color(0xFF1C1C1E)
+            : const Color(0xFFE5E5EA),
         borderRadius: BorderRadius.circular(10),
       ),
       child: LayoutBuilder(
@@ -221,7 +223,11 @@ class _RelatoriosSegmentBar extends StatelessWidget {
             ? const EdgeInsets.symmetric(horizontal: 12)
             : EdgeInsets.zero,
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
+          color: isSelected
+              ? (context.isPremiumDark
+                  ? const Color(0xFF3A3A3C)
+                  : Colors.white)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           boxShadow: isSelected
               ? [

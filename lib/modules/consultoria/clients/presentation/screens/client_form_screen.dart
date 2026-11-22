@@ -603,7 +603,7 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
       decoration: BoxDecoration(
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: context.premiumHairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -637,7 +637,7 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
           decoration: BoxDecoration(
             color: Colors.grey[50],
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
+            border: Border.all(color: context.premiumHairline),
           ),
           child: Column(
             children: [

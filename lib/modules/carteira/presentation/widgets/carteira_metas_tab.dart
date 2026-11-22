@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:soloforte_app/core/extensions/context_extensions.dart';
 import '../../../../core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -571,7 +572,7 @@ class _MetaCategoriaItem extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(4),
                           child: LinearProgressIndicator(
                             value: pct / 100.0,
-                            backgroundColor: Colors.grey[200],
+                            backgroundColor: context.premiumHairline,
                             color: cor,
                             minHeight: 6,
                           ),

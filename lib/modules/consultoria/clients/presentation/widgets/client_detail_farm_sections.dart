@@ -207,7 +207,7 @@ class _ClientFarmWithTalhoesSectionState
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey[100],
+            color: context.isPremiumDark ? const Color(0xFF2C2C2E) : Colors.grey[100],
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -330,7 +330,7 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: Colors.grey[50],
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey[200]!),
+                  border: Border.all(color: context.premiumHairline),
                 ),
                 child: Text(
                   'Nenhum talhão avulso no mapa',

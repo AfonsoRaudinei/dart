@@ -32,11 +32,8 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
   final _formKey = GlobalKey<FormState>();
   int _messageLength = 0;
 
-  static const _bugColor = Color(0xFFDC2626);
   static const _bugBackground = Color(0xFFFFEBEB);
-  static const _suggestionColor = Color(0xFF92400E);
   static const _suggestionBackground = Color(0xFFFFF3CD);
-  static const _praiseColor = Color(0xFF065F46);
   static const _praiseBackground = Color(0xFFD1FAE5);
 
   @override
@@ -84,6 +81,13 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
       );
     }
   }
+
+  Color _bugFg(BuildContext c) =>
+      c.isPremiumDark ? const Color(0xFFFF6B6B) : const Color(0xFFDC2626);
+  Color _suggestionFg(BuildContext c) =>
+      c.isPremiumDark ? const Color(0xFFFFB84D) : const Color(0xFF92400E);
+  Color _praiseFg(BuildContext c) =>
+      c.isPremiumDark ? const Color(0xFF4ADE80) : const Color(0xFF065F46);
 
   Widget _buildStatsUnavailableBanner() {
     return Container(
@@ -194,7 +198,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                                 label: 'Bug',
                                 count: stats.bugCount,
                                 icon: Icons.bug_report_outlined,
-                                color: _bugColor,
+                                color: _bugFg(context),
                                 backgroundColor: _statsCardBackground(
                                   FeedbackType.bug,
                                   context,
@@ -208,7 +212,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                                 label: 'Sugestão',
                                 count: stats.suggestionCount,
                                 icon: Icons.lightbulb_outline,
-                                color: _suggestionColor,
+                                color: _suggestionFg(context),
                                 backgroundColor: _statsCardBackground(
                                   FeedbackType.suggestion,
                                   context,
@@ -223,7 +227,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                                 label: 'Elogios',
                                 count: stats.praiseCount,
                                 icon: Icons.favorite_border,
-                                color: _praiseColor,
+                                color: _praiseFg(context),
                                 backgroundColor: _statsCardBackground(
                                   FeedbackType.praise,
                                   context,
@@ -255,7 +259,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                                 label: 'Bug',
                                 count: 0,
                                 icon: Icons.bug_report_outlined,
-                                color: _bugColor,
+                                color: _bugFg(context),
                                 backgroundColor: _statsCardBackground(
                                   FeedbackType.bug,
                                   context,
@@ -269,7 +273,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                                 label: 'Sugestão',
                                 count: 0,
                                 icon: Icons.lightbulb_outline,
-                                color: _suggestionColor,
+                                color: _suggestionFg(context),
                                 backgroundColor: _statsCardBackground(
                                   FeedbackType.suggestion,
                                   context,
@@ -284,7 +288,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                                 label: 'Elogios',
                                 count: 0,
                                 icon: Icons.favorite_border,
-                                color: _praiseColor,
+                                color: _praiseFg(context),
                                 backgroundColor: _statsCardBackground(
                                   FeedbackType.praise,
                                   context,
@@ -351,10 +355,11 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Expanded(
+                                Expanded(
                                   child: Text(
                                     'Enviar Feedback',
                                     style: TextStyle(
+                                      color: context.premiumTextPrimary,
                                       fontSize: 20,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -569,13 +574,13 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
         switch (type) {
           case FeedbackType.bug:
             icon = Icons.bug_report_outlined;
-            color = const Color(0xFFDC2626);
+            color = _bugFg(context);
           case FeedbackType.suggestion:
             icon = Icons.lightbulb_outline;
-            color = const Color(0xFF92400E);
+            color = _suggestionFg(context);
           case FeedbackType.praise:
             icon = Icons.favorite_border;
-            color = const Color(0xFF065F46);
+            color = _praiseFg(context);
         }
 
         return DropdownMenuItem(

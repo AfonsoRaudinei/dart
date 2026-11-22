@@ -115,7 +115,7 @@ class FarmDetailScreen extends ConsumerWidget {
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.grey[100],
+                            color: context.isPremiumDark ? const Color(0xFF2C2C2E) : Colors.grey[100],
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Column(
