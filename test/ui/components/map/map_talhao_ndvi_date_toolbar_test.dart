@@ -368,4 +368,83 @@ void main() {
       const MapNdviDateSelection(fieldId: 'f1', dateKey: '2026-10-10'),
     );
   });
+
+  testWidgets('segundo toque na mesma data desliga o NDVI', (tester) async {
+    final feature = _feature();
+    final controller = DrawingController(repository: _DrawingRepo([feature]));
+    addTearDown(controller.dispose);
+    controller.selectFeature(feature);
+    final mapController = MapController();
+    addTearDown(mapController.dispose);
+
+    final container = await pumpToolbar(
+      tester,
+      dates: images,
+      presenter: _Presenter(null),
+      controller: controller,
+      mapController: mapController,
+    );
+
+    await tester.tap(find.byKey(const Key('map_talhao_toolbar_ndvi')));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.ensureVisible(
+      find.byKey(const Key('map_talhao_ndvi_date_2026-10-28')),
+    );
+    await tester.tap(find.byKey(const Key('map_talhao_ndvi_date_2026-10-28')));
+    await tester.pump();
+
+    expect(container.read(mapNdviOverlayFieldIdProvider), 'f1');
+    expect(
+      container.read(mapNdviSelectedDateProvider),
+      const MapNdviDateSelection(fieldId: 'f1', dateKey: '2026-10-28'),
+    );
+
+    await tester.tap(find.byKey(const Key('map_talhao_ndvi_date_2026-10-28')));
+    await tester.pump();
+
+    expect(container.read(mapNdviOverlayFieldIdProvider), isNull);
+    expect(container.read(mapNdviSelectedDateProvider), isNull);
+  });
+
+  testWidgets('toque em outra data troca a imagem e mantém o overlay', (
+    tester,
+  ) async {
+    final feature = _feature();
+    final controller = DrawingController(repository: _DrawingRepo([feature]));
+    addTearDown(controller.dispose);
+    controller.selectFeature(feature);
+    final mapController = MapController();
+    addTearDown(mapController.dispose);
+
+    final container = await pumpToolbar(
+      tester,
+      dates: images,
+      presenter: _Presenter(null),
+      controller: controller,
+      mapController: mapController,
+    );
+
+    await tester.tap(find.byKey(const Key('map_talhao_toolbar_ndvi')));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.ensureVisible(
+      find.byKey(const Key('map_talhao_ndvi_date_2026-10-28')),
+    );
+    await tester.tap(find.byKey(const Key('map_talhao_ndvi_date_2026-10-28')));
+    await tester.pump();
+    await tester.ensureVisible(
+      find.byKey(const Key('map_talhao_ndvi_date_2026-10-16')),
+    );
+    await tester.tap(find.byKey(const Key('map_talhao_ndvi_date_2026-10-16')));
+    await tester.pump();
+
+    expect(container.read(mapNdviOverlayFieldIdProvider), 'f1');
+    expect(
+      container.read(mapNdviSelectedDateProvider),
+      const MapNdviDateSelection(fieldId: 'f1', dateKey: '2026-10-16'),
+    );
+  });
 }
