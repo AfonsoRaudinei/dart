@@ -17,10 +17,12 @@ class CombinedWeekFilter extends StatelessWidget {
 
   Future<void> _pickWeek(BuildContext context) async {
     final now = DateTime.now();
+    final firstDate = DateTime(now.year - 3);
+    final start = week?.start ?? now;
     final picked = await showDatePicker(
       context: context,
-      initialDate: week?.start ?? now,
-      firstDate: DateTime(now.year - 3),
+      initialDate: start.isBefore(firstDate) ? firstDate : start,
+      firstDate: firstDate,
       lastDate: now,
       helpText: 'Escolha um dia da semana',
     );
