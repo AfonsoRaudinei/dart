@@ -4,12 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
+import 'package:uuid/uuid.dart';
 
+import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/contracts/i_client_lookup.dart';
 import '../../../../core/contracts/i_client_lookup_provider.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/avaliacao_item.dart';
 import '../../domain/entities/marketing_case.dart';
+import '../../domain/entities/parametro_comparativo.dart';
 import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
 import '../../domain/enums/produtividade_unidade.dart';
@@ -19,7 +22,9 @@ import '../../../planos/presentation/providers/plano_providers.dart';
 import 'case_selectors_widget.dart';
 import 'foto_picker_widget.dart';
 import 'marketing_client_selector.dart';
+import 'novo_case_antes_depois_section.dart';
 import 'novo_case_form_helpers.dart';
+import '../models/novo_case_comparacao.dart';
 
 class EditCaseSheet extends ConsumerStatefulWidget {
   final MarketingCase caso;
@@ -55,8 +60,9 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
   String? _clientId;
   String? _selectedClientNameForFallback;
   String? _fotoPrincipalUrl;
-  String? _fotoAntesUrl;
-  String? _fotoDepoisUrl;
+  final _uuid = const Uuid();
+  List<NovoCaseComparacao> _comparacoes = [];
+  bool _hasConclusao = false;
   bool _isSaving = false;
 
   @override
@@ -76,10 +82,49 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
     _tamanhoHaCtrl.text = caso.tamanhoHa?.toString() ?? '';
     _conclusaoCtrl.text = caso.conclusao ?? '';
     _conclusaoTecnicaCtrl.text = caso.conclusaoTecnica ?? '';
+    _hasConclusao = _conclusaoTecnicaCtrl.text.trim().isNotEmpty;
     _fotoPrincipalUrl = caso.fotoPrincipalUrl;
-    _fotoAntesUrl = caso.fotoAntesUrl;
-    _fotoDepoisUrl = caso.fotoDepoisUrl;
+    if (_tipo == CaseTipo.antesDepois) {
+      _comparacoes = _comparacoesDoCase(caso);
+    }
     _hydrateSelectedClientNameFallback();
+  }
+
+  /// Blocos de `avaliacoes_json`; sem eles, o par legado Antes/Depois e os
+  /// parâmetros de `parametros_json` formam a Comparação 1.
+  List<NovoCaseComparacao> _comparacoesDoCase(MarketingCase caso) {
+    final itens = caso.avaliacoesLivres;
+    if (itens.isEmpty) {
+      return [
+        NovoCaseComparacao(
+          id: _uuid.v4(),
+          fotoAntesUrl: _urlOuNull(caso.fotoAntesUrl),
+          fotoDepoisUrl: _urlOuNull(caso.fotoDepoisUrl),
+          parametros: caso.parametros,
+        ),
+      ];
+    }
+    return [for (final item in itens) _comparacaoDoItem(item)];
+  }
+
+  NovoCaseComparacao _comparacaoDoItem(AvaliacaoItem item) {
+    final fotoB = _urlOuNull(item.fotoLadoBPath);
+    final fotoC = _urlOuNull(item.fotoLadoCPath);
+    final temB = fotoB != null || item.nomeLadoB.trim().isNotEmpty;
+    final temC = fotoC != null || item.nomeLadoC != null;
+    return NovoCaseComparacao(
+      id: item.id.isEmpty ? _uuid.v4() : item.id,
+      fotos: [
+        NovoCaseFotoSlot(
+          rotulo: item.nomeLadoA,
+          url: _urlOuNull(item.fotoLadoAPath),
+        ),
+        if (temB || temC) NovoCaseFotoSlot(rotulo: item.nomeLadoB, url: fotoB),
+        if (temC) NovoCaseFotoSlot(rotulo: item.nomeLadoC ?? '', url: fotoC),
+      ],
+      texto: item.observacoes ?? '',
+      parametros: item.parametros,
+    );
   }
 
   Future<void> _hydrateSelectedClientNameFallback() async {
@@ -117,11 +162,12 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
       _showError('Foto principal obrigatória para o tipo Resultado.');
       return;
     }
-    if (_tipo == CaseTipo.antesDepois &&
-        !_temUrl(_fotoAntesUrl) &&
-        !_temUrl(_fotoDepoisUrl)) {
-      _showError('Adicione pelo menos uma foto.');
-      return;
+    if (_tipo == CaseTipo.antesDepois) {
+      if (!_comparacoes.first.temAlgumaFoto) {
+        _showError('Adicione pelo menos uma foto na Comparação 1.');
+        return;
+      }
+      if (!_validateComparacoesParametros()) return;
     }
 
     final produtividadeValor = _parseDouble(_produtividadeCtrl.text);
@@ -134,6 +180,16 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
     HapticFeedback.mediumImpact();
 
     final casoOriginal = widget.caso;
+    final antesDepois = _tipo == CaseTipo.antesDepois;
+    final avaliacoes = antesDepois
+        ? _avaliacoesDasComparacoes(casoOriginal)
+        : const <AvaliacaoItem>[];
+    final fotosPrimeira = antesDepois
+        ? _urlsPreenchidas(_comparacoes.first)
+        : const <String>[];
+    final parametrosPrimeira = antesDepois
+        ? _comparacoes.first.parametros
+        : const <ParametroComparativo>[];
     final updatedCase = MarketingCase(
       id: casoOriginal.id,
       tipo: _tipo,
@@ -161,22 +217,37 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
       valorGrao: casoOriginal.valorGrao,
       clientId: _clientId,
       ownerUserId: casoOriginal.ownerUserId,
+      sourceCaseId: casoOriginal.sourceCaseId,
       drawingId: casoOriginal.drawingId,
       testeExecucaoId: casoOriginal.testeExecucaoId,
-      fotoAntesUrl: _fotoAntesUrl,
-      fotoDepoisUrl: _fotoDepoisUrl,
+      liberadoEm: casoOriginal.liberadoEm,
+      publicoAte: casoOriginal.publicoAte,
+      fotoAntesUrl: antesDepois
+          ? (fotosPrimeira.isNotEmpty ? fotosPrimeira.first : null)
+          : casoOriginal.fotoAntesUrl,
+      fotoDepoisUrl: antesDepois
+          ? (fotosPrimeira.length > 1 ? fotosPrimeira[1] : null)
+          : casoOriginal.fotoDepoisUrl,
       ganhoProdutividade: casoOriginal.ganhoProdutividade,
       economiaGerada: casoOriginal.economiaGerada,
-      parametrosJson: casoOriginal.parametrosJson,
+      parametrosJson: antesDepois
+          ? (parametrosPrimeira.isEmpty
+                ? null
+                : jsonEncode(
+                    parametrosPrimeira.map((p) => p.toJson()).toList(),
+                  ))
+          : casoOriginal.parametrosJson,
       nomeTalhao: _trimmedOrNull(_nomeTalhaoCtrl.text),
       tamanhoHa: tamanhoHa,
       avaliacoes: casoOriginal.avaliacoes,
-      avaliacoesJson: _tipo == CaseTipo.antesDepois
-          ? _avaliacoesJsonComFotosDaEdicao(casoOriginal.avaliacoesJson)
+      avaliacoesJson: antesDepois
+          ? jsonEncode(avaliacoes.map((item) => item.toJson()).toList())
           : casoOriginal.avaliacoesJson,
       roi: casoOriginal.roi,
       conclusao: _trimmedOrNull(_conclusaoCtrl.text),
-      conclusaoTecnica: _trimmedOrNull(_conclusaoTecnicaCtrl.text),
+      conclusaoTecnica: antesDepois && !_hasConclusao
+          ? null
+          : _trimmedOrNull(_conclusaoTecnicaCtrl.text),
       ativo: casoOriginal.ativo,
       status: casoOriginal.status,
       criadoEm: casoOriginal.criadoEm,
@@ -259,32 +330,133 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
     return trimmed.isEmpty ? null : trimmed;
   }
 
-  bool _temUrl(String? url) => url != null && url.trim().isNotEmpty;
+  String? _urlOuNull(String? url) {
+    final trimmed = url?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
+  }
 
-  /// Atualiza só as duas fotos do primeiro bloco. O terceiro lado, o texto,
-  /// os parâmetros e os blocos seguintes permanecem.
-  String? _avaliacoesJsonComFotosDaEdicao(String? raw) {
-    if (raw == null || raw.trim().isEmpty) return raw;
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is! List || decoded.isEmpty) return raw;
-      final itens = decoded
-          .whereType<Map>()
-          .map(
-            (item) => AvaliacaoItem.fromJson(Map<String, dynamic>.from(item)),
-          )
-          .toList();
-      if (itens.isEmpty) return raw;
-      itens[0] = itens[0].copyWith(
-        fotoLadoAPath: _fotoAntesUrl,
-        fotoLadoBPath: _fotoDepoisUrl,
-        clearFotoLadoA: !_temUrl(_fotoAntesUrl),
-        clearFotoLadoB: !_temUrl(_fotoDepoisUrl),
-      );
-      return jsonEncode(itens.map((item) => item.toJson()).toList());
-    } catch (_) {
-      return raw;
+  List<String> _urlsPreenchidas(NovoCaseComparacao comparacao) {
+    return [
+      for (final slot in comparacao.fotos)
+        if (_urlOuNull(slot.url) != null) _urlOuNull(slot.url)!,
+    ];
+  }
+
+  List<AvaliacaoItem> _avaliacoesDasComparacoes(MarketingCase casoOriginal) {
+    String? cultura;
+    for (final item in casoOriginal.avaliacoesLivres) {
+      final valor = item.cultura?.trim();
+      if (valor != null && valor.isNotEmpty) {
+        cultura = valor;
+        break;
+      }
     }
+    return [
+      for (var i = 0; i < _comparacoes.length; i++)
+        _avaliacaoDaComparacao(_comparacoes[i], i, cultura),
+    ];
+  }
+
+  AvaliacaoItem _avaliacaoDaComparacao(
+    NovoCaseComparacao comparacao,
+    int index,
+    String? cultura,
+  ) {
+    final fotos = comparacao.fotos;
+    final texto = comparacao.texto.trim();
+    return AvaliacaoItem(
+      id: comparacao.id,
+      titulo: 'Comparação ${index + 1}',
+      nomeLadoA: fotos.isNotEmpty ? fotos[0].rotulo.trim() : '',
+      nomeLadoB: fotos.length > 1 ? fotos[1].rotulo.trim() : '',
+      nomeLadoC: fotos.length > 2 ? fotos[2].rotulo.trim() : null,
+      fotoLadoAPath: fotos.isNotEmpty ? _urlOuNull(fotos[0].url) : null,
+      fotoLadoBPath: fotos.length > 1 ? _urlOuNull(fotos[1].url) : null,
+      fotoLadoCPath: fotos.length > 2 ? _urlOuNull(fotos[2].url) : null,
+      cultura: cultura,
+      parametros: comparacao.parametros,
+      observacoes: texto.isEmpty ? null : texto,
+    );
+  }
+
+  bool _validateComparacoesParametros() {
+    for (final comparacao in _comparacoes) {
+      for (final parametro in comparacao.parametros) {
+        if (parametro.titulo.trim().isEmpty) {
+          _showError('Preencha o título do parâmetro comparativo.');
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  void _addComparacao() {
+    setState(() => _comparacoes.add(NovoCaseComparacao(id: _uuid.v4())));
+    HapticFeedback.lightImpact();
+  }
+
+  void _removeComparacao(int index) {
+    if (index <= 0 || index >= _comparacoes.length) return;
+    setState(() => _comparacoes.removeAt(index));
+    HapticFeedback.selectionClick();
+  }
+
+  void _updateComparacao(int index, NovoCaseComparacao comparacao) {
+    if (index < 0 || index >= _comparacoes.length) return;
+    setState(() => _comparacoes[index] = comparacao);
+  }
+
+  void _addParametro(int comparacaoIndex) {
+    if (comparacaoIndex < 0 || comparacaoIndex >= _comparacoes.length) return;
+    final parametro = ParametroComparativo(
+      id: _uuid.v4(),
+      titulo: '',
+      testemunha: 0,
+      teste: 0,
+    );
+    setState(() {
+      final comparacao = _comparacoes[comparacaoIndex];
+      _comparacoes[comparacaoIndex] = comparacao.copyWith(
+        parametros: [...comparacao.parametros, parametro],
+        parametroSelecionadoId: parametro.id,
+      );
+    });
+    HapticFeedback.lightImpact();
+  }
+
+  void _updateParametro(int comparacaoIndex, ParametroComparativo parametro) {
+    if (comparacaoIndex < 0 || comparacaoIndex >= _comparacoes.length) return;
+    final comparacao = _comparacoes[comparacaoIndex];
+    final index = comparacao.parametros.indexWhere((p) => p.id == parametro.id);
+    if (index < 0) return;
+    final updated = List<ParametroComparativo>.from(comparacao.parametros);
+    updated[index] = parametro;
+    setState(() {
+      _comparacoes[comparacaoIndex] = comparacao.copyWith(parametros: updated);
+    });
+  }
+
+  void _deleteParametro(int comparacaoIndex, String id) {
+    if (comparacaoIndex < 0 || comparacaoIndex >= _comparacoes.length) return;
+    final comparacao = _comparacoes[comparacaoIndex];
+    setState(() {
+      _comparacoes[comparacaoIndex] = comparacao.copyWith(
+        parametros: comparacao.parametros.where((p) => p.id != id).toList(),
+        clearParametroSelecionado: comparacao.parametroSelecionadoId == id,
+      );
+    });
+  }
+
+  void _selectParametro(int comparacaoIndex, String? id) {
+    if (comparacaoIndex < 0 || comparacaoIndex >= _comparacoes.length) return;
+    setState(() {
+      final comparacao = _comparacoes[comparacaoIndex];
+      _comparacoes[comparacaoIndex] = comparacao.copyWith(
+        parametroSelecionadoId: id,
+        clearParametroSelecionado: id == null,
+      );
+    });
   }
 
   double? _parseDouble(String raw) {
@@ -327,7 +499,6 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
       _tipo == CaseTipo.avaliacao ? 'Produção ideal' : 'Valor da produtividade';
 
   Widget? _buildFotoSection() {
-    final v = SoloForteSheetVisuals.of(context);
     switch (_tipo) {
       case CaseTipo.resultado:
         return Column(
@@ -346,68 +517,23 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
           ],
         );
       case CaseTipo.antesDepois:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            novoCaseSectionLabel('Fotos'),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Antes',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                          color: v.inputHint,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      FotoPickerWidget(
-                        label: 'Foto Antes',
-                        url: _fotoAntesUrl,
-                        folder: 'antes_depois',
-                        height: 140,
-                        required: false,
-                        includeVegetalInversion: true,
-                        onChanged: (url) => setState(() => _fotoAntesUrl = url),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Depois',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                          color: v.inputHint,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      FotoPickerWidget(
-                        label: 'Foto Depois',
-                        url: _fotoDepoisUrl,
-                        folder: 'antes_depois',
-                        height: 140,
-                        required: false,
-                        includeVegetalInversion: true,
-                        onChanged: (url) =>
-                            setState(() => _fotoDepoisUrl = url),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
+        return NovoCaseAntesDepoisSection(
+          comparacoes: _comparacoes,
+          produtoUtilizado: _produtoCtrl.text,
+          hasConclusao: _hasConclusao,
+          conclusaoCtrl: _conclusaoTecnicaCtrl,
+          onAddComparacao: _addComparacao,
+          onRemoveComparacao: _removeComparacao,
+          onComparacaoChanged: _updateComparacao,
+          onAddParametro: _addParametro,
+          onParametroChanged: _updateParametro,
+          onDeleteParametro: _deleteParametro,
+          onSelectParametro: _selectParametro,
+          onAddConclusao: () => setState(() => _hasConclusao = true),
+          onRemoveConclusao: () => setState(() {
+            _hasConclusao = false;
+            _conclusaoTecnicaCtrl.clear();
+          }),
         );
       case CaseTipo.avaliacao:
         return null;
@@ -417,11 +543,11 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
   @override
   Widget build(BuildContext context) {
     final plan =
-        ref.watch(planoAtivoProvider).valueOrNull ??
-        UserPlan.free(userId: '');
+        ref.watch(planoAtivoProvider).valueOrNull ?? UserPlan.free(userId: '');
     final enabledMetals = MarketingVisibilityPolicy.metaisSelecionaveis(plan);
-    final seletorTravado =
-        MarketingVisibilityPolicy.seletorTotalmenteTravado(plan);
+    final seletorTravado = MarketingVisibilityPolicy.seletorTotalmenteTravado(
+      plan,
+    );
     final PlanoMarketing? selectedVisibilidadeUi = seletorTravado
         ? null
         : _visibilidade;
@@ -461,7 +587,7 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
               20,
               12,
               20,
-              20 + MediaQuery.of(context).viewInsets.bottom,
+              20 + kFabSafeArea + MediaQuery.of(context).viewInsets.bottom,
             ),
             child: Form(
               key: _formKey,
@@ -550,9 +676,9 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
                     const SizedBox(height: 8),
                     Text(
                       'Disponível com plano pago',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: v.subtitleColor,
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: v.subtitleColor),
                     ),
                   ],
                   const SizedBox(height: 20),
@@ -613,7 +739,15 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
                           iconEnabledColor: fieldText,
                           style: TextStyle(color: fieldText),
                           decoration: const InputDecoration(
+                            // O tema global pinta o campo de branco; o card do
+                            // novoCaseFieldBox já traz o fundo do sheet.
+                            filled: false,
                             border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            errorBorder: InputBorder.none,
+                            focusedErrorBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(vertical: 12),
                             isDense: true,
                           ),
@@ -625,7 +759,10 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
                               .map(
                                 (unit) => DropdownMenuItem(
                                   value: unit,
-                                  child: Text(unit.toValue()),
+                                  child: Text(
+                                    unit.toValue(),
+                                    style: TextStyle(color: fieldText),
+                                  ),
                                 ),
                               )
                               .toList(),
@@ -661,26 +798,33 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
                     const SizedBox(height: 20),
                     fotoSection,
                   ],
-                  const SizedBox(height: 20),
-                  novoCaseSectionLabel('Conclusão'),
-                  const SizedBox(height: 10),
-                  novoCaseFieldBox(
-                    child: Column(
-                      children: [
-                        novoCaseTextInput(
-                          _conclusaoCtrl,
-                          'Conclusão',
-                          maxLines: 3,
-                        ),
-                        const NovoCaseFDivider(),
-                        novoCaseTextInput(
-                          _conclusaoTecnicaCtrl,
-                          'Conclusão técnica',
-                          maxLines: 4,
-                        ),
-                      ],
+                  if (_tipo != CaseTipo.antesDepois ||
+                      _conclusaoCtrl.text.trim().isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    novoCaseSectionLabel('Conclusão'),
+                    const SizedBox(height: 10),
+                    novoCaseFieldBox(
+                      child: Column(
+                        children: [
+                          novoCaseTextInput(
+                            _conclusaoCtrl,
+                            'Conclusão',
+                            maxLines: 3,
+                          ),
+                          // Antes/Depois edita a conclusão técnica no bloco da
+                          // própria seção; aqui seria o mesmo campo duplicado.
+                          if (_tipo != CaseTipo.antesDepois) ...[
+                            const NovoCaseFDivider(),
+                            novoCaseTextInput(
+                              _conclusaoTecnicaCtrl,
+                              'Conclusão técnica',
+                              maxLines: 4,
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                   const SizedBox(height: 24),
                   Row(
                     children: [
