@@ -375,8 +375,7 @@ class ClientListScreen extends ConsumerWidget {
                                               .textTheme
                                               .bodyMedium
                                               ?.copyWith(
-                                                color: PremiumTokens
-                                                    .textSecondaryLight,
+                                                color: context.premiumTextSecondary,
                                               ),
                                         ),
                                       ],
@@ -388,17 +387,16 @@ class ClientListScreen extends ConsumerWidget {
                                               .textTheme
                                               .labelMedium
                                               ?.copyWith(
-                                                color: PremiumTokens
-                                                    .textTertiaryLight,
+                                                color: context.premiumTextTertiary,
                                               ),
                                         ),
                                       ],
                                     ],
                                   ),
                                 ),
-                                const Icon(
+                                Icon(
                                   SFIcons.chevronRight,
-                                  color: PremiumTokens.textTertiaryLight,
+                                  color: context.premiumTextTertiary,
                                 ),
                               ],
                             ),

@@ -265,6 +265,11 @@ class PremiumAppTheme {
         error: PremiumTokens.alertError,
         onPrimary: Colors.white,
         onSurface: PremiumTokens.textPrimaryDark,
+        onSurfaceVariant: PremiumTokens.textSecondaryDark,
+        outline: Color(0xFF8E8E93),
+        outlineVariant: Color(0xFF48484A),
+        surfaceContainerHighest: Color(0xFF2C2C2E),
+        surfaceContainerHigh: Color(0xFF242426),
       ),
 
       appBarTheme: const AppBarTheme(
