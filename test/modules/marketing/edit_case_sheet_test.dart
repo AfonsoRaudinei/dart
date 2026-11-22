@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.dart';
@@ -255,13 +256,13 @@ void main() {
       );
       await tester.pump();
 
-      final pickers = tester.widgetList<FotoPickerWidget>(
-        find.byType(FotoPickerWidget),
-      );
-      for (final picker in pickers) {
-        picker.onChanged(null);
+      final total = tester.widgetList(find.byType(FotoPickerWidget)).length;
+      for (var i = 0; i < total; i++) {
+        tester
+            .widget<FotoPickerWidget>(find.byType(FotoPickerWidget).at(i))
+            .onChanged(null);
+        await tester.pump();
       }
-      await tester.pump();
 
       await tester.scrollUntilVisible(
         find.text('Salvar'),
@@ -273,7 +274,10 @@ void main() {
       await tester.pump();
 
       expect(saveCalled, isFalse);
-      expect(find.text('Adicione pelo menos uma foto.'), findsOneWidget);
+      expect(
+        find.text('Adicione pelo menos uma foto na Comparação 1.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('salva antes/depois com só a foto antes', (tester) async {
@@ -385,6 +389,375 @@ void main() {
         expect(savedCase!.fotoAntesUrl, antesNovo);
       },
     );
+
+    testWidgets(
+      'abre com 2 blocos e 3 fotos e ao salvar preserva blocos, rótulos, textos, parâmetros e conclusão',
+      (tester) async {
+        MarketingCase? savedCase;
+        final avaliacoesJson = jsonEncode([
+          {
+            'id': 'av-1',
+            'titulo': 'Comparação 1',
+            'nome_lado_a': 'Testemunha',
+            'nome_lado_b': 'Com produto',
+            'nome_lado_c': 'Concorrente',
+            'foto_lado_a_path': 'https://example.com/a1.jpg',
+            'foto_lado_b_path': 'https://example.com/b1.jpg',
+            'foto_lado_c_path': 'https://example.com/c1.jpg',
+            'cultura': 'Soja',
+            'observacoes': 'Raiz mais vigorosa',
+            'parametros': [
+              {'id': 'p1', 'titulo': 'Vagens', 'testemunha': 10, 'teste': 12},
+            ],
+          },
+          {
+            'id': 'av-2',
+            'titulo': 'Comparação 2',
+            'nome_lado_a': 'Faixa norte',
+            'nome_lado_b': 'Faixa sul',
+            'foto_lado_a_path': 'https://example.com/a2.jpg',
+            'foto_lado_b_path': 'https://example.com/b2.jpg',
+            'cultura': 'Soja',
+            'observacoes': 'Segundo ponto',
+            'parametros': [
+              {'id': 'p2', 'titulo': 'Altura', 'testemunha': 50, 'teste': 55},
+            ],
+          },
+        ]);
+
+        await tester.pumpWidget(
+          _wrap(
+            EditCaseSheet(
+              caso: _caseAntesDepois(
+                avaliacoesJson: avaliacoesJson,
+                conclusaoTecnica: 'Produto elevou o vigor.',
+              ),
+              onClose: () {},
+              onSalvar: (updatedCase) async {
+                savedCase = updatedCase;
+              },
+            ),
+          ),
+        );
+
+        await tester.scrollUntilVisible(
+          find.text('Comparação 2'),
+          500,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pump();
+
+        expect(find.text('Comparação 1'), findsOneWidget);
+        expect(find.text('Comparação 2'), findsOneWidget);
+        expect(find.byType(FotoPickerWidget), findsNWidgets(5));
+        expect(find.text('Testemunha'), findsWidgets);
+        expect(find.text('Concorrente'), findsOneWidget);
+        expect(find.text('Faixa norte'), findsOneWidget);
+        expect(find.text('Raiz mais vigorosa'), findsOneWidget);
+        expect(find.text('Segundo ponto'), findsOneWidget);
+        expect(find.text('Produto elevou o vigor.'), findsOneWidget);
+        expect(find.text('Conclusão técnica'), findsNothing);
+
+        await tester.scrollUntilVisible(
+          find.text('Salvar'),
+          500,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pump();
+        await tester.tap(find.text('Salvar'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(savedCase, isNotNull);
+        final raw = jsonDecode(savedCase!.avaliacoesJson!) as List;
+        expect(raw, hasLength(2));
+        final primeiro = Map<String, dynamic>.from(raw[0] as Map);
+        final segundo = Map<String, dynamic>.from(raw[1] as Map);
+        expect(primeiro['id'], 'av-1');
+        expect(primeiro['titulo'], 'Comparação 1');
+        expect(primeiro['nome_lado_a'], 'Testemunha');
+        expect(primeiro['nome_lado_b'], 'Com produto');
+        expect(primeiro['nome_lado_c'], 'Concorrente');
+        expect(primeiro['foto_lado_a_path'], 'https://example.com/a1.jpg');
+        expect(primeiro['foto_lado_b_path'], 'https://example.com/b1.jpg');
+        expect(primeiro['foto_lado_c_path'], 'https://example.com/c1.jpg');
+        expect(primeiro['observacoes'], 'Raiz mais vigorosa');
+        expect(primeiro['cultura'], 'Soja');
+        expect(primeiro['parametros'], hasLength(1));
+        expect(segundo['id'], 'av-2');
+        expect(segundo['titulo'], 'Comparação 2');
+        expect(segundo['nome_lado_a'], 'Faixa norte');
+        expect(segundo['nome_lado_b'], 'Faixa sul');
+        expect(segundo['nome_lado_c'], isNull);
+        expect(segundo['foto_lado_b_path'], 'https://example.com/b2.jpg');
+        expect(segundo['observacoes'], 'Segundo ponto');
+        expect(segundo['parametros'], hasLength(1));
+
+        expect(savedCase!.conclusaoTecnica, 'Produto elevou o vigor.');
+        expect(savedCase!.fotoAntesUrl, 'https://example.com/a1.jpg');
+        expect(savedCase!.fotoDepoisUrl, 'https://example.com/b1.jpg');
+        expect(savedCase!.parametros, hasLength(1));
+        expect(savedCase!.parametros.first.titulo, 'Vagens');
+      },
+    );
+
+    testWidgets(
+      'par legado sem avaliacoes_json vira a Comparação 1 e grava blocos',
+      (tester) async {
+        MarketingCase? savedCase;
+
+        await tester.pumpWidget(
+          _wrap(
+            EditCaseSheet(
+              caso: _caseAntesDepois(
+                parametrosJson: jsonEncode([
+                  {
+                    'id': 'p1',
+                    'titulo': 'Vagens',
+                    'testemunha': 10,
+                    'teste': 12,
+                  },
+                ]),
+              ),
+              onClose: () {},
+              onSalvar: (updatedCase) async {
+                savedCase = updatedCase;
+              },
+            ),
+          ),
+        );
+
+        await tester.scrollUntilVisible(
+          find.text('Salvar'),
+          500,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pump();
+        expect(find.byType(FotoPickerWidget), findsNWidgets(2));
+        await tester.tap(find.text('Salvar'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(savedCase, isNotNull);
+        final raw = jsonDecode(savedCase!.avaliacoesJson!) as List;
+        expect(raw, hasLength(1));
+        final primeiro = Map<String, dynamic>.from(raw.first as Map);
+        expect(primeiro['titulo'], 'Comparação 1');
+        expect(primeiro['nome_lado_a'], 'Antes');
+        expect(primeiro['nome_lado_b'], 'Depois');
+        expect(primeiro['foto_lado_a_path'], 'https://example.com/antes.jpg');
+        expect(primeiro['foto_lado_b_path'], 'https://example.com/depois.jpg');
+        expect(primeiro['parametros'], hasLength(1));
+        expect(savedCase!.fotoAntesUrl, 'https://example.com/antes.jpg');
+        expect(savedCase!.parametros, hasLength(1));
+      },
+    );
+
+    testWidgets('editar o texto da Comparação 2 e remover a conclusão', (
+      tester,
+    ) async {
+      MarketingCase? savedCase;
+      final avaliacoesJson = jsonEncode([
+        {
+          'id': 'av-1',
+          'titulo': 'Comparação 1',
+          'nome_lado_a': 'Antes',
+          'nome_lado_b': 'Depois',
+          'foto_lado_a_path': 'https://example.com/a1.jpg',
+          'foto_lado_b_path': 'https://example.com/b1.jpg',
+        },
+        {
+          'id': 'av-2',
+          'titulo': 'Comparação 2',
+          'nome_lado_a': 'Antes',
+          'nome_lado_b': 'Depois',
+          'foto_lado_a_path': 'https://example.com/a2.jpg',
+          'observacoes': 'texto velho',
+        },
+      ]);
+
+      await tester.pumpWidget(
+        _wrap(
+          EditCaseSheet(
+            caso: _caseAntesDepois(
+              avaliacoesJson: avaliacoesJson,
+              conclusaoTecnica: 'Conclusão antiga',
+            ),
+            onClose: () {},
+            onSalvar: (updatedCase) async {
+              savedCase = updatedCase;
+            },
+          ),
+        ),
+      );
+
+      await tester.scrollUntilVisible(
+        find.text('texto velho'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.enterText(find.text('texto velho'), 'texto novo');
+      await tester.pump();
+
+      await tester.scrollUntilVisible(
+        find.text('Salvar'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+      await tester.tap(find.text('Salvar'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(savedCase, isNotNull);
+      final raw = jsonDecode(savedCase!.avaliacoesJson!) as List;
+      final segundo = Map<String, dynamic>.from(raw[1] as Map);
+      expect(segundo['observacoes'], 'texto novo');
+      expect(segundo['nome_lado_b'], 'Depois');
+      expect(segundo['foto_lado_b_path'], isNull);
+      expect(savedCase!.conclusaoTecnica, 'Conclusão antiga');
+    });
+
+    testWidgets(
+      'tipo avaliação legado preserva avaliacoes_json e conclusão técnica',
+      (tester) async {
+        MarketingCase? savedCase;
+        final avaliacoesJson = jsonEncode([
+          {
+            'id': 'av-1',
+            'titulo': 'Avaliação 1',
+            'nome_lado_a': 'Lado A',
+            'nome_lado_b': 'Lado B',
+            'nome_lado_c': 'Lado C',
+            'foto_lado_a_path': 'https://example.com/a1.jpg',
+            'foto_lado_b_path': 'https://example.com/b1.jpg',
+            'foto_lado_c_path': 'https://example.com/c1.jpg',
+            'observacoes': 'nota',
+          },
+        ]);
+
+        await tester.pumpWidget(
+          _wrap(
+            EditCaseSheet(
+              caso: _caseAvaliacao().copyWith(
+                avaliacoesJson: avaliacoesJson,
+                conclusaoTecnica: 'Conclusão da avaliação',
+              ),
+              onClose: () {},
+              onSalvar: (updatedCase) async {
+                savedCase = updatedCase;
+              },
+            ),
+          ),
+        );
+
+        await tester.ensureVisible(find.text('Salvar'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Salvar'));
+        await tester.pumpAndSettle();
+
+        expect(savedCase, isNotNull);
+        expect(savedCase!.avaliacoesJson, avaliacoesJson);
+        expect(savedCase!.conclusaoTecnica, 'Conclusão da avaliação');
+      },
+    );
+
+    testWidgets('mantém sourceCaseId e janela pública ao salvar', (
+      tester,
+    ) async {
+      MarketingCase? savedCase;
+      final liberado = DateTime.utc(2026, 9, 1);
+      final ate = DateTime.utc(2026, 10, 1);
+
+      await tester.pumpWidget(
+        _wrap(
+          EditCaseSheet(
+            caso: _caseResultadoCompleto().copyWith(
+              sourceCaseId: 'origem-1',
+              liberadoEm: liberado,
+              publicoAte: ate,
+            ),
+            onClose: () {},
+            onSalvar: (updatedCase) async {
+              savedCase = updatedCase;
+            },
+          ),
+        ),
+      );
+
+      await tester.scrollUntilVisible(
+        find.text('Salvar'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+      await tester.tap(find.text('Salvar'));
+      await tester.pump();
+
+      expect(savedCase!.sourceCaseId, 'origem-1');
+      expect(savedCase!.liberadoEm, liberado);
+      expect(savedCase!.publicoAte, ate);
+    });
+
+    testWidgets('no fim do scroll o botão Salvar fica acima da área do FAB', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          EditCaseSheet(
+            caso: _caseAntesDepois(),
+            onClose: () {},
+            onSalvar: (_) async {},
+          ),
+        ),
+      );
+
+      final scroll = find.byType(SingleChildScrollView).first;
+      await tester.drag(scroll, const Offset(0, -30000));
+      await tester.pump(const Duration(seconds: 1));
+
+      final viewportBottom = tester.getRect(scroll).bottom;
+      final salvarBottom = tester.getRect(find.byType(FilledButton)).bottom;
+      expect(viewportBottom - salvarBottom, greaterThanOrEqualTo(kFabSafeArea));
+    });
+
+    testWidgets('dropdown de unidade não herda fundo branco do tema', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clientLookupProvider.overrideWithValue(_FakeClientLookup()),
+          ],
+          child: MaterialApp(
+            theme: ThemeData(
+              inputDecorationTheme: const InputDecorationTheme(
+                filled: true,
+                fillColor: Colors.white,
+              ),
+            ),
+            home: MediaQuery(
+              data: const MediaQueryData(size: Size(800, 1400)),
+              child: Scaffold(
+                body: EditCaseSheet(
+                  caso: _caseResultadoCompleto(),
+                  onClose: () {},
+                  onSalvar: (_) async {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final decorator = tester.widget<InputDecorator>(
+        find.descendant(
+          of: find.byType(DropdownButtonFormField<ProdutividadeUnidade>),
+          matching: find.byType(InputDecorator),
+        ),
+      );
+      expect(decorator.decoration.filled, isFalse);
+    });
 
     testWidgets(
       'com clientId, limpar produtor ao salvar usa fallback do nome do cliente',
@@ -515,6 +888,8 @@ MarketingCase _caseAntesDepois({
   String? fotoAntesUrl = 'https://example.com/antes.jpg',
   String? fotoDepoisUrl = 'https://example.com/depois.jpg',
   String? avaliacoesJson,
+  String? parametrosJson,
+  String? conclusaoTecnica,
 }) {
   final now = DateTime.utc(2026, 8, 15, 12);
   return MarketingCase(
@@ -530,6 +905,8 @@ MarketingCase _caseAntesDepois({
     fotoAntesUrl: fotoAntesUrl,
     fotoDepoisUrl: fotoDepoisUrl,
     avaliacoesJson: avaliacoesJson,
+    parametrosJson: parametrosJson,
+    conclusaoTecnica: conclusaoTecnica,
     criadoEm: now,
     atualizadoEm: now,
   );
