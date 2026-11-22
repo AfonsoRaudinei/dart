@@ -1,7 +1,6 @@
 import '../../core/constants/app_version.dart';
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -200,25 +199,29 @@ class SideMenuOverlay extends ConsumerWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            ImageFiltered(
-              imageFilter: ui.ImageFilter.blur(sigmaX: 9, sigmaY: 9),
-              child: Image.asset(
-                'assets/images/logo.jpeg',
-                fit: BoxFit.cover,
-                color: _menuAccent(context).withValues(alpha: 0.32),
-                colorBlendMode: BlendMode.multiply,
+            // Foto real de lavoura (plantio/colheita) em vez do logo borrado.
+            Image.asset(
+              menuHeaderPhoto(now),
+              key: const Key('side_menu_header_photo'),
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+            ),
+            // Véu escuro + toque do tema: garante contraste do texto branco.
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.30),
+                    Colors.black.withValues(alpha: 0.62),
+                  ],
+                ),
               ),
             ),
             DecoratedBox(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    _menuAccent(context).withValues(alpha: 0.92),
-                    _menuAccent(context).withValues(alpha: 0.62),
-                  ],
-                ),
+                color: _menuAccent(context).withValues(alpha: 0.18),
               ),
             ),
             Padding(

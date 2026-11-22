@@ -34,3 +34,8 @@ String visitsContextLine(int pendingToday) {
   if (pendingToday == 1) return 'Você tem 1 visita hoje';
   return 'Você tem $pendingToday visitas hoje';
 }
+
+/// Foto do cabeçalho do menu: alterna por dia (par = plantio, ímpar = colheita).
+String menuHeaderPhoto(DateTime now) => now.day.isEven
+    ? 'assets/images/menu/header_plantio.jpg'
+    : 'assets/images/menu/header_colheita.jpg';
