@@ -33,8 +33,8 @@ class PremiumTokens {
   static const Color surfaceDark = Color(
     0xFF1C1C1E,
   ); // Cinza chumbo claro (cards)
-  static const Color blackAccentPrimary = Color(0xFF1428A0); // Azul Samsung
-  static const Color blackAccentVariant = Color(0xFF0F1E7A); // pressed/hover
+  static const Color blackAccentPrimary = Color(0xFF4F6BFF); // Azul Samsung claro (contraste AA no preto)
+  static const Color blackAccentVariant = Color(0xFF3A55E0); // pressed/hover
 
   // === VIDROS (GLASSMORPHISM) ===
 
@@ -60,7 +60,7 @@ class PremiumTokens {
 
   static const Color textPrimaryDark = Color(0xFFFFFFFF);
   static const Color textSecondaryDark = Color(0xFFA0A0A5);
-  static const Color textTertiaryDark = Color(0x4DEBEBF5);
+  static const Color textTertiaryDark = Color(0x99EBEBF5);
 
   // === GEOMETRIA (SQUIRCLES) E BORDAS ===
 

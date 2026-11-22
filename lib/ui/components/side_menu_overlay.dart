@@ -470,7 +470,8 @@ class _MenuItem extends ConsumerWidget {
                         label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -671,7 +672,8 @@ class _AccountActionItem extends StatelessWidget {
                         label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),

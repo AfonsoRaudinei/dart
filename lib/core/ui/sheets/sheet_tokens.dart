@@ -55,8 +55,8 @@ abstract final class SoloForteSheetTokens {
   // Seleção exclusiva (ex: Urgência)
   static const Color chipBorderInactive = Color(0xFF3A3A3C);
   static const Color chipTextInactive   = Color(0xFF8E8E93);
-  static const Color chipBorderActive   = Color(0xFF1428A0);
-  static const Color chipTextActive     = Color(0xFF1428A0);
+  static const Color chipBorderActive   = Color(0xFF4F6BFF);
+  static const Color chipTextActive     = Color(0xFF7D93FF);
   static const double chipBorderWidth   = 2.0;
   static const double chipRadius        = 12.0;
 
