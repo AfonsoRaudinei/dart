@@ -324,6 +324,35 @@ void main() {
     );
   });
 
+  testWidgets('card de vantagens tem bullets 3D e sombra leve', (tester) async {
+    await _pumpMeuPlano(
+      tester,
+      loja: _FakeLoja(LojaVitrine.indisponivel),
+      plano: UserPlan.free(userId: 'u'),
+    );
+    await tester.pumpAndSettle();
+
+    // Grátis: tagline sem bullet + 4 benefícios com bullet.
+    expect(
+      find.byKey(const Key('meuPlanoVantagemBullet')),
+      findsNWidgets(4),
+    );
+    final card = tester.widget<Container>(
+      find.byKey(const Key('meuPlanoVantagensCard')),
+    );
+    final decoracao = card.decoration! as BoxDecoration;
+    expect(decoracao.boxShadow, isNotEmpty);
+    expect(decoracao.gradient, isNotNull);
+
+    await tester.tap(find.text('Ouro'));
+    await tester.pumpAndSettle();
+    // Ouro: preço + tagline sem bullet + 5 benefícios com bullet.
+    expect(
+      find.byKey(const Key('meuPlanoVantagemBullet')),
+      findsNWidgets(5),
+    );
+  });
+
   testWidgets('conta prata começa em Prata e esconde os outros preços', (
     tester,
   ) async {
