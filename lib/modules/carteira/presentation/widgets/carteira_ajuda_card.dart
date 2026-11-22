@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import 'package:soloforte_app/core/design/sf_icons.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_segment_bar.dart';
@@ -96,7 +97,7 @@ class _CarteiraAjudaCardState extends State<CarteiraAjudaCard> {
           borderRadius: BorderRadius.circular(12),
           onTap: () => setState(() => _expandido = !_expandido),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -109,7 +110,9 @@ class _CarteiraAjudaCardState extends State<CarteiraAjudaCard> {
                       child: Text(
                         CarteiraAjudaTextos.resumo(widget.segment),
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: context.premiumTextSecondary,
                         ),
                       ),
                     ),

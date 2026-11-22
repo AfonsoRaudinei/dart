@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/contracts/i_producer_invite_writer.dart';
@@ -63,9 +64,13 @@ class _ConsultantReceiveCodeCardState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Código de outro consultor',
-            style: TextStyle(fontWeight: FontWeight.w700),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: context.premiumTextSecondary,
+            ),
           ),
           const SizedBox(height: 8),
           TextField(
@@ -80,7 +85,7 @@ class _ConsultantReceiveCodeCardState
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
-            child: FilledButton(
+            child: FilledButton.tonal(
               onPressed: _submitting ? null : _accept,
               child: Text(_submitting ? 'Vinculando…' : 'Vincular'),
             ),

@@ -255,10 +255,12 @@ class _AgendaPlanejamentoViewState
               height: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
+                // Tonal: o destaque sólido fica para a informação principal
+                // (os dias e eventos), não para o filtro.
                 color: !isVisible
                     ? context.premiumSurface
                     : isActive
-                    ? theme.colorScheme.primary
+                    ? theme.colorScheme.primary.withValues(alpha: 0.16)
                     : context.premiumHairline.withValues(alpha: 0.35),
               ),
               child: Center(
@@ -270,7 +272,7 @@ class _AgendaPlanejamentoViewState
                     color: !isVisible
                         ? context.premiumTextTertiary
                         : isActive
-                        ? theme.colorScheme.onPrimary
+                        ? theme.colorScheme.primary
                         : context.premiumTextSecondary,
                   ),
                 ),
