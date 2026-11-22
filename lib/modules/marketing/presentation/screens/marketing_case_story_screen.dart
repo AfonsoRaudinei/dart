@@ -86,8 +86,9 @@ Future<String> _buildInjectedHtml(MarketingCase marketingCase) async {
   );
 
   final fotoPrincipal = await _fotoParaSrc(marketingCase.fotoPrincipalUrl);
-  final fotoAntes = await _fotoParaSrc(marketingCase.fotoAntesUrl);
-  final fotoDepois = await _fotoParaSrc(marketingCase.fotoDepoisUrl);
+  final fotosComparativo = storyFotosAntesDepois(marketingCase);
+  final fotoAntes = await _fotoParaSrc(fotosComparativo.antes);
+  final fotoDepois = await _fotoParaSrc(fotosComparativo.depois);
 
   return injectStoryData(
     template,
