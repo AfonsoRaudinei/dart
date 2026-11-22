@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
 import 'package:soloforte_app/core/services/connectivity_service.dart';
 import 'package:soloforte_app/core/services/sync_service.dart';
-import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/core/state/side_menu_state.dart';
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
 import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
@@ -16,6 +16,7 @@ import 'package:soloforte_app/modules/settings/data/settings_repository.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/settings_providers.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
 import 'package:soloforte_app/ui/components/side_menu_overlay.dart';
+import 'package:soloforte_app/ui/components/side_menu_quick_access.dart';
 
 void main() {
   group('SideMenuOverlay', () {
@@ -33,10 +34,13 @@ void main() {
       expect(find.text('Receber código'), findsNothing);
       expect(find.text('Relatórios'), findsOneWidget);
       expect(find.text('Carteira'), findsNothing);
-      expect(find.text('Acesso rápido'), findsNothing);
+      expect(find.text('ACESSO RÁPIDO'), findsNothing);
+      expect(find.text('Ir para local'), findsNothing);
     });
 
-    testWidgets('consultor vê o menu completo e atalhos', (tester) async {
+    testWidgets('consultor vê um único acesso rápido, sem atalhos fixos', (
+      tester,
+    ) async {
       await _pumpSideMenu(
         tester,
         profile: _profile(role: 'consultor'),
@@ -50,60 +54,43 @@ void main() {
       expect(find.text('Carteira'), findsWidgets);
       expect(find.text('Nova Visita'), findsOneWidget);
       expect(find.text('Novo Cliente'), findsOneWidget);
+      expect(find.text('ACESSO RÁPIDO'), findsOneWidget);
+      expect(find.text('Atalhos'), findsNothing);
+      expect(find.text('Foco no que importa'), findsNothing);
+      expect(find.text('Ir para local'), findsNothing);
+      expect(
+        find.byKey(const Key('side_menu_quick_access_edit')),
+        findsOneWidget,
+      );
     });
 
     for (final testCase in [
       (
-        key: const Key('side_menu_summary_visitas'),
+        key: const Key('side_menu_quick_visitas'),
         expectedUri: AppRoutes.agenda,
       ),
       (
-        key: const Key('side_menu_summary_clientes'),
+        key: const Key('side_menu_quick_clientes'),
         expectedUri: AppRoutes.clients,
       ),
       (
-        key: const Key('side_menu_summary_carteira'),
+        key: const Key('side_menu_quick_carteira'),
         expectedUri: AppRoutes.carteira,
       ),
       (
-        key: const Key('side_menu_summary_relatorios'),
+        key: const Key('side_menu_quick_relatorios'),
         expectedUri: AppRoutes.reports,
       ),
-    ]) {
-      testWidgets(
-        'resumo ${testCase.key} navega para ${testCase.expectedUri}',
-        (tester) async {
-          final router = await _pumpSideMenu(
-            tester,
-            profile: _profile(role: 'consultor'),
-            role: UserRole.consultor,
-          );
-          final action = find.byKey(testCase.key);
-
-          await tester.scrollUntilVisible(
-            action,
-            180,
-            scrollable: find.byType(Scrollable).first,
-          );
-          await tester.tap(action);
-          await tester.pumpAndSettle();
-
-          expect(
-            router.routerDelegate.currentConfiguration.uri.toString(),
-            testCase.expectedUri,
-          );
-        },
-      );
-    }
-
-    for (final testCase in [
       (
-        label: 'Nova Visita',
+        key: const Key('side_menu_quick_nova_visita'),
         expectedUri: '${AppRoutes.agenda}?novoEvento=true',
       ),
-      (label: 'Novo Cliente', expectedUri: AppRoutes.clientNew),
+      (
+        key: const Key('side_menu_quick_novo_cliente'),
+        expectedUri: AppRoutes.clientNew,
+      ),
     ]) {
-      testWidgets('${testCase.label} navega para ${testCase.expectedUri}', (
+      testWidgets('${testCase.key} navega para ${testCase.expectedUri}', (
         tester,
       ) async {
         final router = await _pumpSideMenu(
@@ -111,15 +98,8 @@ void main() {
           profile: _profile(role: 'consultor'),
           role: UserRole.consultor,
         );
-        final action = find.text(testCase.label);
 
-        await tester.scrollUntilVisible(
-          action,
-          180,
-          scrollable: find.byType(Scrollable).first,
-        );
-        await tester.tap(action);
-        await tester.pumpAndSettle();
+        await _tapQuickAction(tester, find.byKey(testCase.key));
 
         expect(
           router.routerDelegate.currentConfiguration.uri.toString(),
@@ -127,6 +107,43 @@ void main() {
         );
       });
     }
+
+    testWidgets('consultor tira um atalho e a escolha fica salva', (
+      tester,
+    ) async {
+      await _pumpSideMenu(
+        tester,
+        profile: _profile(role: 'consultor'),
+        role: UserRole.consultor,
+      );
+
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('side_menu_quick_access_edit')),
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.byKey(const Key('side_menu_quick_access_edit')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const Key('side_menu_quick_access_toggle_nova_visita')),
+      );
+      await tester.pumpAndSettle();
+
+      Navigator.of(
+        tester.element(find.byType(SideMenuQuickAccessEditor)),
+      ).pop();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Nova Visita'), findsNothing);
+      expect(find.text('Novo Cliente'), findsOneWidget);
+
+      final saved = (await SharedPreferences.getInstance()).getStringList(
+        sideMenuQuickAccessStorageKey('test-user'),
+      );
+      expect(saved, isNot(contains('nova_visita')));
+      expect(saved, contains('novo_cliente'));
+    });
 
     testWidgets('não gera overflow em tela estreita', (tester) async {
       await _pumpSideMenu(
@@ -138,69 +155,43 @@ void main() {
 
       expect(tester.takeException(), isNull);
 
-      final scrollable = find.byType(Scrollable).first;
       await tester.scrollUntilVisible(
-        find.text('Foco no que importa'),
+        find.byKey(const Key('side_menu_quick_access_edit')),
         220,
-        scrollable: scrollable,
+        scrollable: find.byType(Scrollable).first,
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Foco no que importa'), findsOneWidget);
+      expect(
+        find.byKey(const Key('side_menu_quick_access_edit')),
+        findsOneWidget,
+      );
+      expect(find.text('Ir para local'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('Ir para local define pedido sticky e fecha o menu', (
-      tester,
-    ) async {
-      await _pumpSideMenu(tester, profile: _profile(role: 'produtor'));
-
-      final item = find.byKey(const Key('side_menu_go_to_local_item'));
-      await tester.scrollUntilVisible(
-        item,
-        180,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.tap(item);
-      await tester.pump();
-      await tester.pump();
-
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(SideMenuOverlay)),
-      );
-      expect(container.read(pendingGoToLocalSheetProvider), isTrue);
-      expect(container.read(sideMenuOpenProvider), isFalse);
-    });
-
-    testWidgets('Ir para local na agenda define pending e navega para mapa', (
-      tester,
-    ) async {
-      final router = await _pumpSideMenu(
-        tester,
-        initialLocation: AppRoutes.agenda,
-        profile: _profile(role: 'produtor'),
-      );
-
-      final item = find.byKey(const Key('side_menu_go_to_local_item'));
-      await tester.scrollUntilVisible(
-        item,
-        180,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.tap(item);
-      await tester.pump();
-      await tester.pumpAndSettle();
-
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(SideMenuOverlay)),
-      );
-      expect(container.read(pendingGoToLocalSheetProvider), isTrue);
+    test('decode do acesso rápido ignora id desconhecido', () {
+      expect(decodeSideMenuQuickAccess(null), SideMenuQuickAction.values);
+      expect(decodeSideMenuQuickAccess(const []), isEmpty);
       expect(
-        router.routerDelegate.currentConfiguration.uri.path,
-        AppRoutes.map,
+        decodeSideMenuQuickAccess(const ['clientes', 'nope', 'clientes']),
+        [SideMenuQuickAction.clientes],
       );
     });
   });
+}
+
+Future<void> _tapQuickAction(WidgetTester tester, Finder action) async {
+  final menuScroll = find
+      .descendant(
+        of: find.byType(SideMenuOverlay),
+        matching: find.byType(Scrollable),
+      )
+      .first;
+  await tester.scrollUntilVisible(action, 160, scrollable: menuScroll);
+  await tester.ensureVisible(action);
+  await tester.tap(action);
+  await tester.pumpAndSettle();
 }
 
 Future<GoRouter> _pumpSideMenu(
@@ -235,6 +226,9 @@ Future<GoRouter> _pumpSideMenu(
     ProviderScope(
       overrides: [
         sideMenuOpenProvider.overrideWith((ref) => true),
+        preferencesServiceProvider.overrideWithValue(
+          PreferencesService(preferences),
+        ),
         settingsRepositoryProvider.overrideWithValue(settingsRepository),
         currentUserProfileProvider.overrideWith((ref) async => profile),
         currentUserRoleProvider.overrideWith((ref) => role),

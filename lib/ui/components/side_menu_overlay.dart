@@ -7,13 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
 import 'package:soloforte_app/core/services/connectivity_service.dart';
 import 'package:soloforte_app/core/services/sync_service.dart';
-import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/core/state/side_menu_state.dart';
+import 'package:soloforte_app/ui/components/side_menu_quick_access.dart';
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
 import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
 import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
@@ -72,8 +71,6 @@ Gradient? _menuGradient(BuildContext context) => _menuIsDark(context)
         end: Alignment.bottomCenter,
         colors: [Color(0xFFF8F9FB), Color(0xFFECEFF4)],
       );
-
-Color _menuSecondaryText(BuildContext context) => context.premiumTextSecondary;
 
 class SideMenuOverlay extends ConsumerWidget {
   const SideMenuOverlay({super.key});
@@ -712,20 +709,4 @@ void _closeAndNavigate(BuildContext context, WidgetRef ref, String route) {
   WidgetsBinding.instance.addPostFrameCallback((_) {
     router.go(route);
   });
-}
-
-void _requestGoToLocalFromSideMenu(BuildContext context, WidgetRef ref) {
-  final container = ProviderScope.containerOf(context, listen: false);
-  final router = GoRouter.of(context);
-  final onMap =
-      router.routerDelegate.currentConfiguration.uri.path == AppRoutes.map;
-
-  ref.read(sideMenuOpenProvider.notifier).state = false;
-  container.read(pendingGoToLocalSheetProvider.notifier).state = true;
-
-  if (!onMap) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      router.go(AppRoutes.map);
-    });
-  }
 }
