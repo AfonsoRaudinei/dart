@@ -59,7 +59,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final scrollable = find.byType(Scrollable);
+      final scrollable = find.byType(Scrollable).first;
       await tester.scrollUntilVisible(
         find.text('CONCLUSÃO TÉCNICA'),
         120,
@@ -96,18 +96,184 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final scrollable = find.byType(Scrollable);
+        final scrollable = find.byType(Scrollable).first;
         await tester.scrollUntilVisible(
           find.text('CONCLUSÃO TÉCNICA'),
           120,
           scrollable: scrollable,
         );
 
-        expect(find.byType(CachedNetworkImage), findsNWidgets(3));
+        expect(find.byType(PageView), findsOneWidget);
         expect(find.text('CONCLUSÃO TÉCNICA'), findsOneWidget);
         expect(find.text('Conclusão da avaliação.'), findsOneWidget);
       },
     );
+
+    group('carrossel de fotos por comparação', () {
+      // Largura do pontinho (18 ativo / 8 inativo) + margem horizontal 3+3.
+      const larguraAtivo = 24.0;
+      const larguraInativo = 14.0;
+
+      Finder pontinhos() => find.byWidgetPredicate(
+        (w) =>
+            w.key is ValueKey &&
+            '${(w.key as ValueKey).value}'.startsWith('foto-pontinho-'),
+      );
+
+      double larguraPontinho(WidgetTester tester, int i, {int bloco = 0}) =>
+          tester
+              .getSize(find.byKey(ValueKey('foto-pontinho-$i')).at(bloco))
+              .width;
+
+      Future<void> abrir(WidgetTester tester, MarketingCase c) async {
+        await tester.pumpWidget(_wrapSheet(marketingCase: c, themeId: null));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.byType(PageView).first,
+          120,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('3 fotos: PageView com 3 páginas, 3 pontinhos e rótulos', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        await abrir(tester, _antesDepoisCase());
+
+        final pageView = tester.widget<PageView>(find.byType(PageView));
+        expect(pageView.childrenDelegate.estimatedChildCount, 3);
+        expect(pageView.scrollDirection, Axis.horizontal);
+        expect(pontinhos(), findsNWidgets(3));
+        expect(find.text('Antes'), findsOneWidget);
+        expect(find.bySemanticsLabel('Foto 1 de 3'), findsOneWidget);
+        expect(
+          larguraPontinho(tester, 0),
+          greaterThan(larguraPontinho(tester, 1)),
+        );
+
+        // A borda da próxima foto fica à vista (viewportFraction < 1).
+        expect(find.text('Depois'), findsOneWidget);
+        semantics.dispose();
+      });
+
+      testWidgets('deslizar troca a página e o pontinho ativo', (tester) async {
+        final semantics = tester.ensureSemantics();
+        await abrir(tester, _antesDepoisCase());
+
+        await tester.drag(find.byType(PageView), const Offset(-400, 0));
+        await tester.pumpAndSettle();
+
+        expect(find.bySemanticsLabel('Foto 2 de 3'), findsOneWidget);
+        expect(
+          larguraPontinho(tester, 1),
+          greaterThan(larguraPontinho(tester, 0)),
+        );
+        expect(
+          larguraPontinho(tester, 1),
+          greaterThan(larguraPontinho(tester, 2)),
+        );
+
+        await tester.drag(find.byType(PageView), const Offset(-400, 0));
+        await tester.pumpAndSettle();
+        expect(find.bySemanticsLabel('Foto 3 de 3'), findsOneWidget);
+        expect(find.text('Concorrente'), findsOneWidget);
+        semantics.dispose();
+      });
+
+      testWidgets('1 foto: sem carrossel e sem pontinhos', (tester) async {
+        await tester.pumpWidget(
+          _wrapSheet(
+            marketingCase: _antesDepoisCase(
+              blocos: [
+                _bloco(
+                  'av-1',
+                  'Comparação 1',
+                  fotos: ['https://example.com/a.jpg'],
+                ),
+              ],
+            ),
+            themeId: null,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(PageView), findsNothing);
+        expect(pontinhos(), findsNothing);
+        expect(find.byType(CachedNetworkImage), findsOneWidget);
+        expect(find.text('Antes'), findsOneWidget);
+      });
+
+      testWidgets('dois blocos têm carrosséis independentes', (tester) async {
+        final semantics = tester.ensureSemantics();
+        await abrir(
+          tester,
+          _antesDepoisCase(
+            blocos: [
+              _bloco(
+                'av-1',
+                'Comparação 1',
+                fotos: [
+                  'https://example.com/a.jpg',
+                  'https://example.com/b.jpg',
+                ],
+              ),
+              _bloco(
+                'av-2',
+                'Comparação 2',
+                fotos: [
+                  'https://example.com/c.jpg',
+                  'https://example.com/d.jpg',
+                  'https://example.com/e.jpg',
+                ],
+              ),
+            ],
+          ),
+        );
+        expect(find.byType(PageView), findsNWidgets(2));
+
+        await tester.drag(find.byType(PageView).first, const Offset(-400, 0));
+        await tester.pumpAndSettle();
+
+        expect(larguraPontinho(tester, 1, bloco: 0), larguraAtivo);
+        expect(larguraPontinho(tester, 0, bloco: 1), larguraAtivo);
+        expect(larguraPontinho(tester, 0, bloco: 0), larguraInativo);
+        expect(find.bySemanticsLabel('Foto 2 de 2'), findsOneWidget);
+        expect(find.bySemanticsLabel('Foto 1 de 3'), findsOneWidget);
+        semantics.dispose();
+      });
+
+      testWidgets('tipo avaliação legado também usa o carrossel', (
+        tester,
+      ) async {
+        await abrir(tester, _antesDepoisCase(tipo: CaseTipo.avaliacao));
+
+        expect(find.byType(PageView), findsOneWidget);
+        expect(pontinhos(), findsNWidgets(3));
+      });
+
+      testWidgets('conclusão técnica aparece uma única vez com carrossel', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _wrapSheet(
+            marketingCase: _antesDepoisCase(conclusaoTecnica: 'Vigor maior.'),
+            themeId: null,
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.text('CONCLUSÃO TÉCNICA'),
+          120,
+          scrollable: find.byType(Scrollable).first,
+        );
+
+        expect(find.byType(PageView), findsOneWidget);
+        expect(find.text('CONCLUSÃO TÉCNICA'), findsOneWidget);
+        expect(find.text('Vigor maior.'), findsOneWidget);
+      });
+    });
 
     testWidgets('perfil azul: ações de relatório e hero sem verde escuro', (
       tester,
@@ -119,7 +285,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final scrollable = find.byType(Scrollable);
+      final scrollable = find.byType(Scrollable).first;
       await tester.scrollUntilVisible(
         find.text('Abrir relatório'),
         120,
@@ -180,9 +346,24 @@ Widget _wrapSheet({
   );
 }
 
+Map<String, dynamic> _bloco(
+  String id,
+  String titulo, {
+  List<String> fotos = const [],
+  List<String> rotulos = const ['Antes', 'Depois', 'Concorrente'],
+}) => {
+  'id': id,
+  'titulo': titulo,
+  'nome_lado_a': rotulos[0],
+  'nome_lado_b': rotulos[1],
+  'nome_lado_c': rotulos[2],
+  for (var i = 0; i < fotos.length; i++) 'foto_lado_${'abc'[i]}_path': fotos[i],
+};
+
 MarketingCase _antesDepoisCase({
   CaseTipo tipo = CaseTipo.antesDepois,
   String? conclusaoTecnica,
+  List<Map<String, dynamic>>? blocos,
 }) {
   final now = DateTime.utc(2026, 8, 7);
   return MarketingCase(
@@ -196,18 +377,20 @@ MarketingCase _antesDepoisCase({
     produtoUtilizado: 'coach',
     dataCase: now,
     nomeTalhao: tipo == CaseTipo.avaliacao ? 'Talhão 1' : null,
-    avaliacoesJson: jsonEncode([
-      {
-        'id': 'av-1',
-        'titulo': 'Comparação 1',
-        'nome_lado_a': 'Antes',
-        'nome_lado_b': 'Depois',
-        'nome_lado_c': 'Concorrente',
-        'foto_lado_a_path': 'https://example.com/a.jpg',
-        'foto_lado_b_path': 'https://example.com/b.jpg',
-        'foto_lado_c_path': 'https://example.com/c.jpg',
-      },
-    ]),
+    avaliacoesJson: jsonEncode(
+      blocos ??
+          [
+            _bloco(
+              'av-1',
+              'Comparação 1',
+              fotos: [
+                'https://example.com/a.jpg',
+                'https://example.com/b.jpg',
+                'https://example.com/c.jpg',
+              ],
+            ),
+          ],
+    ),
     conclusaoTecnica: conclusaoTecnica,
     criadoEm: now,
     atualizadoEm: now,
