@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/ui/components/premium/premium_motion.dart';
 import 'package:soloforte_app/ui/components/premium/premium_page_title.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/extensions/context_extensions.dart';
@@ -497,8 +498,8 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
   ) {
     return Column(
       children: [
-        Text(
-          '$count',
+        AnimatedCount(
+          value: count,
           style: theme.textTheme.headlineSmall?.copyWith(
             color: color,
             fontWeight: FontWeight.bold,

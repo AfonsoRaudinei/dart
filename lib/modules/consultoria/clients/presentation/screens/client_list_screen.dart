@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/ui/components/premium/premium_motion.dart';
 import 'package:soloforte_app/ui/components/premium/premium_page_title.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/services/sync_orchestrator.dart';
@@ -331,70 +332,75 @@ class ClientListScreen extends ConsumerWidget {
                             SoloforteKeyboardDismiss.dismiss();
                             context.push(AppRoutes.clientDetail(client.id));
                           },
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: context.premiumSurface,
-                              borderRadius: BorderRadius.circular(
-                                PremiumTokens.borderRadiusMd,
+                          child: PressableScale(
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: context.premiumSurface,
+                                borderRadius: BorderRadius.circular(
+                                  PremiumTokens.borderRadiusMd,
+                                ),
+                                boxShadow: PremiumTokens.tightShadow,
                               ),
-                              boxShadow: PremiumTokens.tightShadow,
-                            ),
-                            child: Row(
-                              children: [
-                                ClientAvatarWidget(
-                                  fotoPath: client.photoPath,
-                                  nome: client.name,
-                                  radius: 24,
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        client.name,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyLarge
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                      ),
-                                      if (_clientLocation(client) != null) ...[
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          _clientLocation(client)!,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium
-                                              ?.copyWith(
-                                                color: context.premiumTextSecondary,
-                                              ),
-                                        ),
-                                      ],
-                                      if (client.phone.trim().isNotEmpty) ...[
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          client.phone,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .labelMedium
-                                              ?.copyWith(
-                                                color: context.premiumTextTertiary,
-                                              ),
-                                        ),
-                                      ],
-                                    ],
+                              child: Row(
+                                children: [
+                                  ClientAvatarWidget(
+                                    fotoPath: client.photoPath,
+                                    nome: client.name,
+                                    radius: 24,
                                   ),
-                                ),
-                                Icon(
-                                  SFIcons.chevronRight,
-                                  color: context.premiumTextTertiary,
-                                ),
-                              ],
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          client.name,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
+                                        if (_clientLocation(client) !=
+                                            null) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _clientLocation(client)!,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(
+                                                  color: context
+                                                      .premiumTextSecondary,
+                                                ),
+                                          ),
+                                        ],
+                                        if (client.phone.trim().isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            client.phone,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .labelMedium
+                                                ?.copyWith(
+                                                  color: context
+                                                      .premiumTextTertiary,
+                                                ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+                                    SFIcons.chevronRight,
+                                    color: context.premiumTextTertiary,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),

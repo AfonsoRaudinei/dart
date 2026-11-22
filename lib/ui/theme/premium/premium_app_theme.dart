@@ -104,6 +104,14 @@ class PremiumAppTheme {
   // COMPONENTES PREMIUM (Inputs e Botões M3 Adaptados)
   // ============================================
 
+  /// Transição de página única (deslize iOS) em iOS e Android.
+  static const PageTransitionsTheme _pageTransitions = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+    },
+  );
+
   /// Switch estilo iOS: trilho na cor do tema quando ligado, cinza quando desligado.
   static SwitchThemeData _buildSwitchTheme(bool isDark, Color accent) {
     final offTrack = isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE5E5EA);
@@ -245,6 +253,7 @@ class PremiumAppTheme {
 
       inputDecorationTheme: _buildInputDecoration(false, accent),
       switchTheme: _buildSwitchTheme(false, accent),
+      pageTransitionsTheme: _pageTransitions,
       elevatedButtonTheme: _buildElevatedButtonTheme(accent),
 
       // Retirando fundos duros dos divisores (Finíssimos igual cabelo)
@@ -311,6 +320,7 @@ class PremiumAppTheme {
 
       inputDecorationTheme: _buildInputDecoration(true, accent),
       switchTheme: _buildSwitchTheme(true, accent),
+      pageTransitionsTheme: _pageTransitions,
       elevatedButtonTheme: _buildElevatedButtonTheme(accent),
 
       dividerTheme: const DividerThemeData(
