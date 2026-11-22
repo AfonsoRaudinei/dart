@@ -158,7 +158,8 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     final sheetBg = v.sheetBackground;
     final handleColor = v.handleColor;
     final titleColor = v.titleColor;
-    final ctaBg = v.ctaBackground;
+    // CTA na cor do tema (o azul fixo do skin iOS destoava do verde).
+    final ctaBg = Theme.of(context).colorScheme.primary;
     // Desabilitado bem apagado (antes igual ao fundo do card: parecia ativo).
     final ctaDisabled = v.subtitleColor.withValues(alpha: 0.16);
     final ctaRadius = v.ctaRadius;
