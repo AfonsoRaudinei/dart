@@ -118,9 +118,7 @@ class _MeuPlanoScreenState extends ConsumerState<MeuPlanoScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Row(
-        children: [
-          Text('Meu Plano', style: premiumPageTitleStyle(context)),
-        ],
+        children: [Text('Meu Plano', style: premiumPageTitleStyle(context))],
       ),
     );
   }
@@ -198,7 +196,7 @@ class _PlanoAtivoContentState extends ConsumerState<_PlanoAtivoContent> {
       children: [
         const SizedBox(height: 16),
         Container(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(_semPlanoPago ? 18 : 24),
           decoration: BoxDecoration(
             color: context.premiumSurface,
             borderRadius: BorderRadius.circular(16),
@@ -229,12 +227,25 @@ class _PlanoAtivoContentState extends ConsumerState<_PlanoAtivoContent> {
               Text(
                 _semPlanoPago ? 'Sem plano pago' : 'Plano ${plano.plano.label}',
                 style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
+                  // Plano pago é conquista (destaque grande na cor do metal);
+                  // sem plano, o foco é a ação: ver os planos abaixo.
+                  fontSize: _semPlanoPago ? 20 : 28,
+                  fontWeight: _semPlanoPago ? FontWeight.w600 : FontWeight.w700,
                   color: _semPlanoPago ? context.premiumTextPrimary : metal,
                   letterSpacing: -0.4,
                 ),
               ),
+              if (_semPlanoPago) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Veja os planos abaixo e libere mais recursos.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: context.premiumTextSecondary,
+                  ),
+                ),
+              ],
               if (!_semPlanoPago) ...[
                 const SizedBox(height: 8),
                 Text(

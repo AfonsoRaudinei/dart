@@ -99,7 +99,7 @@ void main() {
 
       expect(controller.selectedFeature!.properties.clienteId, 'client-1');
       expect(controller.selectedFeature!.properties.fazendaId, 'farm-1');
-      expect(find.text('Dados do talhão salvos'), findsOneWidget);
+      expect(find.text('Talhão salvo. Bom trabalho no campo!'), findsOneWidget);
       expect(repository.saved.last.properties.clienteId, 'client-1');
       expect(repository.saved.last.properties.fazendaId, 'farm-1');
 
