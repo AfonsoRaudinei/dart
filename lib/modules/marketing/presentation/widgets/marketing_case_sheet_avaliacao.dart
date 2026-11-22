@@ -69,9 +69,8 @@ class _AvaliacaoLivreReadOnlyCardState
           ],
           if (_fotosPreenchidasDoBloco(avaliacao).isNotEmpty) ...[
             const SizedBox(height: 10),
-            _FotosGrade(
+            _FotosCarrossel(
               fotos: _fotosPreenchidasDoBloco(avaliacao),
-              visuals: v,
               titleColor: widget.titleColor,
             ),
           ],
@@ -161,7 +160,6 @@ class _ComparacaoBlocosReadOnly extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -178,11 +176,7 @@ class _ComparacaoBlocosReadOnly extends StatelessWidget {
                 ),
               ),
             ),
-          _FotosGrade(
-            fotos: _fotosDoBloco(item),
-            visuals: v,
-            titleColor: titleColor,
-          ),
+          _FotosCarrossel(fotos: _fotosDoBloco(item), titleColor: titleColor),
           if (item.observacoes != null &&
               item.observacoes!.trim().isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -218,72 +212,141 @@ List<_FotoComRotulo> _fotosPreenchidasDoBloco(AvaliacaoItem item) {
   return fotos;
 }
 
-class _FotosGrade extends StatelessWidget {
+/// Fotos de uma comparação: 1 foto ocupa a largura toda; 2 ou 3 viram um
+/// carrossel horizontal com pontinhos. Cada instância guarda a própria página.
+class _FotosCarrossel extends StatefulWidget {
   final List<_FotoComRotulo> fotos;
-  final SoloForteSheetVisuals visuals;
   final Color titleColor;
 
-  const _FotosGrade({
-    required this.fotos,
-    required this.visuals,
-    required this.titleColor,
-  });
+  const _FotosCarrossel({required this.fotos, required this.titleColor});
+
+  @override
+  State<_FotosCarrossel> createState() => _FotosCarrosselState();
+}
+
+class _FotosCarrosselState extends State<_FotosCarrossel> {
+  static const _alturaFoto = 220.0;
+  static const _alturaRotulo = 22.0;
+  static const _fracaoViewport = 0.88;
+
+  late PageController _controller = _novoController();
+  int _pagina = 0;
+
+  bool get _carrossel => widget.fotos.length > 1;
+
+  PageController _novoController() =>
+      PageController(viewportFraction: _carrossel ? _fracaoViewport : 1);
+
+  @override
+  void didUpdateWidget(_FotosCarrossel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if ((oldWidget.fotos.length > 1) != _carrossel) {
+      _controller.dispose();
+      _controller = _novoController();
+    }
+    if (_pagina >= widget.fotos.length) _pagina = 0;
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final fotos = widget.fotos;
     if (fotos.isEmpty) return const SizedBox.shrink();
-    if (fotos.length == 1) return _coluna(fotos.first);
-    final linha = Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(child: _coluna(fotos[0])),
-        const SizedBox(width: 8),
-        Expanded(child: _coluna(fotos[1])),
-      ],
-    );
-    if (fotos.length == 2) return linha;
+    final v = SoloForteSheetVisuals.of(context);
+    if (!_carrossel) return _quadro(fotos.first, v, 0);
+
+    final altura =
+        _alturaFoto +
+        (fotos.any((f) => f.rotulo.isNotEmpty) ? _alturaRotulo : 0);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [linha, const SizedBox(height: 8), _coluna(fotos[2])],
+      children: [
+        SizedBox(
+          height: altura,
+          child: PageView.builder(
+            controller: _controller,
+            itemCount: fotos.length,
+            onPageChanged: (i) => setState(() => _pagina = i),
+            itemBuilder: (_, i) => _quadro(fotos[i], v, 4),
+          ),
+        ),
+        const SizedBox(height: 8),
+        _pontinhos(v),
+      ],
     );
   }
 
-  Widget _coluna(_FotoComRotulo foto) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _mini(foto.url),
-        if (foto.rotulo.isNotEmpty) ...[
-          const SizedBox(height: 4),
-          Text(
-            foto.rotulo,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: titleColor,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+  Widget _quadro(_FotoComRotulo foto, SoloForteSheetVisuals v, double gap) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: gap),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: CachedNetworkImage(
+              imageUrl: foto.url,
+              height: _alturaFoto,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorWidget: (_, __, ___) => Container(
+                height: _alturaFoto,
+                color: v.cardBackground,
+                child: Icon(
+                  Icons.image_not_supported_outlined,
+                  color: v.subtitleColor,
+                ),
+              ),
             ),
           ),
+          if (foto.rotulo.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              foto.rotulo,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: widget.titleColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
-  Widget _mini(String url) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: CachedNetworkImage(
-        imageUrl: url,
-        height: 130,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorWidget: (_, __, ___) => Container(
-          height: 130,
-          color: visuals.cardBackground,
-          child: Icon(
-            Icons.image_not_supported_outlined,
-            color: visuals.subtitleColor,
-          ),
+  Widget _pontinhos(SoloForteSheetVisuals v) {
+    final total = widget.fotos.length;
+    return Semantics(
+      container: true,
+      label: 'Foto ${_pagina + 1} de $total',
+      child: ExcludeSemantics(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var i = 0; i < total; i++)
+              AnimatedContainer(
+                key: ValueKey('foto-pontinho-$i'),
+                duration: const Duration(milliseconds: 180),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: i == _pagina ? 18 : 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: i == _pagina
+                      ? v.iconStroke
+                      : v.subtitleColor.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+          ],
         ),
       ),
     );
