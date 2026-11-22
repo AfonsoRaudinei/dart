@@ -21,7 +21,7 @@ class PublicMapTaglineCarousel extends StatefulWidget {
   static const Duration fadeDuration = Duration(milliseconds: 500);
 
   /// Texto + indicador — altura fixa para evitar salto entre slides.
-  static const double blockHeight = 150;
+  static const double blockHeight = 124;
 
   static const List<PublicMapTaglineSlide> slides = [
     PublicMapTaglineSlide(

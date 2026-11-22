@@ -76,10 +76,9 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
     }
   }
 
-  MapLayerTileConfig get _publicTileConfig =>
-      MapConfig.tileConfigForPublicMap(
-        mapTilerApiKey: MapConfig.kMapTilerApiKey,
-      );
+  MapLayerTileConfig get _publicTileConfig => MapConfig.tileConfigForPublicMap(
+    mapTilerApiKey: MapConfig.kMapTilerApiKey,
+  );
 
   void _zoomIn() {
     final maxZoom = _publicTileConfig.maxZoom;
@@ -110,10 +109,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
   Future<void> _centerOnUserAtEntryZoom() async {
     final position = await _resolveUserPosition();
     if (!mounted || position == null) return;
-    _mapController.move(
-      position,
-      PublicMapEntryConstants.kPublicMapEntryZoom,
-    );
+    _mapController.move(position, PublicMapEntryConstants.kPublicMapEntryZoom);
     setState(() => _currentZoom = PublicMapEntryConstants.kPublicMapEntryZoom);
   }
 
@@ -133,14 +129,18 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
       if (!mounted) return;
       if (newPermission == LocationPermission.whileInUse ||
           newPermission == LocationPermission.always) {
-        await _moveToUserAtZoom(PublicMapEntryConstants.kPublicMapLocationTapZoom);
+        await _moveToUserAtZoom(
+          PublicMapEntryConstants.kPublicMapLocationTapZoom,
+        );
       }
       return;
     }
 
     if (permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always) {
-      await _moveToUserAtZoom(PublicMapEntryConstants.kPublicMapLocationTapZoom);
+      await _moveToUserAtZoom(
+        PublicMapEntryConstants.kPublicMapLocationTapZoom,
+      );
     }
   }
 
@@ -404,7 +404,8 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
                 children: [
                   IgnorePointer(
                     child: Container(
-                      height: PublicMapEntryConstants.kPublicMapBottomScrimHeight,
+                      height:
+                          PublicMapEntryConstants.kPublicMapBottomScrimHeight,
                       width: double.infinity,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -427,15 +428,25 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
                     ),
                     child: const Column(
                       mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Padding(
-                          padding: EdgeInsets.fromLTRB(24, 0, 24, 18),
-                          child: SoloForteLockup(markHeight: 36, markBackdrop: true),
-                        ),
                         PublicMapTaglineCarousel(),
-                        SizedBox(height: 12),
-                        AccessSoloForteButton(),
+                        SizedBox(height: 10),
+                        // Logo e CTA na mesma linha: sobra mais mapa.
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 24),
+                          child: Row(
+                            children: [
+                              SoloForteLockup(
+                                markHeight: 30,
+                                markBackdrop: true,
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: AccessSoloForteButton(compact: true),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
