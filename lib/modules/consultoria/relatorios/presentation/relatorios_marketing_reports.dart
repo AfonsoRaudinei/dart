@@ -395,12 +395,14 @@ class _MarketingCaseStatusFilterBar extends StatelessWidget {
         duration: const Duration(milliseconds: 140),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF9500) : Colors.white,
+          // Âmbar escuro: texto branco com contraste AA; fundo não-selecionado
+          // segue o tema (era branco fixo: texto sumia no tema escuro).
+          color: isSelected ? const Color(0xFFB45309) : context.premiumSurface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? const Color(0xFFFF9500)
-                : const Color(0xFFD1D1D6),
+                ? const Color(0xFFB45309)
+                : context.premiumHairline,
           ),
         ),
         child: Row(
@@ -484,10 +486,10 @@ class _MarketingCaseFilterBar extends StatelessWidget {
         duration: const Duration(milliseconds: 140),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? context.themeAccent : Colors.white,
+          color: isSelected ? context.themeAccent : context.premiumSurface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? context.themeAccent : const Color(0xFFD1D1D6),
+            color: isSelected ? context.themeAccent : context.premiumHairline,
           ),
         ),
         child: Row(
