@@ -254,6 +254,101 @@ void main() {
       }
     });
 
+    group('blocos sem conteúdo não descartam o legado', () {
+      Map<String, dynamic> legado(String avaliacoesJson) => {
+        ...caseComBlocos(),
+        'foto_antes_url': urlA1,
+        'foto_depois_url': urlB1,
+        'parametros_json': jsonEncode([
+          {
+            'id': 'p9',
+            'titulo': 'Grãos por vagem',
+            'testemunha': 2,
+            'teste': 3,
+          },
+        ]),
+        'avaliacoes_json': avaliacoesJson,
+      };
+
+      test(
+        'bloco só com id/título + legado preenchido mostra o legado',
+        () async {
+          final html = await MarketingHtmlRenderer.render(
+            legado(
+              jsonEncode([
+                {'id': 'av-1', 'titulo': 'Comparação 1'},
+              ]),
+            ),
+            fetchRemoteBytes: fetchPorUrl,
+          );
+
+          expect(html, contains('Foto antes'));
+          expect(html, contains('Foto depois'));
+          expect(html, contains(b64(0x01)));
+          expect(html, contains(b64(0x02)));
+          expect(html, contains('Parâmetros comparativos'));
+          expect(html, contains('Grãos por vagem'));
+          expect(html, isNot(contains('Comparação 1')));
+        },
+      );
+
+      test('bloco só com texto + legado: legado nas fotos/parâmetros e o bloco '
+          'é mantido pelo texto, sem lados vazios', () async {
+        final html = await MarketingHtmlRenderer.render(
+          legado(
+            jsonEncode([
+              {
+                'id': 'av-1',
+                'titulo': 'Comparação 1',
+                'observacoes': 'Só uma nota de campo',
+              },
+            ]),
+          ),
+          fetchRemoteBytes: fetchPorUrl,
+        );
+
+        // Sem foto/parâmetro no bloco, o legado segue como fonte.
+        expect(html, contains('Foto antes'));
+        expect(html, contains('Grãos por vagem'));
+        expect(html, isNot(contains('Só uma nota de campo')));
+      });
+
+      test(
+        'blocos reais ignoram o legado e descartam blocos 100% vazios',
+        () async {
+          final data = caseComBlocos();
+          data['parametros_json'] = jsonEncode([
+            {
+              'id': 'p9',
+              'titulo': 'Grãos por vagem',
+              'testemunha': 2,
+              'teste': 3,
+            },
+          ]);
+          final blocos = jsonDecode(data['avaliacoes_json'] as String) as List;
+          blocos.add({'id': 'av-3', 'titulo': 'Comparação 3'});
+          blocos.add({
+            'id': 'av-4',
+            'titulo': 'Comparação 4',
+            'observacoes': 'Texto do quarto',
+          });
+          data['avaliacoes_json'] = jsonEncode(blocos);
+          final html = await MarketingHtmlRenderer.render(
+            data,
+            fetchRemoteBytes: fetchPorUrl,
+          );
+
+          expect(html, contains('Comparação 1'));
+          expect(html, contains('Comparação 2'));
+          expect(html, isNot(contains('Comparação 3')));
+          expect(html, contains('Comparação 4'));
+          expect(html, contains('Texto do quarto'));
+          expect(html, isNot(contains('Grãos por vagem')));
+          expect(html, isNot(contains('Foto antes')));
+        },
+      );
+    });
+
     test('avaliacao exporta o lado C com rótulo e foto inline', () async {
       final html = await MarketingHtmlRenderer.render({
         'tipo': 'avaliacao',
