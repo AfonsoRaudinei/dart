@@ -5,20 +5,44 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../../../../core/contracts/i_client_lookup.dart';
 import '../../../../core/contracts/i_farm_lookup.dart';
+import '../../../../core/html_templates/relatorio_html_renderer.dart';
 import '../../domain/entities/event.dart';
+
+/// Lê os bytes de um asset do app. Testes injetam um fake.
+typedef AgendaPdfAssetLoader = Future<Uint8List> Function(String asset);
+
+Future<Uint8List> loadBundledAgendaPdfAsset(String asset) async {
+  final data = await rootBundle.load(asset);
+  return data.buffer.asUint8List();
+}
 
 /// PDF secundário do planejamento semanal (HTML é o caminho principal).
 ///
-/// Branding alinhado ao designer: Samsung/navy + logo SoloForte no rodapé.
+/// Branding alinhado ao designer: Samsung/navy; rodapé com logo SoloForte e
+/// QR Code de download do app, como nos relatórios HTML.
 class AgendaPdfService {
   final IClientLookup _clientLookup;
   final IFarmLookup? _farmLookup;
+  final AgendaPdfAssetLoader _assetLoader;
 
-  static const _logoAsset = 'assets/images/soloforte_logo.png';
+  static const _logoAsset = RelatorioHtmlRenderer.soloForteLogoAsset;
+  static const _qrAsset = RelatorioHtmlRenderer.soloForteQrAsset;
   static final _samsung = PdfColor.fromHex('1428A0');
   static final _navy = PdfColor.fromHex('2C5564');
 
-  const AgendaPdfService(this._clientLookup, [this._farmLookup]);
+  const AgendaPdfService(
+    this._clientLookup, [
+    this._farmLookup,
+    this._assetLoader = loadBundledAgendaPdfAsset,
+  ]);
+
+  Future<pw.MemoryImage?> _loadImage(String asset) async {
+    try {
+      return pw.MemoryImage(await _assetLoader(asset));
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<Uint8List> generateWeekPdf(
     List<Event> events,
@@ -26,14 +50,16 @@ class AgendaPdfService {
   ) async {
     final weekEnd = weekStart.add(const Duration(days: 6));
 
-    final filtered = events.where((e) {
-      if (e.syncStatus == 'deleted' || e.syncStatus == 'deleted_local') {
-        return false;
-      }
-      final d = e.dataInicioPlanejada;
-      return !d.isBefore(weekStart) && !d.isAfter(weekEnd);
-    }).toList()
-      ..sort((a, b) => a.dataInicioPlanejada.compareTo(b.dataInicioPlanejada));
+    final filtered =
+        events.where((e) {
+          if (e.syncStatus == 'deleted' || e.syncStatus == 'deleted_local') {
+            return false;
+          }
+          final d = e.dataInicioPlanejada;
+          return !d.isBefore(weekStart) && !d.isAfter(weekEnd);
+        }).toList()..sort(
+          (a, b) => a.dataInicioPlanejada.compareTo(b.dataInicioPlanejada),
+        );
 
     final clientIds = filtered.map((e) => e.clienteId).toSet();
     final clientNames = <String, String>{};
@@ -48,8 +74,10 @@ class AgendaPdfService {
       }),
     );
 
-    final farmIds =
-        filtered.map((e) => e.fazendaId).whereType<String>().toSet();
+    final farmIds = filtered
+        .map((e) => e.fazendaId)
+        .whereType<String>()
+        .toSet();
     final farmNames = <String, String>{};
     if (_farmLookup != null && farmIds.isNotEmpty) {
       await Future.wait(
@@ -57,7 +85,8 @@ class AgendaPdfService {
           try {
             final f = await _farmLookup.findById(id);
             farmNames[id] =
-                f?.name ?? 'Fazenda: ${id.substring(0, id.length.clamp(0, 8))}…';
+                f?.name ??
+                'Fazenda: ${id.substring(0, id.length.clamp(0, 8))}…';
           } catch (_) {
             farmNames[id] =
                 'Fazenda: ${id.substring(0, id.length.clamp(0, 8))}…';
@@ -72,11 +101,7 @@ class AgendaPdfService {
 
     final byDay = <DateTime, List<Event>>{};
     for (var i = 0; i < 7; i++) {
-      final day = DateTime(
-        weekStart.year,
-        weekStart.month,
-        weekStart.day + i,
-      );
+      final day = DateTime(weekStart.year, weekStart.month, weekStart.day + i);
       byDay[day] = [];
     }
     for (final event in filtered) {
@@ -85,13 +110,8 @@ class AgendaPdfService {
       byDay[key]?.add(event);
     }
 
-    pw.MemoryImage? logoImage;
-    try {
-      final data = await rootBundle.load(_logoAsset);
-      logoImage = pw.MemoryImage(data.buffer.asUint8List());
-    } catch (_) {
-      logoImage = null;
-    }
+    final logoImage = await _loadImage(_logoAsset);
+    final qrImage = await _loadImage(_qrAsset);
 
     final doc = pw.Document();
     final ptBR = DateFormat.yMMMMd('pt_BR');
@@ -102,7 +122,7 @@ class AgendaPdfService {
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
         header: (_) => _buildHeader(weekStart, weekEnd),
-        footer: (_) => _buildFooter(logoImage),
+        footer: (_) => _buildFooter(logoImage, qrImage),
         build: (ctx) => [
           pw.SizedBox(height: 16),
           ..._buildDays(byDay, clientNames, farmNames, ptBR, timeFormat),
@@ -159,16 +179,17 @@ class AgendaPdfService {
     );
   }
 
-  pw.Widget _buildFooter(pw.MemoryImage? logoImage) {
+  pw.Widget _buildFooter(pw.MemoryImage? logoImage, pw.MemoryImage? qrImage) {
     return pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.center,
+      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
-        if (logoImage != null) ...[
-          pw.Image(logoImage, width: 16, height: 16),
-          pw.SizedBox(width: 8),
-        ],
-        pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
+        pw.Row(
           children: [
+            if (logoImage != null) ...[
+              pw.Image(logoImage, width: 16, height: 16),
+              pw.SizedBox(width: 8),
+            ],
             pw.Text(
               'SoloForte',
               style: pw.TextStyle(
@@ -177,12 +198,26 @@ class AgendaPdfService {
                 color: _navy,
               ),
             ),
-            pw.Text(
-              'Agronomia inteligente · www.soloforte.app',
-              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
-            ),
           ],
         ),
+        if (qrImage != null)
+          pw.UrlLink(
+            destination: RelatorioHtmlRenderer.soloForteAppStoreUrl,
+            child: pw.Column(
+              mainAxisSize: pw.MainAxisSize.min,
+              children: [
+                pw.Image(qrImage, width: 44, height: 44),
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  'Baixe o SoloForte',
+                  style: const pw.TextStyle(
+                    fontSize: 7,
+                    color: PdfColors.grey600,
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
