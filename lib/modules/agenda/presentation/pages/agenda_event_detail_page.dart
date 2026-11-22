@@ -11,7 +11,9 @@ import 'package:soloforte_app/core/contracts/i_farm_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/i_field_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_field_lookup_provider.dart';
 import '../../domain/entities/event.dart';
+import '../../domain/entities/visit_session.dart';
 import '../../domain/enums/event_status.dart';
+import '../../domain/event_when_format.dart';
 import '../providers/agenda_provider.dart';
 import '../services/agenda_visit_share.dart';
 import '../widgets/status_badge.dart';
@@ -68,11 +70,22 @@ class AgendaEventDetailPage extends ConsumerWidget {
       error: (_, __) => 'Talhão não encontrado',
     );
 
+    final sessionId = event.visitSessionId;
+    final session = sessionId == null
+        ? null
+        : agendaState.sessions.where((s) => s.id == sessionId).firstOrNull;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detalhes do Evento'),
         automaticallyImplyLeading: false,
         actions: [
+          if (event.visitSessionId?.trim().isNotEmpty ?? false)
+            IconButton(
+              icon: const Icon(Icons.ios_share_outlined),
+              onPressed: () => openAgendaVisitShare(context, ref, event: event),
+              tooltip: 'Enviar visita',
+            ),
           if (!event.status.isFinished)
             IconButton(
               icon: const Icon(Icons.edit),
@@ -86,70 +99,28 @@ class AgendaEventDetailPage extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            _buildHeader(event, context),
-            const SizedBox(height: 24),
-
-            // Informações principais
-            _buildInfoSection('Informações Gerais', [
-              _buildInfoRow(Icons.title, 'Título', event.titulo),
-              _buildInfoRow(Icons.category, 'Tipo', event.tipo.label),
-              _buildInfoRow(
-                Icons.access_time,
-                'Horário',
-                '${_formatTime(event.dataInicioPlanejada)} - ${_formatTime(event.dataFimPlanejada)}',
-              ),
-              _buildInfoRow(
-                Icons.timelapse,
-                'Duração',
-                '${event.duracaoPlanejadaMin} minutos',
-              ),
+            _buildHeader(event, session, context),
+            const SizedBox(height: 12),
+            _buildCard(context, [
+              _buildInfoRow('Cliente', clientNome),
+              if (farmNome != null && fieldNome != null)
+                _buildPairRow(('Fazenda', farmNome), ('Talhão', fieldNome))
+              else if (farmNome != null)
+                _buildInfoRow('Fazenda', farmNome)
+              else if (fieldNome != null)
+                _buildInfoRow('Talhão', fieldNome),
+              if (session?.notasFinais != null)
+                _buildInfoRow('Notas', session!.notasFinais!),
             ]),
-            const SizedBox(height: 24),
-
-            // Cliente/Fazenda/Talhão
-            _buildInfoSection('Localização', [
-              _buildInfoRow(Icons.person, 'Cliente', clientNome),
-              if (farmNome != null)
-                _buildInfoRow(Icons.agriculture, 'Fazenda', farmNome),
-              if (fieldNome != null)
-                _buildInfoRow(Icons.landscape, 'Talhão', fieldNome),
-            ]),
-            const SizedBox(height: 24),
-
-            // Sessão de visita
             if (event.visitSessionId != null) ...[
-              _buildSessionInfo(ref, event),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
               VisitReportsSection(
                 sessionId: event.visitSessionId!,
                 eventFieldName: fieldNome,
                 eventFarmName: farmNome,
               ),
-              if (event.visitSessionId!.trim().isNotEmpty) ...[
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () =>
-                        openAgendaVisitShare(context, ref, event: event),
-                    icon: const Icon(Icons.ios_share_outlined),
-                    label: const Text('Enviar'),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 24),
             ],
-
-            // Oportunidades — ver ficha do cliente
-            _buildInfoSection('Oportunidades', [
-              _buildInfoRow(
-                Icons.trending_up_rounded,
-                'Oportunidades',
-                'Ver na ficha do cliente',
-              ),
-            ]),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
 
             // Ações
             if (!event.status.isFinished) _buildActions(context, ref, event),
@@ -175,11 +146,15 @@ class AgendaEventDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(Event event, BuildContext context) {
+  Widget _buildHeader(
+    Event event,
+    VisitSession? session,
+    BuildContext context,
+  ) {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -189,29 +164,39 @@ class AgendaEventDetailPage extends ConsumerWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: theme.primaryColor.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
-          EventTypeBadge(type: event.tipo, size: 64),
-          const SizedBox(width: 16),
+          EventTypeBadge(type: event.tipo, size: 44),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   event.titulo,
-                  style: theme.textTheme.headlineSmall?.copyWith(
+                  style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
-                StatusBadge(status: event.status),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 2,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    StatusBadge(status: event.status, compact: true),
+                    Text(event.tipo.label, style: theme.textTheme.bodySmall),
+                  ],
+                ),
                 const SizedBox(height: 4),
                 Text(
-                  _formatDate(event.dataInicioPlanejada),
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                  eventWhenLine(event, session),
+                  style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.textTheme.bodySmall?.color?.withValues(
                       alpha: 0.7,
                     ),
@@ -225,52 +210,36 @@ class AgendaEventDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildInfoSection(String title, List<Widget> children) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            children: [
-              for (int i = 0; i < children.length; i++) ...[
-                children[i],
-                if (i < children.length - 1) const Divider(height: 1),
-              ],
-            ],
-          ),
-        ),
-      ],
+  Widget _buildCard(BuildContext context, List<Widget> children) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).dividerColor),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          for (int i = 0; i < children.length; i++) ...[
+            children[i],
+            if (i < children.length - 1) const Divider(height: 1),
+          ],
+        ],
+      ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.grey.shade600),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 2,
+          SizedBox(
+            width: 72,
             child: Text(
               label,
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
             ),
           ),
           Expanded(
-            flex: 3,
             child: Text(
               value,
               style: const TextStyle(fontWeight: FontWeight.w600),
@@ -282,42 +251,40 @@ class AgendaEventDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildSessionInfo(WidgetRef ref, Event event) {
-    final session = ref
-        .watch(agendaProvider)
-        .sessions
-        .where((s) => s.id == event.visitSessionId)
-        .firstOrNull;
+  Widget _buildPairRow((String, String) left, (String, String) right) {
+    Widget cell((String, String) item) {
+      return Expanded(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.$1,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              ),
+              Text(
+                item.$2,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
-    if (session == null) return const SizedBox.shrink();
-
-    return _buildInfoSection('Sessão de Visita', [
-      _buildSessionTimeRow(
-        Icons.play_arrow,
-        'Início Real',
-        session.startAtReal,
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [cell(left), const VerticalDivider(width: 1), cell(right)],
       ),
-      if (session.endAtReal != null)
-        _buildSessionTimeRow(Icons.stop, 'Fim Real', session.endAtReal!),
-      _buildInfoRow(
-        Icons.timer,
-        'Duração',
-        '${session.currentDurationMin} minutos',
-      ),
-      if (session.notasFinais != null)
-        _buildInfoRow(Icons.notes, 'Notas', session.notasFinais!),
-    ]);
+    );
   }
 
   Widget _buildActions(BuildContext context, WidgetRef ref, Event event) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Ações',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
         if (event.status == EventStatus.agendado)
           ElevatedButton.icon(
             onPressed: () async {
@@ -348,7 +315,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),
         if (event.status == EventStatus.emAndamento &&
@@ -386,7 +353,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.amber,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),
         if (event.status == EventStatus.finalizando)
@@ -413,7 +380,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),
         const SizedBox(height: 8),
@@ -466,7 +433,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
           label: const Text('Excluir Evento'),
           style: OutlinedButton.styleFrom(
             foregroundColor: Colors.red,
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 12),
           ),
         ),
       ],
@@ -474,30 +441,33 @@ class AgendaEventDetailPage extends ConsumerWidget {
   }
 
   Widget _buildKeepOrDelete(BuildContext context, WidgetRef ref, Event event) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Row(
       children: [
-        OutlinedButton(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Visita mantida na agenda.')),
-            );
-          },
-          child: const Text('Manter na agenda'),
-        ),
-        const SizedBox(height: 8),
-        OutlinedButton(
-          onPressed: () => _confirmDelete(
-            context,
-            ref,
-            event,
-            title: 'Excluir da agenda?',
-            message:
-                'A visita sai da agenda. Os relatórios feitos no talhão continuam em Relatórios.',
-            success: 'Visita excluída da agenda.',
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Visita mantida na agenda.')),
+              );
+            },
+            child: const Text('Manter'),
           ),
-          style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-          child: const Text('Excluir da agenda'),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () => _confirmDelete(
+              context,
+              ref,
+              event,
+              title: 'Excluir da agenda?',
+              message:
+                  'A visita sai da agenda. Os relatórios feitos no talhão continuam em Relatórios.',
+              success: 'Visita excluída da agenda.',
+            ),
+            style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Excluir'),
+          ),
         ),
       ],
     );
@@ -554,70 +524,6 @@ class AgendaEventDetailPage extends ConsumerWidget {
     showDialog<void>(
       context: context,
       builder: (_) => VisitEditDialog(event: event),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    const months = [
-      'Jan',
-      'Fev',
-      'Mar',
-      'Abr',
-      'Mai',
-      'Jun',
-      'Jul',
-      'Ago',
-      'Set',
-      'Out',
-      'Nov',
-      'Dez',
-    ];
-    return '${date.day} de ${months[date.month - 1]} ${date.year}';
-  }
-
-  String _formatTime(DateTime time) {
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-  }
-
-  /// Data e hora em linhas separadas para o horário não ficar sob o botão flutuante.
-  Widget _buildSessionTimeRow(IconData icon, String label, DateTime value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: Colors.grey.shade600),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                color: Colors.grey.shade600,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  _formatDate(value),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                  textAlign: TextAlign.right,
-                ),
-                Text(
-                  'às ${_formatTime(value)}',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                  textAlign: TextAlign.right,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
