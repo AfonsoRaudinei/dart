@@ -370,6 +370,7 @@ class _CombinedReportsComposerState
     extends ConsumerState<_CombinedReportsComposer> {
   late Set<String> _selected;
   final List<Set<String>> _undoStack = [];
+  CombinedWeek? _week;
   bool _saving = false;
 
   @override
@@ -383,6 +384,7 @@ class _CombinedReportsComposerState
     super.didUpdateWidget(oldWidget);
     if (oldWidget.clientId != widget.clientId) {
       _undoStack.clear();
+      _week = null;
       _selected = widget.events.map((event) => event.key).toSet();
       return;
     }
@@ -420,8 +422,25 @@ class _CombinedReportsComposerState
     setState(() => _selected = <String>{});
   }
 
+  List<_CombinedReportEvent> get _visibleEvents {
+    final week = _week;
+    if (week == null) return widget.events;
+    return widget.events
+        .where((event) => week.contains(event.occurredAt))
+        .toList();
+  }
+
   List<_CombinedReportEvent> get _selectedEvents =>
-      widget.events.where((event) => _selected.contains(event.key)).toList();
+      _visibleEvents.where((event) => _selected.contains(event.key)).toList();
+
+  void _setWeek(CombinedWeek? week) {
+    if (week == _week) return;
+    _undoStack.add(Set<String>.of(_selected));
+    setState(() {
+      _week = week;
+      _selected = _visibleEvents.map((event) => event.key).toSet();
+    });
+  }
 
   Future<void> _saveCombination() async {
     if (_saving || _selectedEvents.length < 2) return;
@@ -659,7 +678,8 @@ class _CombinedReportsComposerState
       );
     }
 
-    final selectedCount = _selected.length;
+    final visibleEvents = _visibleEvents;
+    final selectedCount = _selectedEvents.length;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -671,6 +691,7 @@ class _CombinedReportsComposerState
             count: widget.events.length,
           ),
           if (saved.isNotEmpty) _savedSection(saved),
+          CombinedWeekFilter(week: _week, onChanged: _setWeek),
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
             child: Row(
@@ -681,7 +702,7 @@ class _CombinedReportsComposerState
                   label: const Text('Desfazer'),
                 ),
                 TextButton(
-                  onPressed: _selected.isEmpty ? null : _clear,
+                  onPressed: selectedCount == 0 ? null : _clear,
                   child: const Text('Limpar'),
                 ),
                 const Spacer(),
@@ -695,7 +716,10 @@ class _CombinedReportsComposerState
               ],
             ),
           ),
-          ...widget.events.map(_eventTile),
+          if (visibleEvents.isEmpty)
+            const _PremiumEmptyState(message: 'Nada registrado nesta semana.')
+          else
+            ...visibleEvents.map(_eventTile),
           const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
