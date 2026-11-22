@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:intl/intl.dart';
 
 import 'package:soloforte_app/core/contracts/i_opportunity_lookup_provider.dart';
@@ -205,7 +206,7 @@ class _OportunidadeItem extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                           child: LinearProgressIndicator(
                             value: pct / 100.0,
-                            backgroundColor: Colors.grey[200],
+                            backgroundColor: context.premiumHairline,
                             color: cor,
                             minHeight: 6,
                           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 class ClienteCarteiraCard extends StatelessWidget {
   const ClienteCarteiraCard({
@@ -46,7 +47,7 @@ class ClienteCarteiraCard extends StatelessWidget {
                 minHeight: 10,
                 // Sem isto a trilha herda a cor secundária (verde) do tema e
                 // 0% parece uma barra cheia.
-                backgroundColor: Colors.grey[200],
+                backgroundColor: context.premiumHairline,
                 borderRadius: BorderRadius.circular(999),
               ),
               const SizedBox(height: 8),

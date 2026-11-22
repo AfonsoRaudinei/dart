@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
 import 'package:soloforte_app/core/contracts/i_ndvi_field_presenter_provider.dart';
@@ -98,7 +99,7 @@ class FarmLinkedFieldList extends ConsumerWidget {
         decoration: BoxDecoration(
           color: Colors.grey[50],
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[200]!),
+          border: Border.all(color: context.premiumHairline),
         ),
         child: Center(child: Text(emptyMessage)),
       );

@@ -370,7 +370,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                         decoration: BoxDecoration(
                           color: Colors.grey[50],
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[200]!),
+                          border: Border.all(color: context.premiumHairline),
                         ),
                         child: Column(
                           children: [
@@ -516,7 +516,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
           decoration: BoxDecoration(
             color: Colors.grey[50],
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
+            border: Border.all(color: context.premiumHairline),
           ),
           child: Text(
             'Nenhuma ainda. Toque no talhão para escolher cultura e material.',
