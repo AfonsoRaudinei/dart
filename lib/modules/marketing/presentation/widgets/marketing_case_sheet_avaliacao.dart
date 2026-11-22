@@ -67,6 +67,14 @@ class _AvaliacaoLivreReadOnlyCardState
               style: TextStyle(color: widget.hintColor, fontSize: 12),
             ),
           ],
+          if (_fotosPreenchidasDoBloco(avaliacao).isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _FotosGrade(
+              fotos: _fotosPreenchidasDoBloco(avaliacao),
+              visuals: v,
+              titleColor: widget.titleColor,
+            ),
+          ],
           const SizedBox(height: 10),
           ...avaliacao.parametros.map(
             (parametro) => Padding(
@@ -191,20 +199,23 @@ class _ComparacaoBlocosReadOnly extends StatelessWidget {
     );
   }
 
-  List<_FotoComRotulo> _fotosDoBloco(AvaliacaoItem item) {
-    final fotos = <_FotoComRotulo>[];
-    void add(String? url, String? rotulo) {
-      final path = url?.trim() ?? '';
-      if (path.isEmpty) return;
-      fotos.add(_FotoComRotulo(path, rotulo?.trim() ?? ''));
-    }
+  List<_FotoComRotulo> _fotosDoBloco(AvaliacaoItem item) =>
+      _fotosPreenchidasDoBloco(item);
+}
 
-    add(item.fotoLadoAPath, item.nomeLadoA);
-    add(item.fotoLadoBPath, item.nomeLadoB);
-    add(item.fotoLadoCPath, item.nomeLadoC);
-    if (fotos.length <= 3) return fotos;
-    return fotos.sublist(0, 3);
+/// Fotos preenchidas do bloco (A, B, C) com o rótulo de cada lado.
+List<_FotoComRotulo> _fotosPreenchidasDoBloco(AvaliacaoItem item) {
+  final fotos = <_FotoComRotulo>[];
+  void add(String? url, String? rotulo) {
+    final path = url?.trim() ?? '';
+    if (path.isEmpty) return;
+    fotos.add(_FotoComRotulo(path, rotulo?.trim() ?? ''));
   }
+
+  add(item.fotoLadoAPath, item.nomeLadoA);
+  add(item.fotoLadoBPath, item.nomeLadoB);
+  add(item.fotoLadoCPath, item.nomeLadoC);
+  return fotos;
 }
 
 class _FotosGrade extends StatelessWidget {
