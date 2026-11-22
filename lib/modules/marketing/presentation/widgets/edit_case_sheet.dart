@@ -90,22 +90,43 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
     _hydrateSelectedClientNameFallback();
   }
 
-  /// Blocos de `avaliacoes_json`; sem eles, o par legado Antes/Depois e os
-  /// parâmetros de `parametros_json` formam a Comparação 1.
+  /// Blocos de `avaliacoes_json`. Um bloco "tem conteúdo" com ao menos uma
+  /// foto (A/B/C) ou um parâmetro com título. Se nenhum tem e o legado
+  /// (`foto_antes_url`/`foto_depois_url`/`parametros_json`) está preenchido,
+  /// o legado forma a Comparação 1 — herdando id e texto do primeiro bloco,
+  /// se houver (bloco só com texto não perde a observação). Demais blocos
+  /// seguem como estão.
   List<NovoCaseComparacao> _comparacoesDoCase(MarketingCase caso) {
     final itens = caso.avaliacoesLivres;
-    if (itens.isEmpty) {
-      return [
-        NovoCaseComparacao(
-          id: _uuid.v4(),
-          fotoAntesUrl: _urlOuNull(caso.fotoAntesUrl),
-          fotoDepoisUrl: _urlOuNull(caso.fotoDepoisUrl),
-          parametros: caso.parametros,
-        ),
-      ];
+    final fotoAntes = _urlOuNull(caso.fotoAntesUrl);
+    final fotoDepois = _urlOuNull(caso.fotoDepoisUrl);
+    final parametros = caso.parametros;
+    final legadoPreenchido =
+        fotoAntes != null || fotoDepois != null || parametros.isNotEmpty;
+    if (itens.isNotEmpty &&
+        (itens.any(_blocoTemConteudo) || !legadoPreenchido)) {
+      return [for (final item in itens) _comparacaoDoItem(item)];
     }
-    return [for (final item in itens) _comparacaoDoItem(item)];
+    final primeiro = itens.firstOrNull;
+    return [
+      NovoCaseComparacao(
+        id: primeiro == null || primeiro.id.isEmpty ? _uuid.v4() : primeiro.id,
+        fotoAntesUrl: fotoAntes,
+        fotoDepoisUrl: fotoDepois,
+        texto: primeiro?.observacoes ?? '',
+        parametros: parametros,
+      ),
+      for (final item in itens.skip(1)) _comparacaoDoItem(item),
+    ];
   }
+
+  bool _blocoTemConteudo(AvaliacaoItem item) =>
+      item.parametros.any((p) => p.titulo.trim().isNotEmpty) ||
+      [
+        item.fotoLadoAPath,
+        item.fotoLadoBPath,
+        item.fotoLadoCPath,
+      ].any((foto) => _urlOuNull(foto) != null);
 
   NovoCaseComparacao _comparacaoDoItem(AvaliacaoItem item) {
     final fotoB = _urlOuNull(item.fotoLadoBPath);
