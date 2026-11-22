@@ -100,8 +100,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
   final VoidCallback stopFollowing;
   final void Function(occ.Occurrence occurrence) handleOccurrencePinTap;
   final void Function() applyInitialViewport;
-  final Future<void> Function() openCoordinateSearch;
-  final Future<void> Function() openMunicipalitySearch;
   final Future<void> Function() downloadOfflineArea;
   final bool absorbMapPointers;
   final bool showLongPressHint;
@@ -123,8 +121,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
     required this.stopFollowing,
     required this.handleOccurrencePinTap,
     required this.applyInitialViewport,
-    required this.openCoordinateSearch,
-    required this.openMunicipalitySearch,
     required this.downloadOfflineArea,
     this.absorbMapPointers = false,
     this.showLongPressHint = false,
@@ -542,8 +538,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
               centerOnUser: centerOnUser,
               onLocationModeChanged: onLocationModeChanged,
               toggleDrawMode: toggleDrawMode,
-              openCoordinateSearch: openCoordinateSearch,
-              openMunicipalitySearch: openMunicipalitySearch,
               downloadOfflineArea: downloadOfflineArea,
               finishDrawing: finishDrawing,
               onMapUserInteraction: onMapUserInteraction,
@@ -602,8 +596,6 @@ class _MapControlsHost extends ConsumerWidget {
     required this.centerOnUser,
     required this.onLocationModeChanged,
     required this.toggleDrawMode,
-    required this.openCoordinateSearch,
-    required this.openMunicipalitySearch,
     required this.downloadOfflineArea,
     required this.finishDrawing,
     this.onMapUserInteraction,
@@ -615,8 +607,6 @@ class _MapControlsHost extends ConsumerWidget {
   final VoidCallback centerOnUser;
   final ValueChanged<MapLocationMode> onLocationModeChanged;
   final VoidCallback toggleDrawMode;
-  final Future<void> Function() openCoordinateSearch;
-  final Future<void> Function() openMunicipalitySearch;
   final Future<void> Function() downloadOfflineArea;
   final Future<void> Function() finishDrawing;
   final VoidCallback? onMapUserInteraction;

@@ -13,8 +13,6 @@ import '../../core/state/map_state.dart';
 import '../../core/config/map_config.dart';
 import '../../core/providers/connectivity_provider.dart';
 import '../../core/services/offline_tile_cache_service.dart';
-import '../../core/utils/coordinate_parser.dart';
-import '../../core/utils/google_maps_link_parser.dart';
 import '../../modules/auth/services/auth_service.dart';
 import '../../core/utils/app_logger.dart';
 import '../../modules/drawing/presentation/providers/drawing_provider.dart';
@@ -28,8 +26,6 @@ import '../../modules/consultoria/occurrences/presentation/controllers/occurrenc
 import '../../modules/marketing/domain/entities/campo_teste_case_seed.dart';
 import '../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../components/map/map_camera_ease.dart';
-import '../components/map/map_coordinate_search_sheet.dart';
-import '../components/map/map_municipality_search_sheet.dart';
 import '../components/map/map_offline_download_sheet.dart';
 import '../components/map/map_sheet_state.dart';
 import '../components/map/widgets/location_export_bottom_sheet.dart';
@@ -47,7 +43,6 @@ import 'map/providers/map_armed_mode_provider.dart';
 import 'map/providers/map_ready_state_provider.dart';
 import '../../modules/map/presentation/providers/map_location_mode_provider.dart';
 import 'map/providers/pin_position_correction_provider.dart';
-import 'map/widgets/go_to_local_sheet_listener.dart';
 import 'map/widgets/map_build_orchestrator.dart';
 import 'map/handlers/map_location_handler.dart';
 import 'map/controllers/map_viewport_controller.dart';
@@ -690,62 +685,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     );
   }
 
-  Future<void> _openCoordinateSearch() async {
-    final value = await showMapCoordinateSearchSheet(context);
-    if (!mounted || value == null || value.isEmpty) return;
-
-    final resolvingLink = GoogleMapsLinkParser.looksLikeGoogleMapsLink(value);
-    if (resolvingLink) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Resolvendo link do Google Maps…'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-
-    final parsed = await CoordinateParser.parseAsync(value);
-    if (!mounted) return;
-    if (parsed == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Formato inválido. Use decimal, DMS/DDM, UTM ou link do Google Maps.',
-          ),
-        ),
-      );
-      return;
-    }
-
-    unawaited(MapCameraEase.move(_mapController, to: parsed, zoom: 17.0));
-    ref.read(destinationCoordinateMarkerProvider.notifier).state = parsed;
-    HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Destino marcado no mapa'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  Future<void> _openMunicipalitySearch() async {
-    await showMapMunicipalitySearch(
-      context,
-      onSelected: (point, label) {
-        if (!mounted) return;
-        unawaited(MapCameraEase.move(_mapController, to: point, zoom: 13.0));
-        ref.read(destinationCoordinateMarkerProvider.notifier).state = point;
-        HapticFeedback.lightImpact();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Destino: $label'),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      },
-    );
-  }
-
   Future<void> _downloadOfflineArea() async {
     final isOnline = ref.read(isOnlineProvider).asData?.value ?? false;
     if (!isOnline) {
@@ -1033,40 +972,33 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       );
     });
 
-    return GoToLocalSheetListener(
-      onMunicipalitySearch: _openMunicipalitySearch,
-      onCoordinateSearch: _openCoordinateSearch,
-      onBeforeOpen: _onMapUserInteraction,
-      child: PopScope(
-        canPop: !pinCorrectionActive,
-        onPopInvokedWithResult: (didPop, result) {
-          if (!didPop && ref.read(pinPositionCorrectionProvider) != null) {
-            ref.cancelPinCorrection();
-          }
-        },
-        child: MapBuildOrchestrator(
-          mapController: _mapController,
-          setSheetState: _setSheetState,
-          openOccurrenceSheet: _openOccurrenceSheet,
-          dropAreaVisitadaPin: _dropAreaVisitadaPin,
-          onAreaVisitada: _armAreaVisitadaMode,
-          handleMapLongPress: _handleMapLongPress,
-          finishDrawing: _finishDrawing,
-          toggleDrawMode: _toggleDrawMode,
-          centerOnUser: _centerOnUser,
-          onLocationModeChanged: _handleLocationModeChanged,
-          stopFollowing: () =>
-              MapLocationHandler.stopFollowing(mapController: _mapController),
-          handleOccurrencePinTap: _handleOccurrencePinTap,
-          applyInitialViewport: _applyInitialViewport,
-          openCoordinateSearch: _openCoordinateSearch,
-          openMunicipalitySearch: _openMunicipalitySearch,
-          downloadOfflineArea: _downloadOfflineArea,
-          absorbMapPointers: _actionsSheetOpen,
-          showLongPressHint: _showLongPressHint,
-          onLongPressHintAcknowledged: _onLongPressHintAcknowledged,
-          onMapUserInteraction: _onMapUserInteraction,
-        ),
+    return PopScope(
+      canPop: !pinCorrectionActive,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && ref.read(pinPositionCorrectionProvider) != null) {
+          ref.cancelPinCorrection();
+        }
+      },
+      child: MapBuildOrchestrator(
+        mapController: _mapController,
+        setSheetState: _setSheetState,
+        openOccurrenceSheet: _openOccurrenceSheet,
+        dropAreaVisitadaPin: _dropAreaVisitadaPin,
+        onAreaVisitada: _armAreaVisitadaMode,
+        handleMapLongPress: _handleMapLongPress,
+        finishDrawing: _finishDrawing,
+        toggleDrawMode: _toggleDrawMode,
+        centerOnUser: _centerOnUser,
+        onLocationModeChanged: _handleLocationModeChanged,
+        stopFollowing: () =>
+            MapLocationHandler.stopFollowing(mapController: _mapController),
+        handleOccurrencePinTap: _handleOccurrencePinTap,
+        applyInitialViewport: _applyInitialViewport,
+        downloadOfflineArea: _downloadOfflineArea,
+        absorbMapPointers: _actionsSheetOpen,
+        showLongPressHint: _showLongPressHint,
+        onLongPressHintAcknowledged: _onLongPressHintAcknowledged,
+        onMapUserInteraction: _onMapUserInteraction,
       ),
     );
   }
