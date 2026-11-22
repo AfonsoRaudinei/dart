@@ -19,6 +19,9 @@ import 'package:soloforte_app/modules/planos/presentation/providers/plano_provid
 import 'package:soloforte_app/modules/settings/presentation/providers/settings_providers.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
 
+import 'package:soloforte_app/ui/components/side_menu_greeting.dart';
+import 'package:soloforte_app/modules/agenda/presentation/providers/agenda_provider.dart';
+
 part 'side_menu_overlay_sections.dart';
 
 Color _menuAccent(BuildContext context) =>
@@ -168,8 +171,14 @@ class SideMenuOverlay extends ConsumerWidget {
     final displayName = (profile?.fullName?.trim().isNotEmpty ?? false)
         ? profile!.fullName!
         : 'Usuário';
-    final displayRole = _formatRole(ref.watch(currentUserRoleProvider).value);
-    final displayEmail = profile?.email.trim() ?? '';
+    final role = ref.watch(currentUserRoleProvider).value;
+    final isConsultor = role.toUserRole().isConsultor;
+    final now = DateTime.now();
+    final greeting = greetingLine(now, profile?.fullName);
+    // Consultor: contexto da agenda de hoje; demais perfis: o próprio perfil.
+    final contextLine = isConsultor
+        ? visitsContextLine(_pendingVisitsToday(ref, now))
+        : _formatRole(role);
 
     ImageProvider<Object>? avatarImage;
     final localPath = localProfile.imagePath;
@@ -255,39 +264,29 @@ class SideMenuOverlay extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          displayRole,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.82),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          displayName,
+                          greeting,
+                          key: const Key('side_menu_greeting'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 17,
+                            fontSize: 20,
                             fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
                           ),
                         ),
-                        if (displayEmail.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            displayEmail,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.82),
-                              fontSize: 11,
-                            ),
+                        const SizedBox(height: 3),
+                        Text(
+                          contextLine,
+                          key: const Key('side_menu_greeting_context'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
                           ),
-                        ],
+                        ),
                       ],
                     ),
                   ),
@@ -378,6 +377,21 @@ class SideMenuOverlay extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Visitas de hoje que ainda não foram concluídas nem canceladas.
+  int _pendingVisitsToday(WidgetRef ref, DateTime now) {
+    final events = ref.watch(agendaProvider.select((s) => s.events));
+    final start = DateTime(now.year, now.month, now.day);
+    final end = start.add(const Duration(days: 1));
+    return events
+        .where(
+          (e) =>
+              !e.status.isFinished &&
+              e.dataInicioPlanejada.isBefore(end) &&
+              e.dataFimPlanejada.isAfter(start),
+        )
+        .length;
   }
 
   String _formatRole(String role) {
