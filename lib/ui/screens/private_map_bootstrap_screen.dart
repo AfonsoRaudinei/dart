@@ -219,7 +219,7 @@ class _BootstrapScaffold extends StatelessWidget {
                     const SizedBox(height: 22),
                     LinearProgressIndicator(
                       value: progress <= 0 || progress >= 1 ? null : progress,
-                      backgroundColor: context.premiumHairline,
+                      backgroundColor: context.isPremiumDark ? context.premiumHairline : Colors.grey[200],
                       color: theme.colorScheme.primary,
                       minHeight: 6,
                     ),
