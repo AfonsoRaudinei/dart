@@ -291,6 +291,54 @@ void main() {
       expect(fotos.depois, isNull);
     });
 
+    test('blocos sem foto usam o par legado', () {
+      final fotos = storyFotosAntesDepois(
+        baseCase(
+          tipo: CaseTipo.antesDepois,
+          avaliacoesJson: jsonEncode([
+            {'id': 'av-1', 'titulo': 'Comparação 1'},
+          ]),
+          fotoAntesUrl: 'https://example.com/legado-antes.jpg',
+          fotoDepoisUrl: 'https://example.com/legado-depois.jpg',
+        ),
+      );
+
+      expect(fotos.antes, 'https://example.com/legado-antes.jpg');
+      expect(fotos.depois, 'https://example.com/legado-depois.jpg');
+    });
+
+    test('Comparação 1 sem foto mas outro bloco com foto: usa esse bloco', () {
+      final fotos = storyFotosAntesDepois(
+        baseCase(
+          tipo: CaseTipo.antesDepois,
+          avaliacoesJson: comparacao1(),
+          fotoAntesUrl: 'https://example.com/legado-antes.jpg',
+        ),
+      );
+
+      expect(fotos.antes, 'https://example.com/c2-a.jpg');
+      expect(fotos.depois, 'https://example.com/c2-b.jpg');
+    });
+
+    test('foto única esconde rótulo Antes e o valor da testemunha', () {
+      final out = injectStoryData(
+        storyHtml,
+        baseCase(
+          tipo: CaseTipo.antesDepois,
+          avaliacoesJson: comparacao1(a: 'https://example.com/a.jpg'),
+        ),
+        fotoAntesSrc: 'data:image/jpeg;base64,AAA',
+      );
+
+      final css = RegExp(
+        r'<style id="sf-story-single-photo">([\s\S]*?)</style>',
+      ).firstMatch(out)!.group(1)!;
+      expect(css, contains('.compare-side.before .compare-side-label'));
+      expect(css, contains('.compare-side.before .compare-side-value'));
+      expect(css, contains('.compare-side.before .compare-side-overlay'));
+      expect(css, contains('display: none'));
+    });
+
     test('uma só foto: slide mostra só ela, sem lado Depois vazio', () {
       final caso = baseCase(
         tipo: CaseTipo.antesDepois,
