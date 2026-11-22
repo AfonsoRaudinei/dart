@@ -7,5 +7,5 @@ abstract final class PublicMapEntryConstants {
   static const double kPublicMapLocationTapZoom = 16.0;
 
   /// Altura do scrim cinematográfico na faixa inferior.
-  static const double kPublicMapBottomScrimHeight = 200.0;
+  static const double kPublicMapBottomScrimHeight = 380.0;
 }

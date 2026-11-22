@@ -10,13 +10,12 @@ import '../../core/router/app_routes.dart';
 import '../../modules/auth/services/auth_service.dart';
 import '../../modules/auth/utils/auth_validators.dart';
 import '../../modules/auth/widgets/confirm_email_code_form.dart';
-import '../../modules/marketing/presentation/widgets/ouro_map_background.dart';
+import '../components/brand/soloforte_lockup.dart';
 import '../components/login/login_input_field.dart';
 import '../components/login/gradient_button.dart';
 import '../components/login/demo_mode_checkbox.dart';
 import '../components/login/login_sheet_drag.dart';
 import '../components/login/login_sheet_keyboard_layout.dart';
-import '../components/login/social_auth_button.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -330,7 +329,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       topSafePadding: media.padding.top,
     );
     final theme = Theme.of(context);
-    final accent = theme.colorScheme.primary;
+    // O painel é sempre claro: no tema escuro o primário azul-claro some.
+    final accent = theme.brightness == Brightness.dark
+        ? PremiumTokens.brandGreenAccessible
+        : theme.colorScheme.primary;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -338,8 +340,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // ── Layer 1: Mapa Ouro no fundo ──────────────────────
-          const OuroMapBackground(),
+          // ── Layer 1: foto real de lavoura (sem depender de tiles/API) ──
+          const ColoredBox(color: Color(0xFF14231B)),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: media.size.height * 0.62,
+            child: Image.asset(
+              'assets/images/login/fundo_lavoura.jpg',
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              errorBuilder: (_, __, ___) =>
+                  const ColoredBox(color: Color(0xFF1B3A2A)),
+            ),
+          ),
 
           // ── Layer 2: Gradiente overlay (faz o mapa virar teaser) ─
           DecoratedBox(
@@ -348,17 +363,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withValues(alpha: 0.22),
-                  Colors.black.withValues(alpha: 0.55),
-                  Colors.black.withValues(alpha: 0.85),
+                  Colors.black.withValues(alpha: 0.18),
+                  Colors.black.withValues(alpha: 0.30),
+                  Colors.black.withValues(alpha: 0.70),
                 ],
-                stops: const [0.0, 0.45, 1.0],
+                stops: const [0.0, 0.5, 1.0],
               ),
             ),
           ),
-
-          // ── Layer 3: Badge "Pins Ouro" pulsante (teaser) ────
-          Positioned(top: 60, right: 20, child: _OuroPinsTeaser()),
 
           // ── Botão Voltar → /public-map (glass iOS) ────
           Positioned(
@@ -497,61 +509,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                         CrossAxisAlignment.stretch,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      // Botão Voltar
-                                      Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: TextButton.icon(
-                                          onPressed: () =>
-                                              context.go(AppRoutes.publicMap),
-                                          icon: Icon(
-                                            Icons.arrow_back_ios,
-                                            size: 16,
-                                            color: accent,
-                                          ),
-                                          label: Text(
-                                            'VOLTAR',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              color: accent,
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-
                                       // Logo
-                                      Hero(
+                                      const Hero(
                                         tag: 'app_logo',
                                         child: Center(
-                                          child: Image.asset(
-                                            'assets/images/soloforte_logo.png',
-                                            height: 60,
-                                            errorBuilder:
-                                                (context, error, stackTrace) {
-                                                  return Container(
-                                                    height: 60,
-                                                    width: 60,
-                                                    decoration: BoxDecoration(
-                                                      gradient: PremiumTokens
-                                                          .brandGradient,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            16,
-                                                          ),
-                                                    ),
-                                                    child: Padding(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                            10.0,
-                                                          ),
-                                                      child: Image.asset(
-                                                        'assets/images/app_icon.png',
-                                                        fit: BoxFit.contain,
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
+                                          child: SoloForteLockup(
+                                            markHeight: 44,
+                                            textColor: Color(0xFF1C2A26),
                                           ),
                                         ),
                                       ),
@@ -559,7 +523,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
                                       // Título
                                       Text(
-                                        'Entrar',
+                                        'Bem-vindo de volta',
                                         textAlign: TextAlign.center,
                                         style: Theme.of(context)
                                             .textTheme
@@ -574,7 +538,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                       const SizedBox(height: 4),
 
                                       Text(
-                                        'Transforme complexidade em decisões simples',
+                                        'Entre para continuar seu trabalho no campo.',
                                         textAlign: TextAlign.center,
                                         style: Theme.of(context)
                                             .textTheme
@@ -639,8 +603,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                       // Botão Entrar
                                       GradientButton(
                                         text: _remainingCooldown > 0
-                                            ? 'AGUARDE ${_remainingCooldown}s'
-                                            : 'ENTRAR',
+                                            ? 'Aguarde ${_remainingCooldown}s'
+                                            : 'Entrar',
                                         onPressed:
                                             _loading || _remainingCooldown > 0
                                             ? null
@@ -648,20 +612,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                         isLoading: _loading,
                                         height: 50,
                                       ),
-                                      const SizedBox(height: 12),
-
-                                      const SocialAuthButton(
-                                        text: 'Continuar com Google',
-                                        subtitle: 'Disponível em breve',
-                                        icon: Icons.account_circle_outlined,
-                                      ),
-                                      const SizedBox(height: 10),
-                                      const SocialAuthButton(
-                                        text: 'Continuar com Apple',
-                                        subtitle: 'Disponível em breve',
-                                        icon: Icons.apple,
-                                      ),
-                                      const SizedBox(height: 12),
+                                      const SizedBox(height: 4),
 
                                       // Cadastrar
                                       Center(
@@ -727,80 +678,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Badge animado de teaser "Pins Ouro ativos"
-class _OuroPinsTeaser extends StatefulWidget {
-  @override
-  State<_OuroPinsTeaser> createState() => _OuroPinsTeaserState();
-}
-
-class _OuroPinsTeaserState extends State<_OuroPinsTeaser>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _pulseCtrl;
-  late Animation<double> _pulseAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulseCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    )..repeat(reverse: true);
-    _pulseAnim = Tween<double>(
-      begin: 0.7,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _pulseCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _pulseAnim,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFB800).withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: const Color(0xFFFFB800).withValues(alpha: 0.6),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFFFB800).withValues(alpha: 0.3),
-              blurRadius: 12,
-              spreadRadius: 1,
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.workspace_premium_rounded,
-              color: Color(0xFFFFB800),
-              size: 14,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'Cases Ouro no mapa',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.95),
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

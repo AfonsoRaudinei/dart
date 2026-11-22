@@ -54,7 +54,15 @@ class GradientButton extends StatelessWidget {
       height: height,
       width: width,
       decoration: BoxDecoration(
-        gradient: isEnabled ? PremiumTokens.brandGradient : null,
+        // Verde acessível (texto branco ≥4.5:1): o degradê antigo começava em
+        // #4ADE80, onde o branco quase some.
+        gradient: isEnabled
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [PremiumTokens.brandGreenAccessible, Color(0xFF17692D)],
+              )
+            : null,
         color: isEnabled ? null : backgroundColor,
         borderRadius: BorderRadius.circular(10.0), // 16px
         boxShadow: effectiveShadow,
@@ -79,8 +87,8 @@ class GradientButton extends StatelessWidget {
                 : Text(
                     text,
                     style: GoogleFonts.inter(
-                      fontSize: 14.0,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 15.0,
+                      fontWeight: FontWeight.w700,
                       color: textColor,
                       letterSpacing: 0.3,
                     ),

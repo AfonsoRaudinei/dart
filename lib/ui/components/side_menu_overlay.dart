@@ -201,10 +201,13 @@ class SideMenuOverlay extends ConsumerWidget {
           children: [
             // Foto real de lavoura (plantio/colheita) em vez do logo borrado.
             Image.asset(
-              menuHeaderPhoto(now),
+              menuHeaderPhotoOfWeekday(now),
               key: const Key('side_menu_header_photo'),
               fit: BoxFit.cover,
               alignment: Alignment.center,
+              // Sem a foto do dia da semana, usa a da safra (plantio/colheita).
+              errorBuilder: (_, __, ___) =>
+                  Image.asset(menuHeaderPhoto(now), fit: BoxFit.cover),
             ),
             // Véu escuro + toque do tema: garante contraste do texto branco.
             DecoratedBox(

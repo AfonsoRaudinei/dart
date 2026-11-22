@@ -101,7 +101,7 @@ void main() {
     tester,
   ) async {
     final router = await _pumpLogin(tester, const Size(400, 2000));
-    final subtitle = find.text('Transforme complexidade em decisões simples');
+    final subtitle = find.text('Entre para continuar seu trabalho no campo.');
     expect(subtitle, findsOneWidget);
 
     final gesture = await tester.startGesture(tester.getCenter(subtitle));

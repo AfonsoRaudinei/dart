@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/components/brand/soloforte_lockup.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -411,11 +412,11 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
                           end: Alignment.bottomCenter,
                           colors: [
                             Colors.transparent,
-                            Colors.black.withValues(alpha: 0.15),
-                            Colors.black.withValues(alpha: 0.45),
+                            Colors.black.withValues(alpha: 0.35),
                             Colors.black.withValues(alpha: 0.65),
+                            Colors.black.withValues(alpha: 0.82),
                           ],
-                          stops: const [0.0, 0.35, 0.7, 1.0],
+                          stops: const [0.0, 0.4, 0.75, 1.0],
                         ),
                       ),
                     ),
@@ -426,8 +427,14 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
                     ),
                     child: const Column(
                       mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(24, 0, 24, 18),
+                          child: SoloForteLockup(markHeight: 36, markBackdrop: true),
+                        ),
                         PublicMapTaglineCarousel(),
+                        SizedBox(height: 12),
                         AccessSoloForteButton(),
                       ],
                     ),
