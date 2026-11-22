@@ -36,14 +36,15 @@ void main() {
     expect(visitsContextLine(3), 'Você tem 3 visitas hoje');
   });
 
-  test('menuHeaderPhoto alterna plantio (dia par) e colheita (dia ímpar)', () {
-    expect(
-      menuHeaderPhoto(DateTime(2026, 11, 22)),
-      'assets/images/menu/header_plantio.jpg',
-    );
-    expect(
-      menuHeaderPhoto(DateTime(2026, 11, 23)),
-      'assets/images/menu/header_colheita.jpg',
-    );
+  test('menuHeaderPhoto segue a safra: colheita fev–jun, plantio no resto', () {
+    String foto(int mes) => menuHeaderPhoto(DateTime(2026, mes, 15));
+    const plantio = 'assets/images/menu/header_plantio.jpg';
+    const colheita = 'assets/images/menu/header_colheita.jpg';
+    for (final mes in [1, 7, 8, 9, 10, 11, 12]) {
+      expect(foto(mes), plantio, reason: 'mês $mes');
+    }
+    for (final mes in [2, 3, 4, 5, 6]) {
+      expect(foto(mes), colheita, reason: 'mês $mes');
+    }
   });
 }

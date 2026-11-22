@@ -35,7 +35,9 @@ String visitsContextLine(int pendingToday) {
   return 'Você tem $pendingToday visitas hoje';
 }
 
-/// Foto do cabeçalho do menu: alterna por dia (par = plantio, ímpar = colheita).
-String menuHeaderPhoto(DateTime now) => now.day.isEven
-    ? 'assets/images/menu/header_plantio.jpg'
-    : 'assets/images/menu/header_colheita.jpg';
+/// Foto do cabeçalho do menu conforme a safra de soja: colheita de fevereiro a
+/// junho; plantio/desenvolvimento no resto do ano.
+String menuHeaderPhoto(DateTime now) =>
+    now.month >= DateTime.february && now.month <= DateTime.june
+    ? 'assets/images/menu/header_colheita.jpg'
+    : 'assets/images/menu/header_plantio.jpg';
