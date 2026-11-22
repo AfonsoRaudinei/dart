@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../../core/router/app_routes.dart';
 
 /// CTA de acesso ao SoloForte na tela de mapa público.
 ///
-/// Wordmark compacto (máx. 220×56) com tap navegando para `/login`.
+/// Botão em pílula, largura total com margens: ação clara ("Entrar ou criar
+/// conta") em vez de um banner de logo. Toque navega para `/login`.
 class AccessSoloForteButton extends StatelessWidget {
   const AccessSoloForteButton({super.key});
-
-  static const _bannerAsset =
-      'assets/E351DC81-7916-4231-A063-9359D2AA64F3.png';
 
   @override
   Widget build(BuildContext context) {
@@ -17,38 +16,47 @@ class AccessSoloForteButton extends StatelessWidget {
       label: 'Acessar SoloForte - Fazer login ou criar conta',
       button: true,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 220, maxHeight: 56),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.28),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
               ),
-              child: SizedBox(
-                width: 220,
+            ],
+          ),
+          child: Material(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            child: InkWell(
+              onTap: () => context.go(AppRoutes.login),
+              borderRadius: BorderRadius.circular(28),
+              child: const SizedBox(
                 height: 56,
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => context.go(AppRoutes.login),
-                    borderRadius: BorderRadius.circular(20),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Image.asset(
-                        _bannerAsset,
-                        fit: BoxFit.contain,
-                        alignment: Alignment.center,
-                        excludeFromSemantics: true,
+                width: double.infinity,
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Entrar ou criar conta',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                          color: PremiumTokens.brandGreenAccessible,
+                        ),
                       ),
-                    ),
+                      SizedBox(width: 8),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 20,
+                        color: PremiumTokens.brandGreenAccessible,
+                      ),
+                    ],
                   ),
                 ),
               ),

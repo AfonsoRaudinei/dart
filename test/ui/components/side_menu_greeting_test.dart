@@ -47,4 +47,15 @@ void main() {
       expect(foto(mes), colheita, reason: 'mês $mes');
     }
   });
+
+  test('menuHeaderPhotoOfWeekday: um arquivo por dia da semana', () {
+    // 2026-11-23 é segunda-feira.
+    const dias = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+    for (var i = 0; i < 7; i++) {
+      expect(
+        menuHeaderPhotoOfWeekday(DateTime(2026, 11, 23 + i)),
+        'assets/images/menu/dia_${dias[i]}.jpg',
+      );
+    }
+  });
 }

@@ -1,45 +1,40 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/ui/components/premium/premium_glass_panel.dart';
-import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 /// Par de textos de um slide da vitrine pública.
 class PublicMapTaglineSlide {
-  const PublicMapTaglineSlide({
-    required this.headline,
-    required this.support,
-  });
+  const PublicMapTaglineSlide({required this.headline, required this.support});
 
   final String headline;
   final String support;
 }
 
-/// Carrossel fade de taglines acima do CTA da vitrine `/public-map`.
-///
-/// Sem gesto. [IgnorePointer] deixa pan/zoom do mapa passar.
+/// Frases da vitrine `/public-map`, em voz de colega de campo (sem painel):
+/// o texto aparece direto sobre o degradê, com entrada suave em duas camadas
+/// (título e depois apoio), sem gesto. [IgnorePointer] deixa pan/zoom do mapa
+/// passar. Respeita "reduzir movimento".
 class PublicMapTaglineCarousel extends StatefulWidget {
   const PublicMapTaglineCarousel({super.key});
 
-  static const Duration interval = Duration(milliseconds: 4500);
-  static const Duration fadeDuration = Duration(milliseconds: 400);
+  static const Duration interval = Duration(milliseconds: 5200);
+  static const Duration fadeDuration = Duration(milliseconds: 500);
 
-  /// Vidro + dots — altura fixa para evitar salto entre slides.
-  static const double blockHeight = 132;
+  /// Texto + indicador — altura fixa para evitar salto entre slides.
+  static const double blockHeight = 150;
 
   static const List<PublicMapTaglineSlide> slides = [
     PublicMapTaglineSlide(
-      headline: 'Simples. Poderoso. Seu.',
-      support: 'A experiência e a sabedoria falam alto na lavoura.',
+      headline: 'Seu campo, do seu jeito.',
+      support: 'Registre visitas, talhões e ocorrências no mesmo lugar.',
     ),
     PublicMapTaglineSlide(
-      headline: 'Tradição e tecnologia no mesmo solo.',
-      support:
-          'Reúna a prática de campo e decisão técnica com mais clareza.',
+      headline: 'Feito por quem entende de lavoura.',
+      support: 'Menos papel, mais tempo com o produtor.',
     ),
     PublicMapTaglineSlide(
-      headline: 'Confiável para o dia a dia da propriedade.',
-      support: 'Acompanhe dados importantes sem perder o ritmo da operação.',
+      headline: 'Seu trabalho merece ser visto.',
+      support: 'Transforme o que você vê no campo em relatórios claros.',
     ),
   ];
 
@@ -49,12 +44,6 @@ class PublicMapTaglineCarousel extends StatefulWidget {
 }
 
 class _PublicMapTaglineCarouselState extends State<PublicMapTaglineCarousel> {
-  static const _textShadow = Shadow(
-    color: Color(0x66000000),
-    blurRadius: 8,
-    offset: Offset(0, 1),
-  );
-
   int _index = 0;
   Timer? _timer;
 
@@ -78,6 +67,7 @@ class _PublicMapTaglineCarouselState extends State<PublicMapTaglineCarousel> {
   @override
   Widget build(BuildContext context) {
     final slide = PublicMapTaglineCarousel.slides[_index];
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return IgnorePointer(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -85,60 +75,26 @@ class _PublicMapTaglineCarouselState extends State<PublicMapTaglineCarousel> {
           height: PublicMapTaglineCarousel.blockHeight,
           width: double.infinity,
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: AnimatedSwitcher(
-                  duration: PublicMapTaglineCarousel.fadeDuration,
-                  child: PremiumGlassPanel(
+                  duration: reduceMotion
+                      ? Duration.zero
+                      : PublicMapTaglineCarousel.fadeDuration,
+                  layoutBuilder: (current, previous) => Stack(
+                    alignment: Alignment.topLeft,
+                    children: [...previous, ?current],
+                  ),
+                  child: _SlideText(
                     key: ValueKey<int>(_index),
-                    isDark: true,
-                    borderRadius: BorderRadius.circular(
-                      PremiumTokens.borderRadiusMd,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          slide.headline,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 17,
-                            height: 1.2,
-                            letterSpacing: -0.3,
-                            shadows: [_textShadow],
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          slide.support,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.82),
-                            fontWeight: FontWeight.w500,
-                            fontSize: 13,
-                            height: 1.25,
-                            letterSpacing: -0.3,
-                            shadows: const [_textShadow],
-                          ),
-                        ),
-                      ],
-                    ),
+                    slide: slide,
+                    animate: !reduceMotion,
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
-              _PageDots(
+              const SizedBox(height: 12),
+              _ProgressBars(
                 count: PublicMapTaglineCarousel.slides.length,
                 activeIndex: _index,
               ),
@@ -150,11 +106,109 @@ class _PublicMapTaglineCarouselState extends State<PublicMapTaglineCarousel> {
   }
 }
 
-class _PageDots extends StatelessWidget {
-  const _PageDots({
-    required this.count,
-    required this.activeIndex,
-  });
+/// Título e apoio com entrada escalonada: sobem 14 px e aparecem, o apoio
+/// começa um pouco depois — leitura natural, sem "pisca" de painel.
+class _SlideText extends StatefulWidget {
+  const _SlideText({super.key, required this.slide, required this.animate});
+
+  final PublicMapTaglineSlide slide;
+  final bool animate;
+
+  @override
+  State<_SlideText> createState() => _SlideTextState();
+}
+
+class _SlideTextState extends State<_SlideText>
+    with SingleTickerProviderStateMixin {
+  static const _shadow = Shadow(
+    color: Color(0x73000000),
+    blurRadius: 10,
+    offset: Offset(0, 1),
+  );
+
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+    value: widget.animate ? 0 : 1,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.animate) _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Widget _reveal(Widget child, {required double from, required double to}) {
+    final curve = CurvedAnimation(
+      parent: _controller,
+      curve: Interval(from, to, curve: Curves.easeOutCubic),
+    );
+    return FadeTransition(
+      opacity: curve,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.28),
+          end: Offset.zero,
+        ).animate(curve),
+        child: child,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _reveal(
+          Text(
+            widget.slide.headline,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 27,
+              height: 1.12,
+              letterSpacing: -0.6,
+              shadows: [_shadow],
+            ),
+          ),
+          from: 0,
+          to: 0.7,
+        ),
+        const SizedBox(height: 8),
+        _reveal(
+          Text(
+            widget.slide.support,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontWeight: FontWeight.w500,
+              fontSize: 15,
+              height: 1.3,
+              shadows: const [_shadow],
+            ),
+          ),
+          from: 0.25,
+          to: 1,
+        ),
+      ],
+    );
+  }
+}
+
+/// Indicador em barras finas (o ativo se alonga), no lugar das bolinhas.
+class _ProgressBars extends StatelessWidget {
+  const _ProgressBars({required this.count, required this.activeIndex});
 
   final int count;
   final int activeIndex;
@@ -162,20 +216,18 @@ class _PageDots extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(count, (index) {
         final isActive = index == activeIndex;
         return Padding(
           padding: EdgeInsets.only(left: index == 0 ? 0 : 6),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            width: 8,
-            height: 8,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOutCubic,
+            width: isActive ? 28 : 10,
+            height: 4,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(
-                alpha: isActive ? 0.9 : 0.35,
-              ),
+              borderRadius: BorderRadius.circular(2),
+              color: Colors.white.withValues(alpha: isActive ? 0.95 : 0.4),
             ),
           ),
         );

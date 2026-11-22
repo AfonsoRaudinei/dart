@@ -61,21 +61,30 @@ class _LoginInputFieldState extends State<LoginInputField> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final errorColor = theme.colorScheme.error;
-    final primaryColor = context.themeAccent; // Verde
-    final secondaryColor = context.premiumTextSecondary;
-    final tertiaryColor = context.premiumTextTertiary;
+    // O painel de login é sempre claro (vidro branco sobre a foto), então os
+    // campos têm paleta própria e não herdam o tema escuro do app.
+    const errorColor = Color(0xFFD70015);
+    const primaryColor = PremiumTokens.brandGreenAccessible;
+    const secondaryColor = Color(0xFF55555A);
+    const hintColor = Color(0xFF6C6C70);
+    const fillColor = Color(0xFFF2F2F7);
+    const borderColor = Color(0xFFD1D1D6);
+    const textColor = Color(0xFF1C1C1E);
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    OutlineInputBorder outline(Color c, [double w = 1]) => OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide(color: c, width: w),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           widget.label,
-          style: theme.textTheme.labelSmall?.copyWith(
+          style: TextStyle(
+            fontSize: 13,
             color: _hasError ? errorColor : secondaryColor,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 8),
@@ -89,12 +98,23 @@ class _LoginInputFieldState extends State<LoginInputField> {
             keyboardType: widget.keyboardType,
             textInputAction: widget.textInputAction,
             scrollPadding: EdgeInsets.only(bottom: keyboardInset + 120),
-            style: theme.textTheme.bodyLarge,
+            style: const TextStyle(fontSize: 16, color: textColor),
+            cursorColor: primaryColor,
             decoration: InputDecoration(
               hintText: widget.hintText,
-              hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                color: tertiaryColor,
+              hintStyle: const TextStyle(fontSize: 15, color: hintColor),
+              filled: true,
+              fillColor: fillColor,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 16,
               ),
+              border: outline(borderColor),
+              enabledBorder: outline(borderColor),
+              focusedBorder: outline(primaryColor, 1.8),
+              errorBorder: outline(errorColor),
+              focusedErrorBorder: outline(errorColor, 1.8),
+              errorStyle: const TextStyle(color: errorColor, fontSize: 12),
               prefixIcon: Icon(
                 widget.icon,
                 color: _hasError ? errorColor : primaryColor,

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/components/brand/soloforte_lockup.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -209,9 +210,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             )),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
+                      Center(
+                        child: SoloForteLockup(
+                          markHeight: 44,
+                          textColor: context.premiumTextPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
                       Text(
-                        'Criar Conta',
+                        'Vamos começar',
                         style: Theme.of(context).textTheme.headlineMedium
                             ?.copyWith(
                               fontWeight: FontWeight.bold,
@@ -221,7 +229,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Preencha seus dados para começar',
+                        'Crie sua conta em menos de um minuto.',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: context.premiumTextSecondary,
                         ),

@@ -41,3 +41,11 @@ String menuHeaderPhoto(DateTime now) =>
     now.month >= DateTime.february && now.month <= DateTime.june
     ? 'assets/images/menu/header_colheita.jpg'
     : 'assets/images/menu/header_plantio.jpg';
+
+const _kDiaDaSemana = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+
+/// Foto do dia: uma por dia da semana (`assets/images/menu/dia_seg.jpg` …
+/// `dia_dom.jpg`). Enquanto o arquivo do dia não existir, o cabeçalho cai na
+/// foto da safra ([menuHeaderPhoto]).
+String menuHeaderPhotoOfWeekday(DateTime now) =>
+    'assets/images/menu/dia_${_kDiaDaSemana[now.weekday - 1]}.jpg';
