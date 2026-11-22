@@ -127,6 +127,11 @@ extension PremiumThemeAware on BuildContext {
   Color get premiumHairline =>
       isPremiumDark ? PremiumTokens.hairlineDark : PremiumTokens.hairlineLight;
 
+  /// Laranja de aviso/rascunho com contraste suficiente para texto sobre o
+  /// próprio tom claro (o #FF9500 puro dava ~2:1).
+  Color get premiumWarning =>
+      isPremiumDark ? const Color(0xFFFFB340) : const Color(0xFFB45309);
+
   /// Borda sutil de cards: quase invisível no claro (o relevo vem da sombra).
   Color get premiumCardBorder =>
       isPremiumDark ? PremiumTokens.hairlineDark : const Color(0x0F000000);

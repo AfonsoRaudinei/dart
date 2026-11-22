@@ -304,7 +304,7 @@ Widget _marketingReportCard(
     enabled: true,
     statusLabel: mapHidden ? 'Oculto no mapa' : statusText,
     statusColor: mapHidden
-        ? const Color(0xFFFF9500)
+        ? context.premiumWarning
         : _marketingStatusColor(context, item.statusValue),
     buildPayload: () => _buildMarketingPayload(ref, item),
     viewerActions: _marketingReportViewerActions(
@@ -334,7 +334,7 @@ Color _marketingStatusColor(BuildContext context, String statusValue) {
     case 'published':
       return context.themeAccent;
     case 'draft':
-      return const Color(0xFFFF9500);
+      return context.premiumWarning;
     case 'pending_sync':
       return const Color(0xFF007AFF);
     case 'archived':

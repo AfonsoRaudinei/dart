@@ -471,7 +471,7 @@ class _VisitPhotoCard extends StatelessWidget {
           : 'Sem visita vinculada',
       date: dateFormat.format(photo.createdAt.toLocal()),
       statusLabel: linked ? 'Vinculada' : 'Órfã',
-      statusColor: linked ? context.themeAccent : const Color(0xFFFF9500),
+      statusColor: linked ? context.themeAccent : context.premiumWarning,
       onTap: onTap,
       trailing: _AsyncActionMenu(
         tooltip: 'Ações da mídia',
