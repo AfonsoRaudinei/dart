@@ -43,7 +43,7 @@ class FeedbackSuggestionsChart extends StatelessWidget {
           Text(
             'Sugestões por módulo',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.w700,
               color: context.premiumTextPrimary,
             ),
@@ -58,7 +58,7 @@ class FeedbackSuggestionsChart extends StatelessWidget {
           const SizedBox(height: 18),
           if (isUnavailable)
             SizedBox(
-              height: 140,
+              height: 72, // vazio compacto: não compete com o formulário
               child: Center(
                 child: Text(
                   'Não foi possível carregar estatísticas',
@@ -69,7 +69,7 @@ class FeedbackSuggestionsChart extends StatelessWidget {
             )
           else if (visibleEntries.isEmpty)
             SizedBox(
-              height: 140,
+              height: 72, // vazio compacto: não compete com o formulário
               child: Center(
                 child: Text(
                   'Nenhuma sugestão por aqui ainda.\nConte como podemos melhorar.',
