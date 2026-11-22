@@ -142,7 +142,6 @@ class _ProducerInviteDialogState extends ConsumerState<ProducerInviteDialog> {
             const SizedBox(height: 8),
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
               title: const Text('Fazendas'),
               value: _shareFarms,
               onChanged: _token == null
@@ -151,7 +150,6 @@ class _ProducerInviteDialogState extends ConsumerState<ProducerInviteDialog> {
             ),
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
               title: const Text('Talhões e mapa'),
               value: _shareFields,
               onChanged: _token == null
@@ -160,7 +158,6 @@ class _ProducerInviteDialogState extends ConsumerState<ProducerInviteDialog> {
             ),
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
               title: const Text('Ocorrências'),
               subtitle: podeOcorrencias
                   ? null
@@ -173,7 +170,6 @@ class _ProducerInviteDialogState extends ConsumerState<ProducerInviteDialog> {
             ),
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
               title: const Text('Relatórios'),
               value: _shareReports,
               onChanged: _token == null

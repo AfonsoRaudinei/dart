@@ -215,12 +215,10 @@ class FarmMapDownloadButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final enabled = farmHasDrawablePolygons(fields);
     final saved = farmMapIsSaved(ref.watch(offlineMapAreasProvider), farmId);
-    final color = enabled ? PremiumTokens.brandGreen : Colors.grey;
+    final color = enabled ? PremiumTokens.brandGreenAccessible : Colors.grey;
     final job = ref.watch(farmMapDownloadControllerProvider)[farmId];
     final isDownloading = job?.isRunning ?? false;
     final compactStyle = TextButton.styleFrom(
-      visualDensity: VisualDensity.compact,
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       padding: const EdgeInsets.symmetric(horizontal: 8),
     );
     final extra = trailing;

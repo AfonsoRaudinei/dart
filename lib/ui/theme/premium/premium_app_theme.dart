@@ -6,7 +6,7 @@ import 'design_tokens.dart';
 
 /// O novo Tema Premium do aplicativo (Responsável pela Fase 1)
 class PremiumAppTheme {
-  static const Color _greenAccent = PremiumTokens.brandGreen;
+  static const Color _greenAccent = PremiumTokens.brandGreenAccessible;
   static const Color _blueAccent = Color(0xFF1B6EE0);
 
   static ThemeData themeFor(String mode) {
