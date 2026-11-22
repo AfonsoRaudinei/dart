@@ -164,7 +164,7 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
     }
 
     if (_userId.isEmpty) {
-      setState(() => _mensagemErro = 'Usuário não autenticado.');
+      setState(() => _mensagemErro = 'Entre na sua conta para continuar.');
       return;
     }
 

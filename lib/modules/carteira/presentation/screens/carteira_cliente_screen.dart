@@ -31,7 +31,7 @@ class CarteiraClienteScreen extends ConsumerWidget {
     final userId = _userId;
     if (userId.isEmpty) {
       return const Scaffold(
-        body: Center(child: Text('Usuário não autenticado.')),
+        body: Center(child: Text('Entre na sua conta para continuar.')),
       );
     }
 
@@ -51,7 +51,7 @@ class CarteiraClienteScreen extends ConsumerWidget {
       body: categoriasAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) =>
-            const Center(child: Text('Erro ao carregar categorias.')),
+            const Center(child: Text('Não conseguimos carregar as categorias. Tente de novo.')),
         data: (categorias) {
           if (categorias.isEmpty) {
             return Center(
@@ -96,7 +96,7 @@ class CarteiraClienteScreen extends ConsumerWidget {
           return registrosAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (_, __) =>
-                const Center(child: Text('Erro ao carregar registros.')),
+                const Center(child: Text('Não conseguimos carregar os registros. Tente de novo.')),
             data: (registros) {
               final registrosByCategoria = <String, ClienteCategoria>{
                 for (final r in registros) r.categoriaId: r,
@@ -632,7 +632,7 @@ class _EditPercentualDialogState extends State<_EditPercentualDialog> {
             if (parsed == null || parsed < 0 || parsed > 100) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Informe um percentual de 0 a 100.'),
+                  content: Text('Digite um percentual de 0 a 100.'),
                 ),
               );
               return;

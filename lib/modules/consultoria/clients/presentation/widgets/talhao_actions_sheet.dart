@@ -337,7 +337,7 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
     if (cicloText.isNotEmpty && int.tryParse(cicloText) == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Informe o ciclo em dias, só com números.'),
+          content: Text('Digite o ciclo em dias, só números.'),
         ),
       );
       return;

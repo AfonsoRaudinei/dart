@@ -125,7 +125,7 @@ class _AgendaDayPageState extends ConsumerState<AgendaDayPage> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Erro ao exportar agenda')));
+      ).showSnackBar(const SnackBar(content: Text('Não deu para exportar a agenda. Tente de novo.')));
     } finally {
       if (mounted) {
         setState(() => _isExporting = false);

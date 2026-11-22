@@ -264,7 +264,7 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
         );
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Falha ao criar visita sugerida.')),
+        const SnackBar(content: Text('Não deu para criar a visita sugerida. Tente de novo.')),
       );
     } finally {
       if (mounted) {

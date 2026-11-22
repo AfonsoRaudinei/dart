@@ -677,7 +677,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         if (fix == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Não foi possível obter sua posição GPS.'),
+              content: Text('Não achamos sua posição. Confira se o GPS está ligado.'),
               backgroundColor: PremiumTokens.alertError,
             ),
           );
