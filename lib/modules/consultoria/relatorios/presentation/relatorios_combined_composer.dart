@@ -369,7 +369,7 @@ class _CombinedReportsComposer extends ConsumerStatefulWidget {
 class _CombinedReportsComposerState
     extends ConsumerState<_CombinedReportsComposer> {
   late Set<String> _selected;
-  final List<Set<String>> _undoStack = [];
+  final List<({Set<String> selected, CombinedWeek? week})> _undoStack = [];
   CombinedWeek? _week;
   bool _saving = false;
 
@@ -403,7 +403,7 @@ class _CombinedReportsComposerState
   }
 
   void _toggle(String key) {
-    _undoStack.add(Set<String>.of(_selected));
+    _pushUndo();
     setState(() {
       if (!_selected.remove(key)) {
         _selected.add(key);
@@ -411,14 +411,22 @@ class _CombinedReportsComposerState
     });
   }
 
+  void _pushUndo() {
+    _undoStack.add((selected: Set<String>.of(_selected), week: _week));
+  }
+
   void _undo() {
     if (_undoStack.isEmpty) return;
-    setState(() => _selected = _undoStack.removeLast());
+    final previous = _undoStack.removeLast();
+    setState(() {
+      _selected = previous.selected;
+      _week = previous.week;
+    });
   }
 
   void _clear() {
     if (_selected.isEmpty) return;
-    _undoStack.add(Set<String>.of(_selected));
+    _pushUndo();
     setState(() => _selected = <String>{});
   }
 
@@ -435,7 +443,7 @@ class _CombinedReportsComposerState
 
   void _setWeek(CombinedWeek? week) {
     if (week == _week) return;
-    _undoStack.add(Set<String>.of(_selected));
+    _pushUndo();
     setState(() {
       _week = week;
       _selected = _visibleEvents.map((event) => event.key).toSet();
