@@ -226,7 +226,9 @@ class _FotosCarrossel extends StatefulWidget {
 
 class _FotosCarrosselState extends State<_FotosCarrossel> {
   static const _alturaFoto = 220.0;
-  static const _alturaRotulo = 22.0;
+  static const _fonteRotulo = 11.0;
+  static const _alturaLinhaRotulo = 1.2;
+  static const _gapRotulo = 4.0;
   static const _fracaoViewport = 0.88;
 
   late PageController _controller = _novoController();
@@ -260,9 +262,13 @@ class _FotosCarrosselState extends State<_FotosCarrossel> {
     final v = SoloForteSheetVisuals.of(context);
     if (!_carrossel) return _quadro(fotos.first, v, 0);
 
+    // O rótulo (1 linha) cresce com a fonte do sistema; a página acompanha.
+    final linhaRotulo = MediaQuery.textScalerOf(
+      context,
+    ).scale(_fonteRotulo * _alturaLinhaRotulo).ceilToDouble();
     final altura =
         _alturaFoto +
-        (fotos.any((f) => f.rotulo.isNotEmpty) ? _alturaRotulo : 0);
+        (fotos.any((f) => f.rotulo.isNotEmpty) ? _gapRotulo + linhaRotulo : 0);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -305,7 +311,7 @@ class _FotosCarrosselState extends State<_FotosCarrossel> {
             ),
           ),
           if (foto.rotulo.isNotEmpty) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: _gapRotulo),
             Text(
               foto.rotulo,
               textAlign: TextAlign.center,
@@ -313,7 +319,8 @@ class _FotosCarrosselState extends State<_FotosCarrossel> {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: widget.titleColor,
-                fontSize: 11,
+                fontSize: _fonteRotulo,
+                height: _alturaLinhaRotulo,
                 fontWeight: FontWeight.w600,
               ),
             ),
