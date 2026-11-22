@@ -251,8 +251,8 @@ class _AgendaPlanejamentoViewState
                 : null,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
-              width: 36,
-              height: 36,
+              width: 44, // alvo de toque mínimo (uso com uma mão no campo)
+              height: 44,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 // Tonal: o destaque sólido fica para a informação principal

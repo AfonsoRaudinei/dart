@@ -155,8 +155,8 @@ class SideMenuQuickAccessBlock extends ConsumerWidget {
               style: TextButton.styleFrom(
                 foregroundColor: accent,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                minimumSize: const Size(0, 32),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                minimumSize: const Size(48, 44),
+                tapTargetSize: MaterialTapTargetSize.padded,
               ),
               onPressed: () => showSideMenuQuickAccessEditor(context),
               child: const Text(
