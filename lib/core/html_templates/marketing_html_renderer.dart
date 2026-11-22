@@ -123,14 +123,16 @@ class MarketingHtmlRenderer {
     );
     final branding = await _branding(data);
     final dataCase = _parseDate(data['data_case'] as String?);
-
-    final blocos = _MarketingAvaliacaoData.listFrom(data['avaliacoes_json']);
-    // Blocos de comparação já trazem parâmetros, fotos e texto por bloco;
-    // sem eles o documento segue o par legado Antes/Depois.
-    final usaBlocos = blocos.isNotEmpty;
-    final parametros = _MarketingParametroData.listFrom(
-      data['parametros_json'],
-    );
+    final todos = _MarketingAvaliacaoData.listFrom(data['avaliacoes_json']);
+    // Blocos só são fonte se algum tem foto/parâmetro; senão vale o legado.
+    // Com blocos, só os 100% vazios (sem foto, parâmetro, texto) saem.
+    final usaBlocos = todos.any((b) => b.temConteudo);
+    final blocos = usaBlocos
+        ? todos.where((b) => b.temConteudo || b.temTexto).toList()
+        : const <_MarketingAvaliacaoData>[];
+    final parametros = usaBlocos
+        ? const <_MarketingParametroData>[]
+        : _MarketingParametroData.listFrom(data['parametros_json']);
     final temParametros =
         parametros.isNotEmpty || blocos.any((b) => b.parametros.isNotEmpty);
     final conclusao = _conclusaoTexto(data);
@@ -385,52 +387,39 @@ class MarketingHtmlRenderer {
     return RelatorioHtmlRenderer.mapLocationAnchor(lat, lng);
   }
 
-  static String _statusLabel(String status) {
-    switch (status) {
-      case 'draft':
-      case 'rascunho':
-        return 'Rascunho';
-      case 'pending_sync':
-        return 'Aguardando sincronização';
-      case 'published':
-      case 'publicado':
-        return 'Publicado';
-      case 'archived':
-      case 'arquivado':
-        return 'Arquivado';
-      default:
-        return RelatorioHtmlRenderer.humanizeKey(status);
-    }
-  }
+  static const _statusLabels = {
+    'draft': 'Rascunho',
+    'rascunho': 'Rascunho',
+    'pending_sync': 'Aguardando sincronização',
+    'published': 'Publicado',
+    'publicado': 'Publicado',
+    'archived': 'Arquivado',
+    'arquivado': 'Arquivado',
+  };
 
-  static String _statusDot(String status) {
-    switch (status) {
-      case 'published':
-      case 'publicado':
-        return 'ok';
-      case 'pending_sync':
-        return 'media';
-      default:
-        return 'draft';
-    }
-  }
+  static String _statusLabel(String status) =>
+      _statusLabels[status] ?? RelatorioHtmlRenderer.humanizeKey(status);
+
+  static String _statusDot(String status) =>
+      const {
+        'published': 'ok',
+        'publicado': 'ok',
+        'pending_sync': 'media',
+      }[status] ??
+      'draft';
+
+  static const _visibilidadeLabels = {
+    'ouro': 'Plano Ouro',
+    'prata': 'Plano Prata',
+    'bronze': 'Plano Bronze',
+    'publico': 'Público',
+    'privado': 'Privado',
+  };
 
   static String _visibilidadeLabel(String? visibilidade) {
     final value = visibilidade?.trim().toLowerCase() ?? '';
-    switch (value) {
-      case 'ouro':
-        return 'Plano Ouro';
-      case 'prata':
-        return 'Plano Prata';
-      case 'bronze':
-        return 'Plano Bronze';
-      case 'publico':
-        return 'Público';
-      case 'privado':
-        return 'Privado';
-      default:
-        return RelatorioHtmlRenderer.humanizeKey(value);
-    }
+    return _visibilidadeLabels[value] ??
+        RelatorioHtmlRenderer.humanizeKey(value);
   }
 
   static Future<String> _renderBlocosHtml(
@@ -586,11 +575,12 @@ class MarketingHtmlRenderer {
   }
 
   static String _parseDate(String? iso) {
-    if (iso == null) return '';
     try {
-      return RelatorioHtmlRenderer.formatDate(DateTime.parse(iso));
+      return iso == null
+          ? ''
+          : RelatorioHtmlRenderer.formatDate(DateTime.parse(iso));
     } catch (_) {
-      return iso;
+      return iso ?? '';
     }
   }
 
@@ -858,6 +848,16 @@ class _MarketingAvaliacaoData {
     this.parametros = const [],
     this.observacoes,
   });
+
+  bool get temTexto => observacoes?.trim().isNotEmpty == true;
+
+  bool get temConteudo =>
+      parametros.isNotEmpty ||
+      [
+        fotoLadoAPath,
+        fotoLadoBPath,
+        fotoLadoCPath,
+      ].any((foto) => foto?.trim().isNotEmpty == true);
 
   double get mediaGanhoPercent {
     if (parametros.isEmpty) return 0.0;
