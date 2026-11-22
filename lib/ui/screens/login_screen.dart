@@ -269,6 +269,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     });
   }
 
+  void _snapSheetBack() {
+    if (!mounted) return;
+    if (_sheetDragDy == 0 && !_sheetFollowsFinger) return;
+    setState(() {
+      _sheetFollowsFinger = false;
+      _sheetDragDy = 0;
+    });
+  }
+
   void _finishSheetDrag(double velocity) {
     if (!mounted) return;
     if (LoginSheetDrag.shouldDismiss(
@@ -278,20 +287,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       context.go(AppRoutes.publicMap);
       return;
     }
-    if (_sheetDragDy == 0 && !_sheetFollowsFinger) return;
-    setState(() {
-      _sheetFollowsFinger = false;
-      _sheetDragDy = 0;
-    });
+    _snapSheetBack();
   }
 
   bool _onFormScroll(ScrollNotification notification) {
     if (_sheetHandleDragging) return false;
 
     if (notification is OverscrollNotification &&
-        notification.overscroll < 0 &&
         notification.metrics.pixels <= notification.metrics.minScrollExtent) {
-      _moveSheetBy(-notification.overscroll);
+      // overscroll < 0: dedo para baixo no topo. > 0: dedo voltando,
+      // quando o formulário não tem o que rolar.
+      if (notification.overscroll < 0 || _sheetDragDy > 0) {
+        _moveSheetBy(-notification.overscroll);
+      }
       return false;
     }
 
@@ -436,14 +444,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             },
                             onVerticalDragUpdate: (details) =>
                                 _moveSheetBy(details.delta.dy),
-                            onVerticalDragEnd: (details) {
-                              _sheetHandleDragging = false;
-                              _finishSheetDrag(details.primaryVelocity ?? 0);
-                            },
-                            onVerticalDragCancel: () {
-                              _sheetHandleDragging = false;
-                              _finishSheetDrag(0);
-                            },
+                          onVerticalDragEnd: (details) {
+                            _sheetHandleDragging = false;
+                            _finishSheetDrag(details.primaryVelocity ?? 0);
+                          },
+                          // Cancel só chega se a arena rejeitar o gesto antes
+                          // de aceitar. Com o arraste já aceito, o framework
+                          // entrega PointerCancel em onVerticalDragEnd.
+                          onVerticalDragCancel: () {
+                            _sheetHandleDragging = false;
+                            _snapSheetBack();
+                          },
                             child: const SizedBox(
                               width: double.infinity,
                               child: Padding(
