@@ -702,12 +702,28 @@ class _MapNdviDateBar extends ConsumerWidget {
                     selected: ndviImageDateKey(image.imageDate) == selectedKey,
                     onSelected: (_) {
                       HapticFeedback.lightImpact();
+                      final dateKey = ndviImageDateKey(image.imageDate);
+                      // O chip mais recente parece marcado com selection nula.
+                      // Desliga só no segundo toque, quando a data já foi escolhida.
+                      final alreadyChosen =
+                          selection != null &&
+                          selection!.fieldId == fieldId &&
+                          selection!.dateKey == dateKey;
+                      if (alreadyChosen) {
+                        ref.read(mapNdviOverlayFieldIdProvider.notifier).state =
+                            null;
+                        ref
+                                .read(mapNdviMonochromeEnabledProvider.notifier)
+                                .state =
+                            false;
+                        return;
+                      }
                       ref
                           .read(mapNdviSelectedDateProvider.notifier)
                           .select(
                             MapNdviDateSelection(
                               fieldId: fieldId,
-                              dateKey: ndviImageDateKey(image.imageDate),
+                              dateKey: dateKey,
                             ),
                           );
                     },
