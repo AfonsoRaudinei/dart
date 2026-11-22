@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
-
-import '../../../../../core/design/sf_icons.dart';
+import 'package:soloforte_app/core/design/sf_icons.dart';
+import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 
 /// Widget responsável por exibir e gerenciar a seleção de ferramentas de desenho.
 ///
@@ -12,21 +11,9 @@ import '../../../../../core/design/sf_icons.dart';
 /// O campo de teste entra pelas abas Resultado e Avaliação (ADR-064),
 /// não por esta grade.
 ///
-/// Ferramentas disponíveis:
-/// - Polígono (desenho livre)
-/// - Livre (freehand)
-/// - Pivô (círculo de irrigação)
-/// - Importar (KML/KMZ)
-/// - GPS (caminhar)
-/// - Área Visitada (ação: arma pin no mapa)
-///
 /// ⚠️ Este widget é STATELESS e não gerencia estado próprio.
 /// O estado visual de seleção é gerenciado pelo parent.
 class DrawingToolSelector extends StatelessWidget {
-  static const _sheetSurface = Color(0xFF2C2C2E);
-  static const _sheetBorder = Color(0xFF3A3A3C);
-  static const _accentGreen = Color(0xFF4CAF50);
-
   final String? selectedToolKey;
   final ValueChanged<String> onToolSelected;
 
@@ -39,79 +26,46 @@ class DrawingToolSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
-    final isIos = v.isIos;
     final tools = <Widget>[
       _ToolButton(
         icon: Icons.pentagon_outlined,
         label: 'Polígono',
         isSelected: selectedToolKey == 'polygon',
         onTap: () => onToolSelected('polygon'),
-        isIos: isIos,
-        backgroundColor: _sheetSurface,
-        borderColor: _sheetBorder,
-        accentColor: _accentGreen,
       ),
       _ToolButton(
         icon: Icons.gesture,
         label: 'Livre',
         isSelected: selectedToolKey == 'freehand',
         onTap: () => onToolSelected('freehand'),
-        isIos: isIos,
-        backgroundColor: _sheetSurface,
-        borderColor: _sheetBorder,
-        accentColor: _accentGreen,
       ),
       _ToolButton(
         icon: Icons.circle_outlined,
         label: 'Pivô',
         isSelected: selectedToolKey == 'pivot',
         onTap: () => onToolSelected('pivot'),
-        isIos: isIos,
-        backgroundColor: _sheetSurface,
-        borderColor: _sheetBorder,
-        accentColor: _accentGreen,
       ),
       _ToolButton(
         icon: Icons.upload_file,
         label: 'Importar (KML)',
-        isSelected: false, // Import is an action, not a state
+        isSelected: false,
         onTap: () => onToolSelected('import'),
-        isIos: isIos,
-        backgroundColor: _sheetSurface,
-        borderColor: _sheetBorder,
-        accentColor: _accentGreen,
       ),
       _ToolButton(
         icon: Icons.directions_walk,
         label: 'GPS (caminhar)',
         isSelected: selectedToolKey == 'gps',
         onTap: () => onToolSelected('gps'),
-        isIos: isIos,
-        backgroundColor: _sheetSurface,
-        borderColor: _sheetBorder,
-        accentColor: _accentGreen,
       ),
       _ToolButton(
         icon: SFIcons.pinFill,
         label: 'Área Visitada',
-        isSelected: false, // Action, not a selected DrawingTool state
+        isSelected: false,
         onTap: () => onToolSelected('area_visitada'),
-        isIos: isIos,
-        backgroundColor: _sheetSurface,
-        borderColor: _sheetBorder,
-        accentColor: _accentGreen,
       ),
     ];
 
-    if (!isIos) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: tools,
-      );
-    }
-
-    // iOS Azul: card agrupado (#EBF5FF) com dividers semânticos.
+    // Verde, Azul e Black: card agrupado via [SoloForteSheetVisuals].
     return Container(
       decoration: BoxDecoration(
         color: v.cardBackground,
@@ -139,105 +93,61 @@ class DrawingToolSelector extends StatelessWidget {
   }
 }
 
-/// Botão individual de ferramenta simplificado.
 class _ToolButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
-  final bool isIos;
-  final Color backgroundColor;
-  final Color borderColor;
-  final Color accentColor;
 
   const _ToolButton({
     required this.icon,
     required this.label,
     required this.isSelected,
     required this.onTap,
-    required this.isIos,
-    required this.backgroundColor,
-    required this.borderColor,
-    required this.accentColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
-    if (isIos) {
-      return Material(
-        color: Colors.transparent,
-        child: ListTile(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            onTap();
-          },
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 2,
-          ),
-          leading: Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: v.iconBackground,
-              shape: BoxShape.circle,
-              // relevo discreto no ícone (efeito 3D suave)
-              boxShadow: [
-                BoxShadow(
-                  color: v.iconStroke.withValues(alpha: 0.22),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(icon, color: v.iconStroke, size: 18),
-          ),
-          title: Text(
-            label,
-            style: TextStyle(
-              color: v.titleColor,
-              fontSize: 15,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            ),
-          ),
-          trailing: Icon(Icons.chevron_right, color: v.arrowColor, size: 18),
-        ),
-      );
-    }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Material(
-        color: backgroundColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: isSelected ? accentColor : borderColor,
-            width: isSelected ? 1.0 : 0.5,
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 2,
+        ),
+        leading: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: v.iconBackground,
+            shape: BoxShape.circle,
+            boxShadow: v.isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: v.iconStroke.withValues(alpha: 0.22),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+          ),
+          child: Icon(icon, color: v.iconStroke, size: 18),
+        ),
+        title: Text(
+          label,
+          style: TextStyle(
+            color: v.titleColor,
+            fontSize: 15,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
           ),
         ),
-        clipBehavior: Clip.antiAlias,
-        child: ListTile(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            onTap();
-          },
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 4,
-          ),
-          leading: Icon(icon, color: accentColor, size: 22),
-          title: Text(
-            label,
-            style: const TextStyle(color: Colors.white, fontSize: 15),
-          ),
-          trailing: const Icon(
-            Icons.chevron_right,
-            color: Colors.white24,
-            size: 18,
-          ),
-        ),
+        trailing: Icon(Icons.chevron_right, color: v.arrowColor, size: 18),
       ),
     );
   }
