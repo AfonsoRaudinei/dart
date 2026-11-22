@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -18,6 +19,8 @@ void main() {
     String? avaliacoesJson,
     String? descricao,
     String? conclusaoTecnica,
+    String? fotoAntesUrl,
+    String? fotoDepoisUrl,
   }) {
     final now = DateTime.utc(2025, 6, 15);
     return MarketingCase(
@@ -37,6 +40,8 @@ void main() {
       descricao: descricao,
       nomeVendedor: vendedor,
       avaliacoesJson: avaliacoesJson,
+      fotoAntesUrl: fotoAntesUrl,
+      fotoDepoisUrl: fotoDepoisUrl,
       prodSemProduto: 60,
       prodComProduto: 70,
       unidadeProdutividade: 'sc/ha',
@@ -234,5 +239,111 @@ void main() {
     expect(out, contains('Lavoura &lt;forte&gt; &amp; &quot;boa&quot;'));
     expect(out, isNot(contains('<forte>')));
     expect(out, isNot(contains('—')));
+  });
+
+  group('story Antes/Depois a partir da Comparação 1', () {
+    String comparacao1({String? a, String? b, String? c}) => jsonEncode([
+      {
+        'id': 'av-1',
+        'titulo': 'Comparação 1',
+        'nome_lado_a': 'Antes',
+        'nome_lado_b': 'Depois',
+        'foto_lado_a_path': a,
+        'foto_lado_b_path': b,
+        'foto_lado_c_path': c,
+      },
+      {
+        'id': 'av-2',
+        'titulo': 'Comparação 2',
+        'foto_lado_a_path': 'https://example.com/c2-a.jpg',
+        'foto_lado_b_path': 'https://example.com/c2-b.jpg',
+      },
+    ]);
+
+    test('usa a primeira e a segunda foto preenchidas da Comparação 1', () {
+      final fotos = storyFotosAntesDepois(
+        baseCase(
+          tipo: CaseTipo.antesDepois,
+          avaliacoesJson: comparacao1(
+            a: 'https://example.com/a.jpg',
+            b: '  ',
+            c: 'https://example.com/c.jpg',
+          ),
+          fotoAntesUrl: 'https://example.com/legado-antes.jpg',
+          fotoDepoisUrl: 'https://example.com/legado-depois.jpg',
+        ),
+      );
+
+      expect(fotos.antes, 'https://example.com/a.jpg');
+      expect(fotos.depois, 'https://example.com/c.jpg');
+    });
+
+    test('sem blocos cai no par legado, só com as fotos preenchidas', () {
+      final fotos = storyFotosAntesDepois(
+        baseCase(
+          tipo: CaseTipo.antesDepois,
+          fotoAntesUrl: null,
+          fotoDepoisUrl: 'https://example.com/legado-depois.jpg',
+        ),
+      );
+
+      expect(fotos.antes, 'https://example.com/legado-depois.jpg');
+      expect(fotos.depois, isNull);
+    });
+
+    test('uma só foto: slide mostra só ela, sem lado Depois vazio', () {
+      final caso = baseCase(
+        tipo: CaseTipo.antesDepois,
+        avaliacoesJson: comparacao1(a: 'https://example.com/a.jpg'),
+      );
+      final fotos = storyFotosAntesDepois(caso);
+
+      expect(fotos.antes, 'https://example.com/a.jpg');
+      expect(fotos.depois, isNull);
+
+      final out = injectStoryData(
+        storyHtml,
+        caso,
+        fotoAntesSrc: 'data:image/jpeg;base64,AAA',
+      );
+
+      expect(out, contains('src="data:image/jpeg;base64,AAA"'));
+      expect(out, contains('sf-story-single-photo'));
+      expect(
+        out,
+        contains('.compare-side.after, .compare-divider { display: none; }'),
+      );
+      expect(out, isNot(contains('{{FOTO_')));
+    });
+
+    test('duas fotos mantêm o layout lado a lado', () {
+      final caso = baseCase(
+        tipo: CaseTipo.antesDepois,
+        avaliacoesJson: comparacao1(
+          a: 'https://example.com/a.jpg',
+          b: 'https://example.com/b.jpg',
+        ),
+      );
+
+      final out = injectStoryData(
+        storyHtml,
+        caso,
+        fotoAntesSrc: 'data:image/jpeg;base64,AAA',
+        fotoDepoisSrc: 'data:image/jpeg;base64,BBB',
+      );
+
+      expect(out, contains('src="data:image/jpeg;base64,AAA"'));
+      expect(out, contains('src="data:image/jpeg;base64,BBB"'));
+      expect(out, isNot(contains('sf-story-single-photo')));
+    });
+
+    test('sem nenhuma foto o slide permanece como antes', () {
+      final out = injectStoryData(
+        storyHtml,
+        baseCase(tipo: CaseTipo.antesDepois),
+      );
+
+      expect(out, isNot(contains('sf-story-single-photo')));
+    });
   });
 }
