@@ -70,10 +70,6 @@ final pendingOccurrenceLocationProvider = StateProvider.autoDispose<LatLng?>(
   (ref) => null,
 );
 
-/// Pedido sticky do SideMenu para abrir [showMapGoToLocalSheet] no mapa.
-/// Permanece true até [GoToLocalSheetListener] consumir (inclui após bootstrap).
-final pendingGoToLocalSheetProvider = StateProvider<bool>((ref) => false);
-
 /// Marcador efêmero de destino para navegação por coordenadas.
 /// Null = sem marcador ativo.
 final destinationCoordinateMarkerProvider = StateProvider.autoDispose<LatLng?>(
@@ -98,9 +94,7 @@ final mapCameraSnapshotProvider = StateProvider.autoDispose<MapCameraSnapshot?>(
 );
 
 /// Rotação atual da câmera (graus, 0 = norte para cima) — bússola / reset norte.
-final mapCameraRotationProvider = StateProvider.autoDispose<double>(
-  (ref) => 0,
-);
+final mapCameraRotationProvider = StateProvider.autoDispose<double>((ref) => 0);
 
 /// Altura do chrome inferior do mapa (sheet stack) — reservado para padding de
 /// câmera/mapa no futuro. A coluna de ações **não** consome este valor

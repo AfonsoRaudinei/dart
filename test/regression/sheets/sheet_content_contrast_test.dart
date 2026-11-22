@@ -15,7 +15,6 @@ const _guardedFiles = <String>[
   'lib/ui/components/map/map_offline_download_sheet.dart',
   'lib/ui/components/map/map_municipality_search_sheet.dart',
   'lib/ui/components/map/map_coordinate_search_sheet.dart',
-  'lib/ui/components/map/map_go_to_local_sheet.dart',
   'lib/ui/components/map/map_layers_sheet.dart',
   'lib/ui/components/map/map_bottom_sheet.dart',
   'lib/ui/screens/map/widgets/active_visit_sheet.dart',
@@ -63,7 +62,8 @@ void main() {
 
         for (final match in _bifurcation.allMatches(source)) {
           final snippet = _normalize(match.group(0)!);
-          final line = '\n'.allMatches(source.substring(0, match.start)).length + 1;
+          final line =
+              '\n'.allMatches(source.substring(0, match.start)).length + 1;
           violations.add('$path:$line → $snippet');
         }
 
@@ -77,6 +77,5 @@ void main() {
         );
       });
     }
-
   });
 }
