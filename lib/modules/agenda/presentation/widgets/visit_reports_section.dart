@@ -104,20 +104,28 @@ class VisitReportsSection extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Relatórios desta visita',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Relatórios desta visita',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Text(
+                  visitReportCountLabel(lines.length),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(visitReportCountLabel(lines.length)),
             if (lines.isNotEmpty) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               for (final line in lines)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(line.label),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Text(line.label),
                 ),
             ],
           ],
