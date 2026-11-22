@@ -85,7 +85,16 @@ class _ConsultantReceiveCodeCardState
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
-            child: FilledButton.tonal(
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                // Tonal explícito: o tonal padrão usa o secundário (verde
+                // escuro) com texto escuro, ilegível no tema verde.
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.14),
+                foregroundColor: Theme.of(context).colorScheme.primary,
+                elevation: 0,
+              ),
               onPressed: _submitting ? null : _accept,
               child: Text(_submitting ? 'Vinculando…' : 'Vincular'),
             ),
