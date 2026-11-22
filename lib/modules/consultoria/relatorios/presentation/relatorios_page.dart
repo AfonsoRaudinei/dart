@@ -475,7 +475,7 @@ class _RelatorioCardState extends ConsumerState<_RelatorioCard> {
       case RelatorioStatus.arquivado:
         return Colors.grey;
       case RelatorioStatus.pendente_revisao:
-        return const Color(0xFFFF9500);
+        return context.premiumWarning;
     }
   }
 }
@@ -702,9 +702,7 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
   }
 
   Color _occStatusColor(String? status) {
-    return status == 'confirmed'
-        ? context.themeAccent
-        : const Color(0xFFFF9500);
+    return status == 'confirmed' ? context.themeAccent : context.premiumWarning;
   }
 }
 

@@ -159,7 +159,8 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     final handleColor = v.handleColor;
     final titleColor = v.titleColor;
     final ctaBg = v.ctaBackground;
-    final ctaDisabled = v.cardBackground;
+    // Desabilitado bem apagado (antes igual ao fundo do card: parecia ativo).
+    final ctaDisabled = v.subtitleColor.withValues(alpha: 0.16);
     final ctaRadius = v.ctaRadius;
 
     _schedulePreselectedClient(clientsAsync.valueOrNull);
@@ -524,7 +525,10 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
       children: [
         visitSheetFieldLabel(v, 'Área / Talhão'),
         const SizedBox(height: 6),
-        DecoratedBox(
+        // Mesmo estado desabilitado do dropdown de Fazenda (opacidade 0.45).
+        Opacity(
+          opacity: enabled ? 1 : 0.45,
+          child: DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(v.cardRadius),
             boxShadow: v.cardShadows,
@@ -540,6 +544,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                 ? 'Buscar talhão'
                 : 'Selecione a fazenda primeiro',
           ),
+        ),
         ),
         ),
         const SizedBox(height: 8),
