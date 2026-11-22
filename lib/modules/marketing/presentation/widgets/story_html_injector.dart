@@ -1,4 +1,5 @@
 import '../../../../core/html_templates/relatorio_html_renderer.dart';
+import '../../domain/entities/avaliacao_item.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/entities/marketing_roi_calculation.dart';
 import '../../domain/enums/case_tipo.dart';
@@ -8,19 +9,19 @@ typedef StoryFotosAntesDepois = ({String? antes, String? depois});
 
 /// Escolhe as fotos do slide Antes/Depois.
 ///
-/// Usa as fotos preenchidas da Comparação 1 (`avaliacoes_json`) na ordem dos
-/// lados: a primeira é o antes, a segunda o depois. Sem blocos, usa o par
-/// legado (`foto_antes_url`/`foto_depois_url`), também só as preenchidas.
+/// Usa as fotos preenchidas do primeiro bloco com foto (`avaliacoes_json`,
+/// normalmente a Comparação 1) na ordem dos lados: a primeira é o antes, a
+/// segunda o depois. Se nenhum bloco tem foto (inclusive blocos só com
+/// id/título), usa o par legado (`foto_antes_url`/`foto_depois_url`), também
+/// só as preenchidas.
 /// Com uma única foto, `depois` fica nulo — [injectStoryData] então mostra o
 /// slide só com essa foto, sem o lado vazio.
 StoryFotosAntesDepois storyFotosAntesDepois(MarketingCase marketingCase) {
-  final blocos = marketingCase.avaliacoesLivres;
-  final candidatas = blocos.isNotEmpty
-      ? [
-          blocos.first.fotoLadoAPath,
-          blocos.first.fotoLadoBPath,
-          blocos.first.fotoLadoCPath,
-        ]
+  final bloco = marketingCase.avaliacoesLivres
+      .where((b) => _urlsDoBloco(b).isNotEmpty)
+      .firstOrNull;
+  final candidatas = bloco != null
+      ? _urlsDoBloco(bloco)
       : [marketingCase.fotoAntesUrl, marketingCase.fotoDepoisUrl];
   final preenchidas = [
     for (final url in candidatas)
@@ -31,6 +32,15 @@ StoryFotosAntesDepois storyFotosAntesDepois(MarketingCase marketingCase) {
     depois: preenchidas.length > 1 ? preenchidas[1] : null,
   );
 }
+
+List<String?> _urlsDoBloco(AvaliacaoItem bloco) => [
+  for (final url in [
+    bloco.fotoLadoAPath,
+    bloco.fotoLadoBPath,
+    bloco.fotoLadoCPath,
+  ])
+    if (url != null && url.trim().isNotEmpty) url,
+];
 
 /// Injeta dados do [MarketingCase] nos marcadores do `assets/story.html`.
 ///
@@ -195,12 +205,17 @@ String injectStoryData(
   return out;
 }
 
-/// Uma só foto no slide: some o lado "Depois" vazio e o divisor.
+/// Uma só foto no slide: some o lado "Depois" vazio e o divisor, e também o
+/// rótulo "Antes", o valor da testemunha e o gradiente do lado que sobrou —
+/// eles só fazem sentido numa comparação entre duas fotos.
 String _withSingleComparePhoto(String html) {
   const style = '''
 <style id="sf-story-single-photo">
 .compare-photos { grid-template-columns: 1fr; }
 .compare-side.after, .compare-divider { display: none; }
+.compare-side.before .compare-side-label,
+.compare-side.before .compare-side-value,
+.compare-side.before .compare-side-overlay { display: none; }
 </style>
 ''';
   if (html.contains('id="sf-story-single-photo"')) return html;
