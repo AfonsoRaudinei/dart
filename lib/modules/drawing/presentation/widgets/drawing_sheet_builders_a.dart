@@ -93,68 +93,13 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
   }
 
   Widget _buildToolsGrid(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
-    final pendingCount = widget.controller.pendingSyncCount;
-    final isIos = v.isIos;
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Column(
-        children: [
-          DrawingToolSelector(
-            selectedToolKey: _selectedToolKey,
-            onToolSelected: _onToolSelected,
-          ),
-          if (pendingCount > 0) ...[
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () => _syncPendingFeatures(context),
-              icon: const Icon(Icons.cloud_upload, color: Colors.white),
-              label: Text('Enviar alterações ($pendingCount)'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isIos
-                    ? v.ctaBackground
-                    : Colors.orange,
-                foregroundColor: Colors.white,
-                shape: isIos
-                    ? RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          v.ctaRadius,
-                        ),
-                      )
-                    : null,
-              ),
-            ),
-          ],
-        ],
+      child: DrawingToolSelector(
+        selectedToolKey: _selectedToolKey,
+        onToolSelected: _onToolSelected,
       ),
     );
-  }
-
-  Future<void> _syncPendingFeatures(BuildContext context) async {
-    final result = await widget.controller.syncFeatures();
-    if (!context.mounted || result == null || result.conflicts.isEmpty) {
-      return;
-    }
-
-    for (final conflict in result.conflicts) {
-      if (!context.mounted) return;
-      await showDialog<void>(
-        context: context,
-        builder: (dialogContext) => ConflictResolutionDialog(
-          title: 'Conflito de sincronização',
-          description:
-              'A geometria "${conflict.properties.nome}" foi alterada '
-              'localmente e no servidor. Escolha qual versão manter.',
-          onUseLocal: () {
-            widget.controller.resolveConflictUseLocal(conflict.id);
-          },
-          onUseRemote: () {
-            widget.controller.resolveConflictUseRemote(conflict);
-          },
-        ),
-      );
-    }
   }
 
   // Métodos de construção de modo
