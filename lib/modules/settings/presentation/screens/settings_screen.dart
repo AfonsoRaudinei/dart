@@ -1,5 +1,6 @@
 import '../../../../core/constants/app_version.dart';
 import 'dart:io';
+import 'package:soloforte_app/ui/components/premium/premium_page_title.dart';
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/solo_forte_sheet_visuals.dart';
 import 'package:flutter/services.dart';
@@ -43,18 +44,16 @@ class SettingsScreen extends ConsumerWidget {
         slivers: [
           SliverAppBar(
             pinned: true,
-            expandedHeight: 120.0,
+            expandedHeight: 96.0,
             backgroundColor: context.premiumBackground,
             surfaceTintColor: Colors.transparent,
             flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+              centerTitle: false,
+              expandedTitleScale: 1.0,
+              titlePadding: const EdgeInsets.only(left: 16, bottom: 14),
               title: Text(
                 'Configurações',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: -0.5,
-                  color: context.premiumTextPrimary,
-                ),
+                style: premiumPageTitleStyle(context),
               ),
               background: ClipRect(
                 child: BackdropFilter(

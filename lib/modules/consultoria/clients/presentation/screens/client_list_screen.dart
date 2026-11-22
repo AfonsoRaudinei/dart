@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/ui/components/premium/premium_page_title.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/services/sync_orchestrator.dart';
 import '../client_list_filter_logic.dart';
@@ -70,12 +71,7 @@ class ClientListScreen extends ConsumerWidget {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'Clientes',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: -0.5,
-                                color: context.premiumTextPrimary,
-                              ),
+                          style: premiumPageTitleStyle(context),
                         ),
                       ),
                     ),

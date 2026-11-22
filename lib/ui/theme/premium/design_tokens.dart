@@ -121,6 +121,26 @@ extension PremiumThemeAware on BuildContext {
   Color get premiumHairline =>
       isPremiumDark ? PremiumTokens.hairlineDark : PremiumTokens.hairlineLight;
 
+  /// Borda sutil de cards: quase invisível no claro (o relevo vem da sombra).
+  Color get premiumCardBorder =>
+      isPremiumDark ? PremiumTokens.hairlineDark : const Color(0x0F000000);
+
+  /// Sombra padrão de cards (iOS premium); sem sombra no escuro.
+  List<BoxShadow> get premiumCardShadows => isPremiumDark
+      ? const []
+      : const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 2,
+            offset: Offset(0, 1),
+          ),
+          BoxShadow(
+            color: Color(0x12000000),
+            blurRadius: 14,
+            offset: Offset(0, 6),
+          ),
+        ];
+
   /// Acento de marca por tema (Verde · Azul Samsung · Black dourado via primary).
   Color get themeAccent => Theme.of(this).colorScheme.primary;
 }

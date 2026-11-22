@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/ui/components/premium/premium_page_title.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
@@ -159,14 +160,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Header
-                    Text(
-                      'Feedback',
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
-                        color: textPrimary,
-                      ),
-                    ),
+                    Text('Feedback', style: premiumPageTitleStyle(context)),
                     const SizedBox(height: 8),
                     Text(
                       'Conte o que precisa melhorar, o que deu errado ou o que funcionou bem.',

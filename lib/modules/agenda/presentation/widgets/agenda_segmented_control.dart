@@ -17,7 +17,7 @@ class AgendaSegmentedControl extends ConsumerWidget {
     final isDark = theme.brightness == Brightness.dark;
     final trackColor = isDark
         ? const Color(0xFF242426)
-        : const Color(0xFFF3F4F6);
+        : const Color(0xFFE5E5EA);
     final selectedFill = isDark ? context.premiumSurface : Colors.white;
 
     return Container(
