@@ -41,7 +41,7 @@ class _CarteiraScreenState extends ConsumerState<CarteiraScreen> {
 
     if (userId.isEmpty) {
       return const Scaffold(
-        body: Center(child: Text('Usuário não autenticado.')),
+        body: Center(child: Text('Entre na sua conta para continuar.')),
       );
     }
 
@@ -81,7 +81,7 @@ class _ClientesTab extends ConsumerWidget {
     if (clientesAsync.hasError ||
         categoriasAsync.hasError ||
         registrosAsync.hasError) {
-      return const Center(child: Text('Erro ao carregar carteira.'));
+      return const Center(child: Text('Não conseguimos carregar a carteira. Tente de novo.'));
     }
 
     final clientes = clientesAsync.value ?? const [];
@@ -283,7 +283,7 @@ class _CategoriasTab extends ConsumerWidget {
           child: categoriasAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (_, __) =>
-                const Center(child: Text('Erro ao carregar categorias.')),
+                const Center(child: Text('Não conseguimos carregar as categorias. Tente de novo.')),
             data: (categorias) {
               if (categorias.isEmpty) {
                 return const CarteiraEstadoVazio(
@@ -386,7 +386,7 @@ class _OportunidadesTab extends ConsumerWidget {
     return overviewAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, __) =>
-          const Center(child: Text('Erro ao carregar oportunidades.')),
+          const Center(child: Text('Não conseguimos carregar as oportunidades. Tente de novo.')),
       data: (overview) {
         if (overview.porCliente.isEmpty) {
           return const CarteiraEstadoVazio(

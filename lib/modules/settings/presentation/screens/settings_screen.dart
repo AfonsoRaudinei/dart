@@ -484,7 +484,7 @@ class SettingsScreen extends ConsumerWidget {
           return Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'Usuário não autenticado.',
+              'Entre na sua conta para continuar.',
               style:
                   (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
                       .copyWith(color: context.premiumTextSecondary),

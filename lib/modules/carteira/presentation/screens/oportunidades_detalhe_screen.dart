@@ -31,7 +31,7 @@ class OportunidadesDetalheScreen extends ConsumerWidget {
       body: oportunidadesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) =>
-            const Center(child: Text('Erro ao carregar oportunidades.')),
+            const Center(child: Text('Não conseguimos carregar as oportunidades. Tente de novo.')),
         data: (oportunidades) {
           if (oportunidades.isEmpty) {
             return const Center(

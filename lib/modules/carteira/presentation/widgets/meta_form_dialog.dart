@@ -49,15 +49,15 @@ class _MetaFormDialogState extends ConsumerState<MetaFormDialog> {
     );
     if (quantidade == null || quantidade <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Informe uma quantidade válida')),
+        const SnackBar(content: Text('Digite uma quantidade válida.')),
       );
       return;
     }
 
     if (_userId.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Usuário não autenticado')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Entre na sua conta para continuar.')),
+      );
       return;
     }
 
@@ -101,9 +101,11 @@ class _MetaFormDialogState extends ConsumerState<MetaFormDialog> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao salvar meta: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não deu para salvar a meta. Tente novamente.'),
+          ),
+        );
       }
     } finally {
       if (mounted) {

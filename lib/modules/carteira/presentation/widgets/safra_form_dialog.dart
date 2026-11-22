@@ -74,9 +74,9 @@ class _SafraFormDialogState extends ConsumerState<SafraFormDialog> {
       return;
     }
     if (_userId.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Usuário não autenticado')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Entre na sua conta para continuar.')),
+      );
       return;
     }
 
@@ -106,9 +106,11 @@ class _SafraFormDialogState extends ConsumerState<SafraFormDialog> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao salvar safra: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não deu para salvar a safra. Tente novamente.'),
+          ),
+        );
       }
     } finally {
       if (mounted) {
