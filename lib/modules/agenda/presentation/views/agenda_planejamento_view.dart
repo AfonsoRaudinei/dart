@@ -300,7 +300,9 @@ class _AgendaPlanejamentoViewState
         color: isSunday ? sundayFill : theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isToday ? theme.colorScheme.primary : context.premiumCardBorder,
+          color: isToday
+              ? theme.colorScheme.primary
+              : context.premiumCardBorder,
           width: isToday ? 2 : 1,
         ),
         boxShadow: context.premiumCardShadows,
@@ -315,12 +317,23 @@ class _AgendaPlanejamentoViewState
           ),
           if (events.isEmpty)
             Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'Nenhum evento agendado',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: context.premiumTextSecondary,
-                ),
+              padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Dia livre. Que tal agendar uma visita?',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: context.premiumTextSecondary,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () =>
+                        context.go('${AppRoutes.agenda}?novoEvento=true'),
+                    child: const Text('Agendar'),
+                  ),
+                ],
               ),
             )
           else

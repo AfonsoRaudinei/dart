@@ -358,7 +358,7 @@ class _RelatoriosSection extends ConsumerWidget {
             children: [
               const _InsetGroupHeader(title: 'Relatórios de Visita', count: 0),
               _PremiumEmptyState(
-                message: 'Nenhuma visita ainda.',
+                message: 'Nenhuma visita ainda. Inicie a primeira pelo mapa.',
                 ctaLabel: 'Abrir mapa',
                 onCta: () => context.go(AppRoutes.map),
               ),
