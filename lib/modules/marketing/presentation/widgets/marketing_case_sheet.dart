@@ -401,6 +401,10 @@ class MarketingCaseSheet extends ConsumerWidget {
                           titleColor: titleColor,
                           isIos: isIos,
                         ),
+                      if (_temConclusaoTecnica) ...[
+                        const SizedBox(height: 12),
+                        _buildConclusaoCard(context, titleColor: titleColor),
+                      ],
                     ],
 
                     // ── Tipo Avaliação ─────────────────────────
@@ -425,7 +429,7 @@ class MarketingCaseSheet extends ConsumerWidget {
                           isIos: isIos,
                         ),
                       ],
-                      if (marketingCase.conclusaoTecnica != null) ...[
+                      if (_temConclusaoTecnica) ...[
                         const SizedBox(height: 12),
                         _buildConclusaoCard(context, titleColor: titleColor),
                       ],
@@ -734,6 +738,9 @@ class MarketingCaseSheet extends ConsumerWidget {
     );
   }
 
+  bool get _temConclusaoTecnica =>
+      marketingCase.conclusaoTecnica?.trim().isNotEmpty == true;
+
   Widget _buildConclusaoCard(
     BuildContext context, {
     required Color titleColor,
@@ -767,7 +774,7 @@ class MarketingCaseSheet extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            marketingCase.conclusaoTecnica!,
+            marketingCase.conclusaoTecnica!.trim(),
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: titleColor, height: 1.5),
