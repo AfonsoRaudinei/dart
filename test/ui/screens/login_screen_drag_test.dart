@@ -96,6 +96,72 @@ void main() {
     expect(find.text('mapa publico'), findsOneWidget);
     expect(router.routeInformationProvider.value.uri.path, '/public-map');
   });
+
+  testWidgets('devolver o formulário à origem não fecha o login', (
+    tester,
+  ) async {
+    final router = await _pumpLogin(tester, const Size(400, 2000));
+    final subtitle = find.text('Transforme complexidade em decisões simples');
+    expect(subtitle, findsOneWidget);
+
+    final gesture = await tester.startGesture(tester.getCenter(subtitle));
+    await gesture.moveBy(const Offset(0, 200));
+    await tester.pump();
+    await gesture.moveBy(const Offset(0, -200));
+    await tester.pump();
+    await gesture.up();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(router.routeInformationProvider.value.uri.path, '/login');
+    expect(find.text('Entrar'), findsOneWidget);
+  });
+}
+
+Future<GoRouter> _pumpLogin(WidgetTester tester, Size size) async {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
+  final router = GoRouter(
+    initialLocation: '/login',
+    routes: [
+      GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
+      GoRoute(
+        path: '/public-map',
+        builder: (_, _) => const Scaffold(body: Text('mapa publico')),
+      ),
+      GoRoute(
+        path: '/recover-password',
+        builder: (_, _) => const SizedBox.shrink(),
+      ),
+      GoRoute(path: '/register', builder: (_, _) => const SizedBox.shrink()),
+    ],
+  );
+  addTearDown(router.dispose);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        marketingCaseRepositoryProvider.overrideWithValue(_NoopRepo()),
+        marketingSyncServiceProvider.overrideWith(
+          (ref) =>
+              MarketingSyncService(ref.watch(marketingCaseRepositoryProvider)),
+        ),
+        marketingCasesProvider.overrideWith((ref) {
+          return _EmptyCasesNotifier(
+            ref.watch(marketingCaseRepositoryProvider),
+            ref.watch(marketingSyncServiceProvider),
+          );
+        }),
+      ],
+      child: MaterialApp.router(routerConfig: router),
+    ),
+  );
+  await tester.pump();
+  expect(find.text('Entrar'), findsOneWidget);
+  return router;
 }
 
 class _EmptyCasesNotifier extends MarketingCasesNotifier {
