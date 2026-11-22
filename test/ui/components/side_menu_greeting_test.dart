@@ -35,4 +35,15 @@ void main() {
     expect(visitsContextLine(1), 'Você tem 1 visita hoje');
     expect(visitsContextLine(3), 'Você tem 3 visitas hoje');
   });
+
+  test('menuHeaderPhoto alterna plantio (dia par) e colheita (dia ímpar)', () {
+    expect(
+      menuHeaderPhoto(DateTime(2026, 11, 22)),
+      'assets/images/menu/header_plantio.jpg',
+    );
+    expect(
+      menuHeaderPhoto(DateTime(2026, 11, 23)),
+      'assets/images/menu/header_colheita.jpg',
+    );
+  });
 }
