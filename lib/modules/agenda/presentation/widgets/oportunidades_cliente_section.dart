@@ -206,7 +206,7 @@ class _OportunidadeItem extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                           child: LinearProgressIndicator(
                             value: pct / 100.0,
-                            backgroundColor: context.premiumHairline,
+                            backgroundColor: context.isPremiumDark ? context.premiumHairline : Colors.grey[200],
                             color: cor,
                             minHeight: 6,
                           ),

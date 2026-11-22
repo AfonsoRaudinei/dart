@@ -262,7 +262,7 @@ class _ProgressoCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: progresso,
-              backgroundColor: context.premiumHairline,
+              backgroundColor: context.isPremiumDark ? context.premiumHairline : Colors.grey[200],
               color: primary,
               minHeight: 8,
             ),

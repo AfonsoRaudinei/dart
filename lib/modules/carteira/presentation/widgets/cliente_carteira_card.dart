@@ -47,7 +47,7 @@ class ClienteCarteiraCard extends StatelessWidget {
                 minHeight: 10,
                 // Sem isto a trilha herda a cor secundária (verde) do tema e
                 // 0% parece uma barra cheia.
-                backgroundColor: context.premiumHairline,
+                backgroundColor: context.isPremiumDark ? context.premiumHairline : Colors.grey[200],
                 borderRadius: BorderRadius.circular(999),
               ),
               const SizedBox(height: 8),
