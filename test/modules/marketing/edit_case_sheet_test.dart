@@ -553,6 +553,103 @@ void main() {
       },
     );
 
+    testWidgets(
+      'bloco sem foto/parâmetro com legado preenchido hidrata o legado e salva coerente',
+      (tester) async {
+        MarketingCase? savedCase;
+        await tester.pumpWidget(
+          _wrap(
+            EditCaseSheet(
+              caso: _caseAntesDepois(
+                avaliacoesJson: jsonEncode([
+                  {'id': 'av-1', 'titulo': 'Comparação 1'},
+                ]),
+                parametrosJson: jsonEncode([
+                  {
+                    'id': 'p1',
+                    'titulo': 'Vagens',
+                    'testemunha': 10,
+                    'teste': 12,
+                  },
+                ]),
+              ),
+              onClose: () {},
+              onSalvar: (updatedCase) async {
+                savedCase = updatedCase;
+              },
+            ),
+          ),
+        );
+
+        await tester.scrollUntilVisible(
+          find.text('Salvar'),
+          500,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pump();
+        expect(find.byType(FotoPickerWidget), findsNWidgets(2));
+        await tester.tap(find.text('Salvar'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(savedCase, isNotNull);
+        final raw = jsonDecode(savedCase!.avaliacoesJson!) as List;
+        expect(raw, hasLength(1));
+        final primeiro = Map<String, dynamic>.from(raw.first as Map);
+        expect(primeiro['id'], 'av-1');
+        expect(primeiro['foto_lado_a_path'], 'https://example.com/antes.jpg');
+        expect(primeiro['foto_lado_b_path'], 'https://example.com/depois.jpg');
+        expect(primeiro['parametros'], hasLength(1));
+        expect(savedCase!.fotoAntesUrl, 'https://example.com/antes.jpg');
+        expect(savedCase!.parametros, hasLength(1));
+      },
+    );
+
+    testWidgets(
+      'decisão: bloco só com texto + legado hidrata o legado e preserva o texto do mesmo id',
+      (tester) async {
+        MarketingCase? savedCase;
+        await tester.pumpWidget(
+          _wrap(
+            EditCaseSheet(
+              caso: _caseAntesDepois(
+                avaliacoesJson: jsonEncode([
+                  {
+                    'id': 'av-1',
+                    'titulo': 'Comparação 1',
+                    'observacoes': 'Nota do campo',
+                  },
+                ]),
+              ),
+              onClose: () {},
+              onSalvar: (updatedCase) async {
+                savedCase = updatedCase;
+              },
+            ),
+          ),
+        );
+
+        await tester.scrollUntilVisible(
+          find.text('Salvar'),
+          500,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pump();
+        expect(find.text('Nota do campo'), findsOneWidget);
+        expect(find.byType(FotoPickerWidget), findsNWidgets(2));
+        await tester.tap(find.text('Salvar'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        final raw = jsonDecode(savedCase!.avaliacoesJson!) as List;
+        final primeiro = Map<String, dynamic>.from(raw.first as Map);
+        expect(primeiro['id'], 'av-1');
+        expect(primeiro['observacoes'], 'Nota do campo');
+        expect(primeiro['foto_lado_a_path'], 'https://example.com/antes.jpg');
+        expect(savedCase!.fotoAntesUrl, 'https://example.com/antes.jpg');
+      },
+    );
+
     testWidgets('editar o texto da Comparação 2 e remover a conclusão', (
       tester,
     ) async {
