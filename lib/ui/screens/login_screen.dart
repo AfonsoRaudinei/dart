@@ -14,6 +14,7 @@ import '../../modules/marketing/presentation/widgets/ouro_map_background.dart';
 import '../components/login/login_input_field.dart';
 import '../components/login/gradient_button.dart';
 import '../components/login/demo_mode_checkbox.dart';
+import '../components/login/login_sheet_drag.dart';
 import '../components/login/login_sheet_keyboard_layout.dart';
 import '../components/login/social_auth_button.dart';
 
@@ -39,6 +40,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   bool _isDemoMode = false;
 
   final _formScrollController = ScrollController();
+
+  /// Quanto o painel desceu com o dedo. 0 = posição de repouso.
+  double _sheetDragDy = 0;
+
+  /// Verdadeiro enquanto o dedo está na barrinha, para o scroll do
+  /// formulário não disputar o fim do gesto.
+  bool _sheetHandleDragging = false;
+
+  /// Enquanto o dedo conduz o painel, o deslocamento segue sem animação.
+  bool _sheetFollowsFinger = false;
 
   // ── Rate limiting ──────────────────────────────────────────
   static const int _kMaxAttempts = 3;
@@ -72,8 +83,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       final focus = _passFocusNode.hasFocus
           ? _passFocusNode
           : _emailFocusNode.hasFocus
-              ? _emailFocusNode
-              : null;
+          ? _emailFocusNode
+          : null;
       final context = focus?.context;
       if (context == null || !context.mounted) return;
       Scrollable.ensureVisible(
@@ -163,7 +174,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               : null,
         );
         if (emailNaoConfirmado) {
-          unawaited(_showConfirmCodeDialog(_emailCtrl.text.trim().toLowerCase()));
+          unawaited(
+            _showConfirmCodeDialog(_emailCtrl.text.trim().toLowerCase()),
+          );
         }
       }
     } finally {
@@ -245,6 +258,57 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   void _handleForgotPassword() {
     context.push(AppRoutes.recoverPassword);
+  }
+
+  void _moveSheetBy(double dy) {
+    final next = LoginSheetDrag.clampOffset(_sheetDragDy + dy);
+    if (next == _sheetDragDy && _sheetFollowsFinger) return;
+    setState(() {
+      _sheetFollowsFinger = true;
+      _sheetDragDy = next;
+    });
+  }
+
+  void _finishSheetDrag(double velocity) {
+    if (!mounted) return;
+    if (LoginSheetDrag.shouldDismiss(
+      offset: _sheetDragDy,
+      velocity: velocity,
+    )) {
+      context.go(AppRoutes.publicMap);
+      return;
+    }
+    if (_sheetDragDy == 0 && !_sheetFollowsFinger) return;
+    setState(() {
+      _sheetFollowsFinger = false;
+      _sheetDragDy = 0;
+    });
+  }
+
+  bool _onFormScroll(ScrollNotification notification) {
+    if (_sheetHandleDragging) return false;
+
+    if (notification is OverscrollNotification &&
+        notification.overscroll < 0 &&
+        notification.metrics.pixels <= notification.metrics.minScrollExtent) {
+      _moveSheetBy(-notification.overscroll);
+      return false;
+    }
+
+    if (notification is ScrollUpdateNotification &&
+        _sheetDragDy > 0 &&
+        (notification.scrollDelta ?? 0) > 0) {
+      final consumed = notification.scrollDelta! > _sheetDragDy
+          ? _sheetDragDy
+          : notification.scrollDelta!;
+      _moveSheetBy(-consumed);
+      return false;
+    }
+
+    if (notification is ScrollEndNotification && _sheetDragDy > 0) {
+      _finishSheetDrag(notification.dragDetails?.primaryVelocity ?? 0);
+    }
+    return false;
   }
 
   @override
@@ -331,256 +395,319 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             bottom: LoginSheetKeyboardLayout.sheetBottomOffset(keyboardInset),
             left: 0,
             right: 0,
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(32),
-                ),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                  child: Container(
-                    constraints: BoxConstraints(maxHeight: sheetMaxHeight),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.92),
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(32),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(end: _sheetDragDy),
+              duration: _sheetFollowsFinger
+                  ? Duration.zero
+                  : const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              builder: (context, dy, child) {
+                return Transform.translate(offset: Offset(0, dy), child: child);
+              },
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(32),
+                  ),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                    child: Container(
+                      constraints: BoxConstraints(maxHeight: sheetMaxHeight),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.92),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(32),
+                        ),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          width: 1,
+                        ),
                       ),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        width: 1,
-                      ),
-                    ),
-                    child: SingleChildScrollView(
-                      controller: _formScrollController,
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: const EdgeInsets.only(
-                        left: 24,
-                        right: 24,
-                        top: 20,
-                        bottom: 28,
-                      ),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Handle
-                            Center(
-                              child: Container(
-                                width: 36,
-                                height: 4,
-                                margin: const EdgeInsets.only(bottom: 20),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade400,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                            ),
-
-                            // Botão Voltar
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: TextButton.icon(
-                                onPressed: () =>
-                                    context.go(AppRoutes.publicMap),
-                                icon: Icon(
-                                  Icons.arrow_back_ios,
-                                  size: 16,
-                                  color: accent,
-                                ),
-                                label: Text(
-                                  'VOLTAR',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: accent,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            // Logo
-                            Hero(
-                              tag: 'app_logo',
-                              child: Center(
-                                child: Image.asset(
-                                  'assets/images/soloforte_logo.png',
-                                  height: 60,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      height: 60,
-                                      width: 60,
-                                      decoration: BoxDecoration(
-                                        gradient: PremiumTokens.brandGradient,
-                                        borderRadius: BorderRadius.circular(16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            key: const Key('login-sheet-handle'),
+                            behavior: HitTestBehavior.opaque,
+                            onVerticalDragStart: (_) {
+                              _sheetHandleDragging = true;
+                              setState(() => _sheetFollowsFinger = true);
+                            },
+                            onVerticalDragUpdate: (details) =>
+                                _moveSheetBy(details.delta.dy),
+                            onVerticalDragEnd: (details) {
+                              _sheetHandleDragging = false;
+                              _finishSheetDrag(details.primaryVelocity ?? 0);
+                            },
+                            onVerticalDragCancel: () {
+                              _sheetHandleDragging = false;
+                              _finishSheetDrag(0);
+                            },
+                            child: const SizedBox(
+                              width: double.infinity,
+                              child: Padding(
+                                padding: EdgeInsets.fromLTRB(24, 14, 24, 10),
+                                child: Center(
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: Color(0xFFBDBDBD),
+                                      borderRadius: BorderRadius.all(
+                                        Radius.circular(2),
                                       ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(10.0),
-                                        child: Image.asset(
-                                          'assets/images/app_icon.png',
-                                          fit: BoxFit.contain,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-
-                            // Título
-                            Text(
-                              'Entrar',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.headlineMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.black87,
-                                    fontSize: 26,
-                                  ),
-                            ),
-
-                            const SizedBox(height: 4),
-
-                            Text(
-                              'Transforme complexidade em decisões simples',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Colors.grey.shade600,
-                                    height: 1.4,
-                                  ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Email Input
-                            LoginInputField(
-                              controller: _emailCtrl,
-                              focusNode: _emailFocusNode,
-                              label: 'Email',
-                              hintText: 'seu@email.com',
-                              icon: Icons.email_outlined,
-                              keyboardType: TextInputType.emailAddress,
-                              textInputAction: TextInputAction.next,
-                              validator: AuthValidators.validateEmail,
-                              onSubmitted: (_) => _passFocusNode.requestFocus(),
-                            ),
-                            const SizedBox(height: 12),
-
-                            // Password Input
-                            LoginInputField(
-                              controller: _passCtrl,
-                              focusNode: _passFocusNode,
-                              label: 'Senha',
-                              hintText: 'Digite sua senha',
-                              icon: Icons.lock_outline,
-                              isPassword: true,
-                              textInputAction: TextInputAction.done,
-                              validator: _validatePassword,
-                              onSubmitted: (_) => _handleLogin(),
-                            ),
-                            const SizedBox(height: 12),
-
-                            // Esqueceu a senha (sem Lembrar-me)
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: _handleForgotPassword,
-                                style: TextButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                ),
-                                child: Text(
-                                  'Esqueceu a senha?',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: accent,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-
-                            // Botão Entrar
-                            GradientButton(
-                              text: _remainingCooldown > 0
-                                  ? 'AGUARDE ${_remainingCooldown}s'
-                                  : 'ENTRAR',
-                              onPressed: _loading || _remainingCooldown > 0
-                                  ? null
-                                  : _handleLogin,
-                              isLoading: _loading,
-                              height: 50,
-                            ),
-                            const SizedBox(height: 12),
-
-                            const SocialAuthButton(
-                              text: 'Continuar com Google',
-                              subtitle: 'Disponível em breve',
-                              icon: Icons.account_circle_outlined,
-                            ),
-                            const SizedBox(height: 10),
-                            const SocialAuthButton(
-                              text: 'Continuar com Apple',
-                              subtitle: 'Disponível em breve',
-                              icon: Icons.apple,
-                            ),
-                            const SizedBox(height: 12),
-
-                            // Cadastrar
-                            Center(
-                              child: TextButton(
-                                onPressed: () =>
-                                    context.push(AppRoutes.register),
-                                child: RichText(
-                                  text: TextSpan(
-                                    text: 'Não tem conta? ',
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 13,
                                     ),
+                                    child: SizedBox(width: 36, height: 4),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Flexible(
+                            fit: FlexFit.loose,
+                            child: NotificationListener<ScrollNotification>(
+                              onNotification: _onFormScroll,
+                              child: SingleChildScrollView(
+                                controller: _formScrollController,
+                                physics: const AlwaysScrollableScrollPhysics(
+                                  parent: ClampingScrollPhysics(),
+                                ),
+                                keyboardDismissBehavior:
+                                    ScrollViewKeyboardDismissBehavior.onDrag,
+                                padding: const EdgeInsets.only(
+                                  left: 24,
+                                  right: 24,
+                                  top: 4,
+                                  bottom: 28,
+                                ),
+                                child: Form(
+                                  key: _formKey,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      TextSpan(
-                                        text: 'Cadastrar',
-                                        style: TextStyle(
-                                          color: accent,
-                                          fontWeight: FontWeight.w700,
+                                      // Botão Voltar
+                                      Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: TextButton.icon(
+                                          onPressed: () =>
+                                              context.go(AppRoutes.publicMap),
+                                          icon: Icon(
+                                            Icons.arrow_back_ios,
+                                            size: 16,
+                                            color: accent,
+                                          ),
+                                          label: Text(
+                                            'VOLTAR',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: accent,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
                                         ),
                                       ),
+
+                                      // Logo
+                                      Hero(
+                                        tag: 'app_logo',
+                                        child: Center(
+                                          child: Image.asset(
+                                            'assets/images/soloforte_logo.png',
+                                            height: 60,
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                                  return Container(
+                                                    height: 60,
+                                                    width: 60,
+                                                    decoration: BoxDecoration(
+                                                      gradient: PremiumTokens
+                                                          .brandGradient,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            16,
+                                                          ),
+                                                    ),
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            10.0,
+                                                          ),
+                                                      child: Image.asset(
+                                                        'assets/images/app_icon.png',
+                                                        fit: BoxFit.contain,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+
+                                      // Título
+                                      Text(
+                                        'Entrar',
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headlineMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                              color: Colors.black87,
+                                              fontSize: 26,
+                                            ),
+                                      ),
+
+                                      const SizedBox(height: 4),
+
+                                      Text(
+                                        'Transforme complexidade em decisões simples',
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: Colors.grey.shade600,
+                                              height: 1.4,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 24),
+
+                                      // Email Input
+                                      LoginInputField(
+                                        controller: _emailCtrl,
+                                        focusNode: _emailFocusNode,
+                                        label: 'Email',
+                                        hintText: 'seu@email.com',
+                                        icon: Icons.email_outlined,
+                                        keyboardType:
+                                            TextInputType.emailAddress,
+                                        textInputAction: TextInputAction.next,
+                                        validator: AuthValidators.validateEmail,
+                                        onSubmitted: (_) =>
+                                            _passFocusNode.requestFocus(),
+                                      ),
+                                      const SizedBox(height: 12),
+
+                                      // Password Input
+                                      LoginInputField(
+                                        controller: _passCtrl,
+                                        focusNode: _passFocusNode,
+                                        label: 'Senha',
+                                        hintText: 'Digite sua senha',
+                                        icon: Icons.lock_outline,
+                                        isPassword: true,
+                                        textInputAction: TextInputAction.done,
+                                        validator: _validatePassword,
+                                        onSubmitted: (_) => _handleLogin(),
+                                      ),
+                                      const SizedBox(height: 12),
+
+                                      // Esqueceu a senha (sem Lembrar-me)
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: TextButton(
+                                          onPressed: _handleForgotPassword,
+                                          style: TextButton.styleFrom(
+                                            padding: EdgeInsets.zero,
+                                          ),
+                                          child: Text(
+                                            'Esqueceu a senha?',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: accent,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
+
+                                      // Botão Entrar
+                                      GradientButton(
+                                        text: _remainingCooldown > 0
+                                            ? 'AGUARDE ${_remainingCooldown}s'
+                                            : 'ENTRAR',
+                                        onPressed:
+                                            _loading || _remainingCooldown > 0
+                                            ? null
+                                            : _handleLogin,
+                                        isLoading: _loading,
+                                        height: 50,
+                                      ),
+                                      const SizedBox(height: 12),
+
+                                      const SocialAuthButton(
+                                        text: 'Continuar com Google',
+                                        subtitle: 'Disponível em breve',
+                                        icon: Icons.account_circle_outlined,
+                                      ),
+                                      const SizedBox(height: 10),
+                                      const SocialAuthButton(
+                                        text: 'Continuar com Apple',
+                                        subtitle: 'Disponível em breve',
+                                        icon: Icons.apple,
+                                      ),
+                                      const SizedBox(height: 12),
+
+                                      // Cadastrar
+                                      Center(
+                                        child: TextButton(
+                                          onPressed: () =>
+                                              context.push(AppRoutes.register),
+                                          child: RichText(
+                                            text: TextSpan(
+                                              text: 'Não tem conta? ',
+                                              style: TextStyle(
+                                                color: Colors.grey.shade600,
+                                                fontSize: 13,
+                                              ),
+                                              children: [
+                                                TextSpan(
+                                                  text: 'Cadastrar',
+                                                  style: TextStyle(
+                                                    color: accent,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+
+                                      // Modo Demo — visível apenas em debug builds
+                                      if (kDebugMode &&
+                                          _demoEmail.isNotEmpty &&
+                                          _demoPassword.isNotEmpty)
+                                        Center(
+                                          child: DemoModeCheckbox(
+                                            value: _isDemoMode,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                _isDemoMode = value ?? false;
+                                                if (_isDemoMode) {
+                                                  _emailCtrl.text = _demoEmail;
+                                                  _passCtrl.text =
+                                                      _demoPassword;
+                                                } else {
+                                                  _emailCtrl.clear();
+                                                  _passCtrl.clear();
+                                                }
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                      const SizedBox(height: 8),
                                     ],
                                   ),
                                 ),
                               ),
                             ),
-
-                            // Modo Demo — visível apenas em debug builds
-                            if (kDebugMode &&
-                                _demoEmail.isNotEmpty &&
-                                _demoPassword.isNotEmpty)
-                              Center(
-                                child: DemoModeCheckbox(
-                                  value: _isDemoMode,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _isDemoMode = value ?? false;
-                                      if (_isDemoMode) {
-                                        _emailCtrl.text = _demoEmail;
-                                        _passCtrl.text = _demoPassword;
-                                      } else {
-                                        _emailCtrl.clear();
-                                        _passCtrl.clear();
-                                      }
-                                    });
-                                  },
-                                ),
-                              ),
-                            const SizedBox(height: 8),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
