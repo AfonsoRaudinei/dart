@@ -270,7 +270,7 @@ class _ClientEditFormState extends State<ClientEditForm> {
       decoration: BoxDecoration(
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.premiumHairline),
+        border: Border.all(color: context.isPremiumDark ? context.premiumHairline : Colors.grey[200]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,7 +302,7 @@ class _ClientEditFormState extends State<ClientEditForm> {
       decoration: BoxDecoration(
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.premiumHairline),
+        border: Border.all(color: context.isPremiumDark ? context.premiumHairline : Colors.grey[200]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -566,7 +566,7 @@ class _ClientEditFormState extends State<ClientEditForm> {
                       decoration: BoxDecoration(
                         color: Colors.grey[50],
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: context.premiumHairline),
+                        border: Border.all(color: context.isPremiumDark ? context.premiumHairline : Colors.grey[200]!),
                       ),
                       child: Column(
                         children: [

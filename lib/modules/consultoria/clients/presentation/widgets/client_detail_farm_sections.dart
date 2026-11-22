@@ -330,7 +330,7 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: Colors.grey[50],
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: context.premiumHairline),
+                  border: Border.all(color: context.isPremiumDark ? context.premiumHairline : Colors.grey[200]!),
                 ),
                 child: Text(
                   'Nenhum talhão avulso no mapa',
