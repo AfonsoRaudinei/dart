@@ -25,9 +25,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
         },
         onSaved: () {
           _rebuild(() => _isEditingMetadata = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Dados do talhão salvos')),
-          );
+          showFieldSuccess(context, 'Talhão salvo. Bom trabalho no campo!');
         },
       );
     }

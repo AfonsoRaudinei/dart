@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
+import 'package:soloforte_app/core/ui/field_feedback.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/extensions/context_extensions.dart';
@@ -362,8 +363,9 @@ class AgendaEventDetailPage extends ConsumerWidget {
               try {
                 await ref.read(agendaProvider.notifier).completeEvent(event.id);
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Evento concluído!')),
+                  showFieldSuccess(
+                    context,
+                    'Visita registrada. Bom trabalho no campo!',
                   );
                   context.go(AppRoutes.agenda);
                 }

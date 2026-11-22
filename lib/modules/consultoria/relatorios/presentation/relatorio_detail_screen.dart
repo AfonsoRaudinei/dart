@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:soloforte_app/core/ui/field_feedback.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -693,12 +694,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
       setState(() => _isDirty = false);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Alterações salvas com sucesso!'),
-            backgroundColor: Color(0xFF059669),
-          ),
-        );
+        showFieldSuccess(context, 'Relatório salvo.');
       }
     } catch (e) {
       if (mounted) {

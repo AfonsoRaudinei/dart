@@ -522,23 +522,23 @@ class _BootErrorApp extends StatelessWidget {
         lower.contains('supabase_anon_key') ||
         lower.contains('placeholder') ||
         lower.contains('seu-projeto.supabase.co')) {
-      return 'Configuração incompleta.\nContate o suporte: suporte@soloforte.com';
+      return 'Não conseguimos abrir o app agora.\nFale com o suporte: suporte@soloforte.com';
     }
     if (lower.contains('timeout') || lower.contains('15s')) {
-      return 'Servidor demorou para responder.\nVerifique sua conexão e tente novamente.';
+      return 'A conexão está lenta.\nConfira sua internet e tente de novo.';
     }
     if (lower.contains('network') ||
         lower.contains('socket') ||
         lower.contains('host lookup')) {
-      return 'Sem conexão com a internet.\nVerifique seu Wi-Fi ou dados móveis.';
+      return 'Você está sem internet.\nConfira o Wi-Fi ou os dados móveis.';
     }
     if (lower.contains('certificate') || lower.contains('ssl')) {
-      return 'Erro de segurança na conexão.\nContate o suporte: suporte@soloforte.com';
+      return 'Não deu para abrir uma conexão segura.\nFale com o suporte: suporte@soloforte.com';
     }
     // Produção: mensagem genérica — não expor detalhes técnicos
     const isProduction = bool.fromEnvironment('dart.vm.product');
     if (isProduction) {
-      return 'Não foi possível inicializar o aplicativo.\nContate o suporte: suporte@soloforte.com';
+      return 'Não conseguimos abrir o app agora.\nFale com o suporte: suporte@soloforte.com';
     }
     // Debug: exibe o erro completo para o desenvolvedor
     return 'Erro de inicialização:\n\n$error';
