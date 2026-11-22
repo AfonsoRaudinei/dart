@@ -7,8 +7,10 @@ import 'package:soloforte_app/core/ui/keyboard_dismiss.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_ai_launcher_provider.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
+import 'package:soloforte_app/core/utils/user_facing_error.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/enums/agenda_view.dart';
+import '../../domain/visit_history.dart';
 import '../providers/agenda_provider.dart';
 import '../providers/agenda_filters_provider.dart';
 import '../views/agenda_planejamento_view.dart';
@@ -16,6 +18,7 @@ import '../views/agenda_indicadores_view.dart';
 import '../widgets/agenda_segmented_control.dart';
 import '../widgets/month_calendar_grid.dart';
 import '../widgets/agenda_filters_sheet.dart';
+import '../widgets/agenda_visit_history_section.dart';
 import '../widgets/visit_form_dialog.dart';
 
 class AgendaMonthPage extends ConsumerStatefulWidget {
@@ -60,6 +63,10 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
         .getEventsByDateRange(firstDay, lastDay);
     final filteredEvents = _applyFilters(monthEvents, filters);
     final eventsByDay = _groupEventsByDay(filteredEvents);
+    final visitasRealizadas = visitasRealizadasNoMes(
+      filteredEvents,
+      _currentMonth,
+    );
 
     final today = DateTime.now();
     final proximosEventos =
@@ -166,11 +173,14 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
                             }
                             showDialog<void>(
                               context: context,
-                              builder: (_) =>
-                                  VisitFormDialog(initialDate: day),
+                              builder: (_) => VisitFormDialog(initialDate: day),
                             );
                           },
                         ),
+                        if (visitasRealizadas.isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          AgendaVisitHistorySection(events: visitasRealizadas),
+                        ],
                         if (proximosCinco.isNotEmpty) ...[
                           const SizedBox(height: 24),
                           Align(
@@ -241,10 +251,22 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
 
   Future<void> _openCreateVisitDialog() async {
     if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (_) => VisitFormDialog(initialDate: DateTime.now()),
-    );
+    try {
+      await showDialog<void>(
+        context: context,
+        useRootNavigator: true,
+        builder: (_) => VisitFormDialog(initialDate: DateTime.now()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            userFacingError(e, action: 'Não foi possível abrir Nova visita'),
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _openAgendaAi() async {

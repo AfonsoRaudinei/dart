@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../domain/entities/event.dart';
 import '../providers/agenda_export_provider.dart';
 import '../providers/agenda_provider.dart';
+import '../services/agenda_visit_share.dart';
 import '../widgets/day_event_card.dart';
 import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/utils/share_position.dart';
@@ -167,6 +168,9 @@ class _AgendaDayPageState extends ConsumerState<AgendaDayPage> {
         final event = events[index];
         return DayEventCard(
           event: event,
+          showSendAction: true,
+          onVisitHtml: (item) =>
+              openAgendaVisitShare(context, ref, event: item),
           onTap: () {
             // TODO: abrir detalhes do evento
           },

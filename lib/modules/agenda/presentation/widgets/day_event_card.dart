@@ -18,6 +18,7 @@ class DayEventCard extends ConsumerWidget {
   final Event event;
   final VoidCallback? onTap;
   final bool enablePlanningSwipeActions;
+  final bool showSendAction;
   final Future<void> Function(Event event)? onVisitHtml;
 
   const DayEventCard({
@@ -25,6 +26,7 @@ class DayEventCard extends ConsumerWidget {
     required this.event,
     this.onTap,
     this.enablePlanningSwipeActions = false,
+    this.showSendAction = false,
     this.onVisitHtml,
   });
 
@@ -94,6 +96,20 @@ class DayEventCard extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   StatusBadge(status: event.status, compact: true),
+                  if (showSendAction &&
+                      (event.visitSessionId?.trim().isNotEmpty ?? false) &&
+                      onVisitHtml != null) ...[
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () => onVisitHtml!(event),
+                      child: const Text('Enviar'),
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   _buildActionButton(context, ref),
                 ],
@@ -235,25 +251,17 @@ class DayEventCard extends ConsumerWidget {
       showDragHandle: false,
       builder: (ctx) {
         final isIos = soloForteSheetIsIos(ctx);
-        final bg = isIos
-            ? v.cardBackground
-            : Theme.of(ctx).cardColor;
-        final handle = isIos
-            ? v.handleColor
-            : Colors.grey.shade300;
-        final titleColor =
-            v.isIos ? v.titleColor : null;
-        final radius =
-            v.cardRadius;
+        final bg = isIos ? v.cardBackground : Theme.of(ctx).cardColor;
+        final handle = isIos ? v.handleColor : Colors.grey.shade300;
+        final titleColor = v.isIos ? v.titleColor : null;
+        final radius = v.cardRadius;
 
         return Container(
           margin: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(radius),
-            border: isIos
-                ? Border.all(color: v.cardBorder)
-                : null,
+            border: isIos ? Border.all(color: v.cardBorder) : null,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -277,17 +285,12 @@ class DayEventCard extends ConsumerWidget {
                   ),
                 ),
               ),
-              Divider(
-                height: 1,
-                color: isIos ? v.rowDivider : null,
-              ),
+              Divider(height: 1, color: isIos ? v.rowDivider : null),
               if (onVisitHtml != null)
                 ListTile(
                   leading: Icon(
                     Icons.article_outlined,
-                    color: isIos
-                        ? v.iconStroke
-                        : const Color(0xFF16A34A),
+                    color: isIos ? v.iconStroke : const Color(0xFF16A34A),
                   ),
                   title: Text(
                     'Pré-visualizar HTML de visita',
@@ -301,9 +304,7 @@ class DayEventCard extends ConsumerWidget {
               ListTile(
                 leading: Icon(
                   Icons.edit_outlined,
-                  color: isIos
-                      ? v.iconStroke
-                      : const Color(0xFF3B82F6),
+                  color: isIos ? v.iconStroke : const Color(0xFF3B82F6),
                 ),
                 title: Text(
                   'Editar evento',
@@ -383,9 +384,9 @@ class DayEventCard extends ConsumerWidget {
                   .startEvent(event.id, userId);
             } catch (e) {
               if (context.mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text(userFacingError(e, action: 'Erro'))));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(userFacingError(e, action: 'Erro'))),
+                );
               }
             }
           },
@@ -405,9 +406,9 @@ class DayEventCard extends ConsumerWidget {
               await ref.read(agendaProvider.notifier).finalizeEvent(event.id);
             } catch (e) {
               if (context.mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text(userFacingError(e, action: 'Erro'))));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(userFacingError(e, action: 'Erro'))),
+                );
               }
             }
           },
@@ -427,9 +428,9 @@ class DayEventCard extends ConsumerWidget {
               await ref.read(agendaProvider.notifier).completeEvent(event.id);
             } catch (e) {
               if (context.mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text(userFacingError(e, action: 'Erro'))));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(userFacingError(e, action: 'Erro'))),
+                );
               }
             }
           },

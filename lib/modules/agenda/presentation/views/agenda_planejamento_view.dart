@@ -8,13 +8,13 @@ import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../../../core/html_templates/html_report_viewer.dart';
 import '../../../../core/contracts/i_client_lookup_provider.dart';
 import '../../../../core/contracts/i_farm_lookup_provider.dart';
-import '../../../../core/contracts/i_field_lookup_provider.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/enums/event_status.dart';
+import '../../domain/planning_week.dart';
 import '../providers/agenda_provider.dart';
 import '../services/agenda_pdf_service.dart';
 import '../services/agenda_planejamento_html_service.dart';
-import '../services/agenda_visit_html_service.dart';
+import '../services/agenda_visit_share.dart';
 import '../widgets/day_event_card.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
@@ -37,7 +37,7 @@ class _AgendaPlanejamentoViewState
   @override
   void initState() {
     super.initState();
-    _currentWeekStart = _calcWeekStart(DateTime.now());
+    _currentWeekStart = planningWeekStart(DateTime.now());
   }
 
   @override
@@ -83,36 +83,28 @@ class _AgendaPlanejamentoViewState
   }
 
   Widget _buildWeekNavigation(ThemeData theme) {
-    final isCurrentWeek = _currentWeekStart == _calcWeekStart(DateTime.now());
-
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: context.premiumHairline,
-        ),
+        border: Border.all(color: context.premiumHairline),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Opacity(
-            opacity: isCurrentWeek ? 0.3 : 1.0,
-            child: IconButton(
-              icon: const Icon(Icons.chevron_left),
-              onPressed: isCurrentWeek
-                  ? null
-                  : () {
-                      setState(() {
-                        _currentWeekStart = _currentWeekStart.subtract(
-                          const Duration(days: 7),
-                        );
-                        _activeDayFilters.addAll({0, 1, 2, 3, 4, 5, 6});
-                      });
-                    },
-            ),
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
+            tooltip: 'Semana anterior',
+            onPressed: () {
+              setState(() {
+                _currentWeekStart = _currentWeekStart.subtract(
+                  const Duration(days: 7),
+                );
+                _activeDayFilters.addAll({0, 1, 2, 3, 4, 5, 6});
+              });
+            },
           ),
           Text(
             _formatWeekRange(_currentWeekStart),
@@ -206,7 +198,11 @@ class _AgendaPlanejamentoViewState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(userFacingError(e, action: 'Erro ao gerar planejamento'))),
+          SnackBar(
+            content: Text(
+              userFacingError(e, action: 'Erro ao gerar planejamento'),
+            ),
+          ),
         );
       }
     } finally {
@@ -216,30 +212,8 @@ class _AgendaPlanejamentoViewState
 
   // ── Lógica de semana e filtro ─────────────────────────────────
 
-  /// Calcula a segunda-feira da semana que contém [ref].
-  /// weekday: 1=seg … 7=dom  →  subtrai (weekday - 1) dias.
-  DateTime _calcWeekStart(DateTime ref) {
-    return DateTime(
-      ref.year,
-      ref.month,
-      ref.day,
-    ).subtract(Duration(days: ref.weekday - 1));
-  }
-
-  /// Dias da semana atual visíveis:
-  ///   - Semana atual: apenas dias >= hoje (hoje sempre incluso)
-  ///   - Semanas futuras: todos os 7 dias
-  List<DateTime> _visibleDays() {
-    final today = DateTime.now();
-    final todayOnly = DateTime(today.year, today.month, today.day);
-    final weekNow = _calcWeekStart(today);
-    final isCurrentWeek = _currentWeekStart == weekNow;
-
-    return List.generate(
-      7,
-      (i) => _currentWeekStart.add(Duration(days: i)),
-    ).where((d) => !isCurrentWeek || !d.isBefore(todayOnly)).toList();
-  }
+  /// Os sete dias da semana exibida, inclusive os que já passaram.
+  List<DateTime> _visibleDays() => planningWeekDays(_currentWeekStart);
 
   /// Aplica o filtro de chips sobre os dias visíveis.
   /// Índice: d.weekday % 7  →  seg=1, ter=2, …, sab=6, dom=0
@@ -358,7 +332,8 @@ class _AgendaPlanejamentoViewState
                 return DayEventCard(
                   event: events[index],
                   enablePlanningSwipeActions: true,
-                  onVisitHtml: _openVisitHtml,
+                  onVisitHtml: (event) =>
+                      openAgendaVisitShare(context, ref, event: event),
                   onTap: () {
                     // Navegar para detalhes
                   },
@@ -368,49 +343,6 @@ class _AgendaPlanejamentoViewState
         ],
       ),
     );
-  }
-
-  Future<void> _openVisitHtml(Event event) async {
-    try {
-      final agendaState = ref.read(agendaProvider);
-      final session = event.visitSessionId == null
-          ? agendaState.sessions
-                .where((item) => item.eventoId == event.id)
-                .firstOrNull
-          : agendaState.sessions
-                .where((item) => item.id == event.visitSessionId)
-                .firstOrNull;
-      final user = Supabase.instance.client.auth.currentUser;
-      final agronomistNome =
-          user?.userMetadata?['name']?.toString().trim().isNotEmpty == true
-          ? user!.userMetadata!['name'].toString()
-          : user?.email ?? 'Agrônomo';
-
-      final service = AgendaVisitHtmlService(
-        ref.read(clientLookupProvider),
-        ref.read(iFarmLookupProvider),
-        ref.read(iFieldLookupProvider),
-      );
-      final html = await service.renderEventVisit(
-        event: event,
-        session: session,
-        agronomistNome: agronomistNome,
-      );
-      if (!mounted) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => HtmlReportViewer(
-            title: 'Visita - ${event.titulo}',
-            htmlContent: html,
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(userFacingError(e, action: 'Erro ao gerar HTML da visita'))),
-      );
-    }
   }
 
   Widget _buildDayHeader(
@@ -427,11 +359,7 @@ class _AgendaPlanejamentoViewState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: context.premiumHairline,
-          ),
-        ),
+        border: Border(bottom: BorderSide(color: context.premiumHairline)),
       ),
       child: Row(
         children: [
