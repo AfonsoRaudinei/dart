@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,10 +28,7 @@ void main() {
       final marketingCase = _resultadoCase();
 
       await tester.pumpWidget(
-        _wrapSheet(
-          marketingCase: marketingCase,
-          themeId: null,
-        ),
+        _wrapSheet(marketingCase: marketingCase, themeId: null),
       );
       await tester.pumpAndSettle();
 
@@ -46,16 +46,76 @@ void main() {
       expect(find.text('ROI/ha'), findsOneWidget);
     });
 
+    testWidgets('Antes/Depois exibe a conclusão técnica após os blocos', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrapSheet(
+          marketingCase: _antesDepoisCase(
+            conclusaoTecnica: 'Produto elevou o vigor da raiz.',
+          ),
+          themeId: null,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final scrollable = find.byType(Scrollable);
+      await tester.scrollUntilVisible(
+        find.text('CONCLUSÃO TÉCNICA'),
+        120,
+        scrollable: scrollable,
+      );
+
+      expect(find.text('CONCLUSÃO TÉCNICA'), findsOneWidget);
+      expect(find.text('Produto elevou o vigor da raiz.'), findsOneWidget);
+      expect(find.text('Comparação 1'), findsOneWidget);
+    });
+
+    testWidgets('Antes/Depois sem conclusão técnica não mostra o card', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrapSheet(marketingCase: _antesDepoisCase(), themeId: null),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('CONCLUSÃO TÉCNICA'), findsNothing);
+    });
+
+    testWidgets(
+      'Avaliação mostra as fotos dos blocos e a conclusão uma única vez',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrapSheet(
+            marketingCase: _antesDepoisCase(
+              tipo: CaseTipo.avaliacao,
+              conclusaoTecnica: 'Conclusão da avaliação.',
+            ),
+            themeId: null,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final scrollable = find.byType(Scrollable);
+        await tester.scrollUntilVisible(
+          find.text('CONCLUSÃO TÉCNICA'),
+          120,
+          scrollable: scrollable,
+        );
+
+        expect(find.byType(CachedNetworkImage), findsNWidgets(3));
+        expect(find.text('CONCLUSÃO TÉCNICA'), findsOneWidget);
+        expect(find.text('Conclusão da avaliação.'), findsOneWidget);
+      },
+    );
+
     testWidgets('perfil azul: ações de relatório e hero sem verde escuro', (
       tester,
     ) async {
       final marketingCase = _resultadoCase();
 
       await tester.pumpWidget(
-        _wrapSheet(
-          marketingCase: marketingCase,
-          themeId: 'blue',
-        ),
+        _wrapSheet(marketingCase: marketingCase, themeId: 'blue'),
       );
       await tester.pumpAndSettle();
 
@@ -97,9 +157,7 @@ Widget _wrapSheet({
 }) {
   final extensions = themeId == null
       ? const <ThemeExtension<dynamic>>[]
-      : <ThemeExtension<dynamic>>[
-          SoloForteThemeExtension(themeId: themeId),
-        ];
+      : <ThemeExtension<dynamic>>[SoloForteThemeExtension(themeId: themeId)];
 
   return ProviderScope(
     overrides: [
@@ -112,17 +170,47 @@ Widget _wrapSheet({
         final sync = ref.watch(marketingSyncServiceProvider);
         return _EmptyCasesNotifier(repo, sync);
       }),
-      authorizedClientIdsProvider.overrideWith(
-        (ref) async => const <String>{},
-      ),
+      authorizedClientIdsProvider.overrideWith((ref) async => const <String>{}),
       currentUserRoleProvider.overrideWith((ref) => UserRole.consultor),
     ],
     child: MaterialApp(
       theme: ThemeData(extensions: extensions),
-      home: Scaffold(
-        body: MarketingCaseSheet(marketingCase: marketingCase),
-      ),
+      home: Scaffold(body: MarketingCaseSheet(marketingCase: marketingCase)),
     ),
+  );
+}
+
+MarketingCase _antesDepoisCase({
+  CaseTipo tipo = CaseTipo.antesDepois,
+  String? conclusaoTecnica,
+}) {
+  final now = DateTime.utc(2026, 8, 7);
+  return MarketingCase(
+    id: 'case-sheet-ad',
+    tipo: tipo,
+    visibilidade: PlanoMarketing.prata,
+    lat: -10,
+    lng: -48,
+    localizacaoTexto: 'Palmas Tocantins',
+    produtorFazenda: 'Miguel',
+    produtoUtilizado: 'coach',
+    dataCase: now,
+    nomeTalhao: tipo == CaseTipo.avaliacao ? 'Talhão 1' : null,
+    avaliacoesJson: jsonEncode([
+      {
+        'id': 'av-1',
+        'titulo': 'Comparação 1',
+        'nome_lado_a': 'Antes',
+        'nome_lado_b': 'Depois',
+        'nome_lado_c': 'Concorrente',
+        'foto_lado_a_path': 'https://example.com/a.jpg',
+        'foto_lado_b_path': 'https://example.com/b.jpg',
+        'foto_lado_c_path': 'https://example.com/c.jpg',
+      },
+    ]),
+    conclusaoTecnica: conclusaoTecnica,
+    criadoEm: now,
+    atualizadoEm: now,
   );
 }
 
