@@ -15,6 +15,8 @@ import 'package:soloforte_app/modules/settings/domain/entities/user_profile.dart
 import 'package:soloforte_app/modules/settings/data/settings_repository.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/settings_providers.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
+import 'package:soloforte_app/modules/agenda/presentation/providers/agenda_provider.dart';
+import 'package:soloforte_app/modules/agenda/presentation/providers/agenda_state.dart';
 import 'package:soloforte_app/ui/components/side_menu_overlay.dart';
 import 'package:soloforte_app/ui/components/side_menu_quick_access.dart';
 
@@ -48,6 +50,8 @@ void main() {
       );
 
       expect(find.text('Agenda'), findsOneWidget);
+      expect(find.byKey(const Key('side_menu_greeting')), findsOneWidget);
+      expect(find.text('Nenhuma visita pendente hoje'), findsOneWidget);
       expect(find.text('Clientes'), findsWidgets);
       expect(find.text('Receber código'), findsNothing);
       expect(find.text('Relatórios'), findsWidgets);
@@ -226,6 +230,7 @@ Future<GoRouter> _pumpSideMenu(
     ProviderScope(
       overrides: [
         sideMenuOpenProvider.overrideWith((ref) => true),
+        agendaProvider.overrideWith(_FakeAgenda.new),
         preferencesServiceProvider.overrideWithValue(
           PreferencesService(preferences),
         ),
@@ -267,4 +272,10 @@ class _MenuHost extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(body: Stack(children: [SideMenuOverlay()]));
   }
+}
+
+/// Agenda vazia, sem repositório/sessão reais.
+class _FakeAgenda extends Agenda {
+  @override
+  AgendaState build() => const AgendaState();
 }
