@@ -3,6 +3,7 @@
 // Rota: /planos/meu-plano — status, vitrine da loja (preço/compra/troca), cores do metal.
 
 import 'dart:async';
+import 'package:soloforte_app/ui/components/premium/premium_page_title.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -115,19 +116,10 @@ class _MeuPlanoScreenState extends ConsumerState<MeuPlanoScreen> {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Row(
         children: [
-          const SizedBox(width: 40),
-          Text(
-            'Meu Plano',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: context.premiumTextPrimary,
-              letterSpacing: 0.37,
-            ),
-          ),
+          Text('Meu Plano', style: premiumPageTitleStyle(context)),
         ],
       ),
     );
@@ -212,9 +204,10 @@ class _PlanoAtivoContentState extends ConsumerState<_PlanoAtivoContent> {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: _semPlanoPago
-                  ? context.premiumHairline
+                  ? context.premiumCardBorder
                   : metal.withValues(alpha: 0.35),
             ),
+            boxShadow: context.premiumCardShadows,
           ),
           child: Column(
             children: [
@@ -265,8 +258,9 @@ class _PlanoAtivoContentState extends ConsumerState<_PlanoAtivoContent> {
               border: Border.all(
                 color: expiraEmBreve
                     ? Colors.red.withAlpha(120)
-                    : context.premiumHairline,
+                    : context.premiumCardBorder,
               ),
+              boxShadow: context.premiumCardShadows,
             ),
             child: Row(
               children: [
@@ -619,7 +613,8 @@ class _InfoRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.premiumSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.premiumHairline),
+        border: Border.all(color: context.premiumCardBorder),
+        boxShadow: context.premiumCardShadows,
       ),
       child: Row(
         children: [
@@ -670,8 +665,10 @@ class _NavigationRow extends StatelessWidget {
       color: context.premiumSurface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: context.premiumHairline),
+        side: BorderSide(color: context.premiumCardBorder),
       ),
+      shadowColor: const Color(0x1F000000),
+      elevation: context.isPremiumDark ? 0 : 2,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),

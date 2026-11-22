@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:soloforte_app/ui/components/premium/premium_page_title.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -260,18 +261,7 @@ class _RelatoriosScreenState extends ConsumerState<RelatoriosScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Text(
-                'Relatórios',
-                style: TextStyle(
-                  fontSize: 34,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.37,
-                  color: context.premiumTextPrimary,
-                ),
-              ),
-            ),
+            const PremiumPageTitle('Relatórios'),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: _RelatoriosSegmentBar(

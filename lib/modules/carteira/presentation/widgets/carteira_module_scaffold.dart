@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:soloforte_app/ui/components/premium/premium_page_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -44,7 +45,8 @@ class _CarteiraModuleScaffoldState extends ConsumerState<CarteiraModuleScaffold>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        centerTitle: false,
+        title: Text(widget.title, style: premiumPageTitleStyle(context)),
         leading: widget.leading,
         automaticallyImplyLeading: widget.leading != null,
       ),

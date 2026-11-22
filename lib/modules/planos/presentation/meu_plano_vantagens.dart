@@ -124,7 +124,7 @@ class MeuPlanoMenuBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.premiumSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.premiumHairline),
+        border: Border.all(color: context.premiumCardBorder),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(

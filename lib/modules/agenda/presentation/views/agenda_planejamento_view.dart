@@ -89,7 +89,8 @@ class _AgendaPlanejamentoViewState
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.premiumHairline),
+        border: Border.all(color: context.premiumCardBorder),
+        boxShadow: context.premiumCardShadows,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -299,9 +300,10 @@ class _AgendaPlanejamentoViewState
         color: isSunday ? sundayFill : theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isToday ? theme.colorScheme.primary : context.premiumHairline,
+          color: isToday ? theme.colorScheme.primary : context.premiumCardBorder,
           width: isToday ? 2 : 1,
         ),
+        boxShadow: context.premiumCardShadows,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

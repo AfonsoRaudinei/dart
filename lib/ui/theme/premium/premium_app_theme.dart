@@ -104,6 +104,19 @@ class PremiumAppTheme {
   // COMPONENTES PREMIUM (Inputs e Botões M3 Adaptados)
   // ============================================
 
+  /// Switch estilo iOS: trilho na cor do tema quando ligado, cinza quando desligado.
+  static SwitchThemeData _buildSwitchTheme(bool isDark, Color accent) {
+    final offTrack = isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE5E5EA);
+    return SwitchThemeData(
+      thumbColor: const WidgetStatePropertyAll(Colors.white),
+      trackColor: WidgetStateProperty.resolveWith(
+        (states) =>
+            states.contains(WidgetState.selected) ? accent : offTrack,
+      ),
+      trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+    );
+  }
+
   static InputDecorationTheme _buildInputDecoration(bool isDark, Color accent) {
     final fillColor = isDark ? PremiumTokens.surfaceDark : Colors.white;
     final borderColor = isDark
@@ -228,6 +241,7 @@ class PremiumAppTheme {
       ),
 
       inputDecorationTheme: _buildInputDecoration(false, accent),
+      switchTheme: _buildSwitchTheme(false, accent),
       elevatedButtonTheme: _buildElevatedButtonTheme(accent),
 
       // Retirando fundos duros dos divisores (Finíssimos igual cabelo)
@@ -293,6 +307,7 @@ class PremiumAppTheme {
       ),
 
       inputDecorationTheme: _buildInputDecoration(true, accent),
+      switchTheme: _buildSwitchTheme(true, accent),
       elevatedButtonTheme: _buildElevatedButtonTheme(accent),
 
       dividerTheme: const DividerThemeData(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/ui/components/premium/premium_page_title.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/extensions/context_extensions.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
@@ -80,7 +81,8 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
 
     final scaffold = Scaffold(
       appBar: AppBar(
-        title: const Text('Agenda'),
+        centerTitle: false,
+        title: Text('Agenda', style: premiumPageTitleStyle(context)),
         automaticallyImplyLeading: false,
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(64),
