@@ -63,37 +63,15 @@ class MarketingHtmlRenderer {
     final dataCase = _parseDate(data['data_case'] as String?);
 
     final roi = _MarketingRoiData.from(data);
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'resultado_numeros',
-      include: roi != null || data['quantidade_produzida'] != null,
-    );
-    tpl = _resolveAllIfBlocks(tpl, 'roi_agronomico', include: roi != null);
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'ganho_percent',
-      include: _ganhoPercentLabel(roi).isNotEmpty,
-    );
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'roi_talhao',
-      include: roi?.hasTalhao == true,
-    );
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'roi_total',
-      include: roi?.hasAreaTotal == true,
-    );
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'quantidade_produzida',
-      include: data['quantidade_produzida'] != null,
-    );
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'foto_principal_url',
-      include: foto.isNotEmpty,
-    );
+    tpl = _resolveFlags(tpl, {
+      'resultado_numeros': roi != null || data['quantidade_produzida'] != null,
+      'roi_agronomico': roi != null,
+      'ganho_percent': _ganhoPercentLabel(roi).isNotEmpty,
+      'roi_talhao': roi?.hasTalhao == true,
+      'roi_total': roi?.hasAreaTotal == true,
+      'quantidade_produzida': data['quantidade_produzida'] != null,
+      'foto_principal_url': foto.isNotEmpty,
+    });
     final contexto = _contexto(data);
     tpl = _resolveCommonBlocks(tpl, data, contexto: contexto);
 
@@ -103,9 +81,7 @@ class MarketingHtmlRenderer {
       'foto_principal_url': foto,
       'foto_legenda': dataCase.isEmpty ? 'Foto 1' : 'Foto 1 · $dataCase',
       'produtividade_valor': data['produtividade_valor']?.toString() ?? '',
-      'produtividade_unidade': RelatorioHtmlRenderer.escapeHtml(
-        data['produtividade_unidade'] as String?,
-      ),
+      'produtividade_unidade': _esc(data, 'produtividade_unidade'),
       'quantidade_produzida': data['quantidade_produzida']?.toString() ?? '',
       'prod_sem_produto': _formatNumber(roi?.prodSemProduto),
       'prod_com_produto': _formatNumber(roi?.prodComProduto),
@@ -129,9 +105,7 @@ class MarketingHtmlRenderer {
       'roi_reais_total': _formatMoney(roi?.roiReaisTotal),
       'tamanho_ha': _formatNumber(roi?.tamanhoHa),
       'area_total': _formatNumber(roi?.areaTotal),
-      'economia_gerada': RelatorioHtmlRenderer.escapeHtml(
-        data['economia_gerada'] as String? ?? '',
-      ),
+      'economia_gerada': _esc(data, 'economia_gerada'),
       'roi_calculado': data['roi_calculado']?.toString() ?? '',
       'roi_investimento': data['roi_investimento']?.toString() ?? '',
       'roi_retorno': data['roi_retorno']?.toString() ?? '',
@@ -151,75 +125,47 @@ class MarketingHtmlRenderer {
     final dataCase = _parseDate(data['data_case'] as String?);
 
     final blocos = _MarketingAvaliacaoData.listFrom(data['avaliacoes_json']);
-    final usaBlocos = blocos.isNotEmpty;
     // Blocos de comparação já trazem parâmetros, fotos e texto por bloco;
     // sem eles o documento segue o par legado Antes/Depois.
-    tpl = _resolveAllIfBlocks(tpl, 'blocos_avaliacao', include: usaBlocos);
-
+    final usaBlocos = blocos.isNotEmpty;
     final parametros = _MarketingParametroData.listFrom(
       data['parametros_json'],
     );
     final temParametros =
         parametros.isNotEmpty || blocos.any((b) => b.parametros.isNotEmpty);
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'parametros_comparativos',
-      include: parametros.isNotEmpty,
-    );
     final conclusao = _conclusaoTexto(data);
-    tpl = _resolveAllIfBlocks(tpl, 'conclusao', include: conclusao.isNotEmpty);
     final hasGanho =
         (data['ganho_produtividade'] as String?)?.isNotEmpty == true;
+    final hasEconomia =
+        (data['economia_gerada'] as String?)?.isNotEmpty == true;
     final resultadosLegados =
         !temParametros &&
-        (hasGanho ||
-            (data['economia_gerada'] as String?)?.isNotEmpty == true ||
-            data['produtividade_valor'] != null);
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'resultados_legados',
-      include: resultadosLegados,
-    );
-    // Com resultados legados o ganho já aparece em "Resultados".
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'ganho_produtividade_ficha',
-      include: hasGanho && !resultadosLegados,
-    );
-    tpl = _resolveAllIfBlocks(tpl, 'ganho_produtividade', include: hasGanho);
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'economia_gerada',
-      include: (data['economia_gerada'] as String?)?.isNotEmpty == true,
-    );
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'produtividade_valor',
-      include: data['produtividade_valor'] != null,
-    );
+        (hasGanho || hasEconomia || data['produtividade_valor'] != null);
 
-    final fotoAntes = usaBlocos
-        ? ''
-        : await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
-            data['foto_antes_url'] as String?,
+    Future<String> fotoLegada(String key) => usaBlocos
+        ? Future.value('')
+        : RelatorioHtmlRenderer.resolvePhotoSrcForExport(
+            data[key] as String?,
             fetchRemoteBytes: fetchRemoteBytes,
           );
-    final fotoDepois = usaBlocos
-        ? ''
-        : await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
-            data['foto_depois_url'] as String?,
-            fetchRemoteBytes: fetchRemoteBytes,
-          );
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'foto_antes_url',
-      include: fotoAntes.isNotEmpty,
-    );
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'foto_depois_url',
-      include: fotoDepois.isNotEmpty,
-    );
+    final fotoAntes = await fotoLegada('foto_antes_url');
+    final fotoDepois = await fotoLegada('foto_depois_url');
+
+    // 'blocos_avaliacao' primeiro: é o bloco externo dos demais.
+    final condicoes = <String, bool>{
+      'blocos_avaliacao': usaBlocos,
+      'parametros_comparativos': parametros.isNotEmpty,
+      'conclusao': conclusao.isNotEmpty,
+      'resultados_legados': resultadosLegados,
+      // Com resultados legados o ganho já aparece em "Resultados".
+      'ganho_produtividade_ficha': hasGanho && !resultadosLegados,
+      'ganho_produtividade': hasGanho,
+      'economia_gerada': hasEconomia,
+      'produtividade_valor': data['produtividade_valor'] != null,
+      'foto_antes_url': fotoAntes.isNotEmpty,
+      'foto_depois_url': fotoDepois.isNotEmpty,
+    };
+    tpl = _resolveFlags(tpl, condicoes);
     final contexto = _contexto(data);
     tpl = _resolveCommonBlocks(tpl, data, contexto: contexto);
 
@@ -229,36 +175,23 @@ class MarketingHtmlRenderer {
       'foto_antes_url': fotoAntes,
       'foto_depois_url': fotoDepois,
       'data_case_sufixo': dataCase.isEmpty ? '' : ' · $dataCase',
-      'ganho_produtividade': RelatorioHtmlRenderer.escapeHtml(
-        data['ganho_produtividade'] as String? ?? '',
-      ),
+      'ganho_produtividade': _esc(data, 'ganho_produtividade'),
       'produtividade_valor': data['produtividade_valor']?.toString() ?? '',
-      'produtividade_unidade': RelatorioHtmlRenderer.escapeHtml(
-        data['produtividade_unidade'] as String?,
-      ),
-      'economia_gerada': RelatorioHtmlRenderer.escapeHtml(
-        data['economia_gerada'] as String? ?? '',
-      ),
+      'produtividade_unidade': _esc(data, 'produtividade_unidade'),
+      'economia_gerada': _esc(data, 'economia_gerada'),
       'media_ganho_percent': _formatSigned(_mediaParametros(parametros)),
       'parametros_comparativos_html': _renderParametrosHtml(parametros),
       'conclusao': RelatorioHtmlRenderer.escapeHtml(conclusao),
     });
 
-    final blocosHtml = StringBuffer();
-    for (var index = 0; index < blocos.length; index++) {
-      blocosHtml.write(
-        await _renderAvaliacaoLivre(
-          blocos[index],
-          index + 1,
-          fetchRemoteBytes: fetchRemoteBytes,
-          ocultarLadosSemFoto: true,
-        ),
-      );
-    }
     final completo = RelatorioHtmlRenderer.resolveEachBlock(
       html,
       'avaliacoes',
-      html: blocosHtml.toString(),
+      html: await _renderBlocosHtml(
+        blocos,
+        fetchRemoteBytes: fetchRemoteBytes,
+        ocultarLadosSemFoto: true,
+      ),
     );
     return RelatorioHtmlRenderer.completeRender(
       completo,
@@ -286,19 +219,13 @@ class MarketingHtmlRenderer {
     );
     final contexto = _contexto(data, extra: nomeTalhao);
 
-    tpl = _resolveAllIfBlocks(tpl, 'conclusao', include: conclusao.isNotEmpty);
-    tpl = _resolveAllIfBlocks(tpl, 'roi_calculado', include: false);
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'nome_talhao',
-      include: nomeTalhao.isNotEmpty,
-    );
-    tpl = _resolveAllIfBlocks(tpl, 'tamanho_ha', include: tamanhoHa.isNotEmpty);
-    tpl = _resolveAllIfBlocks(
-      tpl,
-      'produtividade_valor',
-      include: data['produtividade_valor'] != null,
-    );
+    tpl = _resolveFlags(tpl, {
+      'conclusao': conclusao.isNotEmpty,
+      'roi_calculado': false,
+      'nome_talhao': nomeTalhao.isNotEmpty,
+      'tamanho_ha': tamanhoHa.isNotEmpty,
+      'produtividade_valor': data['produtividade_valor'] != null,
+    });
     tpl = _resolveCommonBlocks(tpl, data, contexto: contexto);
 
     tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
@@ -307,27 +234,20 @@ class MarketingHtmlRenderer {
       'nome_talhao': RelatorioHtmlRenderer.escapeHtml(nomeTalhao),
       'tamanho_ha': tamanhoHa,
       'produtividade_valor': data['produtividade_valor']?.toString() ?? '',
-      'produtividade_unidade': RelatorioHtmlRenderer.escapeHtml(
-        data['produtividade_unidade'] as String?,
-      ),
+      'produtividade_unidade': _esc(data, 'produtividade_unidade'),
       'conclusao': RelatorioHtmlRenderer.escapeHtml(conclusao),
       'roi_calculado': data['roi_calculado']?.toString() ?? '',
       'roi_investimento': data['roi_investimento']?.toString() ?? '',
       'roi_retorno': data['roi_retorno']?.toString() ?? '',
     });
 
-    final blocosHtml = StringBuffer();
-    if (avaliacoesLivres.isNotEmpty) {
-      for (var index = 0; index < avaliacoesLivres.length; index++) {
-        blocosHtml.write(
-          await _renderAvaliacaoLivre(
-            avaliacoesLivres[index],
-            index + 1,
-            fetchRemoteBytes: fetchRemoteBytes,
-          ),
-        );
-      }
-    } else {
+    final blocosHtml = StringBuffer(
+      await _renderBlocosHtml(
+        avaliacoesLivres,
+        fetchRemoteBytes: fetchRemoteBytes,
+      ),
+    );
+    if (avaliacoesLivres.isEmpty) {
       final blocos = data['avaliacoes'] as List<dynamic>? ?? [];
       for (var index = 0; index < blocos.length; index++) {
         final bloco = blocos[index];
@@ -367,13 +287,10 @@ class MarketingHtmlRenderer {
   }
 
   /// Conclusão técnica do case; `conclusao` só entra quando a técnica está vazia.
-  static String _conclusaoTexto(Map<String, dynamic> data) {
-    for (final key in const ['conclusao_tecnica', 'conclusao']) {
-      final value = (data[key] as String?)?.trim() ?? '';
-      if (value.isNotEmpty) return value;
-    }
-    return '';
-  }
+  static String _conclusaoTexto(Map<String, dynamic> data) =>
+      [data['conclusao_tecnica'], data['conclusao']]
+          .map((v) => (v as String?)?.trim() ?? '')
+          .firstWhere((v) => v.isNotEmpty, orElse: () => '');
 
   static Future<Map<String, dynamic>> _withMunicipioUf(
     Map<String, dynamic> data, {
@@ -431,11 +348,7 @@ class MarketingHtmlRenderer {
       'telefone_vendedor': hasText('telefone_vendedor'),
       'criado_em': hasText('criado_em'),
     };
-    var current = template;
-    for (final entry in conditions.entries) {
-      current = _resolveAllIfBlocks(current, entry.key, include: entry.value);
-    }
-    return current;
+    return _resolveFlags(template, conditions);
   }
 
   static Map<String, String> _commonValues(
@@ -445,29 +358,17 @@ class MarketingHtmlRenderer {
     final status = (data['status'] as String?)?.trim() ?? '';
     return {
       'contexto_linha': contexto,
-      'produtor_fazenda': RelatorioHtmlRenderer.escapeHtml(
-        data['produtor_fazenda'] as String? ?? '',
-      ),
-      'produto_utilizado': RelatorioHtmlRenderer.escapeHtml(
-        data['produto_utilizado'] as String? ?? '',
-      ),
-      'localizacao_texto': RelatorioHtmlRenderer.escapeHtml(
-        data['localizacao_texto'] as String? ?? '',
-      ),
+      'produtor_fazenda': _esc(data, 'produtor_fazenda'),
+      'produto_utilizado': _esc(data, 'produto_utilizado'),
+      'localizacao_texto': _esc(data, 'localizacao_texto'),
       'visibilidade_label': RelatorioHtmlRenderer.escapeHtml(
         _visibilidadeLabel(data['visibilidade'] as String?),
       ),
       'status_label': RelatorioHtmlRenderer.escapeHtml(_statusLabel(status)),
       'status_dot': _statusDot(status),
-      'descricao': RelatorioHtmlRenderer.escapeHtml(
-        data['descricao'] as String? ?? '',
-      ),
-      'nome_vendedor': RelatorioHtmlRenderer.escapeHtml(
-        data['nome_vendedor'] as String? ?? '',
-      ),
-      'telefone_vendedor': RelatorioHtmlRenderer.escapeHtml(
-        data['telefone_vendedor'] as String? ?? '',
-      ),
+      'descricao': _esc(data, 'descricao'),
+      'nome_vendedor': _esc(data, 'nome_vendedor'),
+      'telefone_vendedor': _esc(data, 'telefone_vendedor'),
       'emitido_em': _formatDateSafe(DateTime.now()),
       'criado_em_formatado': _parseDate(data['criado_em'] as String?),
       'data_case_formatado': _parseDate(data['data_case'] as String?),
@@ -532,6 +433,23 @@ class MarketingHtmlRenderer {
     }
   }
 
+  static Future<String> _renderBlocosHtml(
+    List<_MarketingAvaliacaoData> blocos, {
+    Future<Uint8List?> Function(String url)? fetchRemoteBytes,
+    bool ocultarLadosSemFoto = false,
+  }) async {
+    final partes = await Future.wait([
+      for (var i = 0; i < blocos.length; i++)
+        _renderAvaliacaoLivre(
+          blocos[i],
+          i + 1,
+          fetchRemoteBytes: fetchRemoteBytes,
+          ocultarLadosSemFoto: ocultarLadosSemFoto,
+        ),
+    ]);
+    return partes.join();
+  }
+
   static Future<String> _renderAvaliacaoLivre(
     _MarketingAvaliacaoData data,
     int ordem, {
@@ -540,17 +458,11 @@ class MarketingHtmlRenderer {
   }) async {
     final nomeA = RelatorioHtmlRenderer.escapeHtml(data.nomeLadoA);
     final nomeB = RelatorioHtmlRenderer.escapeHtml(data.nomeLadoB);
-    final parametrosHtml = data.parametros.map((parametro) {
-      final unidade = parametro.unidade == null || parametro.unidade!.isEmpty
-          ? ''
-          : ' ${RelatorioHtmlRenderer.escapeHtml(parametro.unidade)}';
-      return _parametroRow(
-        parametro,
-        sub:
-            '$nomeA ${_formatNumber(parametro.testemunha)} → '
-            '$nomeB ${_formatNumber(parametro.teste)}$unidade',
-      );
-    }).join();
+    final parametrosHtml = _renderParametrosHtml(
+      data.parametros,
+      nomeA: nomeA,
+      nomeB: nomeB,
+    );
     final titulo = data.titulo.trim().isEmpty
         ? 'Avaliação $ordem'
         : data.titulo.trim();
@@ -693,6 +605,17 @@ class MarketingHtmlRenderer {
     }
   }
 
+  static String _esc(Map<String, dynamic> data, String key) =>
+      RelatorioHtmlRenderer.escapeHtml(data[key] as String? ?? '');
+
+  static String _resolveFlags(String template, Map<String, bool> flags) {
+    var current = template;
+    for (final entry in flags.entries) {
+      current = _resolveAllIfBlocks(current, entry.key, include: entry.value);
+    }
+    return current;
+  }
+
   static String _resolveAllIfBlocks(
     String template,
     String condition, {
@@ -751,10 +674,14 @@ class MarketingHtmlRenderer {
     return total / parametros.length;
   }
 
+  /// [nomeA]/[nomeB] (já escapados) prefixam os valores quando o bloco tem
+  /// rótulos de lado; o par legado não tem e mostra só os números.
   static String _renderParametrosHtml(
-    List<_MarketingParametroData> parametros,
-  ) {
-    if (parametros.isEmpty) return '';
+    List<_MarketingParametroData> parametros, {
+    String nomeA = '',
+    String nomeB = '',
+  }) {
+    String lado(String nome) => nome.isEmpty ? '' : '$nome ';
     return parametros.map((parametro) {
       final unidade = parametro.unidade == null || parametro.unidade!.isEmpty
           ? ''
@@ -762,8 +689,8 @@ class MarketingHtmlRenderer {
       return _parametroRow(
         parametro,
         sub:
-            '${_formatNumber(parametro.testemunha)} → '
-            '${_formatNumber(parametro.teste)}$unidade',
+            '${lado(nomeA)}${_formatNumber(parametro.testemunha)} → '
+            '${lado(nomeB)}${_formatNumber(parametro.teste)}$unidade',
       );
     }).join();
   }
