@@ -798,7 +798,8 @@ class _OccurrenciasSectionState extends ConsumerState<_OccurrenciasSection> {
             ],
             if (list.isEmpty)
               _PremiumEmptyState(
-                message: 'Nenhuma ocorrência ainda.',
+                message:
+                    'Nenhuma ocorrência ainda. Toque longo no mapa para registrar a primeira.',
                 ctaLabel: 'Abrir mapa',
                 onCta: () => context.go(AppRoutes.map),
               )

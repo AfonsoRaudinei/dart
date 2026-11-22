@@ -218,6 +218,9 @@ class PremiumAppTheme {
         error: PremiumTokens.alertError,
         onPrimary: Colors.white,
         onSurface: PremiumTokens.textPrimaryLight,
+        onSurfaceVariant: PremiumTokens.textSecondaryLight,
+        outline: const Color(0xFF6C6C70), // subtítulos legíveis (≥4.5:1 no claro)
+        outlineVariant: const Color(0xFFC6C6C8),
       ),
 
       appBarTheme: const AppBarTheme(

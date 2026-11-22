@@ -56,7 +56,9 @@ class PremiumTokens {
   static const Color textSecondaryLight = Color(
     0xFF3C3C43,
   ); // iOS Secondary Label Light
-  static const Color textTertiaryLight = Color(0x4D3C3C43);
+  static const Color textTertiaryLight = Color(
+    0xB33C3C43,
+  ); // ~4.5:1 sobre branco (antes 30%: ilegível ao sol)
 
   static const Color textPrimaryDark = Color(0xFFFFFFFF);
   static const Color textSecondaryDark = Color(0xFFA0A0A5);

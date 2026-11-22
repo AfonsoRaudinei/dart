@@ -72,7 +72,8 @@ class FeedbackSuggestionsChart extends StatelessWidget {
               height: 140,
               child: Center(
                 child: Text(
-                  'Nenhuma sugestão enviada ainda',
+                  'Nenhuma sugestão por aqui ainda.\nConte como podemos melhorar.',
+                  textAlign: TextAlign.center,
                   style: TextStyle(color: context.premiumTextSecondary),
                 ),
               ),

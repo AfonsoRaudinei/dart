@@ -143,14 +143,14 @@ class _AgendaDayPageState extends ConsumerState<AgendaDayPage> {
           Icon(Icons.event_available, size: 64, color: theme.disabledColor),
           const SizedBox(height: 16),
           Text(
-            'Nenhum evento agendado',
+            'Dia livre',
             style: theme.textTheme.titleMedium?.copyWith(
               color: theme.disabledColor,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Toque no + para criar um evento',
+            'Que tal agendar uma visita? Toque no +.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.disabledColor,
             ),

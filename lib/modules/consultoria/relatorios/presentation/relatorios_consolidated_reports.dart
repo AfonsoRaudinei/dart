@@ -66,8 +66,8 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
         : effectiveClientId == null
         ? const <RelatorioTecnico>[]
         : relatorios
-            .where((report) => report.clientId == effectiveClientId)
-            .toList();
+              .where((report) => report.clientId == effectiveClientId)
+              .toList();
     final scopedOccurrences = effectiveClientId == null
         ? const <Occurrence>[]
         : _sortOccurrencesByCreatedAt(
@@ -78,8 +78,8 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
     final scopedMarketing = effectiveClientId == null
         ? const <MarketingCaseReportSnapshot>[]
         : allMarketing
-            .where((item) => item.clientId == effectiveClientId)
-            .toList();
+              .where((item) => item.clientId == effectiveClientId)
+              .toList();
     final hasProperty = scopedVisits.any(
       (report) => report.farmName.trim().isNotEmpty,
     );
@@ -107,7 +107,8 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
         ),
         if (!hasAnySource)
           _PremiumEmptyState(
-            message: 'Nada para consolidar ainda.',
+            message:
+                'Nada para consolidar ainda. Registre visitas e elas aparecem aqui.',
             ctaLabel: 'Abrir mapa',
             onCta: () => context.go(AppRoutes.map),
           )
@@ -120,13 +121,9 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
             onSelected: onProducerSelected,
           ),
           if (needsProducerPick)
-            const _PremiumEmptyState(
-              message: 'Escolha o produtor.',
-            )
+            const _PremiumEmptyState(message: 'Escolha o produtor.')
           else if (effectiveClientId == null)
-            const _PremiumEmptyState(
-              message: 'Nada vinculado a um produtor.',
-            )
+            const _PremiumEmptyState(message: 'Nada vinculado a um produtor.')
           else ...[
             _GeneratedReportCard(
               leading: _relatoriosReportIconBadge(

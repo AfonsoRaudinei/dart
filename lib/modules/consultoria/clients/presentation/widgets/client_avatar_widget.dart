@@ -18,24 +18,33 @@ class ClientAvatarWidget extends StatelessWidget {
     this.radius = 28,
   });
 
-  static const List<Color> _bgColors = [
-    Color(0xFF2E7D32), // verde escuro
-    Color(0xFF1565C0), // azul
-    Color(0xFF6A1B9A), // roxo
-    Color(0xFFBF360C), // laranja escuro
-    Color(0xFF00695C), // teal
-    Color(0xFF4527A0), // índigo
-    Color(0xFF558B2F), // verde claro
-    Color(0xFF37474F), // cinza azulado
+  /// Paleta curada (tons de lavoura, solo e céu), todos com contraste AA
+  /// para a letra branca. Mesma paleta para todo o app: reconhecimento rápido.
+  static const List<Color> palette = [
+    Color(0xFF2F7D4F), // verde lavoura
+    Color(0xFF1F6F8B), // azul céu
+    Color(0xFFB45309), // âmbar (grão maduro)
+    Color(0xFF7A4E2D), // solo
+    Color(0xFF4D7C0F), // verde folha
+    Color(0xFF0F766E), // teal
+    Color(0xFF9A3412), // terracota
+    Color(0xFF475569), // ardósia
   ];
 
-  Color get _backgroundColor {
-    final idx = nome.hashCode.abs() % _bgColors.length;
-    return _bgColors[idx];
+  /// Cor determinística por nome. Usa soma estável dos code units, pois
+  /// `String.hashCode` não é garantido entre execuções.
+  static Color colorFor(String nome) {
+    final key = nome.trim().toLowerCase();
+    var sum = 0;
+    for (final unit in key.codeUnits) {
+      sum = (sum * 31 + unit) & 0x7fffffff;
+    }
+    return palette[sum % palette.length];
   }
 
-  String get _initial =>
-      nome.isNotEmpty ? nome[0].toUpperCase() : '?';
+  Color get _backgroundColor => colorFor(nome);
+
+  String get _initial => nome.isNotEmpty ? nome[0].toUpperCase() : '?';
 
   @override
   Widget build(BuildContext context) {
