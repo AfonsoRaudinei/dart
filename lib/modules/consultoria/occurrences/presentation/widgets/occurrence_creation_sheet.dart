@@ -561,18 +561,21 @@ class _OccurrenceCreationSheetState
                     const SizedBox(height: 20),
                   ],
 
-                  const OccurrenceSectionHeader(title: 'Estádio Fenológico'),
-                  const SizedBox(height: 10),
-                  OccurrenceEstadioDropdown(
-                    selected: _estadio,
-                    expanded: _estadioCardExpanded,
-                    onChanged: _selectEstadio,
-                    onToggleCard: () => _patchForm(
-                      () => _estadioCardExpanded = !_estadioCardExpanded,
+                  // Plantio já tem Execução/Emergência: sem estádio fenológico.
+                  if (!_isPlantio) ...[
+                    const OccurrenceSectionHeader(title: 'Estádio Fenológico'),
+                    const SizedBox(height: 10),
+                    OccurrenceEstadioDropdown(
+                      selected: _estadio,
+                      expanded: _estadioCardExpanded,
+                      onChanged: _selectEstadio,
+                      onToggleCard: () => _patchForm(
+                        () => _estadioCardExpanded = !_estadioCardExpanded,
+                      ),
                     ),
-                  ),
-                  if (_buildEstadioSugeridoHint(muted) case final hint?) hint,
-                  const SizedBox(height: 20),
+                    if (_buildEstadioSugeridoHint(muted) case final hint?) hint,
+                    const SizedBox(height: 20),
+                  ],
 
                   const OccurrenceSectionHeader(title: 'Urgência'),
                   const SizedBox(height: 8),

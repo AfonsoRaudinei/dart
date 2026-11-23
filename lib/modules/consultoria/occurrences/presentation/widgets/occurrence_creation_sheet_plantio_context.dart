@@ -74,7 +74,7 @@ extension _OccurrenceCreationSheetPlantioContext
         widget.initialOccurrence == null &&
         _isPlantio &&
         !_plantioContextApplied;
-    final suggest = !_estadioSuggestionDone && !_isAreaVisitada;
+    final suggest = !_estadioSuggestionDone && !_isAreaVisitada && !_isPlantio;
     if (!fillPlantio && !suggest) return;
     if (fillPlantio) _plantioContextApplied = true;
     if (suggest) _estadioSuggestionDone = true;
