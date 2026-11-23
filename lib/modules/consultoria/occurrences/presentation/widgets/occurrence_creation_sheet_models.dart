@@ -56,6 +56,12 @@ const _categories = [
     value: 'plantio',
     enumValue: OccurrenceCategory.plantio,
   ),
+  _OccurrenceCategory(
+    label: 'Nódulos',
+    icon: Icons.eco_outlined,
+    value: 'nodulos',
+    enumValue: OccurrenceCategory.nodulos,
+  ),
 ];
 
 /// Empacota todos os campos coletados pelo formulário agronômico v14.

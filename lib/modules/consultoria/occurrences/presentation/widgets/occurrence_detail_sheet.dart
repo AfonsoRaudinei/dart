@@ -14,6 +14,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../../../core/design/sf_icons.dart';
 import '../../../../../../ui/theme/premium/design_tokens.dart';
 import 'package:soloforte_app/core/domain/occurrence_recomendacao_ordem.dart';
+import 'package:soloforte_app/core/domain/soy_nodulos.dart';
 
 import '../../domain/occurrence.dart';
 import '../../domain/occurrence_soy_age.dart';
@@ -185,6 +186,10 @@ class OccurrenceDetailSheet extends ConsumerWidget {
         for (final entry in metrics.entries) {
           final value = entry.value;
           if (value is int && value > 0) {
+            final nodulo = nodulosValueLabel(entry.key, value);
+            if (nodulo != null) {
+              return '${kNodulosTitles[entry.key]}: $nodulo';
+            }
             final metricName = switch (entry.key) {
               'incidencia' => 'Incidência',
               'severidade' => 'Severidade',

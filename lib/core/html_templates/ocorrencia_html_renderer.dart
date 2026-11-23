@@ -693,12 +693,8 @@ class OcorrenciaHtmlRenderer {
       );
       sb.write('<div class="sf-sheet">');
       for (final metric in visibleMetrics) {
-        final conteudo = OcorrenciaHtmlBarras.metrica(metric.value);
         sb.write(
-          '<div class="sf-row">'
-          '<span class="sf-row-label">${RelatorioHtmlRenderer.escapeHtml(RelatorioHtmlRenderer.humanizeKey(metric.key.toString()))}</span>'
-          '<span class="sf-row-value">$conteudo</span>'
-          '</div>',
+          OcorrenciaHtmlBarras.linhaMetrica('${metric.key}', metric.value),
         );
       }
       sb.write('</div>');
@@ -886,6 +882,8 @@ class OcorrenciaHtmlRenderer {
         return const _CatInfo('Solo');
       case 'plantio':
         return const _CatInfo('Plantio');
+      case 'nodulos':
+        return const _CatInfo('Nódulos');
       default:
         return const _CatInfo('Ocorrência');
     }

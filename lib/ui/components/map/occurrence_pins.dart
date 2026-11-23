@@ -232,6 +232,9 @@ class OccurrenceMapPin extends StatelessWidget {
       case 'amostra_solo':
       case 'amostra solo':
         return Icons.biotech_outlined;
+      case 'nodulos':
+      case 'nódulos':
+        return Icons.eco_outlined;
       case 'area_visitada':
       case 'area visitada':
         return Icons.place_outlined;

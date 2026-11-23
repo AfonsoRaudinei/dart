@@ -876,6 +876,7 @@ class ProducerLinkRepository implements ProducerLinkReader {
     'água': 'Água',
     'amostra_solo': 'Amostra de solo',
     'plantio': 'Plantio',
+    'nodulos': 'Nódulos',
     'area_visitada': 'Área visitada',
     'área visitada': 'Área visitada',
   };

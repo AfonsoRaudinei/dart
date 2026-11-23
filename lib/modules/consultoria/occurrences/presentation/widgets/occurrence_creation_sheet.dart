@@ -548,6 +548,7 @@ class _OccurrenceCreationSheetState
                     (c) =>
                         c != OccurrenceCategory.areaVisitada &&
                         c != OccurrenceCategory.plantio &&
+                        c != OccurrenceCategory.nodulos &&
                         c != OccurrenceCategory.amostraSolo,
                   )) ...[
                     OccurrenceOrdemAplicacaoFields(

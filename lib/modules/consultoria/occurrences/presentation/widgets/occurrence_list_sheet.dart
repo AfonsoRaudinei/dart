@@ -316,6 +316,8 @@ class _OccurrenceListItem extends StatelessWidget {
         return const Color(0xFF8B5CF6);
       case OccurrenceCategory.plantio:
         return const Color(0xFFA16207);
+      case OccurrenceCategory.nodulos:
+        return const Color(0xFFD81B60);
       case OccurrenceCategory.areaVisitada:
         return const Color(0xFF607D8B);
     }
@@ -348,6 +350,10 @@ class _OccurrenceListItem extends StatelessWidget {
           if (m.key == 'incidencia' || m.key == 'severidade') continue;
           final metricValue = m.value as int;
           if (metricValue > 0) {
+            final nodulo = nodulosValueLabel(m.key, metricValue);
+            if (nodulo != null) {
+              return '${kNodulosTitles[m.key]}: $nodulo';
+            }
             return '${_metricDisplayName(m.key)}: ${kSliderLabels[metricValue.clamp(0, 3)]}';
           }
         }

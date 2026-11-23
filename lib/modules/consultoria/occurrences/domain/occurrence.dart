@@ -36,6 +36,7 @@ enum OccurrenceCategory {
   agua('Água', '💧'),
   amostraSolo('Amostra de Solo', '🧪'),
   plantio('Plantio', '🌾'),
+  nodulos('Nódulos', '🌱'),
   areaVisitada('Área Visitada', '📍');
 
   final String label;
@@ -68,6 +69,11 @@ enum OccurrenceCategory {
         return OccurrenceCategory.amostraSolo;
       case 'plantio':
         return OccurrenceCategory.plantio;
+      case 'nodulos':
+      case 'nódulos':
+      case 'nodulacao':
+      case 'nodulação':
+        return OccurrenceCategory.nodulos;
       case 'area_visitada':
       case 'area visitada':
       case 'areavisitada':
@@ -100,6 +106,9 @@ extension OccurrenceCategoryColor on OccurrenceCategory {
     }
     if (this == OccurrenceCategory.plantio) {
       return const Color(0xFF795548);
+    }
+    if (this == OccurrenceCategory.nodulos) {
+      return const Color(0xFFD81B60);
     }
     if (this == OccurrenceCategory.areaVisitada) {
       return const Color(0xFF607D8B);

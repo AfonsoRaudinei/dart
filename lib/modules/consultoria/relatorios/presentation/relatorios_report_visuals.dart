@@ -36,6 +36,8 @@ IconData _relatoriosOccurrenceCategoryIcon(String? category) {
       return SFIcons.soilSample;
     case OccurrenceCategory.plantio:
       return SFIcons.agriculture;
+    case OccurrenceCategory.nodulos:
+      return SFIcons.leaf;
     case OccurrenceCategory.areaVisitada:
       return SFIcons.pin;
   }
