@@ -606,7 +606,8 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     if (widget.controller.currentState == DrawingState.reviewing) {
       return _isCampoTestReview ? 'Salvar teste' : 'Salvar talhão';
     }
-    return 'Ferramentas de Desenho';
+    // Lista de ferramentas (Polígono, Livre…) é autoexplicativa: sem título.
+    return '';
   }
 
   bool get _showsSelectedStickyFooter =>
