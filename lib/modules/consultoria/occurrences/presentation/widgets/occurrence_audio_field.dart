@@ -324,41 +324,43 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField>
         ? PremiumTokens.alertError
         : SoloForteSheetVisuals.of(context).onSheetPrimary;
     return TextStyle(
-      fontSize: 22,
+      fontSize: 17,
       fontWeight: FontWeight.w500,
       fontFeatures: const [FontFeature.tabularFigures()],
-      fontFamily: 'Menlo',
-      letterSpacing: 0.5,
       color: color,
     );
   }
 
-  Widget _micButton({
+  /// Linha única de 48 pt (padrão lista do iOS): ícone + texto à esquerda,
+  /// ações compactas à direita. Substitui o botão redondo de 72 pt.
+  Widget _row({
     required Color accent,
-    required bool isIos,
-    required bool activeRecording,
+    required Widget leading,
+    required Widget title,
+    List<Widget> trailing = const [],
+    VoidCallback? onTap,
   }) {
-    final fill = activeRecording
-        ? PremiumTokens.alertError.withValues(alpha: isIos ? 0.16 : 0.2)
-        : accent.withValues(alpha: isIos ? 0.14 : 0.18);
-    final iconColor = activeRecording ? PremiumTokens.alertError : accent;
-
-    return Tooltip(
-      message: activeRecording ? 'Parar' : 'Gravar',
-      child: Material(
-        color: fill,
-        shape: const CircleBorder(),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: widget.enabled ? _onMicTap : null,
-          customBorder: const CircleBorder(),
-          child: SizedBox(
-            width: 72,
-            height: 72,
-            child: Icon(
-              activeRecording ? Icons.stop_rounded : Icons.mic_rounded,
-              size: activeRecording ? 32 : 36,
-              color: iconColor,
+    final v = SoloForteSheetVisuals.of(context);
+    return Material(
+      color: accent.withValues(alpha: 0.10),
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: widget.enabled ? onTap : null,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Padding(
+            padding: const EdgeInsets.only(left: 14, right: 4),
+            child: DefaultTextStyle.merge(
+              style: TextStyle(color: v.onSheetPrimary),
+              child: Row(
+                children: [
+                  leading,
+                  const SizedBox(width: 10),
+                  Expanded(child: title),
+                  ...trailing,
+                ],
+              ),
             ),
           ),
         ),
@@ -370,14 +372,102 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField>
   Widget build(BuildContext context) {
     final v = SoloForteSheetVisuals.of(context);
     final isIos = occurrenceFormIsIos(context);
-    final accent = isIos
-        ? v.iconStroke
-        : context.themeAccent;
+    final accent = isIos ? v.iconStroke : context.themeAccent;
     final hasAudio = _hasAudio;
     final canPlay = _resolvedPath != null;
     final savedDuration = widget.durationSec;
-
     final timerStyle = _timerStyle(context);
+    final labelStyle = TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+      color: v.onSheetPrimary,
+    );
+
+    Widget row;
+    if (_recording) {
+      row = _row(
+        accent: PremiumTokens.alertError,
+        onTap: _onMicTap,
+        leading: const Icon(
+          Icons.fiber_manual_record_rounded,
+          size: 16,
+          color: PremiumTokens.alertError,
+        ),
+        title: Text(_formatClock(_elapsedSec), style: timerStyle),
+        trailing: [
+          Tooltip(
+            message: 'Parar',
+            child: TextButton(
+              onPressed: widget.enabled ? _onMicTap : null,
+              child: const Text(
+                'Parar',
+                style: TextStyle(color: PremiumTokens.alertError),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else if (!hasAudio) {
+      row = Tooltip(
+        message: 'Gravar',
+        child: _row(
+          accent: accent,
+          onTap: _onMicTap,
+          leading: Icon(Icons.mic_rounded, size: 22, color: accent),
+          title: Text('Gravar áudio', style: labelStyle),
+          trailing: [
+            Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: Text(
+                'até ${OccurrenceAudioField.maxDurationSec} s',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isIos
+                      ? v.subtitleColor
+                      : PremiumTokens.textSecondaryDark,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      row = _row(
+        accent: accent,
+        leading: Icon(Icons.graphic_eq_rounded, size: 22, color: accent),
+        title: Text(
+          savedDuration != null && savedDuration > 0
+              ? _formatClock(savedDuration)
+              : 'Áudio gravado',
+          style: savedDuration != null && savedDuration > 0
+              ? timerStyle
+              : labelStyle,
+        ),
+        trailing: [
+          if (!_audioMissingLocally)
+            IconButton(
+              tooltip: _playing ? 'Parar' : 'Ouvir',
+              onPressed: widget.enabled && canPlay ? _togglePlayback : null,
+              icon: Icon(
+                _playing
+                    ? Icons.stop_circle_outlined
+                    : Icons.play_arrow_rounded,
+                color: accent,
+              ),
+            ),
+          IconButton(
+            tooltip: 'Gravar de novo',
+            onPressed: widget.enabled ? _startRecording : null,
+            icon: Icon(Icons.mic_rounded, color: accent),
+          ),
+          IconButton(
+            tooltip: 'Excluir áudio',
+            onPressed: widget.enabled ? _removeAudio : null,
+            icon: Icon(Icons.delete_outline, color: accent),
+          ),
+        ],
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -387,10 +477,9 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField>
         children: [
           if (_audioMissingLocally)
             Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: 8),
               child: Text(
                 OccurrenceDetailAudioSection.missingLocalFileLabel,
-                textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,
                   height: 1.35,
@@ -400,61 +489,7 @@ class _OccurrenceAudioFieldState extends State<OccurrenceAudioField>
                 ),
               ),
             ),
-          if (_recording) ...[
-            Center(
-              child: Text(
-                _formatClock(_elapsedSec),
-                style: timerStyle,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Center(child: _micButton(
-              accent: accent,
-              isIos: isIos,
-              activeRecording: true,
-            )),
-          ] else if (!hasAudio)
-            Center(child: _micButton(
-              accent: accent,
-              isIos: isIos,
-              activeRecording: false,
-            ))
-          else
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (savedDuration != null && savedDuration > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Text(
-                      _formatClock(savedDuration),
-                      style: timerStyle.copyWith(fontSize: 17),
-                    ),
-                  ),
-                if (!_audioMissingLocally)
-                  IconButton(
-                    tooltip: _playing ? 'Parar' : 'Ouvir',
-                    onPressed:
-                        widget.enabled && canPlay ? _togglePlayback : null,
-                    icon: Icon(
-                      _playing
-                          ? Icons.stop_circle_outlined
-                          : Icons.play_arrow_rounded,
-                      color: accent,
-                    ),
-                  ),
-                IconButton(
-                  tooltip: 'Excluir áudio',
-                  onPressed: widget.enabled ? _removeAudio : null,
-                  icon: Icon(Icons.delete_outline, color: accent),
-                ),
-                IconButton(
-                  tooltip: 'Gravar de novo',
-                  onPressed: widget.enabled ? _startRecording : null,
-                  icon: Icon(Icons.mic_rounded, color: accent),
-                ),
-              ],
-            ),
+          row,
         ],
       ),
     );
