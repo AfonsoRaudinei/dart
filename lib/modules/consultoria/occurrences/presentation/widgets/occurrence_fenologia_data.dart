@@ -1,6 +1,7 @@
 // ignore_for_file: depend_on_referenced_packages
 import 'package:flutter/material.dart' show Color;
 
+export 'package:soloforte_app/core/domain/soy_nodulos.dart';
 export 'package:soloforte_app/core/domain/soy_phenology.dart';
 
 // ── Nutrientes ──────────────────────────────────────────────────────────────
@@ -28,6 +29,7 @@ const kCategoryColors = {
   'nutrientes': Color(0xFF8E8E93),
   'agua': Color(0xFF30B0C7),
   'plantio': Color(0xFFA16207),
+  'nodulos': Color(0xFFD81B60),
 };
 
 // ── Labels dos sliders 0–3 ──────────────────────────────────────────────────

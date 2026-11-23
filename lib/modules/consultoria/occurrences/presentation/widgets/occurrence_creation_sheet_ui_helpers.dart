@@ -113,6 +113,83 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
     );
   }
 
+  /// Nódulos de soja: três escolhas rápidas (valor salvo = posição + 1; 0 =
+  /// não informado). Tocar de novo na opção marcada desmarca.
+  Widget _buildNodulosSection(Color color) {
+    final v = SoloForteSheetVisuals.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final key in kNodulosKeys) ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 2, bottom: 6, top: 6),
+              child: Text(
+                kNodulosTitles[key]!,
+                style: TextStyle(color: v.onSheetSecondary, fontSize: 13),
+              ),
+            ),
+            Row(
+              children: [
+                for (var i = 0; i < kNodulosOptions[key]!.length; i++)
+                  Expanded(
+                    child: _nodulosChoice(
+                      key: key,
+                      index: i,
+                      color: color,
+                      surface: v.cardBackground,
+                      border: v.cardBorder,
+                      idleText: v.onSheetSecondary,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _nodulosChoice({
+    required String key,
+    required int index,
+    required Color color,
+    required Color surface,
+    required Color border,
+    required Color idleText,
+  }) {
+    final sel = _metricValue(OccurrenceCategory.nodulos, key) == index + 1;
+    return GestureDetector(
+      key: Key('occurrence_nodulos_${key}_$index'),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        _setMetric(OccurrenceCategory.nodulos, key, sel ? 0 : index + 1);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        margin: EdgeInsets.only(
+          right: index == kNodulosOptions[key]!.length - 1 ? 0 : 6,
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        decoration: BoxDecoration(
+          color: sel ? color.withValues(alpha: .2) : surface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: sel ? color : border, width: sel ? 1.5 : 1),
+        ),
+        child: Text(
+          kNodulosOptions[key]![index],
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: sel ? color : idleText,
+            fontSize: 12,
+            fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildAguaSection(Color color) {
     final v = SoloForteSheetVisuals.of(context);
     final current = _metricValue(OccurrenceCategory.agua, 'status');
@@ -328,6 +405,8 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
                 _buildPlantioSection(color)
               else if (cat == OccurrenceCategory.amostraSolo)
                 _buildAmostraSection(color)
+              else if (cat == OccurrenceCategory.nodulos)
+                _buildNodulosSection(color)
               else
                 ...metrics.map(
                   (metric) => OccurrenceSliderRow(
@@ -341,13 +420,18 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
               // campos para o mesmo texto: só pede notas por categoria quando há
               // mais de uma (ou quando já existe nota gravada).
               if (_cats.length > 1 ||
+                  cat == OccurrenceCategory.nodulos ||
                   _notaCtrl(cat.name).text.trim().isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
                   child: OccurrenceDarkField(
                     controller: _notaCtrl(cat.name),
-                    label: 'Notas (${cat.label})',
-                    hint: 'Observações específicas…',
+                    label: cat == OccurrenceCategory.nodulos
+                        ? 'Inoculação'
+                        : 'Notas (${cat.label})',
+                    hint: cat == OccurrenceCategory.nodulos
+                        ? 'Produto e como foi feita (ex.: no sulco, na semente)'
+                        : 'Observações específicas…',
                     maxLines: 2,
                   ),
                 ),
