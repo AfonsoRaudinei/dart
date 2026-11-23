@@ -102,7 +102,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.byKey(const Key('occurrence_plantio_validacao_field')),
+      find.byKey(const Key('occurrence_plantio_emergencia_field')),
       findsOneWidget,
     );
   });
@@ -117,11 +117,11 @@ void main() {
     await tester.tap(find.byKey(const Key('occurrence_plantio_emergencia_shortcut')));
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.byKey(const Key('occurrence_plantio_validacao_field')));
+    await tester.ensureVisible(find.byKey(const Key('occurrence_plantio_emergencia_field')));
     await tester.tap(
       find.descendant(
         of: find.ancestor(
-          of: find.byKey(const Key('occurrence_plantio_validacao_field')),
+          of: find.byKey(const Key('occurrence_plantio_emergencia_field')),
           matching: find.byType(ExpansionTile),
         ),
         matching: find.text('Boa'),
@@ -136,7 +136,7 @@ void main() {
     expect(submitted, isNotNull);
     expect(submitted!.category, 'plantio');
     expect(submitted!.dataPlantio, isNull);
-    expect(submitted!.dataValidacao, isNotNull);
+    expect(submitted!.dataEmergencia, isNotNull);
     expect(submitted!.avaliacaoEmergencia, 'boa');
   });
 }

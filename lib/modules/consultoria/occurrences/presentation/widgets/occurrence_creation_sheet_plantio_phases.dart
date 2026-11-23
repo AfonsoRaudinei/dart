@@ -87,10 +87,12 @@ extension _OccurrenceCreationSheetPlantioPhases
   void _focusEmergenciaPhase() {
     final today = DateTime.now();
     final normalized = DateTime(today.year, today.month, today.day);
+    // A data de validação deixou de ser pedida: o produtor só informa a data
+    // de emergência (sugerida como hoje ao abrir a fase).
     _patchForm(() {
       _plantioExecucaoExpanded = false;
       _plantioEmergenciaExpanded = true;
-      _dataValidacao ??= normalized;
+      _dataEmergencia ??= normalized;
     });
   }
 
@@ -369,13 +371,6 @@ extension _OccurrenceCreationSheetPlantioPhases
                   ),
                   childrenPadding: const EdgeInsets.only(bottom: 12),
                   children: [
-                    OccurrenceDateField(
-                      key: const Key('occurrence_plantio_validacao_field'),
-                      label: 'Data da validação',
-                      value: _dataValidacao,
-                      onChanged: (d) => _patchForm(() => _dataValidacao = d),
-                    ),
-                    const SizedBox(height: 10),
                     OccurrenceDateField(
                       key: const Key('occurrence_plantio_emergencia_field'),
                       label: 'Data de emergência',
