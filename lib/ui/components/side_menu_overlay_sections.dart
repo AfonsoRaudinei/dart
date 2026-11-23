@@ -20,37 +20,31 @@ class _SideMenuContent extends StatelessWidget {
                   _MenuItem(
                     icon: Icons.calendar_today_outlined,
                     label: 'Agenda',
-                    subtitle: 'Próximas visitas',
                     route: AppRoutes.agenda,
                   ),
                   _MenuItem(
                     icon: Icons.people_outline_rounded,
                     label: 'Clientes',
-                    subtitle: 'Gerenciar carteira',
                     route: AppRoutes.clients,
                   ),
                   _MenuItem(
                     icon: Icons.analytics_outlined,
                     label: 'Relatórios',
-                    subtitle: 'Análises e KPIs',
                     route: AppRoutes.reports,
                   ),
                   _MenuItem(
                     icon: Icons.chat_bubble_outline_rounded,
                     label: 'Feedback',
-                    subtitle: 'Envie sua opinião',
                     route: AppRoutes.feedback,
                   ),
                   _MenuItem(
                     icon: Icons.account_balance_wallet_outlined,
                     label: 'Carteira',
-                    subtitle: 'Metas e oportunidades',
                     route: AppRoutes.carteira,
                   ),
                   _MenuItem(
                     icon: Icons.settings_outlined,
                     label: 'Configurações',
-                    subtitle: 'Ajustes do aplicativo',
                     route: AppRoutes.settings,
                     showDivider: false,
                   ),
@@ -71,19 +65,16 @@ class _SideMenuContent extends StatelessWidget {
                   _MenuItem(
                     icon: Icons.analytics_outlined,
                     label: 'Relatórios',
-                    subtitle: 'Análises e KPIs',
                     route: AppRoutes.reports,
                   ),
                   _MenuItem(
                     icon: Icons.chat_bubble_outline_rounded,
                     label: 'Feedback',
-                    subtitle: 'Envie sua opinião',
                     route: AppRoutes.feedback,
                   ),
                   _MenuItem(
                     icon: Icons.settings_outlined,
                     label: 'Configurações',
-                    subtitle: 'Ajustes do aplicativo',
                     route: AppRoutes.settings,
                     showDivider: false,
                   ),
