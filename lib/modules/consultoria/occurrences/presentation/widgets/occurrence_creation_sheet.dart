@@ -543,8 +543,12 @@ class _OccurrenceCreationSheetState
                       ],
                     ),
                   ),
+                  // Ordem de aplicação não faz sentido em Plantio nem Amostra.
                   if (_cats.any(
-                    (c) => c != OccurrenceCategory.areaVisitada,
+                    (c) =>
+                        c != OccurrenceCategory.areaVisitada &&
+                        c != OccurrenceCategory.plantio &&
+                        c != OccurrenceCategory.amostraSolo,
                   )) ...[
                     OccurrenceOrdemAplicacaoFields(
                       acao: _ordem.acao,
