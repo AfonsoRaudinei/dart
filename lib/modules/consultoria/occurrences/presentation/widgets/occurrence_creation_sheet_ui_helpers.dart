@@ -259,48 +259,31 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
     final total = _totalFotosCount;
     final isIos = occurrenceFormIsIos(context);
     final accent = isIos ? v.iconStroke : context.themeAccent;
-    final hint = isIos ? v.subtitleColor : const Color(0xFFAEAEB2);
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(v.cardRadius),
-        border: Border.all(color: accent.withValues(alpha: 0.55), width: 1.2),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const OccurrenceSectionHeader(title: 'Fotos da ocorrência'),
-          const SizedBox(height: 6),
-          OccurrencePhotoStatusText(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (total > 0) ...[
+          OccurrencePhotoGallery(
             paths: _flatFotoPaths(),
-            emptyHint: 'Anexe fotos para o relatório.',
-            hintColor: hint,
-          ),
-          if (total > 0) ...[
-            const SizedBox(height: 10),
-            OccurrencePhotoGallery(
-              paths: _flatFotoPaths(),
-              captions: Map<String, String>.from(_photoCaptions),
-              thumbnailSize: 56,
-              readOnly: false,
-              onRemove: _removeFlatPhoto,
-              onCaptionChanged: (index, caption) {
-                final paths = _flatFotoPaths();
-                if (index < 0 || index >= paths.length) return;
-                _setPhotoCaption(paths[index], caption);
-              },
-            ),
-          ],
-          const SizedBox(height: 12),
-          OccurrencePhotoOriginToolbar(
-            accent: accent,
-            onOriginSelected: (origin) {
-              unawaited(_onPhotoOriginSelected(origin));
+            captions: Map<String, String>.from(_photoCaptions),
+            thumbnailSize: 56,
+            readOnly: false,
+            onRemove: _removeFlatPhoto,
+            onCaptionChanged: (index, caption) {
+              final paths = _flatFotoPaths();
+              if (index < 0 || index >= paths.length) return;
+              _setPhotoCaption(paths[index], caption);
             },
           ),
+          const SizedBox(height: 10),
         ],
-      ),
+        OccurrencePhotoOriginToolbar(
+          accent: accent,
+          onOriginSelected: (origin) {
+            unawaited(_onPhotoOriginSelected(origin));
+          },
+        ),
+      ],
     );
   }
 

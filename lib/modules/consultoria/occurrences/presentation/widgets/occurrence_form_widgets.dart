@@ -675,26 +675,38 @@ class OccurrencePhotoOriginToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Câmera é a ação principal; galeria e inversão vegetal ficam compactas.
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
+        Expanded(
+          child: Tooltip(
+            message: 'Câmera',
+            child: FilledButton.icon(
+              onPressed: () =>
+                  onOriginSelected(SoloFortePhotoPickerOrigin.camera),
+              icon: const Icon(Icons.camera_alt_rounded, size: 20),
+              label: const Text('Foto'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                backgroundColor: accent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
         _OccurrencePhotoOriginButton(
           tooltip: 'Galeria',
-          label: 'Galeria',
           icon: SFIcons.photoLibrary,
           accent: accent,
           onTap: () => onOriginSelected(SoloFortePhotoPickerOrigin.gallery),
         ),
-        _OccurrencePhotoOriginButton(
-          tooltip: 'Câmera',
-          label: 'Câmera',
-          icon: Icons.camera_alt_outlined,
-          accent: accent,
-          onTap: () => onOriginSelected(SoloFortePhotoPickerOrigin.camera),
-        ),
+        const SizedBox(width: 8),
         _OccurrencePhotoOriginButton(
           tooltip: 'Inversão vegetal',
-          label: 'Vegetal',
           icon: SFIcons.leaf,
           accent: accent,
           onTap: () => onOriginSelected(SoloFortePhotoPickerOrigin.vegetal),
@@ -706,14 +718,12 @@ class OccurrencePhotoOriginToolbar extends StatelessWidget {
 
 class _OccurrencePhotoOriginButton extends StatelessWidget {
   final String tooltip;
-  final String label;
   final IconData icon;
   final Color accent;
   final VoidCallback onTap;
 
   const _OccurrencePhotoOriginButton({
     required this.tooltip,
-    required this.label,
     required this.icon,
     required this.accent,
     required this.onTap,
@@ -721,40 +731,18 @@ class _OccurrencePhotoOriginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = SoloForteSheetVisuals.of(context);
-    final isIos = occurrenceFormIsIos(context);
-    final surface = isIos ? v.iconBackground : accent.withValues(alpha: 0.12);
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(v.ctaRadius),
-          side: BorderSide(color: accent.withValues(alpha: 0.55)),
-        ),
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(v.ctaRadius),
           child: SizedBox(
-            width: 88,
-            height: 56,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, color: accent, size: 22),
-                const SizedBox(height: 3),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: accent,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+            width: 48,
+            height: 48,
+            child: Icon(icon, color: accent, size: 22),
           ),
         ),
       ),
