@@ -354,15 +354,20 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
                     onChanged: (v) => _setMetric(cat, metric, v),
                   ),
                 ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
-                child: OccurrenceDarkField(
-                  controller: _notaCtrl(cat.name),
-                  label: 'Notas (${cat.label})',
-                  hint: 'Observações específicas…',
-                  maxLines: 2,
+              // Com uma só categoria, "Notas" e "Observações Gerais" seriam dois
+              // campos para o mesmo texto: só pede notas por categoria quando há
+              // mais de uma (ou quando já existe nota gravada).
+              if (_cats.length > 1 ||
+                  _notaCtrl(cat.name).text.trim().isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+                  child: OccurrenceDarkField(
+                    controller: _notaCtrl(cat.name),
+                    label: 'Notas (${cat.label})',
+                    hint: 'Observações específicas…',
+                    maxLines: 2,
+                  ),
                 ),
-              ),
               if (_fotos[cat.name]?.isNotEmpty == true)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
