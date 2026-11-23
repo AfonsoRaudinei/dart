@@ -256,7 +256,7 @@ class OccurrenceUrgencySlider extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Prioridade de atendimento',
+                  'Urgência',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: v.onSheetSecondary, fontSize: 13),

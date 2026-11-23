@@ -565,8 +565,9 @@ class _OccurrenceCreationSheetState
                     const SizedBox(height: 20),
                   ],
 
-                  // Plantio já tem Execução/Emergência: sem estádio fenológico.
-                  if (!_isPlantio) ...[
+                  // Plantio já tem Execução/Emergência e Amostra de Solo não
+                  // depende do estádio: sem estádio fenológico nelas.
+                  if (!_isPlantio && !_isAmostraSolo) ...[
                     const OccurrenceSectionHeader(title: 'Estádio Fenológico'),
                     const SizedBox(height: 10),
                     OccurrenceEstadioDropdown(
@@ -581,21 +582,13 @@ class _OccurrenceCreationSheetState
                     const SizedBox(height: 20),
                   ],
 
-                  const OccurrenceSectionHeader(title: 'Urgência'),
-                  const SizedBox(height: 8),
                   _buildUrgencySelector(),
                   const SizedBox(height: 20),
                 ],
 
-                OccurrenceSectionHeader(
-                  title: _isAreaVisitada
-                      ? 'Observações (opcional)'
-                      : 'Observações Gerais',
-                ), // ignore: prefer_const_constructors — title dinâmico
-                const SizedBox(height: 8),
                 OccurrenceDarkField(
                   controller: _descCtrl,
-                  label: _isAreaVisitada ? 'Notas' : 'Descrição',
+                  label: _isAreaVisitada ? 'Notas (opcional)' : 'Observações',
                   hint: _isAreaVisitada
                       ? 'Ex.: trecho da estrada, entrada do talhão…'
                       : 'Descreva a ocorrência…',
