@@ -62,8 +62,8 @@ void main() {
       final paint = tester.widget<CustomPaint>(
         find.descendant(of: swatch, matching: find.byType(CustomPaint)),
       );
-      final painter = paint.painter! as NdviDropPainter;
-      expect(painter.color, c.color, reason: c.key);
+      // ignore: avoid_dynamic_calls
+      expect((paint.painter! as dynamic).color, c.color, reason: c.key);
     }
     expectAllLabels(visible: false);
   });
