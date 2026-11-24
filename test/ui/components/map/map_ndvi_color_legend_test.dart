@@ -4,19 +4,19 @@ import 'package:soloforte_app/ui/components/map/map_ndvi_color_legend.dart';
 
 void main() {
   const classes = <({String label, String key, Color color})>[
-    (
-      label: 'Muito Baixo',
-      key: 'muito_baixo',
-      color: MapNdviColorLegend.muitoBaixo,
-    ),
-    (label: 'Baixo', key: 'baixo', color: MapNdviColorLegend.baixo),
+    (label: 'Alto', key: 'alto', color: MapNdviColorLegend.alto),
+    (label: 'Bom', key: 'bom', color: MapNdviColorLegend.bom),
     (
       label: 'Intermediário',
       key: 'intermediario',
       color: MapNdviColorLegend.intermediario,
     ),
-    (label: 'Bom', key: 'bom', color: MapNdviColorLegend.bom),
-    (label: 'Alto', key: 'alto', color: MapNdviColorLegend.alto),
+    (label: 'Baixo', key: 'baixo', color: MapNdviColorLegend.baixo),
+    (
+      label: 'Muito Baixo',
+      key: 'muito_baixo',
+      color: MapNdviColorLegend.muitoBaixo,
+    ),
   ];
 
   Future<void> pumpLegend(
