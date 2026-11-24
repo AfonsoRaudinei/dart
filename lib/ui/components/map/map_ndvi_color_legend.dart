@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-/// Faixa compacta do colormap NDVI (RdYlGn), ao lado do raster.
+/// Faixa compacta das cinco classes de NDVI, ao lado do raster.
 ///
-/// Recolhida mostra só as três cores. Um toque ou um arrasto horizontal
-/// curto abre ou esconde Alto, Intermediário e Baixo.
+/// Recolhida mostra só as cinco cores. Um toque ou um arrasto horizontal
+/// curto abre ou esconde Alto, Bom, Intermediário, Baixo e Muito Baixo, cada
+/// rótulo na cor da sua classe.
 class MapNdviColorLegend extends StatefulWidget {
   const MapNdviColorLegend({super.key, this.labelsToTheRight = true});
 
@@ -11,16 +12,17 @@ class MapNdviColorLegend extends StatefulWidget {
   final bool labelsToTheRight;
 
   static const double swatchWidth = 18;
-  static const double blockHeight = 22;
+  static const double blockHeight = 18;
   static const double verticalPadding = 4;
 
   /// Altura da faixa recolhida, usada para centralizar no polígono.
-  static const double stripHeight = blockHeight * 3 + verticalPadding * 2;
+  static const double stripHeight = blockHeight * 5 + verticalPadding * 2;
 
-  static const Color alto = Color(0xFF2E7D32);
-  static const Color intermediario = Color(0xFFC5D63C);
-  static const Color baixo = Color(0xFFF6C445);
-  static const Color baixoExtremo = Color(0xFFC62828);
+  static const Color muitoBaixo = Color(0xFF922300);
+  static const Color baixo = Color(0xFFFD6000);
+  static const Color intermediario = Color(0xFFFED000);
+  static const Color bom = Color(0xFF95DA48);
+  static const Color alto = Color(0xFF008B35);
 
   @override
   State<MapNdviColorLegend> createState() => _MapNdviColorLegendState();
@@ -95,13 +97,20 @@ class _NdviLegendSwatches extends StatelessWidget {
           color: MapNdviColorLegend.alto,
         ),
         _NdviLegendSwatch(
+          key: Key('map_ndvi_legend_swatch_bom'),
+          color: MapNdviColorLegend.bom,
+        ),
+        _NdviLegendSwatch(
           key: Key('map_ndvi_legend_swatch_intermediario'),
           color: MapNdviColorLegend.intermediario,
         ),
         _NdviLegendSwatch(
           key: Key('map_ndvi_legend_swatch_baixo'),
           color: MapNdviColorLegend.baixo,
-          redFoot: true,
+        ),
+        _NdviLegendSwatch(
+          key: Key('map_ndvi_legend_swatch_muito_baixo'),
+          color: MapNdviColorLegend.muitoBaixo,
         ),
       ],
     );
@@ -109,32 +118,16 @@ class _NdviLegendSwatches extends StatelessWidget {
 }
 
 class _NdviLegendSwatch extends StatelessWidget {
-  const _NdviLegendSwatch({
-    super.key,
-    required this.color,
-    this.redFoot = false,
-  });
+  const _NdviLegendSwatch({super.key, required this.color});
 
   final Color color;
-  final bool redFoot;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: MapNdviColorLegend.swatchWidth,
       height: MapNdviColorLegend.blockHeight,
-      child: redFoot
-          ? Column(
-              children: [
-                Expanded(child: ColoredBox(color: color)),
-                const SizedBox(
-                  height: 5,
-                  width: double.infinity,
-                  child: ColoredBox(color: MapNdviColorLegend.baixoExtremo),
-                ),
-              ],
-            )
-          : ColoredBox(color: color),
+      child: ColoredBox(color: color),
     );
   }
 }
@@ -158,9 +151,27 @@ class _NdviLegendLabels extends StatelessWidget {
             ? CrossAxisAlignment.end
             : CrossAxisAlignment.start,
         children: [
-          _NdviLegendLabel('Alto', align: align),
-          _NdviLegendLabel('Intermediário', align: align),
-          _NdviLegendLabel('Baixo', align: align),
+          _NdviLegendLabel(
+            'Alto',
+            color: MapNdviColorLegend.alto,
+            align: align,
+          ),
+          _NdviLegendLabel('Bom', color: MapNdviColorLegend.bom, align: align),
+          _NdviLegendLabel(
+            'Intermediário',
+            color: MapNdviColorLegend.intermediario,
+            align: align,
+          ),
+          _NdviLegendLabel(
+            'Baixo',
+            color: MapNdviColorLegend.baixo,
+            align: align,
+          ),
+          _NdviLegendLabel(
+            'Muito Baixo',
+            color: MapNdviColorLegend.muitoBaixo,
+            align: align,
+          ),
         ],
       ),
     );
@@ -168,9 +179,10 @@ class _NdviLegendLabels extends StatelessWidget {
 }
 
 class _NdviLegendLabel extends StatelessWidget {
-  const _NdviLegendLabel(this.text, {required this.align});
+  const _NdviLegendLabel(this.text, {required this.color, required this.align});
 
   final String text;
+  final Color color;
   final Alignment align;
 
   @override
@@ -182,10 +194,10 @@ class _NdviLegendLabel extends StatelessWidget {
         child: Text(
           text,
           maxLines: 1,
-          style: const TextStyle(
-            color: Color(0xFF1D1D1F),
+          style: TextStyle(
+            color: color,
             fontSize: 11,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             height: 1.1,
           ),
         ),
