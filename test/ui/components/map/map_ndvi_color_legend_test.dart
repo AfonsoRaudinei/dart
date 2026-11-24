@@ -3,6 +3,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/ui/components/map/map_ndvi_color_legend.dart';
 
 void main() {
+  const classes = <({String label, String key, Color color})>[
+    (label: 'Alto', key: 'alto', color: MapNdviColorLegend.alto),
+    (label: 'Bom', key: 'bom', color: MapNdviColorLegend.bom),
+    (
+      label: 'Intermediário',
+      key: 'intermediario',
+      color: MapNdviColorLegend.intermediario,
+    ),
+    (label: 'Baixo', key: 'baixo', color: MapNdviColorLegend.baixo),
+    (
+      label: 'Muito Baixo',
+      key: 'muito_baixo',
+      color: MapNdviColorLegend.muitoBaixo,
+    ),
+  ];
+
   Future<void> pumpLegend(
     WidgetTester tester, {
     bool labelsToTheRight = true,
@@ -25,24 +41,45 @@ void main() {
     );
   }
 
-  testWidgets('recolhida mostra as três cores e nenhum rótulo', (tester) async {
+  void expectAllLabels({required bool visible}) {
+    for (final c in classes) {
+      expect(
+        find.text(c.label),
+        visible ? findsOneWidget : findsNothing,
+        reason: c.label,
+      );
+    }
+  }
+
+  testWidgets('recolhida mostra as cinco cores e nenhum rótulo', (
+    tester,
+  ) async {
     await pumpLegend(tester);
 
-    expect(
-      find.byKey(const Key('map_ndvi_legend_swatch_alto')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const Key('map_ndvi_legend_swatch_intermediario')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const Key('map_ndvi_legend_swatch_baixo')),
-      findsOneWidget,
-    );
-    expect(find.text('Alto'), findsNothing);
-    expect(find.text('Intermediário'), findsNothing);
-    expect(find.text('Baixo'), findsNothing);
+    for (final c in classes) {
+      final swatch = find.byKey(Key('map_ndvi_legend_swatch_${c.key}'));
+      expect(swatch, findsOneWidget, reason: c.key);
+      final box = tester.widget<ColoredBox>(
+        find.descendant(of: swatch, matching: find.byType(ColoredBox)),
+      );
+      expect(box.color, c.color, reason: c.key);
+    }
+    expectAllLabels(visible: false);
+  });
+
+  testWidgets('aberta mostra os cinco rótulos, cada um na cor da classe', (
+    tester,
+  ) async {
+    await pumpLegend(tester);
+    await tester.tap(find.byKey(const Key('map_ndvi_legend')));
+    await tester.pump();
+
+    expectAllLabels(visible: true);
+    for (final c in classes) {
+      final text = tester.widget<Text>(find.text(c.label));
+      expect(text.style?.color, c.color, reason: c.label);
+      expect(text.style?.fontWeight, FontWeight.w700, reason: c.label);
+    }
   });
 
   testWidgets('arrasto horizontal abre e o segundo gesto recolhe', (
@@ -57,9 +94,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Alto'), findsOneWidget);
-    expect(find.text('Intermediário'), findsOneWidget);
-    expect(find.text('Baixo'), findsOneWidget);
+    expectAllLabels(visible: true);
 
     await tester.fling(
       find.byKey(const Key('map_ndvi_legend')),
@@ -68,9 +103,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Alto'), findsNothing);
-    expect(find.text('Intermediário'), findsNothing);
-    expect(find.text('Baixo'), findsNothing);
+    expectAllLabels(visible: false);
   });
 
   testWidgets('os dois lados abrem sem overflow', (tester) async {
@@ -79,9 +112,7 @@ void main() {
       await tester.tap(find.byKey(const Key('map_ndvi_legend')));
       await tester.pump();
 
-      expect(find.text('Alto'), findsOneWidget);
-      expect(find.text('Intermediário'), findsOneWidget);
-      expect(find.text('Baixo'), findsOneWidget);
+      expectAllLabels(visible: true);
       expect(tester.takeException(), isNull);
     }
   });
