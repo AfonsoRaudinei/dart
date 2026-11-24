@@ -59,10 +59,11 @@ void main() {
     for (final c in classes) {
       final swatch = find.byKey(Key('map_ndvi_legend_swatch_${c.key}'));
       expect(swatch, findsOneWidget, reason: c.key);
-      final box = tester.widget<ColoredBox>(
-        find.descendant(of: swatch, matching: find.byType(ColoredBox)),
+      final paint = tester.widget<CustomPaint>(
+        find.descendant(of: swatch, matching: find.byType(CustomPaint)),
       );
-      expect(box.color, c.color, reason: c.key);
+      final painter = paint.painter! as NdviDropPainter;
+      expect(painter.color, c.color, reason: c.key);
     }
     expectAllLabels(visible: false);
   });
