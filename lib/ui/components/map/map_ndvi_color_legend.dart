@@ -127,15 +127,15 @@ class _NdviLegendSwatch extends StatelessWidget {
     return SizedBox(
       width: MapNdviColorLegend.swatchWidth,
       height: MapNdviColorLegend.blockHeight,
-      child: CustomPaint(painter: NdviDropPainter(color)),
+      child: CustomPaint(painter: _NdviLeafPainter(color)),
     );
   }
 }
 
-/// Gota/folha da classe: ponta no topo, base arredondada e nervura central
-/// mais escura que afina em direção à ponta.
-class NdviDropPainter extends CustomPainter {
-  const NdviDropPainter(this.color);
+/// Folha da classe: ponta afilada no topo, laterais convexas, base circular e
+/// nervura central mais escura que afina em direção à ponta.
+class _NdviLeafPainter extends CustomPainter {
+  const _NdviLeafPainter(this.color);
 
   final Color color;
 
@@ -149,31 +149,17 @@ class NdviDropPainter extends CustomPainter {
     final bottom = h - pad;
     final left = pad;
     final right = w - pad;
-    final bodyTop = h * 0.42;
+    final widest = h * 0.68;
 
-    final drop = Path()
+    final leaf = Path()
       ..moveTo(cx, top)
-      ..cubicTo(
-        cx + w * 0.10,
-        h * 0.16,
-        right,
-        h * 0.30,
-        right,
-        bodyTop + h * 0.16,
-      )
-      ..cubicTo(right, bottom - h * 0.02, cx + w * 0.30, bottom, cx, bottom)
-      ..cubicTo(
-        cx - w * 0.30,
-        bottom,
-        left,
-        bottom - h * 0.02,
-        left,
-        bodyTop + h * 0.16,
-      )
-      ..cubicTo(left, h * 0.30, cx - w * 0.10, h * 0.16, cx, top)
+      ..cubicTo(cx + w * 0.16, h * 0.20, right, h * 0.40, right, widest)
+      ..cubicTo(right, bottom - h * 0.10, cx + w * 0.28, bottom, cx, bottom)
+      ..cubicTo(cx - w * 0.28, bottom, left, bottom - h * 0.10, left, widest)
+      ..cubicTo(left, h * 0.40, cx - w * 0.16, h * 0.20, cx, top)
       ..close();
     canvas.drawPath(
-      drop,
+      leaf,
       Paint()
         ..color = color
         ..isAntiAlias = true,
@@ -199,7 +185,7 @@ class NdviDropPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(NdviDropPainter old) => old.color != color;
+  bool shouldRepaint(_NdviLeafPainter old) => old.color != color;
 }
 
 class _NdviLegendLabels extends StatelessWidget {
