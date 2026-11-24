@@ -93,24 +93,24 @@ class _NdviLegendSwatches extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         _NdviLegendSwatch(
-          key: Key('map_ndvi_legend_swatch_alto'),
-          color: MapNdviColorLegend.alto,
-        ),
-        _NdviLegendSwatch(
-          key: Key('map_ndvi_legend_swatch_bom'),
-          color: MapNdviColorLegend.bom,
-        ),
-        _NdviLegendSwatch(
-          key: Key('map_ndvi_legend_swatch_intermediario'),
-          color: MapNdviColorLegend.intermediario,
+          key: Key('map_ndvi_legend_swatch_muito_baixo'),
+          color: MapNdviColorLegend.muitoBaixo,
         ),
         _NdviLegendSwatch(
           key: Key('map_ndvi_legend_swatch_baixo'),
           color: MapNdviColorLegend.baixo,
         ),
         _NdviLegendSwatch(
-          key: Key('map_ndvi_legend_swatch_muito_baixo'),
-          color: MapNdviColorLegend.muitoBaixo,
+          key: Key('map_ndvi_legend_swatch_intermediario'),
+          color: MapNdviColorLegend.intermediario,
+        ),
+        _NdviLegendSwatch(
+          key: Key('map_ndvi_legend_swatch_bom'),
+          color: MapNdviColorLegend.bom,
+        ),
+        _NdviLegendSwatch(
+          key: Key('map_ndvi_legend_swatch_alto'),
+          color: MapNdviColorLegend.alto,
         ),
       ],
     );
@@ -146,16 +146,18 @@ class _NdviLeafPainter extends CustomPainter {
     final cx = w / 2;
     const pad = 1.0;
     final top = pad;
-    final bottom = h - pad;
     final left = pad;
     final right = w - pad;
-    final widest = h * 0.68;
+    final widest = h * 0.62;
+    final r = (right - left) / 2;
+    final base = widest + r;
+    const k = 0.55;
 
     final leaf = Path()
       ..moveTo(cx, top)
       ..cubicTo(cx + w * 0.16, h * 0.20, right, h * 0.40, right, widest)
-      ..cubicTo(right, bottom - h * 0.10, cx + w * 0.28, bottom, cx, bottom)
-      ..cubicTo(cx - w * 0.28, bottom, left, bottom - h * 0.10, left, widest)
+      ..cubicTo(right, widest + r * k, cx + r * k, base, cx, base)
+      ..cubicTo(cx - r * k, base, left, widest + r * k, left, widest)
       ..cubicTo(left, h * 0.40, cx - w * 0.16, h * 0.20, cx, top)
       ..close();
     canvas.drawPath(
@@ -169,12 +171,12 @@ class _NdviLeafPainter extends CustomPainter {
     final vein = hsl
         .withLightness((hsl.lightness * 0.75).clamp(0.0, 1.0))
         .toColor();
-    final veinTop = h * 0.22;
-    final veinBottom = bottom - h * 0.05;
+    final veinTop = h * 0.35;
+    const half = 0.35;
     final veinPath = Path()
       ..moveTo(cx, veinTop)
-      ..lineTo(cx + 0.7, veinBottom)
-      ..lineTo(cx - 0.7, veinBottom)
+      ..lineTo(cx + half, base)
+      ..lineTo(cx - half, base)
       ..close();
     canvas.drawPath(
       veinPath,
@@ -208,14 +210,8 @@ class _NdviLegendLabels extends StatelessWidget {
             : CrossAxisAlignment.start,
         children: [
           _NdviLegendLabel(
-            'Alto',
-            color: MapNdviColorLegend.alto,
-            align: align,
-          ),
-          _NdviLegendLabel('Bom', color: MapNdviColorLegend.bom, align: align),
-          _NdviLegendLabel(
-            'Intermediário',
-            color: MapNdviColorLegend.intermediario,
+            'Muito Baixo',
+            color: MapNdviColorLegend.muitoBaixo,
             align: align,
           ),
           _NdviLegendLabel(
@@ -224,8 +220,14 @@ class _NdviLegendLabels extends StatelessWidget {
             align: align,
           ),
           _NdviLegendLabel(
-            'Muito Baixo',
-            color: MapNdviColorLegend.muitoBaixo,
+            'Intermediário',
+            color: MapNdviColorLegend.intermediario,
+            align: align,
+          ),
+          _NdviLegendLabel('Bom', color: MapNdviColorLegend.bom, align: align),
+          _NdviLegendLabel(
+            'Alto',
+            color: MapNdviColorLegend.alto,
             align: align,
           ),
         ],
