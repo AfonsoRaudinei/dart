@@ -11,8 +11,8 @@ class MapNdviColorLegend extends StatefulWidget {
   /// Texto à direita dos blocos. No mapa isso é a legenda à esquerda do raster.
   final bool labelsToTheRight;
 
-  static const double swatchWidth = 18;
-  static const double blockHeight = 18;
+  static const double swatchWidth = 16;
+  static const double blockHeight = 20;
   static const double verticalPadding = 4;
 
   /// Altura da faixa recolhida, usada para centralizar no polígono.
@@ -127,9 +127,79 @@ class _NdviLegendSwatch extends StatelessWidget {
     return SizedBox(
       width: MapNdviColorLegend.swatchWidth,
       height: MapNdviColorLegend.blockHeight,
-      child: ColoredBox(color: color),
+      child: CustomPaint(painter: NdviDropPainter(color)),
     );
   }
+}
+
+/// Gota/folha da classe: ponta no topo, base arredondada e nervura central
+/// mais escura que afina em direção à ponta.
+class NdviDropPainter extends CustomPainter {
+  const NdviDropPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final cx = w / 2;
+    const pad = 1.0;
+    final top = pad;
+    final bottom = h - pad;
+    final left = pad;
+    final right = w - pad;
+    final bodyTop = h * 0.42;
+
+    final drop = Path()
+      ..moveTo(cx, top)
+      ..cubicTo(
+        cx + w * 0.10,
+        h * 0.16,
+        right,
+        h * 0.30,
+        right,
+        bodyTop + h * 0.16,
+      )
+      ..cubicTo(right, bottom - h * 0.02, cx + w * 0.30, bottom, cx, bottom)
+      ..cubicTo(
+        cx - w * 0.30,
+        bottom,
+        left,
+        bottom - h * 0.02,
+        left,
+        bodyTop + h * 0.16,
+      )
+      ..cubicTo(left, h * 0.30, cx - w * 0.10, h * 0.16, cx, top)
+      ..close();
+    canvas.drawPath(
+      drop,
+      Paint()
+        ..color = color
+        ..isAntiAlias = true,
+    );
+
+    final hsl = HSLColor.fromColor(color);
+    final vein = hsl
+        .withLightness((hsl.lightness * 0.75).clamp(0.0, 1.0))
+        .toColor();
+    final veinTop = h * 0.22;
+    final veinBottom = bottom - h * 0.05;
+    final veinPath = Path()
+      ..moveTo(cx, veinTop)
+      ..lineTo(cx + 0.7, veinBottom)
+      ..lineTo(cx - 0.7, veinBottom)
+      ..close();
+    canvas.drawPath(
+      veinPath,
+      Paint()
+        ..color = vein
+        ..isAntiAlias = true,
+    );
+  }
+
+  @override
+  bool shouldRepaint(NdviDropPainter old) => old.color != color;
 }
 
 class _NdviLegendLabels extends StatelessWidget {
