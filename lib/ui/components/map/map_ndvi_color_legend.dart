@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 /// Faixa compacta das cinco classes de NDVI, ao lado do raster.
 ///
 /// Recolhida mostra só as cinco cores. Um toque ou um arrasto horizontal
-/// curto abre ou esconde Alto, Bom, Intermediário, Baixo e Muito Baixo, cada
-/// rótulo na cor da sua classe.
+/// curto abre ou esconde os rótulos, de cima para baixo: Alto, Bom,
+/// Intermediário, Baixo e Muito Baixo, cada um na cor da sua classe.
 class MapNdviColorLegend extends StatefulWidget {
   const MapNdviColorLegend({super.key, this.labelsToTheRight = true});
 
@@ -93,24 +93,24 @@ class _NdviLegendSwatches extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         _NdviLegendSwatch(
-          key: Key('map_ndvi_legend_swatch_muito_baixo'),
-          color: MapNdviColorLegend.muitoBaixo,
-        ),
-        _NdviLegendSwatch(
-          key: Key('map_ndvi_legend_swatch_baixo'),
-          color: MapNdviColorLegend.baixo,
-        ),
-        _NdviLegendSwatch(
-          key: Key('map_ndvi_legend_swatch_intermediario'),
-          color: MapNdviColorLegend.intermediario,
+          key: Key('map_ndvi_legend_swatch_alto'),
+          color: MapNdviColorLegend.alto,
         ),
         _NdviLegendSwatch(
           key: Key('map_ndvi_legend_swatch_bom'),
           color: MapNdviColorLegend.bom,
         ),
         _NdviLegendSwatch(
-          key: Key('map_ndvi_legend_swatch_alto'),
-          color: MapNdviColorLegend.alto,
+          key: Key('map_ndvi_legend_swatch_intermediario'),
+          color: MapNdviColorLegend.intermediario,
+        ),
+        _NdviLegendSwatch(
+          key: Key('map_ndvi_legend_swatch_baixo'),
+          color: MapNdviColorLegend.baixo,
+        ),
+        _NdviLegendSwatch(
+          key: Key('map_ndvi_legend_swatch_muito_baixo'),
+          color: MapNdviColorLegend.muitoBaixo,
         ),
       ],
     );
@@ -210,8 +210,14 @@ class _NdviLegendLabels extends StatelessWidget {
             : CrossAxisAlignment.start,
         children: [
           _NdviLegendLabel(
-            'Muito Baixo',
-            color: MapNdviColorLegend.muitoBaixo,
+            'Alto',
+            color: MapNdviColorLegend.alto,
+            align: align,
+          ),
+          _NdviLegendLabel('Bom', color: MapNdviColorLegend.bom, align: align),
+          _NdviLegendLabel(
+            'Intermediário',
+            color: MapNdviColorLegend.intermediario,
             align: align,
           ),
           _NdviLegendLabel(
@@ -220,14 +226,8 @@ class _NdviLegendLabels extends StatelessWidget {
             align: align,
           ),
           _NdviLegendLabel(
-            'Intermediário',
-            color: MapNdviColorLegend.intermediario,
-            align: align,
-          ),
-          _NdviLegendLabel('Bom', color: MapNdviColorLegend.bom, align: align),
-          _NdviLegendLabel(
-            'Alto',
-            color: MapNdviColorLegend.alto,
+            'Muito Baixo',
+            color: MapNdviColorLegend.muitoBaixo,
             align: align,
           ),
         ],
