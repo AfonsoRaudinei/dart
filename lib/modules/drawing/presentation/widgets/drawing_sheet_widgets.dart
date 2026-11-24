@@ -93,6 +93,27 @@ class _SheetHeader extends StatelessWidget {
         ? v.iconStroke
         : Theme.of(context).colorScheme.onSurface;
 
+    // Sem título nem "voltar": só o fechar, compacto e sem divisor — evita
+    // uma faixa vazia grande acima da lista de ferramentas.
+    if (title.isEmpty && onBack == null) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: onClose == null
+              ? const SizedBox(height: 8)
+              : SheetCloseButton(
+                  key: const Key('drawing_sheet_close'),
+                  tooltip: 'Fechar',
+                  onPressed: onClose,
+                  color: const Color(0xFFFF3B30),
+                  size: 22,
+                  hitSize: 32,
+                ),
+        ),
+      );
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
