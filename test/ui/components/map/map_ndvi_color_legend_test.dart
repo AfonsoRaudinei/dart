@@ -4,19 +4,19 @@ import 'package:soloforte_app/ui/components/map/map_ndvi_color_legend.dart';
 
 void main() {
   const classes = <({String label, String key, Color color})>[
-    (label: 'Alto', key: 'alto', color: MapNdviColorLegend.alto),
-    (label: 'Bom', key: 'bom', color: MapNdviColorLegend.bom),
-    (
-      label: 'Intermediário',
-      key: 'intermediario',
-      color: MapNdviColorLegend.intermediario,
-    ),
-    (label: 'Baixo', key: 'baixo', color: MapNdviColorLegend.baixo),
     (
       label: 'Muito Baixo',
       key: 'muito_baixo',
       color: MapNdviColorLegend.muitoBaixo,
     ),
+    (label: 'Baixo', key: 'baixo', color: MapNdviColorLegend.baixo),
+    (
+      label: 'Intermediário',
+      key: 'intermediario',
+      color: MapNdviColorLegend.intermediario,
+    ),
+    (label: 'Bom', key: 'bom', color: MapNdviColorLegend.bom),
+    (label: 'Alto', key: 'alto', color: MapNdviColorLegend.alto),
   ];
 
   Future<void> pumpLegend(
@@ -76,7 +76,19 @@ void main() {
     await tester.pump();
 
     expectAllLabels(visible: true);
+    double? previousSwatchTop;
+    double? previousLabelTop;
     for (final c in classes) {
+      final swatchTop = tester
+          .getTopLeft(find.byKey(Key('map_ndvi_legend_swatch_${c.key}')))
+          .dy;
+      final labelTop = tester.getTopLeft(find.text(c.label)).dy;
+      if (previousSwatchTop != null) {
+        expect(swatchTop, greaterThan(previousSwatchTop), reason: c.key);
+        expect(labelTop, greaterThan(previousLabelTop!), reason: c.label);
+      }
+      previousSwatchTop = swatchTop;
+      previousLabelTop = labelTop;
       final text = tester.widget<Text>(find.text(c.label));
       expect(text.style?.color, c.color, reason: c.label);
       expect(text.style?.fontWeight, FontWeight.w700, reason: c.label);
