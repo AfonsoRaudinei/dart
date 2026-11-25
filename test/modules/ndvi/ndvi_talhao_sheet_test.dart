@@ -240,7 +240,7 @@ void main() {
       NdviImage(
         id: '3',
         fieldId: fieldId,
-        imageDate: DateTime(2026, 3, 1),
+        imageDate: DateTime(2026, 11, 22),
         ndviMin: 0.1,
         ndviMax: 0.8,
         ndviMean: 0.7,
@@ -251,7 +251,7 @@ void main() {
       NdviImage(
         id: '2',
         fieldId: fieldId,
-        imageDate: DateTime(2026, 2, 1),
+        imageDate: DateTime(2026, 11, 20),
         ndviMin: 0.1,
         ndviMax: 0.8,
         ndviMean: 0.6,
@@ -275,15 +275,15 @@ void main() {
 
     await tester.pump();
 
-    expect(find.text('01/03'), findsOneWidget);
-    expect(find.text('01/02'), findsOneWidget);
+    expect(find.text('22/11'), findsOneWidget);
+    expect(find.text('20/11'), findsOneWidget);
       expect(find.text('Sentinel NDVI'), findsOneWidget);
 
-    await tester.tap(find.text('01/02'));
+    await tester.tap(find.text('20/11'));
     await tester.pump();
 
     expect(find.text('Preview RGB (Planet)'), findsOneWidget);
     expect(find.text('Online'), findsOneWidget);
-    expect(find.text('01/02/2026'), findsOneWidget);
+    expect(find.text('20/11/2026'), findsOneWidget);
   });
 }

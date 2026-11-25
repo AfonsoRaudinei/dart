@@ -39,6 +39,23 @@ void main() {
     expect(edgeFunction, contains('eo:cloud_cover'));
   });
 
+  test('catalogo ordena desc, pagina e dia civil BR', () {
+    expect(
+      edgeFunction,
+      contains('sortby: [{ field: "datetime", direction: "desc" }]'),
+    );
+    expect(edgeFunction, contains('civilDateKeyBr'));
+    expect(edgeFunction, contains('civilDateKeyFromIso8601'));
+    expect(edgeFunction, contains('requested_date_unavailable'));
+    expect(edgeFunction, contains('requestedDateNotAvailable'));
+  });
+
+  test('Ouro usa catalogo 80 e processamento 30', () {
+    expect(edgeFunction, contains('catalogCloudMax: 80'));
+    expect(edgeFunction, contains('processCloudMax: 30'));
+    expect(edgeFunction, isNot(contains('catalogCloudMax: 30')));
+  });
+
   test('validacao de entrada exige area_id e bbox ou geometry', () {
     expect(
       edgeFunction,
@@ -62,11 +79,11 @@ void main() {
     expect(edgeFunction, contains('status: 404'));
   });
 
-  test('Ouro refinado: cloud 30, evalscript e user_plans', () {
+  test('Ouro refinado: evalscript e user_plans', () {
     expect(edgeFunction, contains('sentinel_refined'));
     expect(edgeFunction, contains('NDVI_REFINED_EVALSCRIPT'));
     expect(edgeFunction, contains('0.85, 0.92, 0.35'));
-    expect(edgeFunction, contains('catalogCloudMax: 30'));
+    expect(edgeFunction, contains('catalogCloudMax: 80'));
     expect(edgeFunction, contains('processCloudMax: 30'));
     expect(edgeFunction, contains('user_plans'));
     expect(edgeFunction, contains('userHasActiveOuroPlan'));
