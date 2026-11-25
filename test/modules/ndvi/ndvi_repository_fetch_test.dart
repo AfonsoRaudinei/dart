@@ -791,6 +791,46 @@ void main() {
     },
   );
 
+  test('getLatestByFieldId sem rede cai na cena velha com PNG', () async {
+    const fieldId = 'F1';
+    lookup.nextReturn = const FieldSummary(
+      id: fieldId,
+      name: 'Teste',
+      farmId: 'FAZ1',
+      bbox: [-50.0, -20.0, -49.0, -19.0],
+    );
+    local.nextList = const [
+      NdviImageModel(
+        id: 'F1_2026-11-22',
+        fieldId: fieldId,
+        imageDate: '2026-11-22',
+        ndviMin: 0,
+        ndviMax: 0,
+        ndviMean: 0,
+        source: 'sentinel',
+        fetchedAt: '2026-11-24T00:00:00',
+        syncStatus: 0,
+      ),
+      NdviImageModel(
+        id: 'F1_2026-10-01',
+        fieldId: fieldId,
+        imageDate: '2026-10-01',
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.5,
+        source: 'sentinel',
+        fetchedAt: '2026-10-02T00:00:00',
+        syncStatus: 0,
+        localPath: '/tmp/old.png',
+      ),
+    ];
+    remote.throwOnFetch = true;
+
+    final latest = await repository.getLatestByFieldId(fieldId);
+
+    expect(ndviImageDateKey(latest!.imageDate), '2026-10-01');
+  });
+
   test('getByFieldId junta ISO legado e chave civil do mesmo dia', () async {
     const fieldId = 'F1';
     local.nextList = const [
