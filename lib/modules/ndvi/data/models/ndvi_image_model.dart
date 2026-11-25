@@ -1,4 +1,5 @@
 import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
+import 'package:soloforte_app/modules/ndvi/domain/ndvi_image_utils.dart';
 
 class NdviImageModel {
   final String id;
@@ -35,7 +36,9 @@ class NdviImageModel {
     return NdviImageModel(
       id: map['id'] as String,
       fieldId: map['field_id'] as String,
-      imageDate: map['image_date'] as String,
+      imageDate: ndviNormalizeImageDateStorage(
+        map['image_date'] as String,
+      ),
       ndviMin: (map['ndvi_min'] as num?)?.toDouble() ?? 0.0,
       ndviMax: (map['ndvi_max'] as num?)?.toDouble() ?? 0.0,
       ndviMean: (map['ndvi_mean'] as num?)?.toDouble() ?? 0.0,
@@ -72,7 +75,7 @@ class NdviImageModel {
     return NdviImage(
       id: id,
       fieldId: fieldId,
-      imageDate: DateTime.parse(imageDate),
+      imageDate: ndviParseCivilImageDate(imageDate),
       ndviMin: ndviMin,
       ndviMax: ndviMax,
       ndviMean: ndviMean,
@@ -90,7 +93,7 @@ class NdviImageModel {
     return NdviImageModel(
       id: entity.id,
       fieldId: entity.fieldId,
-      imageDate: entity.imageDate.toIso8601String(),
+      imageDate: ndviImageDateKey(entity.imageDate),
       ndviMin: entity.ndviMin,
       ndviMax: entity.ndviMax,
       ndviMean: entity.ndviMean,

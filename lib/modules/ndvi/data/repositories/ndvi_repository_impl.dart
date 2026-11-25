@@ -318,7 +318,7 @@ class NdviRepositoryImpl implements INdviRepository {
     return NdviImage(
       id: '${fieldId}_$key',
       fieldId: fieldId,
-      imageDate: DateTime.parse(key),
+      imageDate: ndviParseCivilImageDate(key),
       ndviMin: 0,
       ndviMax: 0,
       ndviMean: 0,
@@ -337,7 +337,7 @@ class NdviRepositoryImpl implements INdviRepository {
     return NdviImage(
       id: '${fieldId}_$imageDate',
       fieldId: fieldId,
-      imageDate: DateTime.parse(imageDate),
+      imageDate: ndviParseCivilImageDate(imageDate),
       ndviMin: 0,
       ndviMax: 0,
       ndviMean: 0,
