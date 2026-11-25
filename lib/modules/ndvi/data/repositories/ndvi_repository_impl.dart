@@ -32,10 +32,36 @@ class NdviRepositoryImpl implements INdviRepository {
   String _fingerprint(FieldSummary summary) =>
       ndviOriginFingerprintWithTier(summary, _isRefinedEnabled());
 
+  /// Quantas das datas mais novas sem PNG o "último" tenta materializar antes
+  /// de aceitar uma cena mais antiga.
+  static const int _kLatestLazyAttempts = 3;
+
   @override
   Future<NdviImage?> getLatestByFieldId(String fieldId) async {
     final images = await getByFieldId(fieldId);
     if (images.isEmpty) return null;
+
+    // `images` vem da mais nova para a mais antiga. Data nova sem PNG (stub)
+    // é materializada antes de cair numa cena velha que já tem arquivo.
+    var attempts = 0;
+    for (final image in images) {
+      if (ndviImageHasRenderableData(image)) {
+        if (ndviIsColormapSource(image.source)) return image;
+        continue;
+      }
+      if (normalizeNdviSource(image.source) == 'unavailable') continue;
+      if (attempts >= _kLatestLazyAttempts) break;
+      attempts++;
+      final ensured = await ensureImageForDate(
+        fieldId,
+        ndviImageDateKey(image.imageDate),
+      );
+      if (ensured != null &&
+          ndviImageHasRenderableData(ensured) &&
+          ndviIsColormapSource(ensured.source)) {
+        return ensured;
+      }
+    }
 
     for (final image in images) {
       if (ndviImageHasRenderableData(image)) return image;
@@ -45,6 +71,35 @@ class NdviRepositoryImpl implements INdviRepository {
 
   @override
   Future<List<NdviImage>> getByFieldId(String fieldId) async {
+    return _normalizeIndex(await _loadIndex(fieldId));
+  }
+
+  /// Uma entrada por dia civil (linhas legadas em ISO duplicavam o dia) e
+  /// ordem pela data, não pela string gravada.
+  List<NdviImage> _normalizeIndex(List<NdviImage> images) {
+    int rank(NdviImage image) {
+      if (ndviImageHasRenderableData(image) &&
+          ndviIsColormapSource(image.source)) {
+        return 3;
+      }
+      if (ndviImageHasRenderableData(image)) return 2;
+      if (normalizeNdviSource(image.source) == 'unavailable') return 0;
+      return 1;
+    }
+
+    final byDay = <String, NdviImage>{};
+    for (final image in images) {
+      final key = ndviImageDateKey(image.imageDate);
+      final current = byDay[key];
+      if (current == null || rank(image) > rank(current)) {
+        byDay[key] = image;
+      }
+    }
+    return byDay.values.toList()
+      ..sort((a, b) => b.imageDate.compareTo(a.imageDate));
+  }
+
+  Future<List<NdviImage>> _loadIndex(String fieldId) async {
     final summary = await _fieldLookup.findById(fieldId);
     final fingerprint =
         summary != null ? _fingerprint(summary) : '';
