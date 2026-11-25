@@ -280,8 +280,9 @@ async function fetchSentinelDates(
     bbox: bbox,
     datetime: `${fromDate}T00:00:00Z/${toDate}T23:59:59Z`,
     collections: ["sentinel-2-l2a"],
+    // CDSE recusa `sortby` (400 "problematic key"); a ordem vem de
+    // thinSentinelDatesByRevisit depois de paginar o catálogo inteiro.
     limit: 50,
-    sortby: [{ field: "datetime", direction: "desc" }],
     filter: `eo:cloud_cover < ${cloudMax}`,
     "filter-lang": "cql2-text",
   };
