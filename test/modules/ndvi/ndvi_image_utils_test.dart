@@ -63,7 +63,11 @@ void main() {
 
   test('ndviDateChipLabel inclui nuvem quando informada', () {
     expect(
-      ndviDateChipLabel(DateTime(2026, 10, 8), cloudCoverage: 12.4),
+      ndviDateChipLabel(
+        DateTime(2026, 10, 8),
+        cloudCoverage: 12.4,
+        referenceNow: DateTime(2026, 10, 10),
+      ),
       '08/10 · 12%',
     );
   });
