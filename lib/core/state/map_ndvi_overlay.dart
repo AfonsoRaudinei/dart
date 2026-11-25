@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../contracts/i_ndvi_latest_lookup_provider.dart';
 import '../contracts/ndvi_latest_summary.dart';
+import '../utils/ndvi_civil_date.dart';
 
 /// Talhão cujo raster NDVI deve cobrir o polígono no mapa. Sessão apenas.
 final mapNdviOverlayFieldIdProvider = StateProvider<String?>((ref) => null);
@@ -126,6 +127,12 @@ final mapNdviOverlaySummaryProvider = FutureProvider<NdviLatestSummary?>((
     }
     final covers = mapNdviSummaryCoversField(summary);
     if (covers && summary != null) {
+      final actualKey = ndviImageDateKey(summary.imageDate);
+      if (dateKey != null && actualKey != dateKey) {
+        ref
+            .read(mapNdviSelectedDateProvider.notifier)
+            .select(MapNdviDateSelection(fieldId: fieldId, dateKey: actualKey));
+      }
       ref
           .read(mapNdviRetainedSummaryProvider.notifier)
           .keep(MapNdviRetainedSummary(fieldId: fieldId, summary: summary));
@@ -138,6 +145,10 @@ final mapNdviOverlaySummaryProvider = FutureProvider<NdviLatestSummary?>((
       final error = MapNdviDateError(fieldId: fieldId, dateKey: dateKey);
       ref.read(mapNdviOverlayDateErrorProvider.notifier).report(error);
       if (retained != null && retained.fieldId == fieldId) {
+        final retainedKey = ndviImageDateKey(retained.summary.imageDate);
+        ref
+            .read(mapNdviSelectedDateProvider.notifier)
+            .select(MapNdviDateSelection(fieldId: fieldId, dateKey: retainedKey));
         return retained.summary;
       }
     }
@@ -150,6 +161,10 @@ final mapNdviOverlaySummaryProvider = FutureProvider<NdviLatestSummary?>((
         ref
             .read(mapNdviOverlayDateErrorProvider.notifier)
             .report(MapNdviDateError(fieldId: fieldId, dateKey: dateKey));
+        final retainedKey = ndviImageDateKey(retained.summary.imageDate);
+        ref
+            .read(mapNdviSelectedDateProvider.notifier)
+            .select(MapNdviDateSelection(fieldId: fieldId, dateKey: retainedKey));
         return retained.summary;
       }
     }
