@@ -1,6 +1,8 @@
 import 'package:soloforte_app/modules/ndvi/data/models/ndvi_image_model.dart';
 import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
 
+export 'package:soloforte_app/core/utils/ndvi_civil_date.dart';
+
 bool ndviImageHasRenderableData(NdviImage image) {
   final localPath = image.localPath;
   if (localPath != null && localPath.isNotEmpty) return true;
@@ -13,13 +15,6 @@ bool ndviModelHasRenderableData(NdviImageModel model) {
   if (localPath != null && localPath.isNotEmpty) return true;
   final imageUrl = model.imageUrl;
   return imageUrl != null && imageUrl.isNotEmpty;
-}
-
-String ndviImageDateKey(DateTime date) {
-  final y = date.year.toString().padLeft(4, '0');
-  final m = date.month.toString().padLeft(2, '0');
-  final d = date.day.toString().padLeft(2, '0');
-  return '$y-$m-$d';
 }
 
 /// Normaliza valores legados (`planet`) para a fonte atual.
@@ -77,6 +72,8 @@ String? ndviDegradedReasonLabel(String? code) {
       'Nenhuma cena Sentinel sem nuvens excessivas no periodo.',
     'cdse_process_failed' || 'commercial_process_failed' =>
       'Processamento NDVI falhou nesta data.',
+    'requested_date_unavailable' =>
+      'Nenhuma cena NDVI nesta data para o talhao.',
     _ => 'Sentinel indisponivel ($code).',
   };
 }
@@ -104,12 +101,31 @@ String? ndviCloudCoverageLabel(double? cloudCoverage) {
   return 'Nuvem ${cloudCoverage.round()}%';
 }
 
-String ndviDateChipLabel(DateTime date, {double? cloudCoverage}) {
+String ndviSceneAgeLabel(DateTime imageDate, {DateTime? now}) {
+  final clock = now ?? DateTime.now();
+  final today = DateTime(clock.year, clock.month, clock.day);
+  final scene = DateTime(imageDate.year, imageDate.month, imageDate.day);
+  final days = today.difference(scene).inDays;
+  if (days <= 7) return '';
+  if (days < 30) return 'há ${days}d';
+  final months = (days / 30).floor();
+  if (months < 12) return 'há ${months}m';
+  final years = (days / 365).floor();
+  return 'há ${years}a';
+}
+
+String ndviDateChipLabel(
+  DateTime date, {
+  double? cloudCoverage,
+  DateTime? referenceNow,
+}) {
   final day = date.day.toString().padLeft(2, '0');
   final month = date.month.toString().padLeft(2, '0');
   final cloud = ndviCloudCoverageLabel(cloudCoverage);
-  if (cloud == null) return '$day/$month';
-  return '$day/$month · ${cloudCoverage!.round()}%';
+  final age = ndviSceneAgeLabel(date, now: referenceNow);
+  final core = cloud == null ? '$day/$month' : '$day/$month · ${cloudCoverage!.round()}%';
+  if (age.isEmpty) return core;
+  return '$core · $age';
 }
 
 /// Stats reais da edge; stubs e falha de amostragem ficam 0/0/0.

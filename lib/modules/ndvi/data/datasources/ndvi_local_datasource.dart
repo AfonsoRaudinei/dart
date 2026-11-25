@@ -35,10 +35,15 @@ class NdviLocalDatasource {
     if (userId.isEmpty) return null;
 
     final db = await _db;
+    final dateKey = imageDate.length >= 10
+        ? imageDate.substring(0, 10)
+        : imageDate;
     final rows = await db.query(
       _table,
-      where: 'field_id = ? AND image_date = ? AND user_id = ?',
-      whereArgs: [fieldId, imageDate, userId],
+      where:
+          'field_id = ? AND user_id = ? AND '
+          '(image_date = ? OR image_date LIKE ?)',
+      whereArgs: [fieldId, userId, dateKey, '$dateKey%'],
       limit: 1,
     );
     if (rows.isEmpty) return null;

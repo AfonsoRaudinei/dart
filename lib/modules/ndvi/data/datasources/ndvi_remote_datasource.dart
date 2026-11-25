@@ -105,6 +105,10 @@ class NdviRemoteDatasource {
 
   String? _degradedReasonFromBody(Object? data) {
     if (data is! Map) return null;
+    final errorCode = data['error'];
+    if (errorCode == 'requested_date_unavailable') {
+      return 'requested_date_unavailable';
+    }
     final raw = data['sentinel_degraded_reason'];
     if (raw is! String) return null;
     final reason = raw.trim();
@@ -115,8 +119,9 @@ class NdviRemoteDatasource {
     required Map<String, dynamic> data,
     required String fieldId,
   }) async {
-    final imageDate =
-        data['date'] as String? ?? data['image_date'] as String? ?? '';
+    final imageDate = ndviNormalizeImageDateStorage(
+      data['date'] as String? ?? data['image_date'] as String? ?? '',
+    );
     final rawSource = data['source'] as String? ?? 'auto';
     final source = normalizeNdviSource(rawSource);
     final id = data['id'] as String? ?? '${fieldId}_$imageDate';
