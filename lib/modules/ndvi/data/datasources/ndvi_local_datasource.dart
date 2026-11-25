@@ -44,10 +44,29 @@ class NdviLocalDatasource {
           'field_id = ? AND user_id = ? AND '
           '(image_date = ? OR image_date LIKE ?)',
       whereArgs: [fieldId, userId, dateKey, '$dateKey%'],
-      limit: 1,
     );
     if (rows.isEmpty) return null;
-    return NdviImageModel.fromMap(rows.first);
+
+    NdviImageModel? exact;
+    NdviImageModel? bestLegacy;
+    for (final row in rows) {
+      final model = NdviImageModel.fromMap(row);
+      if (model.imageDate == dateKey) {
+        exact ??= model;
+        if (model.source != 'unavailable' &&
+            ((model.localPath?.isNotEmpty ?? false) ||
+                (model.imageUrl?.isNotEmpty ?? false))) {
+          return model;
+        }
+        continue;
+      }
+      if (model.source != 'unavailable' &&
+          ((model.localPath?.isNotEmpty ?? false) ||
+              (model.imageUrl?.isNotEmpty ?? false))) {
+        bestLegacy = model;
+      }
+    }
+    return exact ?? bestLegacy ?? NdviImageModel.fromMap(rows.first);
   }
 
   Future<List<NdviImageModel>> getAll(String fieldId) async {
