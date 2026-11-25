@@ -145,10 +145,6 @@ final mapNdviOverlaySummaryProvider = FutureProvider<NdviLatestSummary?>((
       final error = MapNdviDateError(fieldId: fieldId, dateKey: dateKey);
       ref.read(mapNdviOverlayDateErrorProvider.notifier).report(error);
       if (retained != null && retained.fieldId == fieldId) {
-        final retainedKey = ndviImageDateKey(retained.summary.imageDate);
-        ref
-            .read(mapNdviSelectedDateProvider.notifier)
-            .select(MapNdviDateSelection(fieldId: fieldId, dateKey: retainedKey));
         return retained.summary;
       }
     }
@@ -161,10 +157,6 @@ final mapNdviOverlaySummaryProvider = FutureProvider<NdviLatestSummary?>((
         ref
             .read(mapNdviOverlayDateErrorProvider.notifier)
             .report(MapNdviDateError(fieldId: fieldId, dateKey: dateKey));
-        final retainedKey = ndviImageDateKey(retained.summary.imageDate);
-        ref
-            .read(mapNdviSelectedDateProvider.notifier)
-            .select(MapNdviDateSelection(fieldId: fieldId, dateKey: retainedKey));
         return retained.summary;
       }
     }
