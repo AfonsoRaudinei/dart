@@ -147,7 +147,7 @@ void main() {
       NdviImage(
         id: '1',
         fieldId: fieldId,
-        imageDate: DateTime(2026, 3, 1),
+        imageDate: DateTime(2026, 11, 20),
         ndviMin: 0.2,
         ndviMax: 0.8,
         ndviMean: 0.55,
@@ -159,7 +159,7 @@ void main() {
       NdviImage(
         id: '2',
         fieldId: fieldId,
-        imageDate: DateTime(2026, 2, 1),
+        imageDate: DateTime(2026, 11, 10),
         ndviMin: 0,
         ndviMax: 0,
         ndviMean: 0,
@@ -195,7 +195,7 @@ void main() {
     expect(find.text('Sentinel NDVI'), findsOneWidget);
     expect(find.text('Máscara verde'), findsOneWidget);
 
-    await tester.tap(find.text('01/02'));
+    await tester.tap(find.textContaining('10/11'));
     await tester.pump();
 
     expect(find.text('Preview RGB (Planet)'), findsOneWidget);
