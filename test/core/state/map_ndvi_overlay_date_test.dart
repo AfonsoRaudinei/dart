@@ -56,10 +56,13 @@ void main() {
 
     expect(kept?.imageDate, DateTime(2026, 10, 28));
     expect(
-      container.read(mapNdviSelectedDateProvider)?.dateKey,
-      '2026-10-28',
+      container.read(mapNdviOverlayDateErrorProvider),
+      const MapNdviDateError(fieldId: 'f1', dateKey: '2026-10-10'),
     );
-    expect(container.read(mapNdviOverlayDateErrorProvider), isNull);
+    expect(
+      container.read(mapNdviSelectedDateProvider)?.dateKey,
+      '2026-10-10',
+    );
   });
 
   test('resposta em outra data alinha a seleção', () async {
