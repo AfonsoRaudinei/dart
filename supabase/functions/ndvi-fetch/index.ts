@@ -298,6 +298,7 @@ async function fetchSentinelDates(
 
     if (!res.ok) {
       console.error("Sentinel catalog error:", await res.text());
+      if (candidates.length > 0) break;
       return { dates: [], catalogOk: false, cloudByDate: {} };
     }
 
@@ -993,30 +994,7 @@ serve(async (req) => {
           requestedDateUnavailable = true;
         }
         if (refinedAttempt.imageBase64) {
-          const standardNewestAttempt = await trySentinelBackends(
-            sentinelBackends,
-            bbox,
-            geometry,
-            fromDate,
-            toDate,
-            undefined,
-            finalDate,
-          );
-          const refinedIsOlder =
-            standardNewestAttempt.imageBase64 != null &&
-            standardNewestAttempt.finalDate.localeCompare(
-              refinedAttempt.finalDate,
-            ) > 0;
-          if (refinedIsOlder) {
-            imageBase64 = standardNewestAttempt.imageBase64;
-            availableDates = standardNewestAttempt.availableDates;
-            finalDate = standardNewestAttempt.finalDate;
-            ndviMin = standardNewestAttempt.ndviMin;
-            ndviMax = standardNewestAttempt.ndviMax;
-            ndviMean = standardNewestAttempt.ndviMean;
-            cloudCoverage = standardNewestAttempt.cloudCoverage;
-            usedSource = "sentinel";
-          } else {
+          if (requestedDate) {
             imageBase64 = refinedAttempt.imageBase64;
             availableDates = refinedAttempt.availableDates;
             finalDate = refinedAttempt.finalDate;
@@ -1025,6 +1003,40 @@ serve(async (req) => {
             ndviMean = refinedAttempt.ndviMean;
             cloudCoverage = refinedAttempt.cloudCoverage;
             usedSource = "sentinel_refined";
+          } else {
+            const standardNewestAttempt = await trySentinelBackends(
+              sentinelBackends,
+              bbox,
+              geometry,
+              fromDate,
+              toDate,
+              undefined,
+              finalDate,
+            );
+            const refinedIsOlder =
+              standardNewestAttempt.imageBase64 != null &&
+              standardNewestAttempt.finalDate.localeCompare(
+                refinedAttempt.finalDate,
+              ) > 0;
+            if (refinedIsOlder) {
+              imageBase64 = standardNewestAttempt.imageBase64;
+              availableDates = standardNewestAttempt.availableDates;
+              finalDate = standardNewestAttempt.finalDate;
+              ndviMin = standardNewestAttempt.ndviMin;
+              ndviMax = standardNewestAttempt.ndviMax;
+              ndviMean = standardNewestAttempt.ndviMean;
+              cloudCoverage = standardNewestAttempt.cloudCoverage;
+              usedSource = "sentinel";
+            } else {
+              imageBase64 = refinedAttempt.imageBase64;
+              availableDates = refinedAttempt.availableDates;
+              finalDate = refinedAttempt.finalDate;
+              ndviMin = refinedAttempt.ndviMin;
+              ndviMax = refinedAttempt.ndviMax;
+              ndviMean = refinedAttempt.ndviMean;
+              cloudCoverage = refinedAttempt.cloudCoverage;
+              usedSource = "sentinel_refined";
+            }
           }
         }
       }
