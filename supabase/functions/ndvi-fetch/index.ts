@@ -8,6 +8,29 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+/** Dia civil para chips NDVI (horário de Brasília). */
+const NDVI_CIVIL_TZ = "America/Sao_Paulo";
+
+function civilDateKeyBr(instant: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: NDVI_CIVIL_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(instant);
+}
+
+function civilDateKeyFromIso8601(iso: string): string {
+  return civilDateKeyBr(new Date(iso));
+}
+
+function addDaysToCivilDateKey(dateKey: string, deltaDays: number): string {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  const utc = new Date(Date.UTC(y, m - 1, d));
+  utc.setUTCDate(utc.getUTCDate() + deltaDays);
+  return utc.toISOString().substring(0, 10);
+}
+
 type GeoJsonGeometry = {
   type: string;
   coordinates: unknown;
@@ -251,40 +274,53 @@ async function fetchSentinelDates(
   catalogOk: boolean;
   cloudByDate: Record<string, number>;
 }> {
-  const body = {
+  const searchUrl = `${apiBase}/catalog/1.0.0/search`;
+  const candidates: SentinelSceneCandidate[] = [];
+  let requestBody: Record<string, unknown> = {
     bbox: bbox,
     datetime: `${fromDate}T00:00:00Z/${toDate}T23:59:59Z`,
     collections: ["sentinel-2-l2a"],
     limit: 50,
+    sortby: [{ field: "datetime", direction: "desc" }],
     filter: `eo:cloud_cover < ${cloudMax}`,
     "filter-lang": "cql2-text",
   };
 
-  const res = await fetch(`${apiBase}/catalog/1.0.0/search`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    console.error("Sentinel catalog error:", await res.text());
-    return { dates: [], catalogOk: false, cloudByDate: {} };
-  }
-
-  const data = await res.json();
-  const candidates: SentinelSceneCandidate[] = [];
-  for (const feature of data.features ?? []) {
-    const props = feature.properties as Record<string, unknown> | undefined;
-    const dt = props?.datetime as string | undefined;
-    if (!dt) continue;
-    candidates.push({
-      date: dt.substring(0, 10),
-      cloudCover: sentinelSceneCloudCover(props ?? {}),
+  for (let page = 0; page < 30; page++) {
+    const res = await fetch(searchUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
     });
+
+    if (!res.ok) {
+      console.error("Sentinel catalog error:", await res.text());
+      return { dates: [], catalogOk: false, cloudByDate: {} };
+    }
+
+    const data = await res.json();
+    for (const feature of data.features ?? []) {
+      const props = feature.properties as Record<string, unknown> | undefined;
+      const dt = props?.datetime as string | undefined;
+      if (!dt) continue;
+      candidates.push({
+        date: civilDateKeyFromIso8601(dt),
+        cloudCover: sentinelSceneCloudCover(props ?? {}),
+      });
+    }
+
+    const links = data.links as Array<{
+      rel: string;
+      body?: Record<string, unknown>;
+    }> | undefined;
+    const nextLink = links?.find((link) => link.rel === "next");
+    if (!nextLink?.body) break;
+    requestBody = { ...requestBody, ...nextLink.body };
   }
+
   const thinned = thinSentinelDatesByRevisit(candidates);
   return {
     dates: thinned.dates,
@@ -482,7 +518,7 @@ async function fetchPlanetDates(
   const dates: string[] = [];
   for (const feature of data.features ?? []) {
     const dt = feature.properties?.acquired as string | undefined;
-    if (dt) dates.push(dt.substring(0, 10));
+    if (dt) dates.push(civilDateKeyFromIso8601(dt));
   }
   return [...new Set(dates)].sort((a, b) => b.localeCompare(a));
 }
@@ -682,6 +718,8 @@ type SentinelFetchAttempt = {
   ndviMean: number;
   cloudCoverage: number;
   degradedReason: string | null;
+  /** Pedido explícito de data ausente do catálogo — sem substituir por outra. */
+  requestedDateNotAvailable?: boolean;
 };
 
 type SentinelFetchOptions = {
@@ -752,39 +790,61 @@ async function trySentinelBackends(
       continue;
     }
 
-    const finalDate = requestedDate
-      ? (catalog.dates.includes(requestedDate)
-        ? requestedDate
-        : catalog.dates[0])
-      : catalog.dates[0];
+    if (requestedDate && !catalog.dates.includes(requestedDate)) {
+      return {
+        imageBase64: null,
+        availableDates: catalog.dates,
+        finalDate: requestedDate,
+        ndviMin: 0,
+        ndviMax: 0,
+        ndviMean: 0,
+        cloudCoverage: 0,
+        degradedReason: `${backend.id}_requested_date_unavailable`,
+        requestedDateNotAvailable: true,
+      };
+    }
 
-    let processGeometry = geometry;
-    let result = await fetchSentinelImage(
-      backend.apiBase,
-      bbox,
-      token,
-      finalDate,
-      processGeometry,
-      processCloudMax,
-      evalscript,
-    );
-    // Polígono recusado pelo process: repete só com bbox, sem máscara.
-    if (!result && geometry) {
-      processGeometry = undefined;
+    const datesToTry = requestedDate ? [requestedDate] : [...catalog.dates];
+    let processGeometry: GeoJsonGeometry | undefined = geometry;
+    let successDate: string | null = null;
+    let result: { base64: string; cloudCoverage: number } | null = null;
+
+    for (const tryDate of datesToTry) {
+      processGeometry = geometry;
       result = await fetchSentinelImage(
         backend.apiBase,
         bbox,
         token,
-        finalDate,
-        undefined,
+        tryDate,
+        processGeometry,
         processCloudMax,
         evalscript,
       );
+      // Polígono recusado pelo process: repete só com bbox, sem máscara.
+      if (!result && geometry) {
+        processGeometry = undefined;
+        result = await fetchSentinelImage(
+          backend.apiBase,
+          bbox,
+          token,
+          tryDate,
+          undefined,
+          processCloudMax,
+          evalscript,
+        );
+      }
+      if (result) {
+        successDate = tryDate;
+        break;
+      }
     }
-    if (!result) {
+
+    if (!result || !successDate) {
       lastReason = `${backend.id}_process_failed`;
       continue;
     }
+
+  const finalDate = successDate;
 
     let ndviMin = 0;
     let ndviMax = 0;
@@ -883,12 +943,9 @@ serve(async (req) => {
     const planetApiKey = Deno.env.get("PLANET_API_KEY") ?? "";
     let sentinelDegradedReason: string | null = null;
 
-    // ── 3. Janela de datas: últimos 90 dias ────────────────────────────────
-    const today = new Date();
-    const toDate = today.toISOString().substring(0, 10);
-    const fromDateObj = new Date(today);
-    fromDateObj.setDate(fromDateObj.getDate() - 90);
-    const fromDate = fromDateObj.toISOString().substring(0, 10);
+    // ── 3. Janela de datas: últimos 90 dias (dia civil BR) ─────────────────
+    const toDate = civilDateKeyBr(new Date());
+    const fromDate = addDaysToCivilDateKey(toDate, -90);
 
     let imageBase64: string | null = null;
     let usedSource = "sentinel";
@@ -899,6 +956,7 @@ serve(async (req) => {
     let ndviMax = 0;
     let ndviMean = 0;
 
+    let requestedDateUnavailable = false;
     let isOuroRefined = false;
     const authHeader = req.headers.get("Authorization");
     if (authHeader?.startsWith("Bearer ")) {
@@ -926,20 +984,48 @@ serve(async (req) => {
           requestedDate,
           finalDate,
           {
-            catalogCloudMax: 30,
+            catalogCloudMax: 80,
             processCloudMax: 30,
             evalscript: NDVI_REFINED_EVALSCRIPT,
           },
         );
+        if (refinedAttempt.requestedDateNotAvailable) {
+          requestedDateUnavailable = true;
+        }
         if (refinedAttempt.imageBase64) {
-          imageBase64 = refinedAttempt.imageBase64;
-          availableDates = refinedAttempt.availableDates;
-          finalDate = refinedAttempt.finalDate;
-          ndviMin = refinedAttempt.ndviMin;
-          ndviMax = refinedAttempt.ndviMax;
-          ndviMean = refinedAttempt.ndviMean;
-          cloudCoverage = refinedAttempt.cloudCoverage;
-          usedSource = "sentinel_refined";
+          const standardNewestAttempt = await trySentinelBackends(
+            sentinelBackends,
+            bbox,
+            geometry,
+            fromDate,
+            toDate,
+            undefined,
+            finalDate,
+          );
+          const refinedIsOlder =
+            standardNewestAttempt.imageBase64 != null &&
+            standardNewestAttempt.finalDate.localeCompare(
+              refinedAttempt.finalDate,
+            ) > 0;
+          if (refinedIsOlder) {
+            imageBase64 = standardNewestAttempt.imageBase64;
+            availableDates = standardNewestAttempt.availableDates;
+            finalDate = standardNewestAttempt.finalDate;
+            ndviMin = standardNewestAttempt.ndviMin;
+            ndviMax = standardNewestAttempt.ndviMax;
+            ndviMean = standardNewestAttempt.ndviMean;
+            cloudCoverage = standardNewestAttempt.cloudCoverage;
+            usedSource = "sentinel";
+          } else {
+            imageBase64 = refinedAttempt.imageBase64;
+            availableDates = refinedAttempt.availableDates;
+            finalDate = refinedAttempt.finalDate;
+            ndviMin = refinedAttempt.ndviMin;
+            ndviMax = refinedAttempt.ndviMax;
+            ndviMean = refinedAttempt.ndviMean;
+            cloudCoverage = refinedAttempt.cloudCoverage;
+            usedSource = "sentinel_refined";
+          }
         }
       }
 
@@ -953,6 +1039,9 @@ serve(async (req) => {
           requestedDate,
           finalDate,
         );
+        if (attempt.requestedDateNotAvailable) {
+          requestedDateUnavailable = true;
+        }
         if (attempt.imageBase64) {
           imageBase64 = attempt.imageBase64;
           availableDates = attempt.availableDates;
@@ -982,11 +1071,38 @@ serve(async (req) => {
       if (availableDates.length === 0) availableDates = planetDates;
 
       if (planetDates.length > 0) {
-        finalDate = requestedDate
-          ? (planetDates.includes(requestedDate) ? requestedDate : planetDates[0])
-          : planetDates[0];
-        imageBase64 = await fetchPlanetThumbnail(bbox, planetApiKey, finalDate);
+        if (requestedDate) {
+          if (planetDates.includes(requestedDate)) {
+            finalDate = requestedDate;
+            imageBase64 = await fetchPlanetThumbnail(
+              bbox,
+              planetApiKey,
+              finalDate,
+            );
+          } else {
+            requestedDateUnavailable = true;
+          }
+        } else {
+          finalDate = planetDates[0];
+          imageBase64 = await fetchPlanetThumbnail(bbox, planetApiKey, finalDate);
+        }
       }
+    }
+
+    if (!imageBase64 && requestedDate && requestedDateUnavailable) {
+      return new Response(
+        JSON.stringify({
+          error: "requested_date_unavailable",
+          message: `Nenhuma imagem para a data ${requestedDate}.`,
+          date: requestedDate,
+          available_dates: availableDates,
+          sentinel_degraded_reason: sentinelDegradedReason,
+        }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // ── 6. Resposta ─────────────────────────────────────────────────────────
