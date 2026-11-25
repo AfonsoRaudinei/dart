@@ -56,8 +56,27 @@ void main() {
 
     expect(kept?.imageDate, DateTime(2026, 10, 28));
     expect(
-      container.read(mapNdviOverlayDateErrorProvider),
-      const MapNdviDateError(fieldId: 'f1', dateKey: '2026-10-10'),
+      container.read(mapNdviSelectedDateProvider)?.dateKey,
+      '2026-10-28',
+    );
+    expect(container.read(mapNdviOverlayDateErrorProvider), isNull);
+  });
+
+  test('resposta em outra data alinha a seleção', () async {
+    final lookup = _RecordingLookup()..alternateDateKey = '2026-10-20';
+    final container = _container(lookup);
+    addTearDown(container.dispose);
+    final keep = container.listen(mapNdviOverlaySummaryProvider, (_, __) {});
+    addTearDown(keep.close);
+
+    container.read(mapNdviOverlayFieldIdProvider.notifier).state = 'f1';
+    container.read(mapNdviSelectedDateProvider.notifier).state =
+        const MapNdviDateSelection(fieldId: 'f1', dateKey: '2026-10-16');
+    await container.read(mapNdviOverlaySummaryProvider.future);
+
+    expect(
+      container.read(mapNdviSelectedDateProvider)?.dateKey,
+      '2026-10-20',
     );
   });
 
@@ -105,6 +124,7 @@ ProviderContainer _container(_RecordingLookup lookup) {
 class _RecordingLookup implements INdviLatestLookup {
   final List<String?> requestedDates = [];
   String? failKey;
+  String? alternateDateKey;
 
   @override
   Future<NdviLatestSummary?> getLatest(
@@ -115,8 +135,9 @@ class _RecordingLookup implements INdviLatestLookup {
     if (imageDate != null && imageDate == failKey) {
       throw StateError('ndvi-offline');
     }
+    final resolvedDate = alternateDateKey ?? imageDate ?? '2026-10-28';
     return NdviLatestSummary(
-      imageDate: DateTime.parse(imageDate ?? '2026-10-28'),
+      imageDate: DateTime.parse(resolvedDate),
       ndviMean: 0.5,
       ndviMin: 0.1,
       ndviMax: 0.9,

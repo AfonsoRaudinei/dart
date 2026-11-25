@@ -45,5 +45,22 @@ void main() {
     expect(outMap['id'], '123');
     expect(outMap['field_id'], 'F1');
     expect(outMap['ndvi_max'], 0.9);
+    expect(outMap['image_date'], '2026-03-01');
+  });
+
+  test('fromMap normaliza ISO legado para yyyy-MM-dd', () {
+    final model = NdviImageModel.fromMap({
+      'id': '1',
+      'field_id': 'F1',
+      'image_date': '2026-03-01T00:00:00.000Z',
+      'ndvi_min': 0,
+      'ndvi_max': 0,
+      'ndvi_mean': 0,
+      'source': 'sentinel',
+      'fetched_at': '2026-03-01',
+      'sync_status': 0,
+    });
+    expect(model.imageDate, '2026-03-01');
+    expect(model.toEntity().imageDate, DateTime(2026, 3, 1));
   });
 }
