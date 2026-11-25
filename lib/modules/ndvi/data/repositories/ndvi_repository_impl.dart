@@ -52,10 +52,20 @@ class NdviRepositoryImpl implements INdviRepository {
       if (normalizeNdviSource(image.source) == 'unavailable') continue;
       if (attempts >= _kLatestLazyAttempts) break;
       attempts++;
-      final ensured = await ensureImageForDate(
-        fieldId,
-        ndviImageDateKey(image.imageDate),
-      );
+      NdviImage? ensured;
+      try {
+        ensured = await ensureImageForDate(
+          fieldId,
+          ndviImageDateKey(image.imageDate),
+        );
+      } catch (e) {
+        // Sem rede/5xx: segue para a cena antiga com PNG (fallback offline).
+        AppLogger.warning(
+          'NDVI latest: falha ao materializar ${image.imageDate} fieldId=$fieldId: $e',
+          tag: 'NDVI.Repository',
+        );
+        continue;
+      }
       if (ensured != null &&
           ndviImageHasRenderableData(ensured) &&
           ndviIsColormapSource(ensured.source)) {
