@@ -690,6 +690,141 @@ void main() {
     expect(local.lastSaved, isNull);
   });
 
+  test(
+    'getLatestByFieldId materializa a data mais nova antes da cena velha com PNG',
+    () async {
+      const fieldId = 'F1';
+      lookup.nextReturn = const FieldSummary(
+        id: fieldId,
+        name: 'Teste',
+        farmId: 'FAZ1',
+        bbox: [-50.0, -20.0, -49.0, -19.0],
+      );
+      local.nextList = const [
+        NdviImageModel(
+          id: 'F1_2026-11-22',
+          fieldId: fieldId,
+          imageDate: '2026-11-22',
+          ndviMin: 0,
+          ndviMax: 0,
+          ndviMean: 0,
+          source: 'sentinel',
+          fetchedAt: '2026-11-24T00:00:00',
+          syncStatus: 0,
+        ),
+        NdviImageModel(
+          id: 'F1_2026-10-01',
+          fieldId: fieldId,
+          imageDate: '2026-10-01',
+          ndviMin: 0.1,
+          ndviMax: 0.8,
+          ndviMean: 0.5,
+          source: 'sentinel',
+          fetchedAt: '2026-10-02T00:00:00',
+          syncStatus: 0,
+          localPath: '/tmp/old.png',
+        ),
+      ];
+      remote.nextReturn = const NdviImageModel(
+        id: 'F1_2026-11-22',
+        fieldId: fieldId,
+        imageDate: '2026-11-22',
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.6,
+        source: 'sentinel',
+        fetchedAt: '2026-11-24T00:00:00',
+        syncStatus: 0,
+        localPath: '/tmp/new.png',
+      );
+
+      final latest = await repository.getLatestByFieldId(fieldId);
+
+      expect(remote.lastDate, '2026-11-22');
+      expect(ndviImageDateKey(latest!.imageDate), '2026-11-22');
+      expect(latest.localPath, '/tmp/new.png');
+    },
+  );
+
+  test(
+    'getLatestByFieldId cai na cena velha só quando a nova falha',
+    () async {
+      const fieldId = 'F1';
+      lookup.nextReturn = const FieldSummary(
+        id: fieldId,
+        name: 'Teste',
+        farmId: 'FAZ1',
+        bbox: [-50.0, -20.0, -49.0, -19.0],
+      );
+      local.nextList = const [
+        NdviImageModel(
+          id: 'F1_2026-11-22',
+          fieldId: fieldId,
+          imageDate: '2026-11-22',
+          ndviMin: 0,
+          ndviMax: 0,
+          ndviMean: 0,
+          source: 'sentinel',
+          fetchedAt: '2026-11-24T00:00:00',
+          syncStatus: 0,
+        ),
+        NdviImageModel(
+          id: 'F1_2026-10-01',
+          fieldId: fieldId,
+          imageDate: '2026-10-01',
+          ndviMin: 0.1,
+          ndviMax: 0.8,
+          ndviMean: 0.5,
+          source: 'sentinel',
+          fetchedAt: '2026-10-02T00:00:00',
+          syncStatus: 0,
+          localPath: '/tmp/old.png',
+        ),
+      ];
+      remote.nextResult = const NdviRemoteFetchResult(
+        degradedReason: 'cdse_process_failed',
+      );
+
+      final latest = await repository.getLatestByFieldId(fieldId);
+
+      expect(ndviImageDateKey(latest!.imageDate), '2026-10-01');
+    },
+  );
+
+  test('getByFieldId junta ISO legado e chave civil do mesmo dia', () async {
+    const fieldId = 'F1';
+    local.nextList = const [
+      NdviImageModel(
+        id: 'legacy',
+        fieldId: fieldId,
+        imageDate: '2026-11-22T00:00:00.000Z',
+        ndviMin: 0,
+        ndviMax: 0,
+        ndviMean: 0,
+        source: 'sentinel',
+        fetchedAt: '2026-11-22T00:00:00',
+        syncStatus: 0,
+      ),
+      NdviImageModel(
+        id: 'novo',
+        fieldId: fieldId,
+        imageDate: '2026-11-22',
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.5,
+        source: 'sentinel',
+        fetchedAt: '2026-11-22T00:00:00',
+        syncStatus: 0,
+        localPath: '/tmp/ndvi.png',
+      ),
+    ];
+
+    final result = await repository.getByFieldId(fieldId);
+
+    expect(result, hasLength(1));
+    expect(result.single.id, 'novo');
+  });
+
   test('getByFieldId: falha remota propaga exceção para UI', () async {
     const fieldId = 'F1';
     lookup.nextReturn = const FieldSummary(
