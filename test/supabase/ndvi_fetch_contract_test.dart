@@ -39,10 +39,11 @@ void main() {
     expect(edgeFunction, contains('eo:cloud_cover'));
   });
 
-  test('catalogo ordena desc, pagina e dia civil BR', () {
+  test('catalogo pagina sem sortby, ordena local e usa dia civil BR', () {
+    expect(edgeFunction, isNot(contains('sortby:')));
     expect(
       edgeFunction,
-      contains('sortby: [{ field: "datetime", direction: "desc" }]'),
+      contains('[...candidates].sort((a, b) => b.date.localeCompare(a.date))'),
     );
     expect(edgeFunction, contains('civilDateKeyBr'));
     expect(edgeFunction, contains('civilDateKeyFromIso8601'));
