@@ -163,4 +163,51 @@ void main() {
     const html = '<html><body><p>ok</p></body></html>';
     expect(trimReportHtmlToMaxBytes(html, kReportPdfHtmlMaxBytes), html);
   });
+
+  test(
+    'corte dentro de style aberto fecha </style> antes de </body>',
+    () {
+      final closedStyle = '<style id="a">${'a' * 80}</style>';
+      final openStyle =
+          '<style id="b">${'b' * 200}';
+      final html =
+          '<html><head>$closedStyle</head><body><p>x</p>$openStyle';
+      final limit = _bytesOf('<html><head>$closedStyle</head><body><p>x</p>') +
+          _bytesOf(openStyle.substring(0, 40)) +
+          1;
+
+      final trimmed = trimReportHtmlToMaxBytes(html, limit);
+
+      expect(_bytesOf(trimmed), lessThanOrEqualTo(limit));
+      expect(trimmed, contains('</style>'));
+      final bodyClose = trimmed.lastIndexOf('</body>');
+      final styleClose = trimmed.lastIndexOf('</style>');
+      expect(styleClose, greaterThan(-1));
+      expect(styleClose, lessThan(bodyClose));
+      expect(_hasLoneSurrogate(trimmed), isFalse);
+      expect(trimmed, endsWith('</body></html>'));
+    },
+  );
+
+  test(
+    'corte com script e style abertos fecha em ordem LIFO',
+    () {
+      final html =
+          '<html><head><script>var s=1;</script></head>'
+          '<body><style>${'c' * 50}<script>var t=2;';
+      final limit = _bytesOf(html) - 30;
+
+      final trimmed = trimReportHtmlToMaxBytes(html, limit);
+
+      expect(_bytesOf(trimmed), lessThanOrEqualTo(limit));
+      expect(trimmed, contains('</script>'));
+      expect(trimmed, contains('</style>'));
+      // LIFO: fecha script (última abertura) antes de style no trecho cortado.
+      expect(
+        trimmed.lastIndexOf('</script>'),
+        lessThan(trimmed.lastIndexOf('</style>')),
+      );
+      expect(trimmed, endsWith('</body></html>'));
+    },
+  );
 }
