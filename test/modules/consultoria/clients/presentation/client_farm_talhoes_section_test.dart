@@ -328,6 +328,109 @@ void main() {
     expect(find.text(talhaoNorteChipLabel), findsNothing);
     expect(find.byTooltip('Mostrar talhões'), findsOneWidget);
   });
+
+  Future<void> pumpSection(
+    WidgetTester tester, {
+    required List<FarmLinkedFieldSummary> fields,
+    Farm? farmOverride,
+    bool initiallyExpanded = false,
+    double textScale = 1.0,
+  }) async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          preferencesServiceProvider.overrideWithValue(preferences),
+          sessionControllerProvider.overrideWith(_BareSessionController.new),
+          farmLinkedFieldsProvider.overrideWith((ref, farmId) async => fields),
+        ],
+        child: MaterialApp(
+          home: MediaQuery(
+            data: MediaQueryData(
+              size: tester.view.physicalSize / tester.view.devicePixelRatio,
+              textScaler: TextScaler.linear(textScale),
+            ),
+            child: Scaffold(
+              body: SingleChildScrollView(
+                child: ClientFarmWithTalhoesSection(
+                  client: client,
+                  farm: farmOverride ?? farm,
+                  initiallyExpanded: initiallyExpanded,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+
+  testWidgets('pill mostra a contagem real de talhões da fazenda', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await pumpSection(tester, fields: linkedFields);
+    expect(find.text('1 talhão'), findsOneWidget);
+    expect(find.text('Pugmil - TO'), findsOneWidget);
+    expect(find.textContaining('Produtor:'), findsNothing);
+
+    await pumpSection(tester, fields: twoDrawingFields);
+    expect(find.text('2 talhões'), findsOneWidget);
+
+    await pumpSection(tester, fields: const []);
+    expect(find.text('Sem talhões'), findsOneWidget);
+  });
+
+  test('rótulo da contagem pluraliza e mostra traço ao carregar', () {
+    expect(farmFieldCountLabel(null), '—');
+    expect(farmFieldCountLabel(0), 'Sem talhões');
+    expect(farmFieldCountLabel(1), '1 talhão');
+    expect(farmFieldCountLabel(3), '3 talhões');
+  });
+
+  for (final scale in [1.0, 1.3]) {
+    testWidgets('cartão da fazenda cabe em 320dp com texto x$scale', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final longFarm = Farm(
+        id: 'farm-long',
+        name: 'Fazenda Morro Verde do Alto Tocantins',
+        city: 'Paraíso Do Tocantins',
+        state: 'TO',
+        totalAreaHa: 1500.753,
+      );
+
+      await pumpSection(
+        tester,
+        fields: twoDrawingFields,
+        farmOverride: longFarm,
+        textScale: scale,
+      );
+      expect(tester.takeException(), isNull);
+      expect(
+        find.text('Fazenda Morro Verde do Alto Tocantins'),
+        findsOneWidget,
+      );
+      expect(find.text('2 talhões'), findsOneWidget);
+
+      await tester.tap(find.text('Fazenda Morro Verde do Alto Tocantins'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+      expect(find.text('Talhões'), findsOneWidget);
+    });
+  }
 }
 
 class _NdviLookupCounter {
