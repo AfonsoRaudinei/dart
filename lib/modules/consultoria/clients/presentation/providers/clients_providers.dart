@@ -5,6 +5,8 @@ import 'package:soloforte_app/core/services/sync_orchestrator.dart';
 import '../../data/clients_repository.dart';
 import '../../domain/client.dart';
 import '../../domain/client_cultura.dart';
+import '../../domain/enums/perfil_atendimento_tipo.dart';
+import '../../domain/perfil_atendimento_calculator.dart';
 import '../client_list_filter_logic.dart';
 
 typedef ClientSyncTrigger = Future<void> Function();
@@ -138,6 +140,28 @@ class ClientsController {
     ref.invalidate(clientListCulturaIndexProvider);
     ref.invalidate(clientDetailProvider(client.id));
     ref.invalidate(clientCulturasProvider(client.id));
+    _triggerSyncInBackground();
+  }
+
+  Future<void> savePerfilDiagnostico({
+    required String clientId,
+    required List<PerfilAtendimentoTipo> respostas,
+  }) async {
+    final resultado = calcularPerfilAtendimento(respostas);
+    final repo = ref.read(clientsRepositoryProvider);
+    final now = DateTime.now();
+    await repo.updateClientPerfilAtendimento(
+      clientId: clientId,
+      dominante: resultado.dominante,
+      secundario: resultado.secundario,
+      pontosPragmatico: resultado.pontos.pragmatico,
+      pontosAnalitico: resultado.pontos.analitico,
+      pontosAfavel: resultado.pontos.afavel,
+      pontosExpressivo: resultado.pontos.expressivo,
+      atualizadoEm: now,
+    );
+    ref.invalidate(clientsListProvider);
+    ref.invalidate(clientDetailProvider(clientId));
     _triggerSyncInBackground();
   }
 
