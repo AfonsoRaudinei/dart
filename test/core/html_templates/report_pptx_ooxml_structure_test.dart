@@ -1,11 +1,12 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/core/html_templates/report_pptx_builder.dart';
 import 'package:xml/xml.dart';
+
+import 'pptx_package_integrity.dart';
 
 const _minimalHtml = '''
 <html><body>
@@ -16,62 +17,6 @@ const _minimalHtml = '''
 </main>
 </body></html>
 ''';
-
-/// Lê entradas do ZIP pelos cabeçalhos locais (não confia só no `archive`).
-class _ZipLocalEntry {
-  _ZipLocalEntry({
-    required this.name,
-    required this.uncompressedSizeInHeader,
-    required this.compressedSizeInHeader,
-    required this.data,
-    required this.compressionMethod,
-  });
-
-  final String name;
-  final int uncompressedSizeInHeader;
-  final int compressedSizeInHeader;
-  final Uint8List data;
-  final int compressionMethod;
-}
-
-List<_ZipLocalEntry> _parseZipLocalHeaders(Uint8List zipBytes) {
-  const localSig = 0x04034b50;
-  final entries = <_ZipLocalEntry>[];
-  var offset = 0;
-  while (offset + 30 <= zipBytes.length) {
-    final sig = ByteData.sublistView(
-      zipBytes,
-      offset,
-      offset + 4,
-    ).getUint32(0, Endian.little);
-    if (sig != localSig) break;
-    final view = ByteData.sublistView(zipBytes, offset);
-    final compressionMethod = view.getUint16(8, Endian.little);
-    final compressedSize = view.getUint32(18, Endian.little);
-    final uncompressedSize = view.getUint32(22, Endian.little);
-    final nameLen = view.getUint16(26, Endian.little);
-    final extraLen = view.getUint16(28, Endian.little);
-    final nameStart = offset + 30;
-    final nameEnd = nameStart + nameLen;
-    if (nameEnd > zipBytes.length) break;
-    final name = utf8.decode(zipBytes.sublist(nameStart, nameEnd));
-    final dataStart = nameEnd + extraLen;
-    final dataEnd = dataStart + compressedSize;
-    if (dataEnd > zipBytes.length) break;
-    final data = Uint8List.fromList(zipBytes.sublist(dataStart, dataEnd));
-    entries.add(
-      _ZipLocalEntry(
-        name: name,
-        uncompressedSizeInHeader: uncompressedSize,
-        compressedSizeInHeader: compressedSize,
-        data: data,
-        compressionMethod: compressionMethod,
-      ),
-    );
-    offset = dataEnd;
-  }
-  return entries;
-}
 
 Future<Uint8List> _buildMinimalPptx() async {
   return const ReportPptxBuilder().build(
@@ -114,7 +59,7 @@ void main() {
     'tamanho descomprimido no cabeçalho local bate com o conteúdo',
     () async {
       final zipBytes = await _buildMinimalPptx();
-      final locals = _parseZipLocalHeaders(zipBytes);
+      final locals = parseZipLocalHeaders(zipBytes);
       expect(locals, isNotEmpty);
       for (final entry in locals) {
         expect(
@@ -146,7 +91,7 @@ void main() {
 
   test('primeiro local header no binário é [Content_Types].xml', () async {
     final zipBytes = await _buildMinimalPptx();
-    final locals = _parseZipLocalHeaders(zipBytes);
+    final locals = parseZipLocalHeaders(zipBytes);
     expect(locals.first.name, '[Content_Types].xml');
   });
 
