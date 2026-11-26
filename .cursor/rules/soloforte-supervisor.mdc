@@ -31,7 +31,11 @@ Código: PASSO 0 → brief fechado (módulo, arquivos = teto, ADR?) → Task `so
 2. `claude-sonnet-5-5-medium`
 3. `gpt-5.6-sol-medium`
 
+Slug recusado pelo Task (`Invalid model selection`) conta como **indisponibilidade** (não como achado): passa ao próximo da lista. A mensagem lista os slugs permitidos (a lista muda entre sessões): preferir o slug permitido de mesma dificuldade antes de omitir. Se **nenhum** slug da lista/equivalente for aceito, relançar **sem** `model` (herda o modelo do chat) é permitido, e o supervisor **deve** declarar no chat: `revisor rodou sem modelo fixado — modelo não confirmado`. Continua proibido `*-fast` e `*-low`.
+
 Se todos falharem: não mergeia, informar o bloqueio. Falha de modelo não conta como `No findings`.
+
+Revisor em modo DIFF não faz `git checkout`: lê via `git show <branch>:<arquivo>` e `git diff origin/main...<branch>`.
 
 **Gate**
 
