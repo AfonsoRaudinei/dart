@@ -1,4 +1,5 @@
 import 'agronomic_models.dart';
+import 'enums/perfil_atendimento_tipo.dart';
 
 class Client {
   // ── Campos originais ──────────────────────────────────────────────
@@ -30,6 +31,15 @@ class Client {
   final bool? usaAssistenciaTecnica;
   final String? tecnicoResponsavel;
 
+  // ── Perfil de atendimento (diagnóstico comercial) ─────────────────
+  final PerfilAtendimentoTipo? perfilDominante;
+  final PerfilAtendimentoTipo? perfilSecundario;
+  final int? perfilPontosPragmatico;
+  final int? perfilPontosAnalitico;
+  final int? perfilPontosAfavel;
+  final int? perfilPontosExpressivo;
+  final DateTime? perfilAtualizadoEm;
+
   // ── Campos de controle ────────────────────────────────────────────
   final DateTime? updatedAt;
   final DateTime? deletedAt;
@@ -57,6 +67,13 @@ class Client {
     this.safraAtual,
     this.usaAssistenciaTecnica,
     this.tecnicoResponsavel,
+    this.perfilDominante,
+    this.perfilSecundario,
+    this.perfilPontosPragmatico,
+    this.perfilPontosAnalitico,
+    this.perfilPontosAfavel,
+    this.perfilPontosExpressivo,
+    this.perfilAtualizadoEm,
     this.updatedAt,
     this.deletedAt,
   });
@@ -94,6 +111,19 @@ class Client {
           ? (map['usa_assistencia_tecnica'] as int) == 1
           : null,
       tecnicoResponsavel: map['tecnico_responsavel'] as String?,
+      perfilDominante: PerfilAtendimentoTipo.fromStorageKey(
+        map['perfil_dominante'] as String?,
+      ),
+      perfilSecundario: PerfilAtendimentoTipo.fromStorageKey(
+        map['perfil_secundario'] as String?,
+      ),
+      perfilPontosPragmatico: map['perfil_pontos_a'] as int?,
+      perfilPontosAnalitico: map['perfil_pontos_b'] as int?,
+      perfilPontosAfavel: map['perfil_pontos_c'] as int?,
+      perfilPontosExpressivo: map['perfil_pontos_d'] as int?,
+      perfilAtualizadoEm: map['perfil_atualizado_em'] != null
+          ? DateTime.tryParse(map['perfil_atualizado_em'] as String)
+          : null,
       farms: const [],
     );
   }
@@ -127,6 +157,13 @@ class Client {
           ? null
           : (usaAssistenciaTecnica! ? 1 : 0),
       'tecnico_responsavel': tecnicoResponsavel,
+      'perfil_dominante': perfilDominante?.storageKey,
+      'perfil_secundario': perfilSecundario?.storageKey,
+      'perfil_pontos_a': perfilPontosPragmatico,
+      'perfil_pontos_b': perfilPontosAnalitico,
+      'perfil_pontos_c': perfilPontosAfavel,
+      'perfil_pontos_d': perfilPontosExpressivo,
+      'perfil_atualizado_em': perfilAtualizadoEm?.toIso8601String(),
     };
   }
 
@@ -153,6 +190,13 @@ class Client {
     String? safraAtual,
     bool? usaAssistenciaTecnica,
     String? tecnicoResponsavel,
+    PerfilAtendimentoTipo? perfilDominante,
+    PerfilAtendimentoTipo? perfilSecundario,
+    int? perfilPontosPragmatico,
+    int? perfilPontosAnalitico,
+    int? perfilPontosAfavel,
+    int? perfilPontosExpressivo,
+    DateTime? perfilAtualizadoEm,
     DateTime? updatedAt,
     DateTime? deletedAt,
   }) {
@@ -179,6 +223,16 @@ class Client {
       usaAssistenciaTecnica:
           usaAssistenciaTecnica ?? this.usaAssistenciaTecnica,
       tecnicoResponsavel: tecnicoResponsavel ?? this.tecnicoResponsavel,
+      perfilDominante: perfilDominante ?? this.perfilDominante,
+      perfilSecundario: perfilSecundario ?? this.perfilSecundario,
+      perfilPontosPragmatico:
+          perfilPontosPragmatico ?? this.perfilPontosPragmatico,
+      perfilPontosAnalitico:
+          perfilPontosAnalitico ?? this.perfilPontosAnalitico,
+      perfilPontosAfavel: perfilPontosAfavel ?? this.perfilPontosAfavel,
+      perfilPontosExpressivo:
+          perfilPontosExpressivo ?? this.perfilPontosExpressivo,
+      perfilAtualizadoEm: perfilAtualizadoEm ?? this.perfilAtualizadoEm,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
     );
