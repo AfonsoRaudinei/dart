@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_keyboard_dismiss.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_safra_chip.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_segment_bar.dart';
 
 /// Shell do módulo Carteira — AppBar + segment bar fixo + corpo scrollável.
@@ -58,6 +59,13 @@ class _CarteiraModuleScaffoldState extends ConsumerState<CarteiraModuleScaffold>
             elevation: 0,
             child: Column(
               children: [
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: CarteiraSafraChip(),
+                  ),
+                ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                   child: CarteiraSegmentBar(
