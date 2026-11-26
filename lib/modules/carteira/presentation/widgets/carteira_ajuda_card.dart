@@ -36,7 +36,8 @@ class CarteiraAjudaTextos {
           'R\$ total é para metas em valor fechado, como adjuvantes.',
       'Desativar esconde a categoria das telas. Os lançamentos já feitos '
           'ficam guardados.',
-      'Só existe uma safra ativa por vez. Crie outra em Nova safra.',
+      'Troque a safra no topo da Carteira; cada safra tem seus próprios '
+          'números.',
       'A meta vale por categoria e safra, para a carteira toda — não é uma '
           'meta de cada produtor.',
       'O progresso vem dos lançamentos registrados na aba Clientes.',
