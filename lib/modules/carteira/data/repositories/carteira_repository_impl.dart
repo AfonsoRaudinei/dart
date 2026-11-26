@@ -538,29 +538,33 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     String clienteId,
     String categoriaId,
     String userId,
+    String safraId,
   ) async {
     final db = await _dbHelper.database;
     final result = await db.rawQuery(
       'SELECT COALESCE(SUM(closed_percent), 0.0) AS total '
       'FROM carteira_lancamentos '
       'WHERE cliente_id = ? AND categoria_id = ? AND user_id = ? '
-      'AND deleted_at IS NULL',
-      [clienteId, categoriaId, userId],
+      'AND safra_id = ? AND deleted_at IS NULL',
+      [clienteId, categoriaId, userId, safraId],
     );
     final total = (result.first['total'] as num?)?.toDouble() ?? 0.0;
     return total.clamp(0.0, 100.0);
   }
 
   @override
-  Future<Map<String, double>> getClosedPercentTodos(String userId) async {
+  Future<Map<String, double>> getClosedPercentTodos(
+    String userId,
+    String safraId,
+  ) async {
     final db = await _dbHelper.database;
     final rows = await db.rawQuery(
       'SELECT cliente_id, categoria_id, '
       'COALESCE(SUM(closed_percent), 0.0) AS total '
       'FROM carteira_lancamentos '
-      'WHERE user_id = ? AND deleted_at IS NULL '
+      'WHERE user_id = ? AND safra_id = ? AND deleted_at IS NULL '
       'GROUP BY cliente_id, categoria_id',
-      [userId],
+      [userId, safraId],
     );
     return {
       for (final row in rows)

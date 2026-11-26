@@ -90,14 +90,19 @@ abstract class ICarteiraRepository {
     String userId,
   );
 
-  /// Soma de closed_percent por cliente+categoria (ADR-029, sem filtro de safra).
+  /// Soma de closed_percent por cliente+categoria na safra [safraId] (ADR-029).
   Future<double> getClosedPercentByClienteCategoria(
     String clienteId,
     String categoriaId,
     String userId,
+    String safraId,
   );
 
-  /// Percentual fechado de todos os pares cliente+categoria do usuário
-  /// (ADR-029), com chave `<clienteId>_<categoriaId>` e cada par limitado a 100.
-  Future<Map<String, double>> getClosedPercentTodos(String userId);
+  /// Percentual fechado de todos os pares cliente+categoria do usuário na
+  /// safra [safraId] (ADR-029), com chave `<clienteId>_<categoriaId>` e cada
+  /// par limitado a 100.
+  Future<Map<String, double>> getClosedPercentTodos(
+    String userId,
+    String safraId,
+  );
 }
