@@ -188,19 +188,82 @@ String trimReportHtmlToMaxBytes(String html, int maxBytes) {
 }
 
 String _cutToMaxBytes(String html, int maxBytes) {
-  final budget = maxBytes - utf8.encode(_closingTags).length;
+  final closingLen = utf8.encode(_closingTags).length;
   final bytes = utf8.encode(html);
-  // Nem as tags de fechamento cabem: devolve vazio em vez de estourar o teto.
-  if (budget <= 0) return '';
+  if (maxBytes - closingLen <= 0) return '';
 
-  var end = budget;
-  // bytes[end] é o 1º byte descartado: se for continuação, estamos no meio
-  // de um caractere — recua até a fronteira.
-  while (end > 0 && (bytes[end] & 0xC0) == 0x80) {
-    end--;
+  var end = bytes.length.clamp(0, maxBytes - closingLen);
+  while (end > 0) {
+    var sliceEnd = end;
+    while (sliceEnd > 0 && (bytes[sliceEnd] & 0xC0) == 0x80) {
+      sliceEnd--;
+    }
+    var head = utf8.decode(bytes.sublist(0, sliceEnd));
+    final lastOpen = head.lastIndexOf('<');
+    if (lastOpen > head.lastIndexOf('>')) head = head.substring(0, lastOpen);
+    head = _closeUnclosedStyleAndScript(head);
+    final result = '$head$_closingTags';
+    if (utf8.encode(result).length <= maxBytes) return result;
+    end = sliceEnd - 1;
   }
-  var head = utf8.decode(bytes.sublist(0, end));
-  final lastOpen = head.lastIndexOf('<');
-  if (lastOpen > head.lastIndexOf('>')) head = head.substring(0, lastOpen);
-  return '$head$_closingTags';
+  return '';
+}
+
+String _closeUnclosedStyleAndScript(String head) {
+  final events = <_StyleScriptEvent>[];
+  for (final match in RegExp(
+    r'<(style|script)\b',
+    caseSensitive: false,
+  ).allMatches(head)) {
+    events.add(
+      _StyleScriptEvent(
+        match.start,
+        match.group(1)!.toLowerCase(),
+        isOpen: true,
+      ),
+    );
+  }
+  for (final match in RegExp(
+    r'</(style|script)\s*>',
+    caseSensitive: false,
+  ).allMatches(head)) {
+    events.add(
+      _StyleScriptEvent(
+        match.start,
+        match.group(1)!.toLowerCase(),
+        isOpen: false,
+      ),
+    );
+  }
+  if (events.isEmpty) return head;
+  events.sort((a, b) => a.offset.compareTo(b.offset));
+
+  final openStack = <String>[];
+  for (final event in events) {
+    if (event.isOpen) {
+      openStack.add(event.tag);
+      continue;
+    }
+    if (openStack.isEmpty) continue;
+    if (openStack.last == event.tag) {
+      openStack.removeLast();
+      continue;
+    }
+    openStack.remove(event.tag);
+  }
+
+  if (openStack.isEmpty) return head;
+  final closers = StringBuffer();
+  for (var i = openStack.length - 1; i >= 0; i--) {
+    closers.write('</${openStack[i]}>');
+  }
+  return '$head$closers';
+}
+
+class _StyleScriptEvent {
+  const _StyleScriptEvent(this.offset, this.tag, {required this.isOpen});
+
+  final int offset;
+  final String tag;
+  final bool isOpen;
 }
