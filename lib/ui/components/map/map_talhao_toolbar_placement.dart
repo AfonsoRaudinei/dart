@@ -196,7 +196,7 @@ Offset resolveMapTalhaoToolbarOffset({
   final candidates = <Offset>[
     _clampToolbarPosition(
       left: f.center.dx - toolbarWidth / 2,
-      top: f.top - lineH - anchorGap,
+      top: f.top - toolbarHeight - anchorGap,
       bounds: bounds,
     ),
     _clampToolbarPosition(
@@ -206,12 +206,12 @@ Offset resolveMapTalhaoToolbarOffset({
     ),
     _clampToolbarPosition(
       left: f.left - toolbarWidth - anchorGap,
-      top: centerY - lineH / 2,
+      top: centerY - toolbarHeight / 2,
       bounds: bounds,
     ),
     _clampToolbarPosition(
       left: f.right + anchorGap,
-      top: centerY - lineH / 2,
+      top: centerY - toolbarHeight / 2,
       bounds: bounds,
     ),
     _clampToolbarPosition(
