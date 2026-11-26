@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -24,6 +23,9 @@ import '../../../modules/drawing/presentation/drawing_compact_selection_actions.
 import '../../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../screens/map/handlers/visit_check_in_talhoes.dart';
 import 'map_sheet_state.dart';
+import 'map_talhao_toolbar_placement.dart';
+
+export 'map_talhao_toolbar_placement.dart';
 
 /// Geometria, Dados e, quando há id, NDVI + P&B + Status.
 /// Teste não entra na contagem de Status.
@@ -59,7 +61,7 @@ class MapTalhaoSelectionToolbar extends ConsumerStatefulWidget {
 
   static const double toolbarHeight = 52;
   static const double horizontalPadding = 12;
-  static const double edgeMargin = 8;
+  static const double edgeMargin = kMapTalhaoToolbarEdgeMargin;
 
   @override
   ConsumerState<MapTalhaoSelectionToolbar> createState() =>
@@ -160,8 +162,19 @@ class _MapTalhaoSelectionToolbarState
       _refreshDateChoicesAfterRaster(ref, next.asData?.value);
     });
 
-    final offset = clampMapToolbarOffset(
+    final featureBounds = drawingFeatureScreenBounds(
+      drawingFeatureScreenOffsets(
+        feature,
+        (latLng) {
+          final p = widget.mapController.camera.latLngToScreenPoint(latLng);
+          return Offset(p.x, p.y);
+        },
+      ),
+    );
+
+    final offset = resolveMapTalhaoToolbarOffset(
       screenPoint: Offset(screenPoint.x, screenPoint.y),
+      featureScreenBounds: featureBounds,
       viewportSize: size,
       toolbarWidth: toolbarWidth,
       toolbarHeight: resolvedToolbarHeight,
@@ -403,74 +416,6 @@ class _ToolbarChip extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Centroide simples do polígono para ancorar a toolbar.
-LatLng? drawingFeatureAnchorLatLng(DrawingFeature feature) {
-  final points = <LatLng>[];
-  final geometry = feature.geometry;
-
-  if (geometry is DrawingPolygon) {
-    for (final ring in geometry.coordinates) {
-      points.addAll(ring.map((p) => LatLng(p[1], p[0])));
-    }
-  } else if (geometry is DrawingMultiPolygon) {
-    for (final polygon in geometry.coordinates) {
-      for (final ring in polygon) {
-        points.addAll(ring.map((p) => LatLng(p[1], p[0])));
-      }
-    }
-  }
-
-  if (points.isEmpty) return null;
-
-  var sumLat = 0.0;
-  var sumLng = 0.0;
-  for (final p in points) {
-    sumLat += p.latitude;
-    sumLng += p.longitude;
-  }
-  return LatLng(sumLat / points.length, sumLng / points.length);
-}
-
-/// Posiciona a toolbar acima do ponto de ancoragem, com clamp nas bordas.
-Offset clampMapToolbarOffset({
-  required Offset screenPoint,
-  required Size viewportSize,
-  required double toolbarWidth,
-  required double toolbarHeight,
-  double topInset = 0,
-  double bottomInset = 0,
-  double edgeMargin = MapTalhaoSelectionToolbar.edgeMargin,
-  double anchorGap = 24,
-  double? anchorHeight,
-}) {
-  var left = screenPoint.dx - toolbarWidth / 2;
-  // A linha principal fica fixa acima do ponto; painéis extras (status, datas
-  // NDVI) crescem para baixo, sem fazer a barra "pular" ao abrir/fechar.
-  var top = screenPoint.dy - (anchorHeight ?? toolbarHeight) - anchorGap;
-
-  final minLeft = edgeMargin;
-  final rightColumnReserve =
-      kMapActionColumnRightInset + kMapActionColumnButtonSize;
-  final maxLeft = math.max(
-    edgeMargin,
-    viewportSize.width - toolbarWidth - edgeMargin - rightColumnReserve,
-  );
-  final minTop = topInset + edgeMargin;
-  final maxTop = math.max(
-    minTop,
-    viewportSize.height -
-        bottomInset -
-        kFabSafeArea -
-        toolbarHeight -
-        edgeMargin,
-  );
-
-  left = left.clamp(minLeft, maxLeft);
-  top = top.clamp(minTop, maxTop);
-
-  return Offset(left, top);
 }
 
 const _mapNdviDateRowHeight = 48.0;
