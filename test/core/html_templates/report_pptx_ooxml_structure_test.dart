@@ -192,6 +192,14 @@ void main() {
     expect(archive.files.any((f) => f.name == 'ppt/presProps.xml'), isTrue);
     expect(archive.files.any((f) => f.name == 'ppt/viewProps.xml'), isTrue);
     expect(archive.files.any((f) => f.name == 'ppt/tableStyles.xml'), isTrue);
+
+    final presProps = utf8.decode(
+      archive.files.firstWhere((f) => f.name == 'ppt/presProps.xml').content
+          as List<int>,
+    );
+    expect(presProps, isNot(contains('needle=')));
+    expect(presProps, contains('<p:showPr loop="0"'));
+    XmlDocument.parse(presProps);
   });
 
   test('slideMaster1.xml contém txStyles', () async {
