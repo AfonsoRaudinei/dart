@@ -191,6 +191,114 @@ void main() {
     });
   });
 
+  group('drawingFeatureScreenBounds', () {
+    test('calcula retângulo com padding', () {
+      final bounds = drawingFeatureScreenBounds(
+        const [
+          Offset(100, 200),
+          Offset(300, 400),
+        ],
+        padding: 8,
+      );
+      expect(bounds, isNotNull);
+      expect(bounds!.left, 92);
+      expect(bounds.top, 192);
+      expect(bounds.right, 308);
+      expect(bounds.bottom, 408);
+    });
+
+    test('lista vazia retorna null', () {
+      expect(drawingFeatureScreenBounds(const []), isNull);
+    });
+  });
+
+  group('resolveMapTalhaoToolbarOffset', () {
+    test(
+      'centroide no meio da viewport: toolbar acima da bbox, sem sobrepor',
+      () {
+        const viewport = Size(400, 800);
+        const toolbarWidth = 200.0;
+        const toolbarHeight = 52.0;
+        const anchorGap = 24.0;
+        const lineH = 52.0;
+        const centroid = Offset(200, 400);
+        final featureBounds = Rect.fromLTRB(80, 280, 320, 520);
+
+        final offset = resolveMapTalhaoToolbarOffset(
+          screenPoint: centroid,
+          featureScreenBounds: featureBounds,
+          viewportSize: viewport,
+          toolbarWidth: toolbarWidth,
+          toolbarHeight: toolbarHeight,
+          anchorHeight: lineH,
+          anchorGap: anchorGap,
+        );
+
+        final toolbarRect = Rect.fromLTWH(
+          offset.dx,
+          offset.dy,
+          toolbarWidth,
+          toolbarHeight,
+        );
+        expect(featureBounds.overlaps(toolbarRect), isFalse);
+        expect(
+          offset.dy + toolbarHeight + anchorGap,
+          lessThanOrEqualTo(featureBounds.top + 0.01),
+        );
+      },
+    );
+
+    test(
+      'quando só abaixo tem folga sem overlap, prefere abaixo da bbox',
+      () {
+        const viewport = Size(400, 800);
+        const toolbarWidth = 200.0;
+        const toolbarHeight = 52.0;
+        const centroid = Offset(200, 120);
+        final featureBounds = Rect.fromLTRB(80, 40, 320, 200);
+
+        final offset = resolveMapTalhaoToolbarOffset(
+          screenPoint: centroid,
+          featureScreenBounds: featureBounds,
+          viewportSize: viewport,
+          toolbarWidth: toolbarWidth,
+          toolbarHeight: toolbarHeight,
+        );
+
+        final toolbarRect = Rect.fromLTWH(
+          offset.dx,
+          offset.dy,
+          toolbarWidth,
+          toolbarHeight,
+        );
+        expect(featureBounds.overlaps(toolbarRect), isFalse);
+        expect(offset.dy, greaterThanOrEqualTo(featureBounds.bottom));
+      },
+    );
+
+    test('sem feature bounds delega ao clamp legado', () {
+      const viewport = Size(400, 800);
+      const toolbarWidth = 200.0;
+      const toolbarHeight = 52.0;
+      const point = Offset(200, 400);
+
+      final resolved = resolveMapTalhaoToolbarOffset(
+        screenPoint: point,
+        featureScreenBounds: null,
+        viewportSize: viewport,
+        toolbarWidth: toolbarWidth,
+        toolbarHeight: toolbarHeight,
+      );
+      final legacy = clampMapToolbarOffset(
+        screenPoint: point,
+        viewportSize: viewport,
+        toolbarWidth: toolbarWidth,
+        toolbarHeight: toolbarHeight,
+      );
+      expect(resolved, legacy);
+    });
+  });
+
   group('clampMapToolbarOffset', () {
     test('feliz: centraliza acima do ponto', () {
       const viewport = Size(400, 800);
