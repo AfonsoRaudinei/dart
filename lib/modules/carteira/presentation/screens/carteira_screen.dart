@@ -2,20 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:uuid/uuid.dart';
-
 import 'package:soloforte_app/core/extensions/context_extensions.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
-import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
-import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_ajuda_card.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_metas_tab.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_module_scaffold.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_segment_bar.dart';
-import 'package:soloforte_app/modules/carteira/presentation/widgets/categoria_form_dialog.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/cliente_carteira_card.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/oportunidades_chart_card.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/oportunidades_chart_mode_toggle.dart';
@@ -54,8 +49,7 @@ class _CarteiraScreenState extends ConsumerState<CarteiraScreen> {
   Widget _buildSegmentBody(String userId, CarteiraSegment segment) {
     return switch (segment) {
       CarteiraSegment.clientes => _ClientesTab(userId: userId),
-      CarteiraSegment.categorias => _CategoriasTab(userId: userId),
-      CarteiraSegment.metas => const CarteiraMetasTab(),
+      CarteiraSegment.categorias => const CarteiraMetasTab(),
       CarteiraSegment.oportunidades => const _OportunidadesTab(),
     };
   }
@@ -137,230 +131,6 @@ class _ClientesTab extends ConsumerWidget {
           );
         },
       ),
-    );
-  }
-}
-
-class _CategoriasTab extends ConsumerWidget {
-  const _CategoriasTab({required this.userId});
-
-  final String userId;
-
-  Color _parseColor(String hex) {
-    final normalized = hex.replaceFirst('#', '');
-    final value = int.tryParse(normalized, radix: 16);
-    if (value == null || normalized.length != 6) {
-      return const Color(0xFF9CA3AF);
-    }
-    return Color(0xFF000000 | value);
-  }
-
-  Future<void> _criarCategoria(BuildContext context, WidgetRef ref) async {
-    final result = await showSoloForteSheet<CategoriaFormResult>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: false,
-      useSafeArea: false,
-      builder: (_) => CategoriaFormDialog(userId: userId),
-    );
-    if (result == null) return;
-
-    final categorias = await ref.read(categoriasGlobaisProvider(userId).future);
-    final now = DateTime.now();
-
-    final nova = CategoriaGlobal(
-      id: const Uuid().v4(),
-      userId: userId,
-      nome: result.nome,
-      cor: result.corHex,
-      ativo: true,
-      ordem: categorias.length,
-      unidadeCodigo: result.unidadeCodigo,
-      unidadeLabel: result.unidadeLabel,
-      converteSacasHa: result.converteSacasHa,
-      valorReferencia: result.valorReferencia,
-      createdAt: now,
-      updatedAt: now,
-    );
-
-    await ref.read(carteiraRepositoryProvider).saveCategoria(nova);
-    ref.invalidate(categoriasGlobaisProvider(userId));
-  }
-
-  Future<void> _editarCategoria(
-    BuildContext context,
-    WidgetRef ref,
-    CategoriaGlobal categoria,
-  ) async {
-    final result = await showSoloForteSheet<CategoriaFormResult>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: false,
-      useSafeArea: false,
-      builder: (_) => CategoriaFormDialog(
-        userId: userId,
-        title: 'Editar categoria',
-        initialNome: categoria.nome,
-        initialCorHex: categoria.cor,
-        initialValorReal: categoria.valorReferencia ?? categoria.valorReal,
-        initialUnidadeCodigo: categoria.unidadeCodigo,
-        initialUnidadeLabel: categoria.unidadeLabel,
-        initialConverteSacasHa: categoria.converteSacasHa,
-      ),
-    );
-    if (result == null) return;
-
-    await ref
-        .read(carteiraRepositoryProvider)
-        .updateCategoria(
-          categoria.copyWith(
-            nome: result.nome,
-            cor: result.corHex,
-            unidadeCodigo: result.unidadeCodigo,
-            unidadeLabel: result.unidadeLabel,
-            converteSacasHa: result.converteSacasHa,
-            valorReferencia: result.valorReferencia,
-          ),
-        );
-
-    ref.invalidate(categoriasGlobaisProvider(userId));
-  }
-
-  Future<void> _desativarCategoria(
-    BuildContext context,
-    WidgetRef ref,
-    CategoriaGlobal categoria,
-  ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Desativar categoria'),
-        content: Text(
-          'Deseja desativar "${categoria.nome}"? Ela some das telas; '
-          'os lançamentos já feitos ficam guardados.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Desativar'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    await ref.read(carteiraRepositoryProvider).desativarCategoria(categoria.id);
-    ref.invalidate(categoriasGlobaisProvider(userId));
-    ref.invalidate(todosRegistrosProvider(userId));
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final categoriasAsync = ref.watch(categoriasGlobaisProvider(userId));
-    final valorGrao = ref.watch(valorGraoProvider).valueOrNull ?? 0.0;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton.icon(
-              onPressed: () => _criarCategoria(context, ref),
-              icon: const Icon(Icons.add),
-              label: const Text('Nova categoria'),
-            ),
-          ),
-        ),
-        const CarteiraAjudaCard(segment: CarteiraSegment.categorias),
-        Expanded(
-          child: categoriasAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, __) =>
-                const Center(child: Text('Não conseguimos carregar as categorias. Tente de novo.')),
-            data: (categorias) {
-              if (categorias.isEmpty) {
-                return const CarteiraEstadoVazio(
-                  titulo: 'Nenhuma categoria ativa',
-                  mensagem:
-                      'Toque em Nova categoria para criar a primeira. '
-                      'Ex.: Nutrição, Sementes de soja.',
-                );
-              }
-
-              return ListView.builder(
-                padding: EdgeInsets.only(
-                  top: 8,
-                  bottom: context.fabSafeBottomPadding,
-                ),
-                itemCount: categorias.length,
-                itemBuilder: (context, index) {
-                  final categoria = categorias[index];
-                  final refLabel = categoria.rotuloReferencia();
-                  final equivLabel = categoria.rotuloEquivalenteSacasHa(
-                    valorGrao,
-                  );
-                  final hintColor = Theme.of(context).hintColor;
-                  return ListTile(
-                    leading: CircleAvatar(
-                      radius: 10,
-                      backgroundColor: _parseColor(categoria.cor),
-                    ),
-                    title: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(categoria.nome),
-                        if (refLabel != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              refLabel,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        if (equivLabel != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              equivLabel,
-                              style: TextStyle(fontSize: 11, color: hintColor),
-                            ),
-                          ),
-                      ],
-                    ),
-                    trailing: Wrap(
-                      spacing: 4,
-                      children: [
-                        IconButton(
-                          tooltip: 'Editar',
-                          icon: const Icon(Icons.edit_outlined),
-                          onPressed: () =>
-                              _editarCategoria(context, ref, categoria),
-                        ),
-                        IconButton(
-                          tooltip: 'Desativar',
-                          icon: const Icon(Icons.block_outlined),
-                          onPressed: () =>
-                              _desativarCategoria(context, ref, categoria),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-      ],
     );
   }
 }
