@@ -7,6 +7,7 @@ import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import '../../domain/enums/perfil_atendimento_tipo.dart';
 import '../../domain/perfil_atendimento_calculator.dart';
 import '../providers/clients_providers.dart';
+import 'client_perfil_abordagem_sheet.dart';
 import 'client_sheet_widgets.dart';
 
 const List<_PerguntaPerfil> _kPerguntasPerfilAtendimento = [
@@ -360,6 +361,8 @@ class _ClientPerfilDiagnosticoSheetBodyState
         ],
         const SizedBox(height: 20),
         _DistribuicaoPontos(pontos: resultado.pontos, total: _total),
+        const SizedBox(height: 20),
+        ClientPerfilAbordagemResumo(tipo: resultado.dominante),
         const SizedBox(height: 24),
         ClientSheetPrimaryButton(
           label: 'Confirmar diagnóstico',
