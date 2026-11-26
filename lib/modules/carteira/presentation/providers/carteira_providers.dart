@@ -40,6 +40,7 @@ final opportunityLookupProvider = Provider<IOpportunityLookup>((ref) {
 /// ADR-029 — oportunidades abertas (via [OpportunitySummary]) de um cliente.
 final clientOpportunitiesProvider = FutureProvider.autoDispose
     .family<List<OpportunitySummary>, String>((ref, clientId) async {
+      await ref.watch(safraAtivaProvider.future);
       final lookup = ref.watch(opportunityLookupProvider);
       return lookup.getOpenOpportunities(clientId);
     });
@@ -107,6 +108,7 @@ const _kProducerPalette = <int>[
 
 final oportunidadesCarteiraOverviewProvider =
     FutureProvider.autoDispose<OportunidadesCarteiraOverview>((ref) async {
+      await ref.watch(safraAtivaProvider.future);
       final clients = await ref.watch(carteiraClientesProvider.future);
       final lookup = ref.watch(opportunityLookupProvider);
 
@@ -165,12 +167,14 @@ final todosRegistrosProvider = FutureProvider.autoDispose
       return repo.getTodosRegistros(userId);
     });
 
-/// Percentual fechado por `<clienteId>_<categoriaId>` (soma de lançamentos,
-/// ADR-029). Mesma fonte do detalhe do produtor.
+/// Percentual fechado por `<clienteId>_<categoriaId>` (soma de lançamentos
+/// da safra ativa, ADR-029). Mesma fonte do detalhe do produtor.
 final closedPercentTodosProvider = FutureProvider.autoDispose
     .family<Map<String, double>, String>((ref, userId) async {
+      final safra = await ref.watch(safraAtivaProvider.future);
+      if (safra == null) return {};
       final repo = ref.watch(carteiraRepositoryProvider);
-      return repo.getClosedPercentTodos(userId);
+      return repo.getClosedPercentTodos(userId, safra.id);
     });
 
 final carteiraClientesProvider =
@@ -298,12 +302,15 @@ final realizadoClienteCategoriaProvider = FutureProvider.autoDispose
       );
     });
 
-/// Percentual fechado por cliente+categoria (ADR-029 — soma closed_percent).
+/// Percentual fechado por cliente+categoria na safra ativa (ADR-029 — soma
+/// closed_percent).
 final closedPercentClienteCategoriaProvider = FutureProvider.autoDispose
     .family<double, ({String clienteId, String categoriaId})>((
       ref,
       args,
     ) async {
+      final safra = await ref.watch(safraAtivaProvider.future);
+      if (safra == null) return 0.0;
       final userId = _currentUserId(ref);
       if (userId.isEmpty) return 0.0;
       final repo = ref.watch(carteiraRepositoryProvider);
@@ -311,6 +318,7 @@ final closedPercentClienteCategoriaProvider = FutureProvider.autoDispose
         args.clienteId,
         args.categoriaId,
         userId,
+        safra.id,
       );
     });
 
