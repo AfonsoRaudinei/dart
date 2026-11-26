@@ -271,53 +271,77 @@ class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
           loading: () => const LinearProgressIndicator(),
           error: (_, __) => const SizedBox.shrink(),
           data: (safra) {
-            if (safra == null) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Text(
-                  'Crie uma safra para definir metas por categoria.',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              );
-            }
-
-            return categoriasAsync.when(
-              loading: () => const LinearProgressIndicator(),
-              error: (_, __) => const SizedBox.shrink(),
-              data: (categorias) {
-                final ativas = categorias.where((c) => c.ativo).toList();
-                if (ativas.isEmpty) {
-                  return const Text(
-                    'Nenhuma categoria ativa.',
-                    style: TextStyle(color: Colors.grey),
-                  );
-                }
-
-                return metasAsync.when(
+            final semSafra = safra == null;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (semSafra)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      'Crie uma safra para definir metas por categoria.',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                categoriasAsync.when(
                   loading: () => const LinearProgressIndicator(),
                   error: (_, __) => const SizedBox.shrink(),
-                  data: (metas) {
-                    return Column(
-                      children: ativas.map((cat) {
-                        final meta = _findMetaByCategoria(metas, cat.id);
-                        final progressoAsync = ref.watch(
-                          progressoCategoriaProvider(cat.id),
+                  data: (categorias) {
+                    final ativas = categorias.where((c) => c.ativo).toList();
+                    if (ativas.isEmpty) {
+                      return const Text(
+                        'Nenhuma categoria ativa.',
+                        style: TextStyle(color: Colors.grey),
+                      );
+                    }
+
+                    final valorGrao =
+                        ref.watch(valorGraoProvider).valueOrNull ?? 0.0;
+
+                    if (semSafra) {
+                      return Column(
+                        children: ativas.map((cat) {
+                          return _MetaCategoriaItem(
+                            categoria: cat,
+                            meta: null,
+                            valorGrao: valorGrao,
+                            progressoAsync: const AsyncValue.data(0.0),
+                            onEditMeta: () => _abrirMetaDialog(cat, null),
+                            onEditCategoria: () => _editarCategoria(cat),
+                            onDesativarCategoria: () =>
+                                _desativarCategoria(cat),
+                          );
+                        }).toList(),
+                      );
+                    }
+
+                    return metasAsync.when(
+                      loading: () => const LinearProgressIndicator(),
+                      error: (_, __) => const SizedBox.shrink(),
+                      data: (metas) {
+                        return Column(
+                          children: ativas.map((cat) {
+                            final meta = _findMetaByCategoria(metas, cat.id);
+                            final progressoAsync = ref.watch(
+                              progressoCategoriaProvider(cat.id),
+                            );
+                            return _MetaCategoriaItem(
+                              categoria: cat,
+                              meta: meta,
+                              valorGrao: valorGrao,
+                              progressoAsync: progressoAsync,
+                              onEditMeta: () => _abrirMetaDialog(cat, meta),
+                              onEditCategoria: () => _editarCategoria(cat),
+                              onDesativarCategoria: () =>
+                                  _desativarCategoria(cat),
+                            );
+                          }).toList(),
                         );
-                        return _MetaCategoriaItem(
-                          categoria: cat,
-                          meta: meta,
-                          valorGrao:
-                              ref.watch(valorGraoProvider).valueOrNull ?? 0.0,
-                          progressoAsync: progressoAsync,
-                          onEditMeta: () => _abrirMetaDialog(cat, meta),
-                          onEditCategoria: () => _editarCategoria(cat),
-                          onDesativarCategoria: () => _desativarCategoria(cat),
-                        );
-                      }).toList(),
+                      },
                     );
                   },
-                );
-              },
+                ),
+              ],
             );
           },
         ),
