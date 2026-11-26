@@ -18,6 +18,7 @@ import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart'
 import 'package:soloforte_app/modules/drawing/presentation/drawing_compact_selection_actions.dart';
 import 'package:soloforte_app/modules/drawing/presentation/providers/drawing_provider.dart';
 import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
+import 'package:soloforte_app/modules/ndvi/domain/ndvi_image_utils.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_providers.dart';
 import 'package:soloforte_app/ui/components/map/map_talhao_selection_toolbar.dart';
 
@@ -222,7 +223,7 @@ void main() {
         const anchorHeight = 52.0;
         const anchorGap = 24.0;
         const centroid = Offset(200, 400);
-        final featureBounds = Rect.fromLTRB(80, 280, 320, 520);
+        const featureBounds = Rect.fromLTRB(80, 280, 320, 520);
 
         final offset = resolveMapTalhaoToolbarOffset(
           screenPoint: centroid,
@@ -259,7 +260,7 @@ void main() {
         const anchorGap = 24.0;
         const lineH = 52.0;
         const centroid = Offset(200, 400);
-        final featureBounds = Rect.fromLTRB(80, 280, 320, 520);
+        const featureBounds = Rect.fromLTRB(80, 280, 320, 520);
 
         final offset = resolveMapTalhaoToolbarOffset(
           screenPoint: centroid,
@@ -292,7 +293,7 @@ void main() {
         const toolbarWidth = 200.0;
         const toolbarHeight = 52.0;
         const centroid = Offset(200, 120);
-        final featureBounds = Rect.fromLTRB(80, 40, 320, 200);
+        const featureBounds = Rect.fromLTRB(80, 40, 320, 200);
 
         final offset = resolveMapTalhaoToolbarOffset(
           screenPoint: centroid,
@@ -517,7 +518,10 @@ void main() {
       WidgetTester tester, {
       required DrawingFeature feature,
       required _Writer writer,
+      DateTime? ndviSceneDate,
     }) async {
+      final sceneDate =
+          ndviSceneDate ?? DateTime.now().subtract(const Duration(days: 2));
       final controller = DrawingController(repository: _DrawingRepo([feature]));
       addTearDown(controller.dispose);
       controller.selectFeature(feature);
@@ -533,7 +537,7 @@ void main() {
             iDrawingFieldWriterProvider.overrideWithValue(writer),
             ndviLatestLookupProvider.overrideWithValue(_NdviLookup()),
             ndviImagesProvider.overrideWith(
-              (ref, fieldId) async => [_ndviImage(DateTime(2026, 10, 28))],
+              (ref, fieldId) async => [_ndviImage(sceneDate)],
             ),
           ],
           child: MaterialApp(
@@ -653,27 +657,30 @@ void main() {
     testWidgets('painel Status esconde as datas e NDVI fecha o painel', (
       tester,
     ) async {
+      final sceneDate = DateTime.now().subtract(const Duration(days: 2));
+      final chipLabel = ndviDateChipLabel(sceneDate);
       final pumped = await pumpToolbar(
         tester,
         feature: _squareFeature(),
         writer: _Writer(),
+        ndviSceneDate: sceneDate,
       );
 
       await tester.tap(find.byKey(const Key('map_talhao_toolbar_ndvi')));
       await tester.pump();
       await tester.pump();
-      expect(find.text('28/10'), findsOneWidget);
+      expect(find.text(chipLabel), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('map_talhao_toolbar_status')));
       await tester.pump();
-      expect(find.text('28/10'), findsNothing);
+      expect(find.text(chipLabel), findsNothing);
       expect(find.text('Bom'), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('map_talhao_toolbar_ndvi')));
       await tester.pump();
       await tester.pump();
       expect(find.text('Bom'), findsNothing);
-      expect(find.text('28/10'), findsOneWidget);
+      expect(find.text(chipLabel), findsOneWidget);
       expect(
         pumped.container.read(mapTalhaoStatusPanelFieldIdProvider),
         isNull,
