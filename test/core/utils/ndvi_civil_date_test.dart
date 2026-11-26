@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:soloforte_app/core/utils/ndvi_civil_date.dart';
 import 'package:soloforte_app/modules/ndvi/domain/ndvi_image_utils.dart';
 
 void main() {
