@@ -322,95 +322,54 @@ class ReportPptxBuilder {
       }
     }
 
-    archive.addFile(
-      ArchiveFile(
-        '[Content_Types].xml',
-        0,
-        utf8.encode(_contentTypesXml(slides.length, media.isNotEmpty)),
-      ),
+    void addUtf8(String name, String xml) {
+      archive.addFile(ArchiveFile.bytes(name, utf8.encode(xml)));
+    }
+
+    addUtf8(
+      '[Content_Types].xml',
+      _contentTypesXml(slides.length, media.isNotEmpty),
     );
-    archive.addFile(
-      ArchiveFile('_rels/.rels', 0, utf8.encode(_packageRelsXml())),
+    addUtf8('_rels/.rels', _packageRelsXml());
+    addUtf8('docProps/core.xml', _corePropsXml());
+    addUtf8('docProps/app.xml', _appPropsXml(slides.length));
+    addUtf8('ppt/presentation.xml', _presentationXml(slides.length));
+    addUtf8(
+      'ppt/_rels/presentation.xml.rels',
+      _presentationRelsXml(slides.length),
     );
-    archive.addFile(
-      ArchiveFile('docProps/core.xml', 0, utf8.encode(_corePropsXml())),
+    addUtf8('ppt/presProps.xml', _presPropsXml());
+    addUtf8('ppt/viewProps.xml', _viewPropsXml());
+    addUtf8('ppt/tableStyles.xml', _tableStylesXml());
+    addUtf8('ppt/slideMasters/slideMaster1.xml', _slideMasterXml());
+    addUtf8(
+      'ppt/slideMasters/_rels/slideMaster1.xml.rels',
+      _slideMasterRelsXml(),
     );
-    archive.addFile(
-      ArchiveFile(
-        'docProps/app.xml',
-        0,
-        utf8.encode(_appPropsXml(slides.length)),
-      ),
+    addUtf8('ppt/slideLayouts/slideLayout1.xml', _slideLayoutXml());
+    addUtf8(
+      'ppt/slideLayouts/_rels/slideLayout1.xml.rels',
+      _slideLayoutRelsXml(),
     );
-    archive.addFile(
-      ArchiveFile(
-        'ppt/presentation.xml',
-        0,
-        utf8.encode(_presentationXml(slides.length)),
-      ),
-    );
-    archive.addFile(
-      ArchiveFile(
-        'ppt/_rels/presentation.xml.rels',
-        0,
-        utf8.encode(_presentationRelsXml(slides.length)),
-      ),
-    );
-    archive.addFile(
-      ArchiveFile(
-        'ppt/slideMasters/slideMaster1.xml',
-        0,
-        utf8.encode(_slideMasterXml()),
-      ),
-    );
-    archive.addFile(
-      ArchiveFile(
-        'ppt/slideMasters/_rels/slideMaster1.xml.rels',
-        0,
-        utf8.encode(_slideMasterRelsXml()),
-      ),
-    );
-    archive.addFile(
-      ArchiveFile(
-        'ppt/slideLayouts/slideLayout1.xml',
-        0,
-        utf8.encode(_slideLayoutXml()),
-      ),
-    );
-    archive.addFile(
-      ArchiveFile(
-        'ppt/slideLayouts/_rels/slideLayout1.xml.rels',
-        0,
-        utf8.encode(_slideLayoutRelsXml()),
-      ),
-    );
-    archive.addFile(
-      ArchiveFile('ppt/theme/theme1.xml', 0, utf8.encode(_themeXml())),
-    );
+    addUtf8('ppt/theme/theme1.xml', _themeXml());
 
     for (var i = 0; i < slides.length; i++) {
       final slideNum = i + 1;
       final slide = slides[i];
       final relMedia = media[slideNum];
-      archive.addFile(
-        ArchiveFile(
-          'ppt/slides/slide$slideNum.xml',
-          0,
-          utf8.encode(_slideXml(slide, relMedia != null)),
-        ),
+      addUtf8(
+        'ppt/slides/slide$slideNum.xml',
+        _slideXml(slide, relMedia != null),
       );
-      archive.addFile(
-        ArchiveFile(
-          'ppt/slides/_rels/slide$slideNum.xml.rels',
-          0,
-          utf8.encode(_slideRelsXml(relMedia?.name)),
-        ),
+      addUtf8(
+        'ppt/slides/_rels/slide$slideNum.xml.rels',
+        _slideRelsXml(relMedia?.name),
       );
     }
 
     for (final entry in media.values) {
       archive.addFile(
-        ArchiveFile('ppt/media/${entry.name}', entry.bytes.length, entry.bytes),
+        ArchiveFile.bytes('ppt/media/${entry.name}', entry.bytes),
       );
     }
 
@@ -528,7 +487,22 @@ class ReportPptxBuilder {
   String _contentTypesXml(int slideCount, bool hasMedia) {
     final overrides = StringBuffer()
       ..writeln(
+        '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>',
+      )
+      ..writeln(
+        '<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>',
+      )
+      ..writeln(
         '<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>',
+      )
+      ..writeln(
+        '<Override PartName="/ppt/presProps.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presProps+xml"/>',
+      )
+      ..writeln(
+        '<Override PartName="/ppt/viewProps.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.viewProps+xml"/>',
+      )
+      ..writeln(
+        '<Override PartName="/ppt/tableStyles.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.tableStyles+xml"/>',
       )
       ..writeln(
         '<Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>',
@@ -607,6 +581,17 @@ $sldIds
         '<Relationship Id="rId${i + 2}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${i + 1}.xml"/>',
       );
     }
+    final base = slideCount + 2;
+    rels
+      ..writeln(
+        '<Relationship Id="rId$base" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/presProps" Target="presProps.xml"/>',
+      )
+      ..writeln(
+        '<Relationship Id="rId${base + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/viewProps" Target="viewProps.xml"/>',
+      )
+      ..writeln(
+        '<Relationship Id="rId${base + 2}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/tableStyles" Target="tableStyles.xml"/>',
+      );
     return '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 $rels
@@ -627,7 +612,42 @@ $rels
 <p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld>
 <p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>
 <p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst>
+<p:txStyles>
+<p:titleStyle><a:lvl1pPr algn="ctr" rtl="0" eaLnBrk="1" latinLnBrk="0" hangingPunct="1"><a:defRPr sz="4400" kern="1200"><a:solidFill><a:schemeClr val="tx1"/></a:solidFill><a:latin typeface="+mj-lt"/><a:ea typeface="+mj-ea"/><a:cs typeface="+mj-cs"/></a:defRPr></a:lvl1pPr></p:titleStyle>
+<p:bodyStyle><a:lvl1pPr marL="342900" marR="0" lvl="0" algn="l" defTabSz="914400" rtl="0" eaLnBrk="1" latinLnBrk="0" hangingPunct="1"><a:defRPr sz="3200" kern="1200"><a:solidFill><a:schemeClr val="tx1"/></a:solidFill><a:latin typeface="+mn-lt"/><a:ea typeface="+mn-ea"/><a:cs typeface="+mn-cs"/></a:defRPr></a:lvl1pPr></p:bodyStyle>
+<p:otherStyle><a:defPPr lvl="0" algn="l"/><a:lvl1pPr marL="342900" marR="0" lvl="0" algn="l" defTabSz="914400" rtl="0" eaLnBrk="1" latinLnBrk="0" hangingPunct="1"><a:defRPr sz="1800" kern="1200"><a:solidFill><a:schemeClr val="tx1"/></a:solidFill><a:latin typeface="+mn-lt"/><a:ea typeface="+mn-ea"/><a:cs typeface="+mn-cs"/></a:defRPr></a:lvl1pPr></p:otherStyle>
+</p:txStyles>
 </p:sldMaster>''';
+  }
+
+  String _presPropsXml() {
+    return '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:presentationPr xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+<p:showPr needle="1"/>
+</p:presentationPr>''';
+  }
+
+  String _viewPropsXml() {
+    return '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:viewPr xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+<p:normalViewPr>
+<p:restoredLeft sz="15620"/>
+<p:restoredTop sz="94660"/>
+</p:normalViewPr>
+<p:slideViewPr>
+<p:cSldViewPr>
+<p:cViewPr var="1"/>
+<p:guideLst/>
+</p:cSldViewPr>
+</p:slideViewPr>
+<p:notesTextViewPr/>
+<p:gridSpacing cx="78028800" cy="78028800"/>
+</p:viewPr>''';
+  }
+
+  String _tableStylesXml() {
+    return '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<a:tblStyleLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" def="{5C22544A-7BC6-43B2-948B-7B34887676DD}"/>''';
   }
 
   String _slideLayoutRelsXml() {
@@ -651,7 +671,7 @@ $rels
 <a:themeElements>
 <a:clrScheme name="SoloForte"><a:dk1><a:sysClr val="windowText" lastClr="000000"/></a:dk1><a:lt1><a:sysClr val="window" lastClr="FFFFFF"/></a:lt1><a:dk2><a:srgbClr val="2C5564"/></a:dk2><a:lt2><a:srgbClr val="F5F5F7"/></a:lt2><a:accent1><a:srgbClr val="1428A0"/></a:accent1><a:accent2><a:srgbClr val="2C5564"/></a:accent2><a:accent3><a:srgbClr val="059669"/></a:accent3><a:accent4><a:srgbClr val="E8A317"/></a:accent4><a:accent5><a:srgbClr val="D93025"/></a:accent5><a:accent6><a:srgbClr val="6E6E73"/></a:accent6><a:hlink><a:srgbClr val="1428A0"/></a:hlink><a:folHlink><a:srgbClr val="2C5564"/></a:folHlink></a:clrScheme>
 <a:fontScheme name="SoloForte"><a:majorFont><a:latin typeface="Calibri Light"/></a:majorFont><a:minorFont><a:latin typeface="Calibri"/></a:minorFont></a:fontScheme>
-<a:fmtScheme name="SoloForte"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="9525"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst></a:fmtScheme>
+<a:fmtScheme name="SoloForte"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:tint val="50000"/></a:schemeClr></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"><a:shade val="10000"/></a:schemeClr></a:gs></a:gsLst><a:lin ang="5400000" scaled="0"/></a:gradFill></a:fillStyleLst><a:lnStyleLst><a:ln w="9525"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="25400"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="38100"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst><a:outerShdw blurRad="40000" dist="20000" dir="5400000" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="38000"/></a:srgbClr></a:outerShdw></a:effectLst></a:effectStyle><a:effectStyle><a:effectLst><a:outerShdw blurRad="40000" dist="23000" dir="5400000" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="35000"/></a:srgbClr></a:outerShdw></a:effectLst></a:effectStyle><a:effectStyle><a:effectLst><a:outerShdw blurRad="40000" dist="23000" dir="5400000" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="35000"/></a:srgbClr></a:outerShdw></a:effectLst><a:scene3d><a:camera prst="orthographicFront"/><a:lightRig rig="threePt" dir="t"><a:rot lat="0" lon="0" rev="1200000"/></a:lightRig></a:scene3d><a:sp3d extrusionH="25400" contourW="12700" prstMaterial="plastic"/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:tint val="40000"/></a:schemeClr></a:gs><a:gs pos="50000"><a:schemeClr val="phClr"><a:shade val="99000"/></a:schemeClr></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"><a:shade val="20000"/></a:schemeClr></a:gs></a:gsLst><a:path path="circle"><a:fillToRect l="50000" t="-80000" r="50000" b="180000"/></a:path></a:gradFill><a:blipFill rotWithShape="1"><a:blip/><a:tile tx="0" ty="0" sx="100000" sy="100000" flip="none" algn="tl"/></a:blipFill></a:bgFillStyleLst></a:fmtScheme>
 </a:themeElements>
 </a:theme>''';
   }
