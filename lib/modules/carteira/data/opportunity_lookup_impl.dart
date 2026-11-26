@@ -9,10 +9,13 @@ import 'package:soloforte_app/modules/carteira/domain/repositories/i_carteira_re
 
 /// Implementação de [IOpportunityLookup] para o módulo carteira/.
 ///
-/// Calcula oportunidades abertas por cliente combinando:
+/// Calcula oportunidades abertas por cliente na safra ativa combinando:
 /// - categorias ativas do usuário (carteira_categorias)
-/// - soma de closed_percent por cliente+categoria (carteira_lancamentos)
+/// - soma de closed_percent por cliente+categoria dos lançamentos da safra
+///   ativa (carteira_lancamentos)
 /// - area_total do cliente (clients)
+///
+/// Sem safra ativa não há oportunidade: retorna [].
 ///
 /// ADR-029 — SoloForte
 class OpportunityLookupImpl implements IOpportunityLookup {
@@ -35,6 +38,9 @@ class OpportunityLookupImpl implements IOpportunityLookup {
     try {
       final userId = _userId;
       if (userId.isEmpty) return [];
+
+      final safra = await _repository.getSafraAtiva(userId);
+      if (safra == null) return [];
 
       final categorias = await _repository.getCategorias(userId);
       if (categorias.isEmpty) return [];
@@ -61,8 +67,8 @@ class OpportunityLookupImpl implements IOpportunityLookup {
           'SELECT COALESCE(SUM(closed_percent), 0.0) AS total '
           'FROM carteira_lancamentos '
           'WHERE cliente_id = ? AND categoria_id = ? AND user_id = ? '
-          'AND deleted_at IS NULL',
-          [clientId, categoria.id, userId],
+          'AND safra_id = ? AND deleted_at IS NULL',
+          [clientId, categoria.id, userId, safra.id],
         );
         final rawPct = (result.first['total'] as num?)?.toDouble() ?? 0.0;
         final closedPercent = rawPct.clamp(0.0, 100.0);
