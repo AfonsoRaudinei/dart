@@ -3,6 +3,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/modules/carteira/data/opportunity_lookup_impl.dart';
+import 'package:soloforte_app/modules/carteira/domain/entities/carteira_safra.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
 import 'package:soloforte_app/modules/carteira/domain/repositories/i_carteira_repository.dart';
 
@@ -140,4 +141,16 @@ class _FakeCarteiraRepository extends Fake implements ICarteiraRepository {
   @override
   Future<List<CategoriaGlobal>> getCategorias(String userId) async =>
       _categorias;
+
+  @override
+  Future<CarteiraSafra?> getSafraAtiva(String userId) async => CarteiraSafra(
+    id: 's1',
+    userId: userId,
+    nome: 'Safra 2026/2027',
+    dataInicio: DateTime.utc(2026, 9, 1),
+    dataFim: DateTime.utc(2027, 8, 31),
+    ativa: true,
+    createdAt: DateTime.utc(2026, 8, 22),
+    updatedAt: DateTime.utc(2026, 8, 22),
+  );
 }
