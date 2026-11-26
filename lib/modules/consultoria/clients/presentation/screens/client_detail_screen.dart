@@ -27,6 +27,7 @@ import '../widgets/create_farm_sheet.dart';
 import '../widgets/producer_invite_dialog.dart';
 import '../widgets/client_perfil_diagnostico_sheet.dart';
 import '../widgets/client_perfil_abordagem_sheet.dart';
+import '../widgets/client_perfil_destaque_card.dart';
 
 Future<bool> showClientDeleteConfirmation(
   BuildContext context,
@@ -291,7 +292,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _ClientPerfilDestaque(
+                    ClientPerfilDestaqueCard(
                       client: client,
                       onRediagnosticar: () => showClientPerfilDiagnosticoSheet(
                         context: context,
@@ -593,129 +594,6 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
       context,
       clientId: client.id,
       clientName: client.name,
-    );
-  }
-}
-
-class _ClientPerfilDestaque extends StatelessWidget {
-  const _ClientPerfilDestaque({
-    required this.client,
-    required this.onRediagnosticar,
-    required this.onAbrirAbordagem,
-  });
-
-  final Client client;
-  final VoidCallback onRediagnosticar;
-  final VoidCallback onAbrirAbordagem;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = context.themeAccent;
-    final dominante = client.perfilDominante;
-    final sec = client.perfilSecundario;
-    final subtitulo = dominante == null
-        ? 'Ainda não diagnosticado · Toque para iniciar'
-        : sec == null
-        ? dominante.labelDisplay
-        : '${dominante.labelDisplay} · traço ${sec.labelDisplay}';
-    final radius = BorderRadius.circular(14);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: context.premiumSurface,
-        borderRadius: radius,
-        border: Border.all(color: context.premiumCardBorder),
-        boxShadow: context.premiumCardShadows,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: radius,
-          onTap: dominante == null ? onRediagnosticar : onAbrirAbordagem,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    dominante == null
-                        ? Icons.psychology_outlined
-                        : Icons.verified_outlined,
-                    size: 20,
-                    color: accent,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Perfil de atendimento',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: context.premiumTextPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitulo,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: dominante == null
-                              ? context.premiumTextSecondary
-                              : accent,
-                          fontWeight: dominante == null
-                              ? FontWeight.w400
-                              : FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (dominante != null) ...[
-                  const SizedBox(width: 8),
-                  // Detector interno ganha o gesto: Refazer abre o questionário
-                  // e não dispara o toque do cartão (guia de venda).
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: onRediagnosticar,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 6,
-                      ),
-                      child: Text(
-                        'Refazer',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: context.premiumTextSecondary,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(width: 2),
-                Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: context.premiumTextTertiary,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
