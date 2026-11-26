@@ -14,13 +14,14 @@ import 'carteira_ajuda_card.dart';
 import 'carteira_segment_bar.dart';
 import 'categoria_form_dialog.dart';
 import 'meta_form_dialog.dart';
-import 'safra_form_dialog.dart';
+import 'safra_selector_sheet.dart';
 
 /// Aba unificada "Categorias" da tela Carteira (metas + gestão de categorias).
 ///
 /// Exibe:
 /// - Campo de valor do grão (global)
-/// - Safra ativa com botão para criar nova
+/// - Estado vazio quando não há safra ativa (a troca de safra fica no topo
+///   da Carteira)
 /// - Lista de metas por categoria com progresso
 class CarteiraMetasTab extends ConsumerStatefulWidget {
   const CarteiraMetasTab({super.key});
@@ -37,13 +38,6 @@ class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
   }
 
   String get _userId => LocalSessionIdentity.resolveUserId();
-
-  Future<void> _abrirNovaSafra() async {
-    await showDialog<bool>(
-      context: context,
-      builder: (_) => const SafraFormDialog(),
-    );
-  }
 
   Future<void> _abrirMetaDialog(
     CategoriaGlobal categoria,
@@ -176,82 +170,17 @@ class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
         const SizedBox(height: 24),
         const Divider(height: 1),
         const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const _SectionLabel('Safra ativa'),
-            TextButton.icon(
-              onPressed: _abrirNovaSafra,
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('Nova safra'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        safraAtivaAsync.when(
-          loading: () => const LinearProgressIndicator(),
-          error: (_, __) => const SizedBox.shrink(),
-          data: (safra) {
-            if (safra == null) {
-              return _EmptyState(
-                message: 'Nenhuma safra ativa',
-                sub: 'Crie uma safra para definir metas',
-                onAction: _abrirNovaSafra,
-                actionLabel: '+ Nova safra',
-              );
-            }
-            String fmt(DateTime d) =>
-                '${d.day.toString().padLeft(2, '0')}/'
-                '${d.month.toString().padLeft(2, '0')}/'
-                '${d.year}';
-
-            return Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primaryContainer.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.primary.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today_outlined,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          safra.nome,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        Text(
-                          '${fmt(safra.dataInicio)} → ${fmt(safra.dataFim)}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 24),
-        const Divider(height: 1),
-        const SizedBox(height: 16),
+        if (safraAtivaAsync.hasValue && safraAtivaAsync.value == null) ...[
+          _EmptyState(
+            message: 'Nenhuma safra ativa',
+            sub: 'Crie uma safra para definir metas',
+            onAction: () => showSafraSelectorSheet(context),
+            actionLabel: '+ Nova safra',
+          ),
+          const SizedBox(height: 24),
+          const Divider(height: 1),
+          const SizedBox(height: 16),
+        ],
         Align(
           alignment: Alignment.centerRight,
           child: FilledButton.icon(
