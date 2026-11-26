@@ -25,6 +25,7 @@ import '../widgets/client_map_display_settings.dart';
 import '../widgets/client_farm_post_create_flow.dart';
 import '../widgets/create_farm_sheet.dart';
 import '../widgets/producer_invite_dialog.dart';
+import '../widgets/client_perfil_diagnostico_sheet.dart';
 
 Future<bool> showClientDeleteConfirmation(
   BuildContext context,
@@ -275,7 +276,26 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                               '&clienteNome=${Uri.encodeComponent(client.name)}',
                             ),
                           ),
+                          const SizedBox(width: 16),
+                          ClientActionButton(
+                            icon: Icons.psychology_outlined,
+                            label: 'Perfil',
+                            onTap: () => showClientPerfilDiagnosticoSheet(
+                              context: context,
+                              clientId: client.id,
+                              clientName: client.name,
+                            ),
+                          ),
                         ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _ClientPerfilDestaque(
+                      client: client,
+                      onRediagnosticar: () => showClientPerfilDiagnosticoSheet(
+                        context: context,
+                        clientId: client.id,
+                        clientName: client.name,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -562,6 +582,53 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
       context,
       clientId: client.id,
       clientName: client.name,
+    );
+  }
+}
+
+class _ClientPerfilDestaque extends StatelessWidget {
+  const _ClientPerfilDestaque({
+    required this.client,
+    required this.onRediagnosticar,
+  });
+
+  final Client client;
+  final VoidCallback onRediagnosticar;
+
+  @override
+  Widget build(BuildContext context) {
+    final dominante = client.perfilDominante;
+    if (dominante == null) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: ActionChip(
+          avatar: Icon(
+            Icons.psychology_outlined,
+            size: 18,
+            color: context.themeAccent,
+          ),
+          label: const Text('Perfil de atendimento: ainda não diagnosticado'),
+          onPressed: onRediagnosticar,
+        ),
+      );
+    }
+
+    final sec = client.perfilSecundario;
+    final texto = sec == null
+        ? dominante.labelDisplay
+        : '${dominante.labelDisplay} · traço ${sec.labelDisplay}';
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ActionChip(
+        avatar: Icon(
+          Icons.verified_outlined,
+          size: 18,
+          color: context.themeAccent,
+        ),
+        label: Text('Perfil: $texto'),
+        onPressed: onRediagnosticar,
+      ),
     );
   }
 }
