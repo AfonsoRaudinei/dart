@@ -88,4 +88,43 @@ void main() {
     expect(find.text('Editar categoria'), findsOneWidget);
     expect(find.text('Desativar categoria'), findsOneWidget);
   });
+
+  testWidgets(
+    'sem safra ativa ainda lista categorias com banner e menu',
+    (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            valorGraoProvider.overrideWith((ref) async => 120.0),
+            safraAtivaProvider.overrideWith((ref) async => null),
+            categoriasGlobaisProvider(userId)
+                .overrideWith((ref) async => [categoria]),
+            metasSafraAtivaProvider
+                .overrideWith((ref) async => const <CarteiraMeta>[]),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(body: CarteiraMetasTab()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Crie uma safra para definir metas por categoria.'),
+        findsOneWidget,
+      );
+      expect(find.text('Nutrição'), findsOneWidget);
+      expect(find.text('Sem meta definida'), findsOneWidget);
+      final menu = find.byIcon(Icons.more_vert);
+      expect(menu, findsOneWidget);
+
+      await tester.ensureVisible(menu);
+      await tester.pumpAndSettle();
+      await tester.tap(menu);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Editar categoria'), findsOneWidget);
+      expect(find.text('Desativar categoria'), findsOneWidget);
+    },
+  );
 }
