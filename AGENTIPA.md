@@ -28,9 +28,9 @@ IPA 355 · versão `1.36.0` · ID `2BXTVYS4SIQXX2AH3XWJPNIHT4` · 26/nov/2026 13
 | 1.35.0 | train fechada + versão já aprovada | IPA 328, 13/nov/2026 | ASC **90186** + **90062**, entrega `ZVZELTZQW5PCOYOVIYDV4BMVNQ` |
 | 1.36.0 | train fechada + versão já aprovada | IPA 355, 26/nov/2026 | ASC **90186** + **90062**, ID `2BXTVYS4SIQXX2AH3XWJPNIHT4` |
 
-**Candidato ASC:** train **1.37.0** · build **356** (`1.37.0+356`) — linha IPA 356. Train **1.36.0** fechada (IPA 355 recusado, ID `2BXTVYS4SIQXX2AH3XWJPNIHT4`). Versões **1.34.0**, **1.35.0** e **1.36.0** permanecem fechadas.
+**Candidato ASC:** train **1.37.0** · build **357** (`1.37.0+357`) — linha IPA 357. Build **356** já enviado (não reenviar). Versões **1.34.0**, **1.35.0** e **1.36.0** permanecem fechadas.
 
-**Último IPA válido (build number):** **356** (`1.37.0+356`) após archive IPA 356 (26/nov/2026). Próximo archive na train **1.37.0** com `CFBundleVersion` **> 356** (ou nova train se **1.37.0** fechar).
+**Último IPA válido (build number):** **357** (`1.37.0+357`) após archive IPA 357 (26/nov/2026). Próximo archive na train **1.37.0** com `CFBundleVersion` **> 357** (ou nova train se **1.37.0** fechar).
 
 ### Bloqueio de conta Apple (não é o binário)
 
@@ -57,11 +57,25 @@ IPA 328 · versão `1.35.0` · entrega `ZVZELTZQW5PCOYOVIYDV4BMVNQ` · 13/nov/20
 
 Mesmo padrão do IPA 320 na train 1.34.0.
 
+## Envio por linha de comando (sem Transporter)
+
+Validado com o IPA 356 em 26/nov/2026. Não precisa da interface do Mac.
+
+1. Conferir no `Info.plist` do IPA a versão e o build; a versão tem de estar acima das trains fechadas.
+2. Chave de equipe da App Store Connect API em `~/.private_keys/AuthKey_<KEY_ID>.p8` (o `altool` encontra sozinho). O `.p8` nunca entra no repositório nem no chat.
+3. `<KEY_ID>` e `<ISSUER_ID>`: App Store Connect → Usuários e Acesso → Integrações → App Store Connect API.
+
+```bash
+xcrun altool --upload-app -f ~/Desktop/soloforte_app_<BUILD>.ipa --type ios --apiKey <KEY_ID> --apiIssuer <ISSUER_ID>
+```
+
+Sucesso: `UPLOAD SUCCEEDED` + `Delivery UUID` (registrar na linha do IPA). Falha: registrar o texto integral, o código e o ID.
+
 ## Regras de release
 
 - Sempre gerar o próximo IPA com `CFBundleVersion` maior que o maior IPA já publicado neste repositório.
 - Nunca gerar IPA com build number igual ou menor ao último IPA validado.
-- Nunca gerar IPA com `CFBundleShortVersionString` igual ou menor a uma train fechada ou a uma versão já aprovada na App Store (90186 / 90062). Hoje o piso é **maior que 1.36.0** na train **1.37.0** (build **> 355**).
+- Nunca gerar IPA com `CFBundleShortVersionString` igual ou menor a uma train fechada ou a uma versão já aprovada na App Store (90186 / 90062). Hoje o piso é **maior que 1.36.0** na train **1.37.0** (build **> 357**).
 - Se a versão do `pubspec` cair nesse piso, recusar o build e dizer a train nova antes de tocar em Xcode.
 - Sempre embutir corretamente os dados locais necessários ao boot do app antes de fechar a release.
 - Atualizar este arquivo após cada IPA com o número gerado e a evidência de validação.
@@ -219,4 +233,5 @@ Mesmo padrão do IPA 320 na train 1.34.0.
 - IPA 351: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=351` | `CFBundleShortVersionString=1.36.0` | `MinimumOSVersion=15.0` Runner + App.framework | `SUPABASE_URL` confirmada no binário (`pyoejhhkjlrjijiviryq`) | produto **`main`** @ `5dcbaa9d` (PR **#663** latest NDVI: materializa data nova antes de cena velha · dedupe dia civil) + bump `1.36.0+351` | conteúdo desde 350: **ndvi** fix cena antiga no “último” (mapa/ficha/relatório) | `./tool/arch_check.sh` Exit 0 | `./build_testflight.sh` Exit 0 (`1.36.0+351`) · Mac 25/nov/2026 ~07:06 Araguaina · `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` | `./tool/release_store_check.sh` Exit 0 | cópia Transporter: `~/Desktop/soloforte_app_351.ipa` | **substituído por 352**
 - IPA 352: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=352` | `CFBundleShortVersionString=1.36.0` | `MinimumOSVersion=15.0` Runner + App.framework | `SUPABASE_URL` confirmada no binário (`pyoejhhkjlrjijiviryq`) | produto **`main`** @ `a3bd019e` (PR **#663** latest · PR **#665** contrato ndvi-fetch; edge `sortby` removido — deploy Supabase 25/nov) + bump `1.36.0+352` | conteúdo desde 351: app alinhado à edge NDVI restaurada | `./tool/arch_check.sh` Exit 0 | `./build_testflight.sh` Exit 0 (`1.36.0+352`) · Mac 25/nov/2026 ~08:37 Araguaina · `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` | `./tool/release_store_check.sh` Exit 0 | cópia Transporter: `~/Desktop/soloforte_app_352.ipa` | **substituído por 355**
 - IPA 355: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=355` | `CFBundleShortVersionString=1.36.0` | `MinimumOSVersion=15.0` Runner + App.framework | `SUPABASE_URL` confirmada no binário (`pyoejhhkjlrjijiviryq`) | produto **`main`** @ `6c52e3ef` + bump local `1.36.0+355` | conteúdo desde 352: **carteira** safra ativa no topo · seletor/troca de safra · fechamentos/oportunidades por safra (PR **#682**) · **planos** Meu Plano: menu abre com erro · refresh de sessão · retry amigável (PR **#683**) · **consultoria** cartão/diagnóstico de perfil de atendimento no cliente · **core** export PDF/PPTX (HTML trim · cap fotos · paginação) | `./tool/arch_check.sh` Exit 0 | `./build_testflight.sh` Exit 0 (`1.36.0+355`) · Mac 26/nov/2026 ~13:14 Araguaina · `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` | `./tool/release_store_check.sh` Exit 0 | cópia Transporter: `~/Desktop/soloforte_app_355.ipa` | **não enviar** — recusado pela Apple em 26/nov/2026 (ID `2BXTVYS4SIQXX2AH3XWJPNIHT4`): **90062** + **90186** (train **1.36.0** fechada) · **substituído por 356**
-- IPA 356: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=356` | `CFBundleShortVersionString=1.37.0` | `MinimumOSVersion=15.0` Runner + App.framework | `SUPABASE_URL` confirmada no binário (`pyoejhhkjlrjijiviryq`) | produto **`main`** @ `69aa76fa` + bump `1.37.0+356` | mesmo conteúdo do 355 (carteira safra · Meu Plano · consultoria perfil · export PDF/PPTX) · **train nova 1.37.0** (ASC recusou 355 na train 1.36.0 fechada) | `./tool/arch_check.sh` Exit 0 | `./build_testflight.sh` Exit 0 (`1.37.0+356`) · Mac 26/nov/2026 ~13:59 Araguaina · `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` | `./tool/release_store_check.sh` Exit 0 | `Info.plist` Runner: Short=1.37.0 Build=356 | cópia Transporter: `~/Desktop/soloforte_app_356.ipa` | **enviar este** (se Transporter **403**, contratos Apple — ver acima)
+- IPA 356: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=356` | `CFBundleShortVersionString=1.37.0` | `MinimumOSVersion=15.0` Runner + App.framework | `SUPABASE_URL` confirmada no binário (`pyoejhhkjlrjijiviryq`) | produto **`main`** @ `69aa76fa` + bump `1.37.0+356` | mesmo conteúdo do 355 (carteira safra · Meu Plano · consultoria perfil · export PDF/PPTX) · **train nova 1.37.0** (ASC recusou 355 na train 1.36.0 fechada) | `./tool/arch_check.sh` Exit 0 | `./build_testflight.sh` Exit 0 (`1.37.0+356`) · Mac 26/nov/2026 ~13:59 Araguaina · `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` | `./tool/release_store_check.sh` Exit 0 | `Info.plist` Runner: Short=1.37.0 Build=356 | cópia Transporter: `~/Desktop/soloforte_app_356.ipa` | **enviado** 26/nov/2026 14:08 via `xcrun altool` · **UPLOAD SUCCEEDED with no errors** · Delivery UUID `235aa7fb-9ed7-4ff7-92fe-73a1f8d6de69` · não reenviar · **substituído por 357**
+- IPA 357: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=357` | `CFBundleShortVersionString=1.37.0` | `MinimumOSVersion=15.0` Runner + App.framework | `SUPABASE_URL` confirmada no binário (`pyoejhhkjlrjijiviryq`) | produto **`main`** @ `9059a439` + bump `1.37.0+357` | conteúdo desde 356: **consultoria** dicas de venda por perfil (sheet Como vender, PR **#686**) · cartão ilustrado do perfil (PR **#687**) · fazendas em cartão com hierarquia, local e contagem de talhões (PR **#688**) | `./tool/arch_check.sh` Exit 0 | `./build_testflight.sh` Exit 0 (`1.37.0+357`) · Mac 26/nov/2026 ~17:27 Araguaina · `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` | `./tool/release_store_check.sh` Exit 0 | `Info.plist` Runner: Short=1.37.0 Build=357 | cópia Transporter: `~/Desktop/soloforte_app_357.ipa` | **enviar este**
