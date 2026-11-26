@@ -15,9 +15,7 @@ class CarteiraAjudaTextos {
     CarteiraSegment.clientes =>
       'Escolha um produtor para registrar o que ele já fechou com você.',
     CarteiraSegment.categorias =>
-      'Categorias são os grupos de produto que você vende.',
-    CarteiraSegment.metas =>
-      'Defina quanto quer vender de cada categoria na safra ativa.',
+      'Gerencie categorias, safra ativa, valor do grão e metas de venda.',
     CarteiraSegment.oportunidades =>
       'Aqui está o que ainda falta fechar com cada produtor.',
   };
@@ -32,13 +30,12 @@ class CarteiraAjudaTextos {
     CarteiraSegment.categorias => const [
       'Exemplos: Nutrição, Sementes de soja, Defensivos.',
       'Cada categoria tem uma unidade (R\$/ha, Big Bag, Sacas 60k, '
-          'Sacas 500 mil sementes, R\$ total…) e um valor de referência.',
+          'Sacas 500 mil sementes, R\$ total…). Em Mais opções, o custo/'
+          'referência alimenta Oportunidades — não é meta de venda.',
       'Só categorias em R\$/ha entram no total em reais das Oportunidades. '
           'R\$ total é para metas em valor fechado, como adjuvantes.',
       'Desativar esconde a categoria das telas. Os lançamentos já feitos '
           'ficam guardados.',
-    ],
-    CarteiraSegment.metas => const [
       'Só existe uma safra ativa por vez. Crie outra em Nova safra.',
       'A meta vale por categoria e safra, para a carteira toda — não é uma '
           'meta de cada produtor.',
