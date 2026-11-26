@@ -374,7 +374,15 @@ List<String> _auditEmbeds(Archive archive, Set<String> partNames) {
       }
       continue;
     }
-    final relsDoc = XmlDocument.parse(relsText);
+    XmlDocument relsDoc;
+    try {
+      relsDoc = XmlDocument.parse(relsText);
+    } on Object catch (e) {
+      for (final embedId in embedIds) {
+        broken.add('$relsPath: não parseável ($e) [r:embed="$embedId"]');
+      }
+      continue;
+    }
     final relsById = {
       for (final rel in relsDoc.findAllElements('Relationship'))
         if (rel.getAttribute('Id') != null) rel.getAttribute('Id')!: rel,
@@ -403,7 +411,13 @@ List<String> _auditEmbeds(Archive archive, Set<String> partNames) {
         broken.add('$partPath r:embed="$embedId": TargetMode External');
         continue;
       }
-      final resolved = resolveOoxmlPartPath(ownerDir, target);
+      String resolved;
+      try {
+        resolved = resolveOoxmlPartPath(ownerDir, target);
+      } on Object catch (e) {
+        broken.add('$partPath r:embed="$embedId": $e');
+        continue;
+      }
       if (!partNames.contains(resolved)) {
         broken.add(
           '$partPath r:embed="$embedId" → $resolved (ausente no ZIP)',
