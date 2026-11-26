@@ -162,7 +162,6 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
   bool _loading = true;
   bool _actionBusy = false;
   final GlobalKey _exportButtonKey = GlobalKey();
-  final GlobalKey _pdfButtonKey = GlobalKey();
 
   bool get _usesCustomBody => widget.bodyBuilder != null;
 
@@ -422,6 +421,39 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
     return icons;
   }
 
+  Future<void> _shareReportPptx() async {
+    if (_actionBusy) return;
+    setState(() => _actionBusy = true);
+    try {
+      await widget.exportService.export(
+        ReportExportFormat.pptx,
+        ReportExportPayload(
+          title: widget.title,
+          html: widget.htmlContent,
+          fileBaseName: widget.fileBaseName,
+          json: widget.jsonData,
+          csv: widget.csvData,
+        ),
+        sharePositionOrigin: resolveSharePositionOrigin(
+          context,
+          anchorKey: _exportButtonKey,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              userFacingError(e, action: 'Erro ao gerar apresentação'),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _actionBusy = false);
+    }
+  }
+
   Future<void> _shareReportPdf() async {
     if (_actionBusy) return;
     setState(() => _actionBusy = true);
@@ -435,7 +467,7 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
       if (deliver != null) {
         await deliver(bytes);
       } else {
-        await _sharePdfBytes(bytes, anchorKey: _pdfButtonKey);
+        await _sharePdfBytes(bytes, anchorKey: _exportButtonKey);
       }
     } catch (e) {
       if (mounted) {
@@ -482,27 +514,29 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
               ),
             ),
           ...actionIcons,
-          if (widget.enableWhatsAppShareLink)
-            IconButton(
-              key: _pdfButtonKey,
-              tooltip: 'Enviar PDF',
-              onPressed: _actionBusy ? null : _shareReportPdf,
-              icon: const Icon(Icons.picture_as_pdf_outlined),
-            ),
-          if (widget.pdfBytesProvider != null)
+          if (widget.enableWhatsAppShareLink ||
+              widget.pdfBytesProvider != null)
             PopupMenuButton<String>(
               key: _exportButtonKey,
               tooltip: 'Exportar',
+              enabled: !_actionBusy,
               icon: const Icon(Icons.ios_share_outlined),
-              onSelected: (value) {
+              onSelected: (value) async {
                 if (value == 'html') {
-                  _exportHtml();
+                  await _exportHtml();
                 } else if (value == 'pdf') {
-                  _exportPdf();
+                  if (widget.pdfBytesProvider != null) {
+                    await _exportPdf();
+                  } else {
+                    await _shareReportPdf();
+                  }
+                } else if (value == 'pptx') {
+                  await _shareReportPptx();
                 }
               },
               itemBuilder: (context) => const [
                 PopupMenuItem(value: 'pdf', child: Text('Enviar PDF')),
+                PopupMenuItem(value: 'pptx', child: Text('Enviar apresentação')),
                 PopupMenuItem(value: 'html', child: Text('Enviar página')),
               ],
             )
@@ -565,9 +599,11 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
   }
 
   Future<void> _exportPdf() async {
-    final provider = widget.pdfBytesProvider;
-    if (provider == null) return;
+    if (_actionBusy) return;
+    setState(() => _actionBusy = true);
     try {
+      final provider = widget.pdfBytesProvider;
+      if (provider == null) return;
       final bytes = await provider();
       if (!mounted) return;
       await _sharePdfBytes(bytes, anchorKey: _exportButtonKey);
@@ -579,6 +615,8 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _actionBusy = false);
     }
   }
 
