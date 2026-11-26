@@ -350,46 +350,62 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
                           );
                         },
                       ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _valorReferenciaController,
-                        style: TextStyle(color: titleColor),
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: 'Custo / Referência (opcional)',
-                          helperText:
-                              'Em R\$/ha, entra no cálculo das oportunidades. '
-                              'Nas outras unidades é só referência.',
-                          helperMaxLines: 3,
-                          labelStyle: TextStyle(color: labelColor),
-                          suffixText: _unidadeLabel,
-                          suffixStyle: TextStyle(color: labelColor),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: isIos
-                                ? BorderSide(color: v.cardBorder,
-                                  )
-                                : const BorderSide(),
+                      const SizedBox(height: 8),
+                      ExpansionTile(
+                        tilePadding: EdgeInsets.zero,
+                        childrenPadding: const EdgeInsets.only(bottom: 8),
+                        title: Text(
+                          'Mais opções',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: titleColor,
                           ),
-                          enabledBorder: isIos
-                              ? OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: v.cardBorder,
-                                  ),
-                                )
-                              : null,
                         ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return null;
-                          }
-                          if (_parseNullableDouble(value) == null) {
-                            return 'Valor inválido';
-                          }
-                          return null;
-                        },
+                        subtitle: Text(
+                          'Custo ou referência para Oportunidades (não é meta de venda).',
+                          style: TextStyle(fontSize: 12, color: labelColor),
+                        ),
+                        children: [
+                          TextFormField(
+                            controller: _valorReferenciaController,
+                            style: TextStyle(color: titleColor),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            decoration: InputDecoration(
+                              labelText: 'Custo / Referência (opcional)',
+                              helperText:
+                                  'Em R\$/ha, entra no cálculo das Oportunidades. '
+                                  'Não define meta de venda. Nas outras unidades '
+                                  'é só referência.',
+                              helperMaxLines: 4,
+                              labelStyle: TextStyle(color: labelColor),
+                              suffixText: _unidadeLabel,
+                              suffixStyle: TextStyle(color: labelColor),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: isIos
+                                    ? BorderSide(color: v.cardBorder)
+                                    : const BorderSide(),
+                              ),
+                              enabledBorder: isIos
+                                  ? OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(color: v.cardBorder),
+                                    )
+                                  : null,
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return null;
+                              }
+                              if (_parseNullableDouble(value) == null) {
+                                return 'Valor inválido';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 24),
                     ],
