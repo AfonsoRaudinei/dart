@@ -5,8 +5,10 @@ import 'package:soloforte_app/modules/planos/data/services/loja_compra_gateway.d
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
 import 'package:soloforte_app/modules/planos/domain/enums/plano_origem.dart';
 import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
+import 'package:soloforte_app/modules/planos/domain/plano_cache_unavailable_exception.dart';
 import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
 import 'package:soloforte_app/modules/planos/presentation/screens/meu_plano_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 
 class _FakeLoja extends LojaCompraGateway {
   _FakeLoja(this.vitrine);
@@ -165,10 +167,7 @@ void main() {
     await tester.tap(find.text('Bronze'));
     await tester.pump();
 
-    expect(
-      find.text(r'R$ 49,90 · 3 meses · pagamento único'),
-      findsOneWidget,
-    );
+    expect(find.text(r'R$ 49,90 · 3 meses · pagamento único'), findsOneWidget);
     expect(find.text(r'R$ 49,90'), findsOneWidget);
     expect(find.text('Mudar'), findsNothing);
     await tester.ensureVisible(find.text(r'R$ 49,90'));
@@ -269,17 +268,11 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(
-      find.text('3 meses · preço na loja ao comprar'),
-      findsNothing,
-    );
+    expect(find.text('3 meses · preço na loja ao comprar'), findsNothing);
 
     await tester.tap(find.text('Bronze'));
     await tester.pump();
-    expect(
-      find.text('3 meses · preço na loja ao comprar'),
-      findsOneWidget,
-    );
+    expect(find.text('3 meses · preço na loja ao comprar'), findsOneWidget);
     expect(
       find.text('A cada 5 indicações, você sobe para o Prata.'),
       findsOneWidget,
@@ -292,10 +285,7 @@ void main() {
 
     await tester.tap(find.text('Prata'));
     await tester.pump();
-    expect(
-      find.text('6 meses · preço na loja ao comprar'),
-      findsOneWidget,
-    );
+    expect(find.text('6 meses · preço na loja ao comprar'), findsOneWidget);
     expect(
       find.text('A cada 10 indicações, você sobe para o Ouro.'),
       findsOneWidget,
@@ -307,14 +297,9 @@ void main() {
 
     await tester.tap(find.text('Ouro'));
     await tester.pump();
+    expect(find.text('12 meses · preço na loja ao comprar'), findsOneWidget);
     expect(
-      find.text('12 meses · preço na loja ao comprar'),
-      findsOneWidget,
-    );
-    expect(
-      find.text(
-        'Pin visível para todos, até sem login, a partir do zoom 8.',
-      ),
+      find.text('Pin visível para todos, até sem login, a partir do zoom 8.'),
       findsOneWidget,
     );
     expect(find.text('NDVI com maior nível de detalhe.'), findsOneWidget);
@@ -333,10 +318,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Grátis: tagline sem bullet + 4 benefícios com bullet.
-    expect(
-      find.byKey(const Key('meuPlanoVantagemBullet')),
-      findsNWidgets(4),
-    );
+    expect(find.byKey(const Key('meuPlanoVantagemBullet')), findsNWidgets(4));
     final card = tester.widget<Container>(
       find.byKey(const Key('meuPlanoVantagensCard')),
     );
@@ -347,10 +329,7 @@ void main() {
     await tester.tap(find.text('Ouro'));
     await tester.pumpAndSettle();
     // Ouro: preço + tagline sem bullet + 5 benefícios com bullet.
-    expect(
-      find.byKey(const Key('meuPlanoVantagemBullet')),
-      findsNWidgets(5),
-    );
+    expect(find.byKey(const Key('meuPlanoVantagemBullet')), findsNWidgets(5));
   });
 
   testWidgets('conta prata começa em Prata e esconde os outros preços', (
@@ -389,5 +368,77 @@ void main() {
     expect(find.text('Atual'), findsOneWidget);
     expect(find.text(r'R$ 119,90'), findsNothing);
     expect(find.text('Mudar'), findsNothing);
+  });
+
+  group('erro ao carregar plano', () {
+    Future<void> pumpErro(
+      WidgetTester tester,
+      Object error,
+      List<int> loads,
+    ) async {
+      tester.view.physicalSize = const Size(400, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            lojaCompraGatewayProvider.overrideWithValue(
+              _FakeLoja(_vitrineTresPlanos),
+            ),
+            planoAtivoProvider.overrideWith((ref) async {
+              loads.add(loads.length + 1);
+              if (loads.length == 1) throw error;
+              return _paidBronze();
+            }),
+            meuCodigoIndicacaoProvider.overrideWith((ref) async => null),
+          ],
+          child: const MaterialApp(home: MeuPlanoScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('erro de rede mostra mensagem amigável e recarrega', (
+      tester,
+    ) async {
+      final loads = <int>[];
+      await pumpErro(
+        tester,
+        const PlanoCacheUnavailableException(expired: false),
+        loads,
+      );
+
+      expect(
+        find.text(
+          'Não foi possível carregar seu plano agora. '
+          'Verifique a conexão e tente novamente.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Erro ao carregar plano'), findsNothing);
+      expect(find.textContaining('Conecte-se'), findsNothing);
+      expect(find.text('Tentar novamente'), findsOneWidget);
+
+      await tester.tap(find.text('Tentar novamente'));
+      await tester.pumpAndSettle();
+
+      expect(loads.length, 2);
+      expect(find.text('Tentar novamente'), findsNothing);
+      expect(find.text('Atual'), findsOneWidget);
+    });
+
+    testWidgets('erro de sessão mostra mensagem de renovação', (tester) async {
+      final loads = <int>[];
+      await pumpErro(tester, const AuthException('JWT expired'), loads);
+
+      expect(
+        find.text('Sua sessão precisa ser renovada. Tente novamente.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('JWT'), findsNothing);
+      expect(find.text('Tentar novamente'), findsOneWidget);
+    });
   });
 }
