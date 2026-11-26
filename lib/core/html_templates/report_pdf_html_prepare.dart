@@ -190,11 +190,8 @@ String trimReportHtmlToMaxBytes(String html, int maxBytes) {
 String _cutToMaxBytes(String html, int maxBytes) {
   final budget = maxBytes - utf8.encode(_closingTags).length;
   final bytes = utf8.encode(html);
-  if (budget <= 0)
-    return utf8.decode(
-      bytes.sublist(0, maxBytes < 0 ? 0 : maxBytes),
-      allowMalformed: true,
-    );
+  // Nem as tags de fechamento cabem: devolve vazio em vez de estourar o teto.
+  if (budget <= 0) return '';
 
   var end = budget;
   // bytes[end] é o 1º byte descartado: se for continuação, estamos no meio
