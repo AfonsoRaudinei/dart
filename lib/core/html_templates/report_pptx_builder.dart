@@ -1,13 +1,29 @@
 import 'dart:convert';
 
 import 'package:archive/archive.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 
+import '../utils/app_logger.dart';
 import 'report_photo_links.dart';
 import 'relatorio_html_renderer.dart';
 
 const _slidePhotoMaxDimension = 1024;
+
+/// Top-level para rodar em isolate via `compute`.
+Uint8List? _compressForSlide(Uint8List bytes) {
+  final decoded = img.decodeImage(bytes);
+  if (decoded == null) return bytes;
+  final oriented = img.bakeOrientation(decoded);
+  final resized = img.copyResize(
+    oriented,
+    width: oriented.width >= oriented.height ? _slidePhotoMaxDimension : null,
+    height: oriented.height > oriented.width ? _slidePhotoMaxDimension : null,
+    interpolation: img.Interpolation.average,
+  );
+  return Uint8List.fromList(img.encodeJpg(resized, quality: 78));
+}
 
 /// Gera `.pptx` (OOXML) a partir do HTML editorial de relatório.
 class ReportPptxBuilder {
@@ -22,14 +38,16 @@ class ReportPptxBuilder {
     required String reportTitle,
     required String html,
   }) async {
-    final coverTitle = _extractFirstGroup(
-          html,
-          RegExp(
-            r'<h1[^>]*class="sf-title"[^>]*>([\s\S]*?)</h1>',
-            caseSensitive: false,
-          ),
-        ) ??
-        _stripTags(reportTitle);
+    final coverTitle = _stripTags(
+      _extractFirstGroup(
+            html,
+            RegExp(
+              r'<h1[^>]*class="sf-title"[^>]*>([\s\S]*?)</h1>',
+              caseSensitive: false,
+            ),
+          ) ??
+          reportTitle,
+    );
     final coverContext = _stripTags(
       _extractFirstGroup(
             html,
@@ -95,32 +113,28 @@ class ReportPptxBuilder {
   }
 
   Future<Uint8List?> _photoBytes(ReportPhoto photo) async {
-    if (photo.isDataUri) {
-      final raw = photo.decodeBytes();
-      if (raw == null) return null;
-      return _compressForSlide(raw);
-    }
-    if (photo.isNetwork) {
-      final inlined = await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
-        photo.src,
+    try {
+      if (photo.isDataUri) {
+        final raw = photo.decodeBytes();
+        if (raw == null) return null;
+        return await compute(_compressForSlide, raw);
+      }
+      if (photo.isNetwork) {
+        final inlined = await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
+          photo.src,
+        );
+        if (!inlined.startsWith('data:image/')) return null;
+        final raw = UriData.parse(inlined).contentAsBytes();
+        return await compute(_compressForSlide, raw);
+      }
+    } catch (e) {
+      AppLogger.warning(
+        'PPTX: foto ${photo.index + 1} ignorada (dados inválidos)',
+        tag: 'ReportPptxBuilder',
+        error: e,
       );
-      if (!inlined.startsWith('data:image/')) return null;
-      final raw = UriData.parse(inlined).contentAsBytes();
-      return _compressForSlide(raw);
     }
     return null;
-  }
-
-  Uint8List? _compressForSlide(Uint8List bytes) {
-    final decoded = img.decodeImage(bytes);
-    if (decoded == null) return bytes;
-    final resized = img.copyResize(
-      decoded,
-      width: decoded.width >= decoded.height ? _slidePhotoMaxDimension : null,
-      height: decoded.height > decoded.width ? _slidePhotoMaxDimension : null,
-      interpolation: img.Interpolation.average,
-    );
-    return Uint8List.fromList(img.encodeJpg(resized, quality: 78));
   }
 
   Future<Uint8List> _loadLogoBytes() async {
@@ -279,10 +293,50 @@ class ReportPptxBuilder {
   }
 
   String _stripTags(String html) {
-    return html
-        .replaceAll(RegExp(r'<[^>]+>'), ' ')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
+    final noTags = html.replaceAll(RegExp(r'<[^>]+>'), ' ');
+    return _decodeHtmlEntities(noTags).replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  static final _entityPattern = RegExp(
+    r'&(#[xX][0-9a-fA-F]+|#[0-9]+|amp|lt|gt|quot|apos|nbsp);',
+  );
+
+  /// Decodifica entidades HTML comuns em uma única passada (sem dupla
+  /// decodificação); o escape XML acontece depois, em [_xmlEscape].
+  String _decodeHtmlEntities(String text) {
+    return text.replaceAllMapped(_entityPattern, (m) {
+      final name = m.group(1)!;
+      switch (name) {
+        case 'amp':
+          return '&';
+        case 'lt':
+          return '<';
+        case 'gt':
+          return '>';
+        case 'quot':
+          return '"';
+        case 'apos':
+          return "'";
+        case 'nbsp':
+          return ' ';
+      }
+      final isHex = name.startsWith('#x') || name.startsWith('#X');
+      final code = int.tryParse(
+        name.substring(isHex ? 2 : 1),
+        radix: isHex ? 16 : 10,
+      );
+      if (code == null || !_isValidXmlCodePoint(code)) return '';
+      return String.fromCharCode(code);
+    });
+  }
+
+  bool _isValidXmlCodePoint(int c) {
+    return c == 0x9 ||
+        c == 0xA ||
+        c == 0xD ||
+        (c >= 0x20 && c <= 0xD7FF) ||
+        (c >= 0xE000 && c <= 0xFFFD) ||
+        (c >= 0x10000 && c <= 0x10FFFF);
   }
 
   String _xmlEscape(String value) {
