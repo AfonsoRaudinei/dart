@@ -26,6 +26,7 @@ import '../widgets/client_farm_post_create_flow.dart';
 import '../widgets/create_farm_sheet.dart';
 import '../widgets/producer_invite_dialog.dart';
 import '../widgets/client_perfil_diagnostico_sheet.dart';
+import '../widgets/client_perfil_abordagem_sheet.dart';
 
 Future<bool> showClientDeleteConfirmation(
   BuildContext context,
@@ -297,6 +298,16 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                         clientId: client.id,
                         clientName: client.name,
                       ),
+                      onAbrirAbordagem: () {
+                        final dominante = client.perfilDominante;
+                        if (dominante == null) return;
+                        showClientPerfilAbordagemSheet(
+                          context: context,
+                          clientName: client.name,
+                          dominante: dominante,
+                          secundario: client.perfilSecundario,
+                        );
+                      },
                     ),
                     const SizedBox(height: 24),
 
@@ -590,10 +601,12 @@ class _ClientPerfilDestaque extends StatelessWidget {
   const _ClientPerfilDestaque({
     required this.client,
     required this.onRediagnosticar,
+    required this.onAbrirAbordagem,
   });
 
   final Client client;
   final VoidCallback onRediagnosticar;
+  final VoidCallback onAbrirAbordagem;
 
   @override
   Widget build(BuildContext context) {
@@ -618,7 +631,7 @@ class _ClientPerfilDestaque extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: radius,
-          onTap: onRediagnosticar,
+          onTap: dominante == null ? onRediagnosticar : onAbrirAbordagem,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(
@@ -671,12 +684,24 @@ class _ClientPerfilDestaque extends StatelessWidget {
                 ),
                 if (dominante != null) ...[
                   const SizedBox(width: 8),
-                  Text(
-                    'Refazer',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: context.premiumTextSecondary,
+                  // Detector interno ganha o gesto: Refazer abre o questionário
+                  // e não dispara o toque do cartão (guia de venda).
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onRediagnosticar,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 6,
+                      ),
+                      child: Text(
+                        'Refazer',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: context.premiumTextSecondary,
+                        ),
+                      ),
                     ),
                   ),
                 ],
