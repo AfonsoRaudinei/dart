@@ -21,12 +21,12 @@ void main() {
 
     expect(find.text('Clientes'), findsOneWidget);
     expect(find.text('Categorias'), findsOneWidget);
-    expect(find.text('Metas'), findsOneWidget);
+    expect(find.text('Metas'), findsNothing);
     expect(find.text('Oportunidades'), findsOneWidget);
 
-    await tester.tap(find.text('Metas'));
+    await tester.tap(find.text('Categorias'));
     await tester.pumpAndSettle();
 
-    expect(selected, CarteiraSegment.metas);
+    expect(selected, CarteiraSegment.categorias);
   });
 }
