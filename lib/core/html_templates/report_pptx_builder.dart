@@ -623,7 +623,7 @@ $rels
   String _presPropsXml() {
     return '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:presentationPr xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
-<p:showPr needle="1"/>
+<p:showPr loop="0" showNarration="0" showAnimation="1" useTimings="1"/>
 </p:presentationPr>''';
   }
 
