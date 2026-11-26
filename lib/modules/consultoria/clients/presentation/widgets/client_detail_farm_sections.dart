@@ -126,162 +126,345 @@ class _ClientFarmWithTalhoesSectionState
     final areaUnit = ref.watch(areaDisplayUnitProvider);
     final areaFormatted = formatAreaFromHectares(displayedAreaHa, areaUnit);
     final toggleTooltip = _expanded ? 'Ocultar talhões' : 'Mostrar talhões';
+    final location = farmLocationLabel(farm);
+    final accent = context.themeAccent;
+    final divider = Divider(
+      height: 1,
+      thickness: 0.5,
+      color: context.premiumHairline,
+    );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(
-          onTap: _toggleExpanded,
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: context.premiumSurface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.premiumCardBorder),
+          boxShadow: context.premiumCardShadows,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Material(
+            type: MaterialType.transparency,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        farm.name,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                InkWell(
+                  onTap: _toggleExpanded,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 4, 14),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: accent.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.agriculture_rounded,
+                                color: accent,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      farm.name,
+                                      maxLines: 2,
+                                      softWrap: true,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        height: 1.2,
+                                        color: context.premiumTextPrimary,
+                                      ),
+                                    ),
+                                    if (location != null) ...[
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.place_outlined,
+                                            size: 14,
+                                            color: context.premiumTextSecondary,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Flexible(
+                                            child: Text(
+                                              location,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: context
+                                                    .premiumTextSecondary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                            PopupMenuButton<String>(
+                              tooltip: 'Opções da fazenda',
+                              icon: Icon(
+                                Icons.more_horiz_rounded,
+                                color: context.premiumTextSecondary,
+                              ),
+                              onSelected: (value) {
+                                switch (value) {
+                                  case 'edit':
+                                    _editFarm(context);
+                                  case 'delete':
+                                    _deleteFarm(context);
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: ListTile(
+                                    leading: Icon(Icons.edit_outlined),
+                                    title: Text('Editar fazenda'),
+                                    contentPadding: EdgeInsets.zero,
+                                    dense: true,
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: ListTile(
+                                    leading: Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.red,
+                                    ),
+                                    title: Text(
+                                      'Excluir fazenda',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                    contentPadding: EdgeInsets.zero,
+                                    dense: true,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Tooltip(
+                              message: toggleTooltip,
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  4,
+                                  12,
+                                  8,
+                                  12,
+                                ),
+                                child: AnimatedRotation(
+                                  turns: _expanded ? 0.5 : 0,
+                                  duration: const Duration(milliseconds: 200),
+                                  curve: Curves.easeOutCubic,
+                                  child: Icon(
+                                    Icons.expand_more_rounded,
+                                    color: context.premiumTextSecondary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                    PopupMenuButton<String>(
-                      tooltip: 'Opções da fazenda',
-                      onSelected: (value) {
-                        switch (value) {
-                          case 'edit':
-                            _editFarm(context);
-                          case 'delete':
-                            _deleteFarm(context);
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'edit',
-                          child: ListTile(
-                            leading: Icon(Icons.edit_outlined),
-                            title: Text('Editar fazenda'),
-                            contentPadding: EdgeInsets.zero,
-                            dense: true,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: divider,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Área Total',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: context.premiumTextSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      areaFormatted,
+                                      maxLines: 1,
+                                      style: TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w700,
+                                        color: context.premiumTextPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            _FarmFieldCountPill(count: linkedFields?.length),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_expanded) ...[
+                  divider,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4),
+                              child: Text(
+                                'Talhões',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.premiumTextPrimary,
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            TextButton.icon(
+                              onPressed: () => showAdicionarTalhaoModal(
+                                context,
+                                client,
+                                farm: farm,
+                              ),
+                              icon: Icon(Icons.add, color: accent),
+                              label: Text(
+                                'Novo',
+                                style: TextStyle(
+                                  color: accent,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        // A linha "Baixar mapa" + exportar não quebra e
+                        // estoura em telas estreitas / texto ampliado.
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: FarmMapDownloadButton(
+                            farmId: farm.id,
+                            fields: linkedFields,
+                            trailing: FarmGeometryExportButton(
+                              documentName: farm.name,
+                              fields: linkedFields,
+                            ),
                           ),
                         ),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: ListTile(
-                            leading: Icon(
-                              Icons.delete_outline,
-                              color: Colors.red,
-                            ),
-                            title: Text(
-                              'Excluir fazenda',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                            contentPadding: EdgeInsets.zero,
-                            dense: true,
+                        const SizedBox(height: 8),
+                        fieldsAsync.when(
+                          data: (fields) => FarmLinkedFieldList(
+                            clientId: client.id,
+                            farmId: farm.id,
+                            fields: fields,
                           ),
+                          loading: () {
+                            if ((linkedFields ?? const []).isEmpty) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+                            return FarmLinkedFieldList(
+                              clientId: client.id,
+                              farmId: farm.id,
+                              fields: linkedFields!,
+                            );
+                          },
+                          error: (err, stack) => const SizedBox.shrink(),
                         ),
                       ],
                     ),
-                    Tooltip(
-                      message: toggleTooltip,
-                      child: Icon(
-                        _expanded ? Icons.expand_less : Icons.expand_more,
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  'Produtor: ${client.name}',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                ),
+                  ),
+                ],
               ],
             ),
           ),
         ),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: context.isPremiumDark ? const Color(0xFF2C2C2E) : Colors.grey[100],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Área Total', style: TextStyle(color: Colors.grey[600])),
-              Text(
-                areaFormatted,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${farm.city} - ${farm.state}',
-                style: const TextStyle(fontSize: 16),
-              ),
-            ],
-          ),
-        ),
-        if (_expanded) ...[
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              const Text(
-                'Talhões',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const Spacer(),
-              TextButton.icon(
-                onPressed: () =>
-                    showAdicionarTalhaoModal(context, client, farm: farm),
-                icon: Icon(Icons.add, color: context.themeAccent),
-                label: Text(
-                  'Novo',
-                  style: TextStyle(
-                    color: context.themeAccent,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          FarmMapDownloadButton(
-            farmId: farm.id,
-            fields: linkedFields,
-            trailing: FarmGeometryExportButton(
-              documentName: farm.name,
-              fields: linkedFields,
+      ),
+    );
+  }
+}
+
+/// "{cidade} - {UF}" sem partes vazias; `null` quando não há localização.
+String? farmLocationLabel(Farm farm) {
+  final parts = [
+    farm.city.trim(),
+    farm.state.trim(),
+  ].where((part) => part.isNotEmpty).toList();
+  return parts.isEmpty ? null : parts.join(' - ');
+}
+
+/// "Sem talhões" · "1 talhão" · "N talhões"; `null` (carregando) vira "—".
+String farmFieldCountLabel(int? count) {
+  if (count == null) return '—';
+  if (count == 0) return 'Sem talhões';
+  if (count == 1) return '1 talhão';
+  return '$count talhões';
+}
+
+class _FarmFieldCountPill extends StatelessWidget {
+  const _FarmFieldCountPill({required this.count});
+
+  final int? count;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasFields = (count ?? 0) > 0;
+    final color = hasFields
+        ? context.themeAccent
+        : context.premiumTextSecondary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.grid_view_rounded, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            farmFieldCountLabel(count),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: color,
             ),
-          ),
-          const SizedBox(height: 8),
-          fieldsAsync.when(
-            data: (fields) => FarmLinkedFieldList(
-              clientId: client.id,
-              farmId: farm.id,
-              fields: fields,
-            ),
-            loading: () {
-              if ((linkedFields ?? const []).isEmpty) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              return FarmLinkedFieldList(
-                clientId: client.id,
-                farmId: farm.id,
-                fields: linkedFields!,
-              );
-            },
-            error: (err, stack) => const SizedBox.shrink(),
           ),
         ],
-        const SizedBox(height: 12),
-      ],
+      ),
     );
   }
 }
@@ -325,17 +508,31 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
             const SizedBox(height: 16),
             if (fields.isEmpty)
               Container(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 20,
+                ),
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: context.isPremiumDark ? context.premiumHairline : Colors.grey[200]!),
+                  color: context.premiumSurface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: context.premiumCardBorder),
+                  boxShadow: context.premiumCardShadows,
                 ),
-                child: Text(
-                  'Nenhum talhão avulso no mapa',
-                  style: TextStyle(color: Colors.grey[600]),
-                  textAlign: TextAlign.center,
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.crop_free_rounded,
+                      size: 28,
+                      color: context.premiumTextTertiary,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Nenhum talhão avulso no mapa',
+                      style: TextStyle(color: context.premiumTextSecondary),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               )
             else
