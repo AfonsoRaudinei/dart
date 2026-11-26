@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,7 +12,9 @@ import 'package:soloforte_app/core/services/connectivity_service.dart';
 import 'package:soloforte_app/core/services/sync_service.dart';
 import 'package:soloforte_app/core/state/side_menu_state.dart';
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
+import 'package:soloforte_app/modules/planos/domain/plano_cache_unavailable_exception.dart';
 import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 import 'package:soloforte_app/modules/settings/domain/entities/user_profile.dart';
 import 'package:soloforte_app/modules/settings/data/settings_repository.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/settings_providers.dart';
@@ -174,6 +178,57 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    for (final testCase in [
+      (
+        name: 'rede',
+        error: const SocketException('Failed host lookup'),
+        subtitle: 'Sem conexão',
+      ),
+      (
+        name: 'sessão',
+        error: const AuthException('JWT expired'),
+        subtitle: 'Sessão expirada — toque para abrir',
+      ),
+      (
+        name: 'genérico',
+        error: const PlanoCacheUnavailableException(expired: false),
+        subtitle: 'Toque para tentar de novo',
+      ),
+    ]) {
+      testWidgets(
+        'Meu Plano em erro (${testCase.name}) mostra subtítulo e abre o módulo',
+        (tester) async {
+          var loads = 0;
+          final router = await _pumpSideMenu(
+            tester,
+            profile: _profile(role: 'produtor'),
+            planoOverride: (ref) async {
+              loads++;
+              throw testCase.error;
+            },
+          );
+
+          expect(find.text('Meu Plano'), findsOneWidget);
+          expect(find.text(testCase.subtitle), findsOneWidget);
+          final loadsBefore = loads;
+
+          await _tapQuickAction(tester, find.text('Meu Plano'));
+
+          expect(find.text('meu-plano-destino'), findsOneWidget);
+          expect(
+            router
+                .routerDelegate
+                .currentConfiguration
+                .matches
+                .last
+                .matchedLocation,
+            AppRoutes.meuPlano,
+          );
+          expect(loads, greaterThan(loadsBefore));
+        },
+      );
+    }
+
     test('decode do acesso rápido ignora id desconhecido', () {
       expect(decodeSideMenuQuickAccess(null), SideMenuQuickAction.values);
       expect(decodeSideMenuQuickAccess(const []), isEmpty);
@@ -204,6 +259,7 @@ Future<GoRouter> _pumpSideMenu(
   String initialLocation = AppRoutes.map,
   UserProfile? profile,
   UserRole role = UserRole.produtor,
+  Future<UserPlan> Function(Ref ref)? planoOverride,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -222,6 +278,10 @@ Future<GoRouter> _pumpSideMenu(
       GoRoute(path: AppRoutes.clients, builder: (_, __) => const _MenuHost()),
       GoRoute(path: AppRoutes.carteira, builder: (_, __) => const _MenuHost()),
       GoRoute(path: AppRoutes.reports, builder: (_, __) => const _MenuHost()),
+      GoRoute(
+        path: AppRoutes.meuPlano,
+        builder: (_, __) => const Scaffold(body: Text('meu-plano-destino')),
+      ),
     ],
   );
   addTearDown(router.dispose);
@@ -238,7 +298,7 @@ Future<GoRouter> _pumpSideMenu(
         currentUserProfileProvider.overrideWith((ref) async => profile),
         currentUserRoleProvider.overrideWith((ref) => role),
         planoAtivoProvider.overrideWith(
-          (ref) async => UserPlan.free(userId: 'test-user'),
+          planoOverride ?? (ref) async => UserPlan.free(userId: 'test-user'),
         ),
         manualSyncProvider.overrideWith((ref) async {}),
         connectivityStateProvider.overrideWith((ref) => Stream.value(true)),
