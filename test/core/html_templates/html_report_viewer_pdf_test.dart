@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/core/contracts/i_report_share_link_publisher.dart';
 import 'package:soloforte_app/core/contracts/i_report_share_link_publisher_provider.dart';
 import 'package:soloforte_app/core/html_templates/html_report_viewer.dart';
+import 'package:soloforte_app/core/html_templates/report_pdf_html_prepare.dart';
 
 const _reportHtml = '''
 <!DOCTYPE html>
@@ -38,8 +39,8 @@ class _RecordingPublisher implements IReportShareLinkPublisher {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('prepareReportHtmlForPdf esconde áudio e mantém a duração', () {
-    final prepared = prepareReportHtmlForPdf(_reportHtml);
+  test('prepareReportHtmlForPdf esconde áudio e mantém a duração', () async {
+    final prepared = await prepareReportHtmlForPdf(_reportHtml);
 
     expect(prepared, contains('id="sf-pdf-print"'));
     expect(prepared, contains('@media print'));
