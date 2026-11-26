@@ -179,6 +179,19 @@ class DrawingActionsBar extends StatelessWidget {
               },
             ),
           ],
+          if (showSplitAction &&
+              actionsMode == DrawingFeatureActionsMode.compact) ...[
+            const SizedBox(height: 12),
+            _ActionButton(
+              icon: Icons.call_split,
+              label: 'Separar talhões',
+              description: 'Divide em talhões individuais',
+              onTap: () {
+                HapticFeedback.lightImpact();
+                onSplitPolygons!.call();
+              },
+            ),
+          ],
           if (onDelete != null &&
               actionsMode == DrawingFeatureActionsMode.compact) ...[
             const SizedBox(height: 12),
