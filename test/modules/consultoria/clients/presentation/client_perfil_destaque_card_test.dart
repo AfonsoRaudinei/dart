@@ -124,6 +124,63 @@ void main() {
     },
   );
 
+  testWidgets('320dp com padding do detalhe não estoura em texto ampliado', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(960, 2400);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    final clientes = [
+      _client(
+        dominante: PerfilAtendimentoTipo.pragmatico,
+        secundario: PerfilAtendimentoTipo.analitico,
+        pragmatico: 3,
+        analitico: 2,
+        afavel: 1,
+        expressivo: 1,
+      ),
+      _client(),
+    ];
+
+    for (final escala in [1.0, 1.3, 2.0]) {
+      for (final client in clientes) {
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.linear(escala)),
+              child: child!,
+            ),
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: ClientPerfilDestaqueCard(
+                    client: client,
+                    onRediagnosticar: () => rediagnosticar++,
+                    onAbrirAbordagem: () => abordagem++,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(tester.takeException(), isNull, reason: 'escala $escala');
+        if (client.perfilDominante != null) {
+          expect(find.text('Ver como vender'), findsOneWidget);
+        } else {
+          expect(
+            find.text('Iniciar diagnóstico · 7 perguntas'),
+            findsOneWidget,
+          );
+        }
+      }
+    }
+  });
+
   testWidgets('diagnosticado sem pontos: não mostra a distribuição', (
     tester,
   ) async {
