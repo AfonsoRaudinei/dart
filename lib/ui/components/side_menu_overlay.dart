@@ -14,6 +14,7 @@ import 'package:soloforte_app/core/state/side_menu_state.dart';
 import 'package:soloforte_app/ui/components/side_menu_quick_access.dart';
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
 import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
+import 'package:soloforte_app/modules/planos/domain/plano_cache_unavailable_exception.dart';
 import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/settings_providers.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
@@ -589,14 +590,28 @@ class _MenuPlanoBadgeItem extends ConsumerWidget {
         errorText.contains('connection refused') ||
         errorText.contains('no address associated') ||
         errorText.contains('networkrequestfailed');
+    final isSession = isPlanoSessionOrRlsError(error);
+
+    final subtitle = isNetwork
+        ? 'Sem conexão'
+        : isSession
+        ? 'Sessão expirada — toque para abrir'
+        : 'Toque para tentar de novo';
 
     return _AccountActionItem(
       icon: isNetwork ? Icons.wifi_off_outlined : Icons.error_outline,
       label: 'Meu Plano',
-      subtitle: isNetwork ? 'Sem conexão' : 'Não foi possível carregar',
+      subtitle: subtitle,
       iconColor: Theme.of(context).colorScheme.error,
       trailingIcon: Icons.refresh,
-      onTap: () => ref.invalidate(planoAtivoProvider),
+      onTap: () {
+        ref.invalidate(planoAtivoProvider);
+        ref.read(sideMenuOpenProvider.notifier).state = false;
+        final router = GoRouter.of(context);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          router.push(AppRoutes.meuPlano);
+        });
+      },
     );
   }
 }
