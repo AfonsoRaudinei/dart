@@ -59,14 +59,15 @@ void main() {
     );
   }
 
-  testWidgets('aba Categorias unificada mostra grão, safra e Nova categoria', (
+  testWidgets('aba Categorias unificada mostra grão e Nova categoria', (
     tester,
   ) async {
     await tester.pumpWidget(scope(child: const CarteiraMetasTab()));
     await tester.pumpAndSettle();
 
     expect(find.text('Valor do grão'), findsOneWidget);
-    expect(find.text('Safra ativa'), findsOneWidget);
+    expect(find.text('Safra ativa'), findsNothing);
+    expect(find.text('Nenhuma safra ativa'), findsNothing);
     expect(find.text('Nova categoria'), findsOneWidget);
     expect(
       find.text(CarteiraAjudaTextos.resumo(CarteiraSegment.categorias)),
@@ -109,6 +110,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      expect(find.text('Nenhuma safra ativa'), findsOneWidget);
+      expect(find.text('+ Nova safra'), findsOneWidget);
       expect(
         find.text('Crie uma safra para definir metas por categoria.'),
         findsOneWidget,
