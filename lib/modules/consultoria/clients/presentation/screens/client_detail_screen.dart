@@ -597,37 +597,99 @@ class _ClientPerfilDestaque extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = context.themeAccent;
     final dominante = client.perfilDominante;
-    if (dominante == null) {
-      return Align(
-        alignment: Alignment.centerLeft,
-        child: ActionChip(
-          avatar: Icon(
-            Icons.psychology_outlined,
-            size: 18,
-            color: context.themeAccent,
-          ),
-          label: const Text('Perfil de atendimento: ainda não diagnosticado'),
-          onPressed: onRediagnosticar,
-        ),
-      );
-    }
-
     final sec = client.perfilSecundario;
-    final texto = sec == null
+    final subtitulo = dominante == null
+        ? 'Ainda não diagnosticado · Toque para iniciar'
+        : sec == null
         ? dominante.labelDisplay
         : '${dominante.labelDisplay} · traço ${sec.labelDisplay}';
+    final radius = BorderRadius.circular(14);
 
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: ActionChip(
-        avatar: Icon(
-          Icons.verified_outlined,
-          size: 18,
-          color: context.themeAccent,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: context.premiumSurface,
+        borderRadius: radius,
+        border: Border.all(color: context.premiumCardBorder),
+        boxShadow: context.premiumCardShadows,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: radius,
+          onTap: onRediagnosticar,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    dominante == null
+                        ? Icons.psychology_outlined
+                        : Icons.verified_outlined,
+                    size: 20,
+                    color: accent,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Perfil de atendimento',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: context.premiumTextPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitulo,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: dominante == null
+                              ? context.premiumTextSecondary
+                              : accent,
+                          fontWeight: dominante == null
+                              ? FontWeight.w400
+                              : FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (dominante != null) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    'Refazer',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: context.premiumTextSecondary,
+                    ),
+                  ),
+                ],
+                const SizedBox(width: 2),
+                Icon(
+                  Icons.chevron_right,
+                  size: 20,
+                  color: context.premiumTextTertiary,
+                ),
+              ],
+            ),
+          ),
         ),
-        label: Text('Perfil: $texto'),
-        onPressed: onRediagnosticar,
       ),
     );
   }
