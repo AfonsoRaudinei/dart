@@ -325,6 +325,67 @@ void main() {
     expect(words, 1500);
   });
 
+  test('subtítulo longo da capa gera vários slides com sufixo (2/n)', () async {
+    final subtitle = List.filled(3000, 'x').join(' ');
+    final html = '''
+<html><body>
+<h1 class="sf-title">Relatório</h1>
+<p class="sf-subtitle">$subtitle</p>
+<main>
+<h2 class="sf-section-title"><span class="sf-section-num"></span>Descrição</h2>
+<p>Corpo.</p>
+</main>
+</body></html>
+''';
+    final archive = await _build(html);
+    final slides = _slideXmls(archive);
+
+    final coverSlides = slides
+        .where((x) {
+          final title = _titleText(x);
+          return title == 'Relatório' ||
+              RegExp(r'^Relatório \(\d+/\d+\)$').hasMatch(title);
+        })
+        .toList();
+    expect(coverSlides.length, greaterThan(1));
+    expect(_titleText(coverSlides.first), 'Relatório');
+    final total = coverSlides.length;
+    expect(
+      _titleText(coverSlides[1]),
+      'Relatório (2/$total)',
+    );
+    for (final slide in coverSlides) {
+      expect(_bodyText(slide).length, lessThanOrEqualTo(kPptxSlideBodyMaxChars));
+    }
+  });
+
+  test(
+    'fotos após o teto não viram jpeg extra e o aviso bate com o HTML',
+    () async {
+      const extra = 3;
+      final uri = _pngDataUri(1, 1);
+      final photos = List.generate(
+        kPptxMaxPhotos + extra,
+        (i) => '<img data-sf-photo="$i" src="$uri" alt="Foto ${i + 1}">',
+      ).join('\n');
+      final html = _htmlWithBody('<p>Texto.</p>', photos: photos);
+      final figureCount = RegExp(r'<figure', caseSensitive: false)
+          .allMatches(html)
+          .length;
+
+      final archive = await _build(html);
+      final jpegs = archive.files.where(
+        (f) => f.name.startsWith('ppt/media/') && f.name.endsWith('.jpeg'),
+      );
+      expect(jpegs.length, kPptxMaxPhotos);
+      expect(figureCount, 0);
+
+      final slides = _slideXmls(archive);
+      final notice = '+$extra fotos não incluídas (limite do arquivo)';
+      expect(slides.where((x) => _bodyText(x).contains(notice)).length, 1);
+    },
+  );
+
   test(
     'acima do teto de fotos só entram kPptxMaxPhotos e há aviso factual',
     () async {
