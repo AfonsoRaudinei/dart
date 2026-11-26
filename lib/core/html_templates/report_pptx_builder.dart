@@ -125,12 +125,22 @@ class ReportPptxBuilder {
     final photos = ReportPhotoLinks.extractPhotos(html);
     final logo = await _loadLogo();
 
-    final textSlides = <_SlideBody>[
-      _SlideBody(
-        title: coverTitle,
-        paragraphs: coverContext.isEmpty ? const [] : [coverContext],
-      ),
-    ];
+    final textSlides = <_SlideBody>[];
+    if (coverContext.isEmpty) {
+      textSlides.add(_SlideBody(title: coverTitle, paragraphs: const []));
+    } else {
+      final coverPages = _paginate([coverContext]);
+      for (var i = 0; i < coverPages.length; i++) {
+        textSlides.add(
+          _SlideBody(
+            title: i == 0
+                ? coverTitle
+                : '$coverTitle (${i + 1}/${coverPages.length})',
+            paragraphs: coverPages[i],
+          ),
+        );
+      }
+    }
 
     for (final section in sections) {
       if (section.paragraphs.isEmpty) continue;
@@ -152,14 +162,14 @@ class ReportPptxBuilder {
     var limitReached = false;
     var droppedByLimit = 0;
     for (final photo in photos) {
+      if (limitReached || photoSlides.length >= kPptxMaxPhotos) {
+        droppedByLimit++;
+        continue;
+      }
       final image = await _photoBytes(photo);
       if (image == null || image.bytes.isEmpty) continue;
-      if (!limitReached &&
-          (photoSlides.length >= kPptxMaxPhotos ||
-              mediaBytes + image.bytes.length > kPptxMaxMediaBytes)) {
+      if (mediaBytes + image.bytes.length > kPptxMaxMediaBytes) {
         limitReached = true;
-      }
-      if (limitReached) {
         droppedByLimit++;
         continue;
       }
