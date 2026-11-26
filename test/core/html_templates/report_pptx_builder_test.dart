@@ -77,4 +77,70 @@ void main() {
       isTrue,
     );
   });
+
+  test('data URI malformado não derruba build() e a foto é ignorada', () async {
+    const html = '''
+<html><body>
+<h1 class="sf-title">Relatório</h1>
+<main>
+<h2 class="sf-section-title"><span class="sf-section-num"></span>Descrição</h2>
+<p>Texto.</p>
+<img data-sf-photo="0" src="data:image/png;base64,%%%não-é-base64%%%" alt="Foto 1">
+</main>
+</body></html>
+''';
+    final bytes = await const ReportPptxBuilder().build(
+      reportTitle: 'Relatório',
+      html: html,
+    );
+
+    final archive = ZipDecoder().decodeBytes(bytes);
+    expect(
+      archive.files.any((f) => f.name == 'ppt/slides/slide1.xml'),
+      isTrue,
+    );
+    // Só o logo (png) vira mídia; nenhuma foto jpeg.
+    final media = archive.files
+        .where((f) => f.name.startsWith('ppt/media/'))
+        .map((f) => f.name)
+        .toList();
+    expect(media.where((n) => n.endsWith('.jpeg')), isEmpty);
+  });
+
+  test('entidades HTML são decodificadas antes do escape XML', () async {
+    const html = '''
+<html><body>
+<h1 class="sf-title">Ervas &amp; <em>daninhas</em></h1>
+<p class="sf-subtitle">Cliente&nbsp;A</p>
+<main>
+<h2 class="sf-section-title"><span class="sf-section-num"></span>Pragas &amp; doenças</h2>
+<p>Soja&nbsp;e milho &lt;ok&gt; &quot;x&quot; it&#39;s &#x27;y&#x27;.</p>
+</main>
+</body></html>
+''';
+    final bytes = await const ReportPptxBuilder().build(
+      reportTitle: 'Ervas & daninhas',
+      html: html,
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    String slideXml(int n) => utf8.decode(
+          archive.files
+              .firstWhere((f) => f.name == 'ppt/slides/slide$n.xml')
+              .content as List<int>,
+        );
+
+    final cover = slideXml(1);
+    expect(cover, contains('<a:t>Ervas &amp; daninhas</a:t>'));
+    expect(cover, contains('Cliente A'));
+    expect(cover, isNot(contains('&amp;amp;')));
+    expect(cover, isNot(contains('<em>')));
+
+    final section = slideXml(2);
+    expect(section, contains('Pragas &amp; doenças'));
+    expect(section, contains('Soja e milho &lt;ok&gt;'));
+    expect(section, contains('it\'s'));
+    expect(section, isNot(contains('&amp;amp;')));
+    expect(section, isNot(contains('&amp;nbsp;')));
+    expect(section, isNot(contains('&amp;lt;')));
+  });
 }
