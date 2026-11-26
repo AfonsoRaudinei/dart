@@ -87,11 +87,13 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.byTooltip('Enviar PDF'), findsOneWidget);
+    expect(find.byTooltip('Exportar'), findsOneWidget);
+    expect(find.byTooltip('Enviar PDF'), findsNothing);
     expect(find.byTooltip('Enviar link (WhatsApp)'), findsNothing);
-    expect(find.byIcon(Icons.picture_as_pdf_outlined), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Enviar PDF'));
+    await tester.tap(find.byTooltip('Exportar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enviar PDF'));
     await tester.pump();
     await tester.pump();
 
