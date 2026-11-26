@@ -50,6 +50,30 @@ Future<Archive> _archiveFromHtml(String html) async {
   return ZipDecoder().decodeBytes(bytes);
 }
 
+Archive _cloneArchiveWithPatches(
+  Archive source,
+  Map<String, String Function(String)> patches,
+) {
+  final copy = Archive();
+  for (final f in source.files) {
+    var content = List<int>.from(f.content as List<int>);
+    final patch = patches[f.name];
+    if (patch != null) {
+      content = utf8.encode(patch(utf8.decode(content)));
+    }
+    copy.addFile(ArchiveFile(f.name, content.length, content));
+  }
+  return copy;
+}
+
+String _issues(PptxPackageAuditResult result) => [
+  ...result.orphanRelationships,
+  ...result.brokenEmbeds,
+  ...result.duplicateShapeIds,
+  ...result.partsWithoutContentType,
+  ...result.malformedXml,
+].join('\n');
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -104,5 +128,78 @@ void main() {
     final result = auditPptxPackage(archive);
     expect(result.isOk, isTrue);
     expect(result.summary, isEmpty);
+  });
+
+  test('resolveOoxmlPartPath resolve mídia a partir do slide', () {
+    expect(
+      resolveOoxmlPartPath('ppt/slides', '../media/image1.jpeg'),
+      'ppt/media/image1.jpeg',
+    );
+  });
+
+  test('auditoria falha com rel órfão (target inexistente)', () async {
+    final base = await _archiveFromHtml(_minimalHtml);
+    final archive = _cloneArchiveWithPatches(base, {
+      'ppt/_rels/presentation.xml.rels': (xml) => xml.replaceFirst(
+        '</Relationships>',
+        '<Relationship Id="rIdGhost" '
+        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" '
+        'Target="slides/arquivo_inexistente.xml"/>'
+        '</Relationships>',
+      ),
+    });
+    final result = auditPptxPackage(archive);
+    expect(result.isOk, isFalse);
+    final issues = _issues(result);
+    expect(issues.toLowerCase(), contains('ausente'));
+    expect(result.orphanRelationships, isNotEmpty);
+  });
+
+  test('auditoria falha com r:embed sem rId no .rels', () async {
+    final base = await _archiveFromHtml(_minimalHtml);
+    final archive = _cloneArchiveWithPatches(base, {
+      'ppt/slides/slide1.xml': (xml) => xml.replaceFirst(
+        '<p:grpSpPr/>',
+        '<p:grpSpPr/><a:blip r:embed="rIdGhost"/>',
+      ),
+    });
+    final result = auditPptxPackage(archive);
+    expect(result.isOk, isFalse);
+    final issues = _issues(result);
+    expect(issues, contains('r:embed'));
+    expect(issues, contains('Id ausente'));
+    expect(result.brokenEmbeds, isNotEmpty);
+  });
+
+  test('auditoria falha com id duplicado de p:cNvPr no mesmo slide', () async {
+    final base = await _archiveFromHtml(_minimalHtml);
+    final archive = _cloneArchiveWithPatches(base, {
+      'ppt/slides/slide1.xml': (xml) {
+        final firstId = RegExp(r'<p:cNvPr id="(\d+)"').firstMatch(xml)!.group(1)!;
+        var seen = 0;
+        return xml.replaceAllMapped(RegExp(r'<p:cNvPr id="\d+"'), (m) {
+          seen++;
+          if (seen == 2) return '<p:cNvPr id="$firstId"';
+          return m.group(0)!;
+        });
+      },
+    });
+    final slideXml = utf8.decode(
+      archive.files
+          .firstWhere((f) => f.name == 'ppt/slides/slide1.xml')
+          .content as List<int>,
+    );
+    final ids = RegExp(r'<p:cNvPr id="(\d+)"')
+        .allMatches(slideXml)
+        .map((m) => m.group(1))
+        .toList();
+    expect(ids.length, greaterThanOrEqualTo(2));
+    expect(ids[0], ids[1]);
+
+    final result = auditPptxPackage(archive);
+    expect(result.isOk, isFalse);
+    final issues = _issues(result);
+    expect(issues, contains('repetido'));
+    expect(result.duplicateShapeIds, isNotEmpty);
   });
 }
