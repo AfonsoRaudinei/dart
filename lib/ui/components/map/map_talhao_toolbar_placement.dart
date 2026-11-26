@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
@@ -45,7 +44,6 @@ LatLng? drawingFeatureAnchorLatLng(DrawingFeature feature) {
 }
 
 /// Projeta vértices da feature em offsets de tela.
-@visibleForTesting
 List<Offset> drawingFeatureScreenOffsets(
   DrawingFeature feature,
   Offset Function(LatLng latLng) project,
@@ -54,7 +52,6 @@ List<Offset> drawingFeatureScreenOffsets(
 }
 
 /// Retângulo na tela que envolve os vértices projetados, com padding opcional.
-@visibleForTesting
 Rect? drawingFeatureScreenBounds(
   List<Offset> screenOffsets, {
   double padding = 8,
@@ -155,7 +152,6 @@ double _toolbarFreeSpaceToViewportEdge(
 }
 
 /// Escolhe posição ao redor da bbox da feature, sem cobrir a área de trabalho.
-@visibleForTesting
 Offset resolveMapTalhaoToolbarOffset({
   required Offset screenPoint,
   required Rect? featureScreenBounds,
