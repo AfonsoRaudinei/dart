@@ -227,6 +227,47 @@ void main() {
 
     expect(find.text('Unir talhões'), findsNothing);
   });
+
+  testWidgets(
+    'modo compacto com MultiPolygon e onSplitPolygons exibe Separar talhões',
+    (tester) async {
+      var splitTapped = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DrawingActionsBar(
+              selectedFeature: _multiPolygonFeature(),
+              actionsMode: DrawingFeatureActionsMode.compact,
+              onSplitPolygons: () => splitTapped = true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Separar talhões'), findsOneWidget);
+      await tester.tap(find.text('Separar talhões'));
+      expect(splitTapped, isTrue);
+    },
+  );
+
+  testWidgets(
+    'modo compacto com Polygon simples não exibe Separar talhões',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DrawingActionsBar(
+              selectedFeature: _feature(),
+              actionsMode: DrawingFeatureActionsMode.compact,
+              onSplitPolygons: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Separar talhões'), findsNothing);
+    },
+  );
 }
 
 DrawingFeature _feature() {
@@ -251,6 +292,44 @@ DrawingFeature _feature() {
       autorId: 'user-1',
       autorTipo: AuthorType.consultor,
       areaHa: 1,
+      versao: 1,
+      ativo: true,
+      createdAt: now,
+      updatedAt: now,
+      syncStatus: SyncStatus.synced,
+    ),
+  );
+}
+
+DrawingFeature _multiPolygonFeature() {
+  final now = DateTime(2026);
+  final ring1 = <List<List<double>>>[
+    [
+      [-48.0, -10.0],
+      [-47.99, -10.0],
+      [-47.99, -9.99],
+      [-48.0, -10.0],
+    ],
+  ];
+  final ring2 = <List<List<double>>>[
+    [
+      [-47.5, -10.0],
+      [-47.49, -10.0],
+      [-47.49, -9.99],
+      [-47.5, -10.0],
+    ],
+  ];
+  return DrawingFeature(
+    id: 'field-merged',
+    geometry: DrawingMultiPolygon(coordinates: [ring1, ring2]),
+    properties: DrawingProperties(
+      nome: 'Talhão Unido',
+      tipo: DrawingType.talhao,
+      origem: DrawingOrigin.desenho_manual,
+      status: DrawingStatus.rascunho,
+      autorId: 'user-1',
+      autorTipo: AuthorType.consultor,
+      areaHa: 2,
       versao: 1,
       ativo: true,
       createdAt: now,
