@@ -11,18 +11,80 @@ import 'relatorio_html_renderer.dart';
 
 const _slidePhotoMaxDimension = 1024;
 
+/// Máximo de fotos incluídas no `.pptx`; as demais são descartadas.
+@visibleForTesting
+const int kPptxMaxPhotos = 40;
+
+/// Teto da soma dos JPEGs (bytes) incluídos no `.pptx`.
+@visibleForTesting
+const int kPptxMaxMediaBytes = 25 * 1024 * 1024;
+
+/// Estimativa conservadora de caracteres por linha (corpo a 20 pt, 9").
+@visibleForTesting
+const int kPptxCharsPerLine = 60;
+
+/// Linhas de corpo por slide (caixa de 5" a 20 pt).
+@visibleForTesting
+const int kPptxSlideBodyMaxLines = 12;
+
+/// Teto de caracteres de corpo por slide de texto.
+@visibleForTesting
+const int kPptxSlideBodyMaxChars = kPptxCharsPerLine * kPptxSlideBodyMaxLines;
+
+// Geometria dos slides (EMU). Slide 4:3 = 9144000 x 6858000.
+const int _slideMarginX = 457200;
+const int _titleY = 274320;
+const int _titleHeight = 914400;
+const int _bodyY = 1371600;
+const int _bodyHeight = 4572000;
+const int _contentWidth = 8229600;
+const int _pictureAreaY = _bodyY;
+const int _pictureAreaHeight = 6858000 - _bodyY - _slideMarginX;
+
+/// 96 dpi: nunca exibir a imagem maior que seu tamanho natural.
+const int _emuPerPixel = 9525;
+
+/// Fallback para logo que não decodifica (quadrado, sem distorcer).
+const int _fallbackLogoSide = 2743200;
+
+/// JPEG já reduzido (nunca ampliado) com suas dimensões reais em pixels.
+class _SlideImage {
+  const _SlideImage({
+    required this.bytes,
+    required this.width,
+    required this.height,
+  });
+
+  final Uint8List bytes;
+  final int width;
+  final int height;
+}
+
 /// Top-level para rodar em isolate via `compute`.
-Uint8List? _compressForSlide(Uint8List bytes) {
+///
+/// Devolve `null` se os bytes não são uma imagem decodificável — nunca bytes
+/// crus rotulados como JPEG. Só reduz quando `max(w, h) > 1024`.
+_SlideImage? _compressForSlide(Uint8List bytes) {
   final decoded = img.decodeImage(bytes);
-  if (decoded == null) return bytes;
+  if (decoded == null) return null;
   final oriented = img.bakeOrientation(decoded);
-  final resized = img.copyResize(
-    oriented,
-    width: oriented.width >= oriented.height ? _slidePhotoMaxDimension : null,
-    height: oriented.height > oriented.width ? _slidePhotoMaxDimension : null,
-    interpolation: img.Interpolation.average,
-  );
-  return Uint8List.fromList(img.encodeJpg(resized, quality: 78));
+  final longest = oriented.width >= oriented.height
+      ? oriented.width
+      : oriented.height;
+  final output = longest > _slidePhotoMaxDimension
+      ? img.copyResize(
+          oriented,
+          width: oriented.width >= oriented.height
+              ? _slidePhotoMaxDimension
+              : null,
+          height: oriented.height > oriented.width
+              ? _slidePhotoMaxDimension
+              : null,
+          interpolation: img.Interpolation.average,
+        )
+      : oriented;
+  final jpg = Uint8List.fromList(img.encodeJpg(output, quality: 78));
+  return _SlideImage(bytes: jpg, width: output.width, height: output.height);
 }
 
 /// Gera `.pptx` (OOXML) a partir do HTML editorial de relatório.
@@ -61,75 +123,167 @@ class ReportPptxBuilder {
 
     final sections = _parseSections(html);
     final photos = ReportPhotoLinks.extractPhotos(html);
-    final logoBytes = await _loadLogoBytes();
+    final logo = await _loadLogo();
 
-    final slideBodies = <_SlideBody>[];
-    slideBodies.add(
+    final textSlides = <_SlideBody>[
       _SlideBody(
-        kind: _SlideKind.cover,
         title: coverTitle,
-        body: coverContext,
+        paragraphs: coverContext.isEmpty ? const [] : [coverContext],
       ),
-    );
+    ];
 
     for (final section in sections) {
-      final text = section.bodyText.trim();
-      if (text.isEmpty && section.title.toLowerCase().contains('fotográf')) {
-        continue;
+      if (section.paragraphs.isEmpty) continue;
+      final pages = _paginate(section.paragraphs);
+      for (var i = 0; i < pages.length; i++) {
+        textSlides.add(
+          _SlideBody(
+            title: i == 0
+                ? section.title
+                : '${section.title} (${i + 1}/${pages.length})',
+            paragraphs: pages[i],
+          ),
+        );
       }
-      if (text.isEmpty) continue;
-      slideBodies.add(
-        _SlideBody(
-          kind: _SlideKind.section,
-          title: section.title,
-          body: text,
-        ),
-      );
     }
 
+    final photoSlides = <_SlideBody>[];
+    var mediaBytes = 0;
+    var limitReached = false;
+    var droppedByLimit = 0;
     for (final photo in photos) {
-      final bytes = await _photoBytes(photo);
-      if (bytes == null || bytes.isEmpty) continue;
-      slideBodies.add(
+      final image = await _photoBytes(photo);
+      if (image == null || image.bytes.isEmpty) continue;
+      if (!limitReached &&
+          (photoSlides.length >= kPptxMaxPhotos ||
+              mediaBytes + image.bytes.length > kPptxMaxMediaBytes)) {
+        limitReached = true;
+      }
+      if (limitReached) {
+        droppedByLimit++;
+        continue;
+      }
+      mediaBytes += image.bytes.length;
+      photoSlides.add(
         _SlideBody(
-          kind: _SlideKind.photo,
           title: photo.caption ?? 'Foto ${photo.index + 1}',
-          imageBytes: bytes,
+          image: image,
           imageExt: 'jpeg',
         ),
       );
     }
 
-    slideBodies.add(
-      _SlideBody(
-        kind: _SlideKind.brand,
-        title: 'SoloForte',
-        imageBytes: logoBytes,
-        imageExt: 'png',
-      ),
-    );
+    if (droppedByLimit > 0) {
+      AppLogger.warning(
+        'PPTX: $droppedByLimit foto(s) fora do arquivo '
+        '(limite: $kPptxMaxPhotos fotos / $kPptxMaxMediaBytes bytes)',
+        tag: 'ReportPptxBuilder',
+      );
+      final notice = droppedByLimit == 1
+          ? '+1 foto não incluída (limite do arquivo)'
+          : '+$droppedByLimit fotos não incluídas (limite do arquivo)';
+      final last = textSlides.last;
+      if (_linesOf(last.paragraphs) + 1 <= kPptxSlideBodyMaxLines) {
+        textSlides[textSlides.length - 1] = _SlideBody(
+          title: last.title,
+          paragraphs: [...last.paragraphs, notice],
+        );
+      } else {
+        textSlides.add(_SlideBody(title: 'Fotos', paragraphs: [notice]));
+      }
+    }
 
-    return _packArchive(slideBodies);
+    return _packArchive([
+      ...textSlides,
+      ...photoSlides,
+      _SlideBody(title: 'SoloForte', image: logo, imageExt: 'png'),
+    ]);
   }
 
-  Future<Uint8List?> _photoBytes(ReportPhoto photo) async {
-    try {
-      if (photo.isDataUri) {
-        final raw = photo.decodeBytes();
-        if (raw == null) return null;
-        return await compute(_compressForSlide, raw);
+  static int _linesOf(List<String> paragraphs) {
+    var lines = 0;
+    for (final p in paragraphs) {
+      lines += (p.length + kPptxCharsPerLine - 1) ~/ kPptxCharsPerLine;
+    }
+    return lines;
+  }
+
+  /// Divide parágrafos em páginas dentro do orçamento de linhas; parágrafo
+  /// maior que o teto é quebrado por palavra.
+  List<List<String>> _paginate(List<String> paragraphs) {
+    final pages = <List<String>>[];
+    var current = <String>[];
+    var currentLines = 0;
+    for (final paragraph in paragraphs) {
+      for (final piece in _splitParagraph(paragraph)) {
+        final lines = _linesOf([piece]);
+        if (current.isNotEmpty &&
+            currentLines + lines > kPptxSlideBodyMaxLines) {
+          pages.add(current);
+          current = <String>[];
+          currentLines = 0;
+        }
+        current.add(piece);
+        currentLines += lines;
       }
-      if (photo.isNetwork) {
+    }
+    if (current.isNotEmpty) pages.add(current);
+    return pages;
+  }
+
+  List<String> _splitParagraph(String paragraph) {
+    if (paragraph.length <= kPptxSlideBodyMaxChars) return [paragraph];
+    final pieces = <String>[];
+    var buffer = StringBuffer();
+    var length = 0;
+    void flush() {
+      if (length > 0) pieces.add(buffer.toString());
+      buffer = StringBuffer();
+      length = 0;
+    }
+
+    for (var word in paragraph.split(' ')) {
+      if (word.isEmpty) continue;
+      // Palavra sozinha maior que o teto (ex.: URL): quebra por caractere.
+      while (word.length > kPptxSlideBodyMaxChars) {
+        flush();
+        pieces.add(word.substring(0, kPptxSlideBodyMaxChars));
+        word = word.substring(kPptxSlideBodyMaxChars);
+      }
+      final extra = length == 0 ? word.length : word.length + 1;
+      if (length + extra > kPptxSlideBodyMaxChars) flush();
+      if (length > 0) buffer.write(' ');
+      buffer.write(word);
+      length += length == 0 ? word.length : word.length + 1;
+    }
+    flush();
+    return pieces;
+  }
+
+  Future<_SlideImage?> _photoBytes(ReportPhoto photo) async {
+    try {
+      Uint8List? raw;
+      if (photo.isDataUri) {
+        raw = photo.decodeBytes();
+      } else if (photo.isNetwork) {
         final inlined = await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
           photo.src,
         );
         if (!inlined.startsWith('data:image/')) return null;
-        final raw = UriData.parse(inlined).contentAsBytes();
-        return await compute(_compressForSlide, raw);
+        raw = UriData.parse(inlined).contentAsBytes();
       }
-    } catch (e) {
+      if (raw == null || raw.isEmpty) return null;
+      final image = await compute(_compressForSlide, raw);
+      if (image == null) {
+        AppLogger.warning(
+          'PPTX: foto ${photo.index + 1} ignorada (formato não decodificável)',
+          tag: 'ReportPptxBuilder',
+        );
+      }
+      return image;
+    } catch (e, st) {
       AppLogger.warning(
-        'PPTX: foto ${photo.index + 1} ignorada (dados inválidos)',
+        'PPTX: foto ${photo.index + 1} ignorada (dados inválidos)\n$st',
         tag: 'ReportPptxBuilder',
         error: e,
       );
@@ -137,9 +291,20 @@ class ReportPptxBuilder {
     return null;
   }
 
-  Future<Uint8List> _loadLogoBytes() async {
-    final data = await rootBundle.load(RelatorioHtmlRenderer.soloForteLogoAsset);
-    return data.buffer.asUint8List();
+  Future<_SlideImage> _loadLogo() async {
+    final data = await rootBundle.load(
+      RelatorioHtmlRenderer.soloForteLogoAsset,
+    );
+    final bytes = data.buffer.asUint8List();
+    final decoded = img.decodeImage(bytes);
+    if (decoded == null) {
+      return _SlideImage(bytes: bytes, width: 0, height: 0);
+    }
+    return _SlideImage(
+      bytes: bytes,
+      width: decoded.width,
+      height: decoded.height,
+    );
   }
 
   Uint8List _packArchive(List<_SlideBody> slides) {
@@ -149,10 +314,10 @@ class ReportPptxBuilder {
 
     for (var i = 0; i < slides.length; i++) {
       final slide = slides[i];
-      if (slide.imageBytes != null) {
+      if (slide.image != null) {
         final ext = slide.imageExt ?? 'jpeg';
         final name = 'image$mediaIndex.$ext';
-        media[i + 1] = _MediaEntry(name: name, bytes: slide.imageBytes!);
+        media[i + 1] = _MediaEntry(name: name, bytes: slide.image!.bytes);
         mediaIndex++;
       }
     }
@@ -165,18 +330,10 @@ class ReportPptxBuilder {
       ),
     );
     archive.addFile(
-      ArchiveFile(
-        '_rels/.rels',
-        0,
-        utf8.encode(_packageRelsXml()),
-      ),
+      ArchiveFile('_rels/.rels', 0, utf8.encode(_packageRelsXml())),
     );
     archive.addFile(
-      ArchiveFile(
-        'docProps/core.xml',
-        0,
-        utf8.encode(_corePropsXml()),
-      ),
+      ArchiveFile('docProps/core.xml', 0, utf8.encode(_corePropsXml())),
     );
     archive.addFile(
       ArchiveFile(
@@ -228,11 +385,7 @@ class ReportPptxBuilder {
       ),
     );
     archive.addFile(
-      ArchiveFile(
-        'ppt/theme/theme1.xml',
-        0,
-        utf8.encode(_themeXml()),
-      ),
+      ArchiveFile('ppt/theme/theme1.xml', 0, utf8.encode(_themeXml())),
     );
 
     for (var i = 0; i < slides.length; i++) {
@@ -250,7 +403,7 @@ class ReportPptxBuilder {
         ArchiveFile(
           'ppt/slides/_rels/slide$slideNum.xml.rels',
           0,
-          utf8.encode(_slideRelsXml(slideNum, relMedia?.name)),
+          utf8.encode(_slideRelsXml(relMedia?.name)),
         ),
       );
     }
@@ -282,9 +435,27 @@ class ReportPptxBuilder {
         RegExp(r'<img\b[^>]*>', caseSensitive: false),
         '',
       );
-      list.add(_HtmlSection(title: title, bodyText: _stripTags(withoutImg)));
+      list.add(
+        _HtmlSection(title: title, paragraphs: _toParagraphs(withoutImg)),
+      );
     }
     return list;
+  }
+
+  static final _blockBoundary = RegExp(
+    r'</(?:p|div|li|tr|h[1-6]|ul|ol|table|section|blockquote)\s*>|<br\s*/?>',
+    caseSensitive: false,
+  );
+
+  /// Quebra o HTML em parágrafos nas fronteiras de bloco (`</p>`, `<br>`…).
+  List<String> _toParagraphs(String html) {
+    final marked = html.replaceAll(_blockBoundary, '\n');
+    final noTags = marked.replaceAll(RegExp(r'<[^>]+>'), ' ');
+    return _decodeHtmlEntities(noTags)
+        .split('\n')
+        .map((p) => p.replaceAll(RegExp(r'\s+'), ' ').trim())
+        .where((p) => p.isNotEmpty)
+        .toList();
   }
 
   String? _extractFirstGroup(String html, RegExp pattern) {
@@ -339,8 +510,15 @@ class ReportPptxBuilder {
         (c >= 0x10000 && c <= 0x10FFFF);
   }
 
+  /// Caracteres de controle ilegais em XML 1.0 (o PowerPoint pede "reparar").
+  static final _illegalXmlChars = RegExp(
+    r'[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]',
+  );
+
+  /// Todo texto que entra no XML passa por aqui.
   String _xmlEscape(String value) {
     return value
+        .replaceAll(_illegalXmlChars, '')
         .replaceAll('&', '&amp;')
         .replaceAll('<', '&lt;')
         .replaceAll('>', '&gt;')
@@ -367,12 +545,8 @@ class ReportPptxBuilder {
       );
     }
     if (hasMedia) {
-      overrides.writeln(
-        '<Default Extension="jpeg" ContentType="image/jpeg"/>',
-      );
-      overrides.writeln(
-        '<Default Extension="png" ContentType="image/png"/>',
-      );
+      overrides.writeln('<Default Extension="jpeg" ContentType="image/jpeg"/>');
+      overrides.writeln('<Default Extension="png" ContentType="image/png"/>');
     }
     return '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -410,9 +584,7 @@ $overrides
   String _presentationXml(int slideCount) {
     final sldIds = StringBuffer();
     for (var i = 0; i < slideCount; i++) {
-      sldIds.writeln(
-        '<p:sldId id="${256 + i}" r:id="rId${i + 2}"/>',
-      );
+      sldIds.writeln('<p:sldId id="${256 + i}" r:id="rId${i + 2}"/>');
     }
     return '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" saveSubsetFonts="1">
@@ -484,7 +656,7 @@ $rels
 </a:theme>''';
   }
 
-  String _slideRelsXml(int slideNum, String? mediaName) {
+  String _slideRelsXml(String? mediaName) {
     final rels = StringBuffer()
       ..writeln(
         '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>',
@@ -501,14 +673,30 @@ $rels
   }
 
   String _slideXml(_SlideBody slide, bool hasImage) {
-    final title = _xmlEscape(slide.title);
-    final body = _xmlEscape(slide.body);
-    final titleShape = _textShape(id: 2, x: 457200, y: 274320, cx: 8229600, cy: 914400, text: title, bold: true, size: 2800);
-    final bodyShape = body.isEmpty
+    final titleShape = _textShape(
+      id: 2,
+      x: _slideMarginX,
+      y: _titleY,
+      cx: _contentWidth,
+      cy: _titleHeight,
+      paragraphs: [slide.title],
+      bold: true,
+      size: 2800,
+    );
+    final bodyShape = slide.paragraphs.isEmpty
         ? ''
-        : _textShape(id: 3, x: 457200, y: 1371600, cx: 8229600, cy: 4572000, text: body, bold: false, size: 2000);
-    final imageShape = hasImage && slide.imageBytes != null
-        ? _pictureShape(id: 4, rId: 'rId2')
+        : _textShape(
+            id: 3,
+            x: _slideMarginX,
+            y: _bodyY,
+            cx: _contentWidth,
+            cy: _bodyHeight,
+            paragraphs: slide.paragraphs,
+            bold: false,
+            size: 2000,
+          );
+    final imageShape = hasImage && slide.image != null
+        ? _pictureShape(id: 4, rId: 'rId2', image: slide.image!)
         : '';
     return '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
@@ -527,51 +715,74 @@ $imageShape
     required int y,
     required int cx,
     required int cy,
-    required String text,
+    required List<String> paragraphs,
     required bool bold,
     required int size,
   }) {
+    final runs = StringBuffer();
+    for (final paragraph in paragraphs) {
+      runs.writeln(
+        '<a:p><a:r><a:rPr lang="pt-BR" sz="$size" b="${bold ? 1 : 0}"/><a:t>${_xmlEscape(paragraph)}</a:t></a:r></a:p>',
+      );
+    }
     return '''<p:sp>
 <p:nvSpPr><p:cNvPr id="$id" name="Text $id"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
 <p:spPr><a:xfrm><a:off x="$x" y="$y"/><a:ext cx="$cx" cy="$cy"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>
-<p:txBody><a:bodyPr wrap="square" rtlCol="0"/><a:lstStyle/>
-<a:p><a:r><a:rPr lang="pt-BR" sz="$size" b="${bold ? 1 : 0}"/><a:t>$text</a:t></a:r></a:p>
-</p:txBody>
+<p:txBody><a:bodyPr wrap="square" rtlCol="0"><a:normAutofit/></a:bodyPr><a:lstStyle/>
+$runs</p:txBody>
 </p:sp>''';
   }
 
-  String _pictureShape({required int id, required String rId}) {
+  /// Ajusta a imagem à área útil (sem distorcer, sem ampliar além do tamanho
+  /// natural a 96 dpi) e centraliza.
+  String _pictureShape({
+    required int id,
+    required String rId,
+    required _SlideImage image,
+  }) {
+    final int cx;
+    final int cy;
+    if (image.width <= 0 || image.height <= 0) {
+      cx = _fallbackLogoSide;
+      cy = _fallbackLogoSide;
+    } else {
+      final fit = [
+        _contentWidth / image.width,
+        _pictureAreaHeight / image.height,
+        _emuPerPixel.toDouble(),
+      ].reduce((a, b) => a < b ? a : b);
+      cx = (image.width * fit).round().clamp(1, _contentWidth);
+      cy = (image.height * fit).round().clamp(1, _pictureAreaHeight);
+    }
+    final x = _slideMarginX + (_contentWidth - cx) ~/ 2;
+    final y = _pictureAreaY + (_pictureAreaHeight - cy) ~/ 2;
     return '''<p:pic>
 <p:nvPicPr><p:cNvPr id="$id" name="Picture $id"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr>
 <p:blipFill><a:blip r:embed="$rId"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>
-<p:spPr><a:xfrm><a:off x="1143000" y="1828800"/><a:ext cx="6858000" cy="4572000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>
+<p:spPr><a:xfrm><a:off x="$x" y="$y"/><a:ext cx="$cx" cy="$cy"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>
 </p:pic>''';
   }
 }
 
-enum _SlideKind { cover, section, photo, brand }
-
 class _SlideBody {
   const _SlideBody({
-    required this.kind,
     required this.title,
-    this.body = '',
-    this.imageBytes,
+    this.paragraphs = const [],
+    this.image,
     this.imageExt,
   });
 
-  final _SlideKind kind;
   final String title;
-  final String body;
-  final Uint8List? imageBytes;
+  final List<String> paragraphs;
+  final _SlideImage? image;
   final String? imageExt;
 }
 
 class _HtmlSection {
-  const _HtmlSection({required this.title, required this.bodyText});
+  const _HtmlSection({required this.title, required this.paragraphs});
 
   final String title;
-  final String bodyText;
+  final List<String> paragraphs;
 }
 
 class _MediaEntry {
