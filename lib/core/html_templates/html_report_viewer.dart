@@ -15,6 +15,7 @@ import '../constants/layout_constants.dart';
 import '../design/sf_icons.dart';
 import '../utils/share_position.dart';
 import 'report_export_service.dart';
+import 'report_pdf_html_prepare.dart';
 import 'report_photo_links.dart';
 import 'report_photo_viewer.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
@@ -22,36 +23,6 @@ import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 /// HTML → bytes de PDF. Testes injetam um fake; produção usa [convertReportHtmlToPdf].
 typedef ReportHtmlToPdf = Future<Uint8List> Function(String html);
-
-/// Cópia do HTML para o PDF: esconde o player de áudio e o rodapé de
-/// `window.print()`, e evita cortar a foto no meio da página.
-///
-/// A legenda (duração, ficha) permanece. Não altera o HTML exibido no app.
-@visibleForTesting
-String prepareReportHtmlForPdf(String html) {
-  const style = '''
-<style id="sf-pdf-print">
-audio,
-#sf-share-pdf-toolbar,
-.sf-share-pdf-stub { display: none !important; }
-@media print {
-  audio,
-  #sf-share-pdf-toolbar,
-  .sf-share-pdf-stub { display: none !important; }
-  .sf-figure,
-  img[data-sf-photo] {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-}
-</style>
-''';
-  if (html.contains('id="sf-pdf-print"')) return html;
-  if (html.contains('</head>')) {
-    return html.replaceFirst('</head>', '$style</head>');
-  }
-  return '$style$html';
-}
 
 /// Cópia do HTML só para o WebView: reserva no fim do documento a altura do
 /// FAB global ([kFabSafeArea] + safe-area do aparelho) para que o botão não
@@ -455,7 +426,8 @@ class _HtmlReportViewerState extends ConsumerState<HtmlReportViewer> {
     if (_actionBusy) return;
     setState(() => _actionBusy = true);
     try {
-      final html = prepareReportHtmlForPdf(widget.htmlContent);
+      final html = await prepareReportHtmlForPdf(widget.htmlContent);
+      if (!mounted) return;
       final converter = widget.htmlToPdfConverter ?? convertReportHtmlToPdf;
       final bytes = await converter(html);
       if (!mounted) return;
