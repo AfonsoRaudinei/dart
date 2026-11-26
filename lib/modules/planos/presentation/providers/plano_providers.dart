@@ -63,6 +63,50 @@ PlanoLocalCache planoLocalCache(PlanoLocalCacheRef ref) {
   return PlanoLocalCache(ref.watch(preferencesServiceProvider));
 }
 
+/// Renova a sessão Supabase. Injetável em testes via override.
+final planoSessionRefresherProvider = Provider<Future<void> Function()>((ref) {
+  return () async {
+    await Supabase.instance.client.auth.refreshSession();
+  };
+});
+
+/// Consulta o plano; em erro de sessão/RLS renova a sessão e repete UMA vez.
+///
+/// Se o refresh ou a repetição falharem, relança o erro de sessão original
+/// (o chamador nunca serve cache nesse caso — ADR-012 Adendo 1).
+Future<UserPlan> fetchPlanoComRefreshDeSessao({
+  required Future<UserPlan> Function() fetch,
+  required Future<void> Function() refreshSession,
+}) async {
+  try {
+    return await fetch();
+  } catch (e, st) {
+    if (!isPlanoSessionOrRlsError(e)) rethrow;
+    try {
+      await refreshSession();
+      return await fetch();
+    } catch (retryError) {
+      AppLogger.warning(
+        'refresh de sessão não resolveu falha do plano '
+        '(${retryError.runtimeType})',
+        tag: 'planoAtivoProvider',
+        error: retryError,
+      );
+      Error.throwWithStackTrace(e, st);
+    }
+  }
+}
+
+/// Mensagem de log que distingue erro de parse de rede/outros.
+String describePlanoLoadFailure(Object error) {
+  final isParse =
+      error is ArgumentError || error is TypeError || error is FormatException;
+  final kind = isParse ? 'falha de parse do plano' : 'falha de rede/outros';
+  final code = error is PostgrestException ? (error.code ?? '-') : '-';
+  return 'Plano indisponível sem cache válido: $kind '
+      '(tipo=${error.runtimeType}, código=$code)';
+}
+
 // ─────────────────────────────────────────────────────────────
 // PLANO ATIVO — keepAlive (consultado por marketing/ e map/)
 // ─────────────────────────────────────────────────────────────
@@ -92,7 +136,11 @@ Future<UserPlan> planoAtivo(PlanoAtivoRef ref) async {
   final cache = ref.read(planoLocalCacheProvider);
 
   try {
-    final plan = await ref.read(planoRepositoryProvider).getPlanoAtivo(userId);
+    final repo = ref.read(planoRepositoryProvider);
+    final plan = await fetchPlanoComRefreshDeSessao(
+      fetch: () => repo.getPlanoAtivo(userId),
+      refreshSession: ref.read(planoSessionRefresherProvider),
+    );
     try {
       await cache.save(plan);
     } catch (e) {
@@ -116,7 +164,12 @@ Future<UserPlan> planoAtivo(PlanoAtivoRef ref) async {
       );
       return cached;
     }
-    AppLogger.error('erro', tag: 'planoAtivoProvider', error: e, stackTrace: st);
+    AppLogger.error(
+      describePlanoLoadFailure(e),
+      tag: 'planoAtivoProvider',
+      error: e,
+      stackTrace: st,
+    );
     throw PlanoCacheUnavailableException(expired: cache.isExpired(userId));
   }
 }
