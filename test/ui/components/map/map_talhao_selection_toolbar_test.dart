@@ -214,6 +214,43 @@ void main() {
 
   group('resolveMapTalhaoToolbarOffset', () {
     test(
+      'painel extra (100px): candidato acima respeita altura total, sem overlap',
+      () {
+        const viewport = Size(400, 800);
+        const toolbarWidth = 200.0;
+        const toolbarHeight = 100.0;
+        const anchorHeight = 52.0;
+        const anchorGap = 24.0;
+        const centroid = Offset(200, 400);
+        final featureBounds = Rect.fromLTRB(80, 280, 320, 520);
+
+        final offset = resolveMapTalhaoToolbarOffset(
+          screenPoint: centroid,
+          featureScreenBounds: featureBounds,
+          viewportSize: viewport,
+          toolbarWidth: toolbarWidth,
+          toolbarHeight: toolbarHeight,
+          anchorHeight: anchorHeight,
+          anchorGap: anchorGap,
+        );
+
+        final toolbarRect = Rect.fromLTWH(
+          offset.dx,
+          offset.dy,
+          toolbarWidth,
+          toolbarHeight,
+        );
+        expect(featureBounds.overlaps(toolbarRect), isFalse);
+        expect(
+          offset.dy + toolbarHeight + anchorGap,
+          lessThanOrEqualTo(featureBounds.top + 0.01),
+        );
+        expect(offset.dy, lessThan(featureBounds.top));
+        expect(offset.dy + toolbarHeight, lessThan(featureBounds.top));
+      },
+    );
+
+    test(
       'centroide no meio da viewport: toolbar acima da bbox, sem sobrepor',
       () {
         const viewport = Size(400, 800);
