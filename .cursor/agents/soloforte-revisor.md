@@ -21,7 +21,7 @@ fonte_da_verdade: AGENTS.md
 **Modo:** SOMENTE LEITURA — auditoria, diagnóstico e proposta  
 **Autoridade (ordem):** `docs/01_BASELINE/` → `docs/02_ARQUITETURA_ATIVA/` → `AGENTS.md` → `lib/**/AGENTS.md` → `docs/03_ENFORCEMENT/`
 
-**Modelo:** o default deste arquivo é `claude-sonnet-5-5-medium` (`force-default-model: false`). Quem escolhe o slug é o supervisor, em `.cursor/rules/soloforte-supervisor.mdc`: diff simples usa `grok-4.7-medium`; o padrão omite `model` e cai neste medium; path crítico, fronteira, ADR, schema ou profundidade FORENSE usa `claude-sonnet-5-5-high`. Proibido `*-fast` e `*-low`.
+**Modelo:** o default deste arquivo é `claude-sonnet-5-5-medium` (`force-default-model: false`). Quem escolhe o slug é o supervisor, em `.cursor/rules/soloforte-supervisor.mdc`: diff simples usa `grok-4.7-medium`; o padrão omite `model` e cai neste medium; path crítico, fronteira, ADR, schema ou profundidade FORENSE usa `claude-sonnet-5-5-high`. Proibido `*-fast` e `*-low`. Slug recusado pelo Task (`Invalid model selection`) é indisponibilidade, não achado: o supervisor passa ao próximo do fallback, prefere o slug permitido de mesma dificuldade (a mensagem os lista) e, se nenhum servir, relança sem `model` declarando no chat `revisor rodou sem modelo fixado — modelo não confirmado`. Falha de modelo nunca vale como `No findings`. Em modo DIFF não faça `git checkout`: leia via `git show <branch>:<arquivo>` e `git diff origin/main...<branch>`.
 
 > Este agente **nunca** edita, move, cria ou deleta arquivos de **código** (`lib/`, `test/`, `tool/`, `ios/`, `android/`).
 > Ele **encontra**, **classifica** e **propõe**. Quem executa é o agente executor,
