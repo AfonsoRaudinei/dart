@@ -1,6 +1,7 @@
 import '../domain/client.dart';
 import '../domain/agronomic_models.dart';
 import '../domain/client_cultura.dart';
+import '../domain/enums/perfil_atendimento_tipo.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../../../core/session/local_session_identity.dart';
@@ -127,6 +128,38 @@ class ClientsRepository {
       {
         'area_total': areaTotal,
         'updated_at': DateTime.now().toIso8601String(),
+        'sync_status': 1,
+      },
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [clientId, userId],
+    );
+  }
+
+  /// Atualiza somente o diagnóstico de perfil de atendimento.
+  Future<void> updateClientPerfilAtendimento({
+    required String clientId,
+    required PerfilAtendimentoTipo dominante,
+    PerfilAtendimentoTipo? secundario,
+    required int pontosPragmatico,
+    required int pontosAnalitico,
+    required int pontosAfavel,
+    required int pontosExpressivo,
+    required DateTime atualizadoEm,
+  }) async {
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty) return;
+    final db = await _db;
+    await db.update(
+      'clients',
+      {
+        'perfil_dominante': dominante.storageKey,
+        'perfil_secundario': secundario?.storageKey,
+        'perfil_pontos_a': pontosPragmatico,
+        'perfil_pontos_b': pontosAnalitico,
+        'perfil_pontos_c': pontosAfavel,
+        'perfil_pontos_d': pontosExpressivo,
+        'perfil_atualizado_em': atualizadoEm.toIso8601String(),
+        'updated_at': atualizadoEm.toIso8601String(),
         'sync_status': 1,
       },
       where: 'id = ? AND user_id = ?',
