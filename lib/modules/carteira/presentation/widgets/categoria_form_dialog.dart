@@ -72,6 +72,7 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
   late bool _converteSacasHa;
 
   final _formKey = GlobalKey<FormState>();
+  final _maisOpcoesController = ExpansibleController();
   static const List<Color> _palette = [
     Color(0xFF4ADE80),
     Color(0xFFFBBF24),
@@ -107,6 +108,7 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
   void dispose() {
     _nomeController.dispose();
     _valorReferenciaController.dispose();
+    _maisOpcoesController.dispose();
     super.dispose();
   }
 
@@ -352,6 +354,8 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
                       ),
                       const SizedBox(height: 8),
                       ExpansionTile(
+                        controller: _maisOpcoesController,
+                        maintainState: true,
                         tilePadding: EdgeInsets.zero,
                         childrenPadding: const EdgeInsets.only(bottom: 8),
                         title: Text(
@@ -432,6 +436,15 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
                           : () {
                               if (!(_formKey.currentState?.validate() ??
                                   false)) {
+                                final rawRef =
+                                    _valorReferenciaController.text.trim();
+                                if (rawRef.isNotEmpty &&
+                                    _parseNullableDouble(
+                                      _valorReferenciaController.text,
+                                    ) ==
+                                        null) {
+                                  _maisOpcoesController.expand();
+                                }
                                 return;
                               }
                               final valorRef = _parseNullableDouble(
