@@ -6,7 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-enum ReportExportFormat { html, json, csv }
+import 'report_pptx_builder.dart';
+
+enum ReportExportFormat { html, pptx, json, csv }
 
 class ReportExportPayload {
   final String title;
@@ -53,6 +55,8 @@ class ReportExportService {
     switch (format) {
       case ReportExportFormat.html:
         return exportHtml(payload, sharePositionOrigin: sharePositionOrigin);
+      case ReportExportFormat.pptx:
+        return exportPptx(payload, sharePositionOrigin: sharePositionOrigin);
       case ReportExportFormat.json:
         return exportJson(payload, sharePositionOrigin: sharePositionOrigin);
       case ReportExportFormat.csv:
@@ -90,6 +94,33 @@ class ReportExportService {
       mimeType: 'application/json',
       sharePositionOrigin: sharePositionOrigin,
     );
+  }
+
+  Future<ReportExportResult> exportPptx(
+    ReportExportPayload payload, {
+    Rect? sharePositionOrigin,
+  }) async {
+    final bytes = await const ReportPptxBuilder().build(
+      reportTitle: payload.title,
+      html: payload.html,
+    );
+    final file = await writeTempFileBytes(
+      baseName: _baseName(payload),
+      extension: 'pptx',
+      bytes: bytes,
+    );
+    await Share.shareXFiles(
+      [
+        XFile(
+          file.path,
+          mimeType:
+              'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        ),
+      ],
+      subject: payload.title,
+      sharePositionOrigin: sharePositionOrigin,
+    );
+    return ReportExportResult(format: ReportExportFormat.pptx, path: file.path);
   }
 
   Future<ReportExportResult> exportCsv(
@@ -168,6 +199,18 @@ class ReportExportService {
     final safeName = safeFileBaseName(baseName);
     final file = File('${dir.path}/$safeName.$extension');
     await file.writeAsString(content, flush: true);
+    return file;
+  }
+
+  Future<File> writeTempFileBytes({
+    required String baseName,
+    required String extension,
+    required Uint8List bytes,
+  }) async {
+    final dir = await getTemporaryDirectory();
+    final safeName = safeFileBaseName(baseName);
+    final file = File('${dir.path}/$safeName.$extension');
+    await file.writeAsBytes(bytes, flush: true);
     return file;
   }
 
