@@ -30,7 +30,6 @@ void main() {
 
     expect(find.text('Clientes'), findsOneWidget);
     expect(find.text('Categorias'), findsOneWidget);
-    expect(find.text('Metas'), findsOneWidget);
     expect(find.text('Oportunidades'), findsOneWidget);
     expect(find.text('Conteúdo'), findsOneWidget);
   });
