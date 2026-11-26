@@ -17,6 +17,7 @@ import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../data/services/loja_compra_gateway.dart';
 import '../../domain/entities/user_plan.dart';
 import '../../domain/enums/plano_tipo.dart';
+import '../../domain/plano_cache_unavailable_exception.dart';
 import '../meu_plano_vantagens.dart';
 import '../plano_tipo_metal_colors.dart';
 import '../providers/plano_providers.dart';
@@ -105,7 +106,13 @@ class _MeuPlanoScreenState extends ConsumerState<MeuPlanoScreen> {
                     color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
-                error: (e, _) => _ErrorContent(error: e.toString()),
+                error: (e, _) => _ErrorContent(
+                  error: e,
+                  onRetry: () {
+                    HapticFeedback.lightImpact();
+                    ref.invalidate(planoAtivoProvider);
+                  },
+                ),
               ),
             ),
           ],
@@ -585,19 +592,55 @@ class _LojaAcaoButton extends StatelessWidget {
 }
 
 class _ErrorContent extends StatelessWidget {
-  final String error;
+  final Object error;
+  final VoidCallback onRetry;
 
-  const _ErrorContent({required this.error});
+  const _ErrorContent({required this.error, required this.onRetry});
+
+  static String mensagemPara(Object error) {
+    if (isPlanoSessionOrRlsError(error)) {
+      return 'Sua sessão precisa ser renovada. Tente novamente.';
+    }
+    return 'Não foi possível carregar seu plano agora. '
+        'Verifique a conexão e tente novamente.';
+  }
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(
-          'Erro ao carregar plano: $error',
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.red, fontFamily: 'Inter'),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, kFabSafeArea),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.cloud_off_rounded,
+              size: 36,
+              color: context.premiumTextSecondary,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              mensagemPara(error),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                color: context.premiumTextSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              key: const Key('meu_plano_retry'),
+              onPressed: onRetry,
+              child: Text(
+                'Tentar novamente',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
