@@ -27,6 +27,8 @@ git log -1 --oneline
 
 Atalho canônico: `./tool/sync_mac.sh`
 
+**`sync_mac.sh` não troca de branch fora da `main`:** em `main` (ou detached HEAD) mantém o fluxo acima (checkout `main`, pull, `flutter pub get` se mudou). Em outra branch (ex.: `cursor/*`) **não** faz checkout nem toca no working tree: só avança o ref local `main` via `git fetch origin main:main` (fast-forward, sem forçar) e pula `flutter pub get`. Se `main` local divergiu, avisa em stderr e sai com 0 (não quebra o launchd).
+
 **Auto-merge no Mac (Fase 1 local):** `./tool/arm_auto_merge.sh [branch]` arma `gh pr merge --auto --rebase` só no PR da branch `cursor/*` com base `main`. Automático **apenas** via hook Cursor `stop` (branch corrente). Launchd só faz Fase 2 (`sync_mac`). `--all` existe só para uso manual explícito no terminal.
 
 Confirmar SHA local = SHA de `origin/main` (não o SHA da branch de feature).  
