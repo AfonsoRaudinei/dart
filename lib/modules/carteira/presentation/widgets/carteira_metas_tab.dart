@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
-import 'package:soloforte_app/core/extensions/context_extensions.dart';
-import '../../../../core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:soloforte_app/core/extensions/context_extensions.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../domain/entities/carteira_meta.dart';
 import '../../domain/entities/categoria_global.dart';
 import '../providers/carteira_providers.dart';
 import 'carteira_ajuda_card.dart';
 import 'carteira_segment_bar.dart';
+import 'categoria_form_dialog.dart';
 import 'meta_form_dialog.dart';
 import 'safra_form_dialog.dart';
 
-/// Aba "Metas" da tela Carteira.
+/// Aba unificada "Categorias" da tela Carteira (metas + gestão de categorias).
 ///
 /// Exibe:
 /// - Campo de valor do grão (global)
@@ -53,6 +56,101 @@ class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
     );
   }
 
+  Future<void> _criarCategoria() async {
+    final result = await showSoloForteSheet<CategoriaFormResult>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: false,
+      useSafeArea: false,
+      builder: (_) => CategoriaFormDialog(userId: _userId),
+    );
+    if (result == null) return;
+
+    final categorias =
+        await ref.read(categoriasGlobaisProvider(_userId).future);
+    final now = DateTime.now();
+
+    final nova = CategoriaGlobal(
+      id: const Uuid().v4(),
+      userId: _userId,
+      nome: result.nome,
+      cor: result.corHex,
+      ativo: true,
+      ordem: categorias.length,
+      unidadeCodigo: result.unidadeCodigo,
+      unidadeLabel: result.unidadeLabel,
+      converteSacasHa: result.converteSacasHa,
+      valorReferencia: result.valorReferencia,
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    await ref.read(carteiraRepositoryProvider).saveCategoria(nova);
+    ref.invalidate(categoriasGlobaisProvider(_userId));
+  }
+
+  Future<void> _editarCategoria(CategoriaGlobal categoria) async {
+    final result = await showSoloForteSheet<CategoriaFormResult>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: false,
+      useSafeArea: false,
+      builder: (_) => CategoriaFormDialog(
+        userId: _userId,
+        title: 'Editar categoria',
+        initialNome: categoria.nome,
+        initialCorHex: categoria.cor,
+        initialValorReal: categoria.valorReferencia ?? categoria.valorReal,
+        initialUnidadeCodigo: categoria.unidadeCodigo,
+        initialUnidadeLabel: categoria.unidadeLabel,
+        initialConverteSacasHa: categoria.converteSacasHa,
+      ),
+    );
+    if (result == null) return;
+
+    await ref.read(carteiraRepositoryProvider).updateCategoria(
+          categoria.copyWith(
+            nome: result.nome,
+            cor: result.corHex,
+            unidadeCodigo: result.unidadeCodigo,
+            unidadeLabel: result.unidadeLabel,
+            converteSacasHa: result.converteSacasHa,
+            valorReferencia: result.valorReferencia,
+          ),
+        );
+
+    ref.invalidate(categoriasGlobaisProvider(_userId));
+  }
+
+  Future<void> _desativarCategoria(CategoriaGlobal categoria) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Desativar categoria'),
+        content: Text(
+          'Deseja desativar "${categoria.nome}"? Ela some das telas; '
+          'os lançamentos já feitos ficam guardados.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Desativar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await ref.read(carteiraRepositoryProvider).desativarCategoria(categoria.id);
+    ref.invalidate(categoriasGlobaisProvider(_userId));
+    ref.invalidate(todosRegistrosProvider(_userId));
+  }
+
   @override
   Widget build(BuildContext context) {
     final valorGraoAsync = ref.watch(valorGraoProvider);
@@ -68,10 +166,6 @@ class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
         16 + context.fabSafeBottomPadding,
       ),
       children: [
-        const CarteiraAjudaCard(
-          segment: CarteiraSegment.metas,
-          margin: EdgeInsets.only(bottom: 12),
-        ),
         const _SectionLabel('Valor do grão'),
         const SizedBox(height: 8),
         valorGraoAsync.when(
@@ -158,6 +252,19 @@ class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
         const SizedBox(height: 24),
         const Divider(height: 1),
         const SizedBox(height: 16),
+        Align(
+          alignment: Alignment.centerRight,
+          child: FilledButton.icon(
+            onPressed: _criarCategoria,
+            icon: const Icon(Icons.add),
+            label: const Text('Nova categoria'),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const CarteiraAjudaCard(
+          segment: CarteiraSegment.categorias,
+          margin: EdgeInsets.only(bottom: 12),
+        ),
         const _SectionLabel('Metas da safra ativa'),
         const SizedBox(height: 12),
         safraAtivaAsync.when(
@@ -202,7 +309,9 @@ class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
                           valorGrao:
                               ref.watch(valorGraoProvider).valueOrNull ?? 0.0,
                           progressoAsync: progressoAsync,
-                          onEdit: () => _abrirMetaDialog(cat, meta),
+                          onEditMeta: () => _abrirMetaDialog(cat, meta),
+                          onEditCategoria: () => _editarCategoria(cat),
+                          onDesativarCategoria: () => _desativarCategoria(cat),
                         );
                       }).toList(),
                     );
@@ -486,14 +595,18 @@ class _MetaCategoriaItem extends ConsumerWidget {
   final CarteiraMeta? meta;
   final double valorGrao;
   final AsyncValue<double> progressoAsync;
-  final VoidCallback onEdit;
+  final VoidCallback onEditMeta;
+  final VoidCallback onEditCategoria;
+  final VoidCallback onDesativarCategoria;
 
   const _MetaCategoriaItem({
     required this.categoria,
     required this.meta,
     required this.valorGrao,
     required this.progressoAsync,
-    required this.onEdit,
+    required this.onEditMeta,
+    required this.onEditCategoria,
+    required this.onDesativarCategoria,
   });
 
   Color _parseCor(String hex) {
@@ -592,11 +705,39 @@ class _MetaCategoriaItem extends ConsumerWidget {
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 18),
-            onPressed: onEdit,
-            visualDensity: VisualDensity.compact,
-            color: Colors.grey[600],
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                onPressed: onEditMeta,
+                visualDensity: VisualDensity.compact,
+                color: Colors.grey[600],
+                tooltip: 'Editar meta',
+              ),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert, size: 18, color: Colors.grey[600]),
+                tooltip: 'Mais ações da categoria',
+                onSelected: (value) {
+                  switch (value) {
+                    case 'editar':
+                      onEditCategoria();
+                    case 'desativar':
+                      onDesativarCategoria();
+                  }
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: 'editar',
+                    child: Text('Editar categoria'),
+                  ),
+                  PopupMenuItem(
+                    value: 'desativar',
+                    child: Text('Desativar categoria'),
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
       ),
