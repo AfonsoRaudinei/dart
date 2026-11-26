@@ -215,15 +215,18 @@ class _Diagnosticado extends StatelessWidget {
           children: [
             Icon(Icons.lightbulb_outline_rounded, size: 18, color: accent),
             const SizedBox(width: 8),
-            Text(
-              'Ver como vender',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: accent,
+            Expanded(
+              child: Text(
+                'Ver como vender',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: accent,
+                ),
               ),
             ),
-            const Spacer(),
             Icon(Icons.chevron_right_rounded, size: 20, color: accent),
           ],
         ),
