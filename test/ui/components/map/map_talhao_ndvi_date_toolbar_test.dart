@@ -210,11 +210,26 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('28/10'), findsOneWidget);
-    expect(find.text('16/10'), findsOneWidget);
-    expect(find.text('10/10'), findsOneWidget);
-    expect(find.text('01/10'), findsOneWidget);
-    expect(find.text('20/09'), findsNothing);
+    expect(
+      find.text(ndviDateChipLabel(DateTime(2026, 10, 28))),
+      findsOneWidget,
+    );
+    expect(
+      find.text(ndviDateChipLabel(DateTime(2026, 10, 16))),
+      findsOneWidget,
+    );
+    expect(
+      find.text(ndviDateChipLabel(DateTime(2026, 10, 10))),
+      findsOneWidget,
+    );
+    expect(
+      find.text(ndviDateChipLabel(DateTime(2026, 10, 1))),
+      findsOneWidget,
+    );
+    expect(
+      find.text(ndviDateChipLabel(DateTime(2026, 9, 20))),
+      findsNothing,
+    );
     expect(find.text('ver mais'), findsOneWidget);
 
     await tester.ensureVisible(
