@@ -29,7 +29,7 @@ void main() {
     testWidgets('mostra o resumo e expande os detalhes ao tocar', (
       tester,
     ) async {
-      const segment = CarteiraSegment.metas;
+      const segment = CarteiraSegment.categorias;
       await tester.pumpWidget(_wrap(const CarteiraAjudaCard(segment: segment)));
 
       expect(find.text(CarteiraAjudaTextos.resumo(segment)), findsOneWidget);
