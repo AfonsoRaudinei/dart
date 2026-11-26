@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
-enum CarteiraSegment { clientes, categorias, metas, oportunidades }
+enum CarteiraSegment { clientes, categorias, oportunidades }
 
 extension CarteiraSegmentLabel on CarteiraSegment {
   String get label => switch (this) {
     CarteiraSegment.clientes => 'Clientes',
     CarteiraSegment.categorias => 'Categorias',
-    CarteiraSegment.metas => 'Metas',
     CarteiraSegment.oportunidades => 'Oportunidades',
   };
 }
