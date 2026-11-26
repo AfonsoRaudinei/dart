@@ -117,8 +117,9 @@ String? _recompressDataUriIsolate(_RecompressRequest request) {
   try {
     final bytes = UriData.parse(request.dataUri).contentAsBytes();
     if (bytes.isEmpty) return null;
-    final decoded = img.decodeImage(bytes);
-    if (decoded == null) return null;
+    final rawDecoded = img.decodeImage(bytes);
+    if (rawDecoded == null) return null;
+    final decoded = img.bakeOrientation(rawDecoded);
 
     final shouldResize =
         decoded.width > request.maxDimension ||
