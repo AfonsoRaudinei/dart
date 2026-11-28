@@ -53,7 +53,8 @@ Limite de talhões do módulo Desenho que a conta pode manter sincronizados na n
 
 - Plano pago expirado ou inativo conta como sem plano pago: 0.
 - Sem limite é `null` no código. Nenhum número fixo representa ilimitado, ao contrário do `999999` que `limiteCases` devolve para admin.
-- Admin não tem regra própria aqui: segue a tabela do plano que a conta tem. **A confirmar** se admin deve ser ilimitado.
+- Admin é ilimitado (`null`), independente do plano, como no ADR-012. Isso vale também para admin sem plano pago ou com plano expirado.
+- Plano indisponível ou inválido não vira 0: o consumidor do limite deve manter o último limite conhecido e nunca apagar da nuvem talhões já sincronizados.
 - Fonte no código: `PlanoTipo.limiteTalhoesSincronizados` (tabela por plano) e `UserPlan.limiteTalhoesSincronizados` (conta efetiva).
 
 ---
@@ -154,6 +155,6 @@ Parcial em relação à regra acima (atualizado 28/11/2026).
 - `ProducerLinkOccurrencePolicy.usuarioPodeAcessarOcorrenciasNoVinculo` / `assertProdutorPodeVerOcorrenciasCompartilhadas` no app; consultor usa o mesmo gate ao compartilhar.
 - NDVI refinado já segue Ouro pago.
 - **Talhões sincronizados na nuvem:** o limite existe como dado (`PlanoTipo.limiteTalhoesSincronizados`, `UserPlan.limiteTalhoesSincronizados`) e aparece como último bullet de cada card em **Meu Plano** (`meu_plano_vantagens.dart`), com o número lido do dado. **Ainda não é aplicado no sync do Desenho:** `drawing/` não importa `planos/` e `DrawingSyncService` não consulta nenhum limite. Aplicar exige contrato em `core/contracts/` e ADR novo.
-- **Lacuna — plano desconhecido:** `PlanoTipo.fromString` lança `ArgumentError` para um valor fora de bronze/prata/ouro, e `UserPlan.fromJson` herda isso. Não há fallback.
+- **Plano desconhecido:** `PlanoTipo.fromString` lança `ArgumentError` para um valor fora de bronze/prata/ouro, e `UserPlan.fromJson` herda isso. É intencional: não vira “sem plano pago”. O `planoAtivoProvider` serve o plano em cache (TTL 24h) e, sem cache válido, lança `PlanoCacheUnavailableException` com log de “falha de parse”.
 - **Meu Plano** (`/planos/meu-plano`) e **Planos** (`/planos`) mostram preço só quando a loja devolve o produto (`LojaProduto.preco`). Sem produto na vitrine, o menu de vantagens usa só o prazo do catálogo (`store_plan_catalog.dart`) e o texto «preço na loja ao comprar» — sem BRL fictício no app. Valores de referência para cadastro na App Store / Play Console: **R$ 90 / R$ 300 / R$ 960** (`docs/store/PRODUTOS_IAP_LOJAS.md`, alinhado à tabela Preço acima).
 
