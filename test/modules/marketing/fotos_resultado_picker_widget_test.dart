@@ -211,6 +211,44 @@ void main() {
     expect(find.text('5/5'), findsOneWidget);
   });
 
+  testWidgets('uma foto: selo Capa, sem hint de toque', (tester) async {
+    await tester.pumpWidget(
+      _Host(inicial: _urls(1), upload: (_) async => null),
+    );
+
+    expect(find.byKey(const ValueKey('fotos-resultado-selo-capa')), findsOneWidget);
+    expect(find.text('Capa'), findsOneWidget);
+    expect(find.byKey(const ValueKey('fotos-resultado-hint-capa')), findsNothing);
+    expect(find.byKey(const ValueKey('fotos-resultado-capa-tap-0')), findsNothing);
+  });
+
+  testWidgets('duas ou mais fotos: hint e selo só na primeira', (tester) async {
+    await tester.pumpWidget(
+      _Host(inicial: _urls(2), upload: (_) async => null),
+    );
+
+    expect(find.text('Toque em uma foto para usar como capa no mapa'), findsOneWidget);
+    expect(find.byKey(const ValueKey('fotos-resultado-selo-capa')), findsOneWidget);
+    expect(find.byKey(const ValueKey('fotos-resultado-capa-tap-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('fotos-resultado-capa-tap-0')), findsNothing);
+  });
+
+  testWidgets('toque na 2ª foto promove para capa (1ª posição)', (tester) async {
+    List<String>? emitido;
+    await tester.pumpWidget(
+      _Host(
+        inicial: _urls(2),
+        upload: (_) async => null,
+        onChange: (l) => emitido = l,
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('fotos-resultado-capa-tap-1')));
+    await tester.pumpAndSettle();
+
+    expect(emitido, ['https://x/2.jpg', 'https://x/1.jpg']);
+  });
+
   testWidgets('adicionar a 5ª foto esconde o tile', (tester) async {
     await tester.pumpWidget(
       _Host(inicial: _urls(4), upload: (_) async => 'https://x/5.jpg'),
