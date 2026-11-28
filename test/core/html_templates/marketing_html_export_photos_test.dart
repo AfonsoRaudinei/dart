@@ -411,24 +411,71 @@ void main() {
 
     final imgRe = RegExp(r'<img data-sf-photo="\d+"');
 
-    test('3 fotos: 3 imgs data-sf-photo em ordem e legendas Foto 1..3', () async {
-      final html = await MarketingHtmlRenderer.render({
-        ...base(),
-        'foto_principal_url': urls.first,
-        'fotos_resultado_json': jsonEncode(urls),
-      }, fetchRemoteBytes: fetchPorUrl);
+    test(
+      '3 fotos: 3 imgs data-sf-photo em ordem e legendas Foto 1..3',
+      () async {
+        final html = await MarketingHtmlRenderer.render({
+          ...base(),
+          'foto_principal_url': urls.first,
+          'fotos_resultado_json': jsonEncode(urls),
+        }, fetchRemoteBytes: fetchPorUrl);
 
-      expect(imgRe.allMatches(html).length, 3);
-      final pos = [for (var i = 0; i < 3; i++) html.indexOf(b64(i))];
-      expect(pos.every((p) => p >= 0), isTrue);
-      expect(pos[0], lessThan(pos[1]));
-      expect(pos[1], lessThan(pos[2]));
-      expect(html, contains('<figcaption>Foto 1</figcaption>'));
-      expect(html, contains('<figcaption>Foto 2</figcaption>'));
-      expect(html, contains('<figcaption>Foto 3</figcaption>'));
-      expect(html, isNot(contains('<figcaption>Foto 4')));
-      expect(html, isNot(contains('https://cdn.test')));
-    });
+        expect(imgRe.allMatches(html).length, 3);
+        final pos = [for (var i = 0; i < 3; i++) html.indexOf(b64(i))];
+        expect(pos.every((p) => p >= 0), isTrue);
+        expect(pos[0], lessThan(pos[1]));
+        expect(pos[1], lessThan(pos[2]));
+        expect(html, contains('<figcaption>Foto 1</figcaption>'));
+        expect(html, contains('<figcaption>Foto 2</figcaption>'));
+        expect(html, contains('<figcaption>Foto 3</figcaption>'));
+        expect(html, isNot(contains('<figcaption>Foto 4')));
+        expect(html, isNot(contains('https://cdn.test')));
+      },
+    );
+
+    test(
+      'fetch concorrente com atrasos invertidos mantém a ordem 1,2,3',
+      () async {
+        final iniciados = <String>[];
+        Future<Uint8List?> fetchInvertido(String url) async {
+          iniciados.add(url);
+          final i = urls.indexOf(url);
+          await Future<void>.delayed(Duration(milliseconds: (3 - i) * 40));
+          return fetchPorUrl(url);
+        }
+
+        final html = await MarketingHtmlRenderer.render({
+          ...base(),
+          'fotos_resultado_json': jsonEncode(urls),
+        }, fetchRemoteBytes: fetchInvertido);
+
+        expect(iniciados, hasLength(3));
+        final pos = [for (var i = 0; i < 3; i++) html.indexOf(b64(i))];
+        expect(pos.every((p) => p >= 0), isTrue);
+        expect(pos[0], lessThan(pos[1]));
+        expect(pos[1], lessThan(pos[2]));
+        expect(html, contains('<figcaption>Foto 3</figcaption>'));
+      },
+    );
+
+    test(
+      'foto que não resolve é descartada e a numeração segue sequencial',
+      () async {
+        final html = await MarketingHtmlRenderer.render({
+          ...base(),
+          'fotos_resultado_json': jsonEncode([
+            urls[0],
+            'http://inseguro.test/x.jpg',
+            urls[2],
+          ]),
+        }, fetchRemoteBytes: fetchPorUrl);
+
+        expect(imgRe.allMatches(html).length, 2);
+        expect(html.indexOf(b64(0)), lessThan(html.indexOf(b64(2))));
+        expect(html, contains('<figcaption>Foto 2</figcaption>'));
+        expect(html, isNot(contains('<figcaption>Foto 3')));
+      },
+    );
 
     test('lista como List também é aceita e legenda leva a data', () async {
       final html = await MarketingHtmlRenderer.render({
