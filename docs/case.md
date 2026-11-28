@@ -40,6 +40,24 @@ Admin continua ilimitado, como no código de hoje.
 
 ---
 
+## Talhões sincronizados na nuvem (Desenho)
+
+Limite de talhões do módulo Desenho que a conta pode manter sincronizados na nuvem. Sem plano pago o desenho fica só no aparelho.
+
+| Plano da conta | Talhões sincronizados na nuvem |
+|---|---|
+| Sem plano pago | 0 (só no aparelho) |
+| Bronze | 150 |
+| Prata | 500 |
+| Ouro | Sem limite |
+
+- Plano pago expirado ou inativo conta como sem plano pago: 0.
+- Sem limite é `null` no código. Nenhum número fixo representa ilimitado, ao contrário do `999999` que `limiteCases` devolve para admin.
+- Admin não tem regra própria aqui: segue a tabela do plano que a conta tem. **A confirmar** se admin deve ser ilimitado.
+- Fonte no código: `PlanoTipo.limiteTalhoesSincronizados` (tabela por plano) e `UserPlan.limiteTalhoesSincronizados` (conta efetiva).
+
+---
+
 ## Metal da publicação
 
 O seletor **Visibilidade** escolhe o metal **daquela publicação**: Ouro, Prata ou Bronze. Não é um filtro “o plano da conta e os inferiores”.
@@ -120,7 +138,7 @@ Fonte: `ndviRefinedEnabledForUserPlan`.
 
 ## O que o app faz hoje
 
-Parcial em relação à regra acima (atualizado 19/11/2026).
+Parcial em relação à regra acima (atualizado 28/11/2026).
 
 - `UserPlan.free` (`id = free`) aparece como “Sem plano pago” e, por dentro, está marcado como Bronze sem expiração. A tela mostra “5 cases” e “0/5 para Prata”.
 - Cota por metal na publicação (Bronze 5 / Prata 5+5 / Ouro 5+5+10 conforme plano pago; free e expirado = 0 em todos; admin ilimitado).
@@ -135,5 +153,7 @@ Parcial em relação à regra acima (atualizado 19/11/2026).
 - Produtor lê ocorrências compartilhadas quando consultor **e** produtor passam `consultor_pode_compartilhar_ocorrencias` (Bronze+/admin ativo) — app checa plano do produtor antes do RPC; Supabase repete no RPC e na policy `occurrences_select_authorized`.
 - `ProducerLinkOccurrencePolicy.usuarioPodeAcessarOcorrenciasNoVinculo` / `assertProdutorPodeVerOcorrenciasCompartilhadas` no app; consultor usa o mesmo gate ao compartilhar.
 - NDVI refinado já segue Ouro pago.
+- **Talhões sincronizados na nuvem:** o limite existe como dado (`PlanoTipo.limiteTalhoesSincronizados`, `UserPlan.limiteTalhoesSincronizados`) e aparece como último bullet de cada card em **Meu Plano** (`meu_plano_vantagens.dart`), com o número lido do dado. **Ainda não é aplicado no sync do Desenho:** `drawing/` não importa `planos/` e `DrawingSyncService` não consulta nenhum limite. Aplicar exige contrato em `core/contracts/` e ADR novo.
+- **Lacuna — plano desconhecido:** `PlanoTipo.fromString` lança `ArgumentError` para um valor fora de bronze/prata/ouro, e `UserPlan.fromJson` herda isso. Não há fallback.
 - **Meu Plano** (`/planos/meu-plano`) e **Planos** (`/planos`) mostram preço só quando a loja devolve o produto (`LojaProduto.preco`). Sem produto na vitrine, o menu de vantagens usa só o prazo do catálogo (`store_plan_catalog.dart`) e o texto «preço na loja ao comprar» — sem BRL fictício no app. Valores de referência para cadastro na App Store / Play Console: **R$ 90 / R$ 300 / R$ 960** (`docs/store/PRODUTOS_IAP_LOJAS.md`, alinhado à tabela Preço acima).
 
