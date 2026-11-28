@@ -5,6 +5,7 @@ import '../enums/plano_marketing.dart';
 import '../enums/produtividade_unidade.dart';
 import '../enums/marketing_case_status.dart';
 import 'avaliacao_bloco.dart';
+import '../marketing_resultado_fotos.dart';
 import 'avaliacao_item.dart';
 import 'marketing_roi_calculation.dart';
 import 'parametro_comparativo.dart';
@@ -30,6 +31,9 @@ class MarketingCase {
 
   // Campos de Resultado
   final String? fotoPrincipalUrl;
+
+  /// Fotos do Resultado (1–5, ADR-065). `fotoPrincipalUrl` é sempre a 1ª.
+  final List<String> fotosResultado;
   final double? quantidadeProduzida;
   final double? prodSemProduto;
   final double? prodComProduto;
@@ -96,6 +100,7 @@ class MarketingCase {
     this.telefoneVendedor,
     this.descricao,
     this.fotoPrincipalUrl,
+    this.fotosResultado = const [],
     this.quantidadeProduzida,
     this.prodSemProduto,
     this.prodComProduto,
@@ -152,6 +157,7 @@ class MarketingCase {
       telefoneVendedor: json['telefone_vendedor'] as String?,
       descricao: json['descricao'] as String?,
       fotoPrincipalUrl: json['foto_principal_url'] as String?,
+      fotosResultado: parseFotosResultado(json['fotos_resultado_json']),
       quantidadeProduzida: (json['quantidade_produzida'] as num?)?.toDouble(),
       prodSemProduto: (json['prod_sem_produto'] as num?)?.toDouble(),
       prodComProduto: (json['prod_com_produto'] as num?)?.toDouble(),
@@ -215,6 +221,8 @@ class MarketingCase {
       'telefone_vendedor': telefoneVendedor,
       'descricao': descricao,
       'foto_principal_url': fotoPrincipalUrl,
+      if (fotosResultado.isNotEmpty)
+        'fotos_resultado_json': encodeFotosResultado(fotosResultado),
       'quantidade_produzida': quantidadeProduzida,
       'prod_sem_produto': prodSemProduto,
       'prod_com_produto': prodComProduto,
@@ -317,6 +325,7 @@ class MarketingCase {
     String? telefoneVendedor,
     String? descricao,
     String? fotoPrincipalUrl,
+    List<String>? fotosResultado,
     double? quantidadeProduzida,
     double? prodSemProduto,
     double? prodComProduto,
@@ -372,6 +381,7 @@ class MarketingCase {
       telefoneVendedor: telefoneVendedor ?? this.telefoneVendedor,
       descricao: descricao ?? this.descricao,
       fotoPrincipalUrl: fotoPrincipalUrl ?? this.fotoPrincipalUrl,
+      fotosResultado: fotosResultado ?? this.fotosResultado,
       quantidadeProduzida: quantidadeProduzida ?? this.quantidadeProduzida,
       prodSemProduto: prodSemProduto ?? this.prodSemProduto,
       prodComProduto: prodComProduto ?? this.prodComProduto,
@@ -409,6 +419,10 @@ class MarketingCase {
       deletadoEm: clearDeletadoEm ? null : (deletadoEm ?? this.deletadoEm),
     );
   }
+
+  /// Fotos efetivas do Resultado: lista própria ou, em cases legados, só a capa.
+  List<String> get fotosResultadoEfetivas =>
+      resolveFotosResultadoEfetivas(fotosResultado, fotoPrincipalUrl);
 
   List<AvaliacaoItem> get avaliacoesLivres {
     final raw = avaliacoesJson;
