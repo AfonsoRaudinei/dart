@@ -80,6 +80,15 @@ class UserPlan {
   bool get ocultaPinsMarketingNoMapa =>
       !isAdmin && (expirado || !ativo);
 
+  /// Limite de talhões do Desenho na nuvem para o tier efetivo da conta.
+  ///
+  /// Grátis: 0 (só local). Pagos: delega a [PlanoTipo.limiteTalhoesSincronizados]
+  /// (`null` no Ouro = ilimitado).
+  int? get limiteTalhoesSincronizados {
+    if (id == 'free') return 0;
+    return plano.limiteTalhoesSincronizados;
+  }
+
   /// Soma das cotas por metal (legado para telas com um número único).
   ///
   /// Admin sempre tem acesso ilimitado, independente do plano.
