@@ -360,6 +360,25 @@ class _FotosCarrosselState extends State<_FotosCarrossel> {
   }
 }
 
+/// Fotos do case Resultado (sem rótulo) no mesmo carrossel das comparações.
+class _FotosResultadoCarrossel extends StatelessWidget {
+  final List<String> urls;
+  final Color titleColor;
+
+  const _FotosResultadoCarrossel({required this.urls, required this.titleColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: _FotosCarrossel(
+        fotos: [for (final url in urls) _FotoComRotulo(url, '')],
+        titleColor: titleColor,
+      ),
+    );
+  }
+}
+
 class _FotoComRotulo {
   final String url;
   final String rotulo;
