@@ -101,7 +101,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
   final _conclusaoCtrl = TextEditingController();
 
   // ── URLs de Foto ───────────────────────────────────────────────
-  String? _fotoPrincipalUrl; // Resultado
+  List<String> _fotosResultado = []; // Resultado (1–5, ADR-065)
 
   bool _isLoading = false;
 
@@ -146,7 +146,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
     final photo = seed.photoPath?.trim();
     if (photo == null || photo.isEmpty) return;
     if (_tipo == CaseTipo.resultado) {
-      _fotoPrincipalUrl = photo;
+      _fotosResultado = [photo];
     } else if (_comparacoes.isNotEmpty) {
       _comparacoes[0] = _comparacoes.first.copyWith(fotoAntesUrl: photo);
     }
@@ -237,7 +237,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
 
     if (!_formKey.currentState!.validate()) return null;
 
-    if (_tipo == CaseTipo.resultado && _fotoPrincipalUrl == null) {
+    if (_tipo == CaseTipo.resultado && _fotosResultado.isEmpty) {
       _showError('Foto principal obrigatória para o tipo Resultado.');
       return null;
     }
@@ -302,7 +302,10 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
       descricao: _descricaoCtrl.text.trim().isEmpty
           ? null
           : _descricaoCtrl.text.trim(),
-      fotoPrincipalUrl: _tipo == CaseTipo.resultado ? _fotoPrincipalUrl : null,
+      fotoPrincipalUrl: _tipo == CaseTipo.resultado
+          ? _fotosResultado.firstOrNull
+          : null,
+      fotosResultado: _tipo == CaseTipo.resultado ? _fotosResultado : const [],
       quantidadeProduzida: null,
       prodSemProduto: _tipo == CaseTipo.resultado
           ? _parseDouble(_prodSemProdutoCtrl.text)
@@ -722,9 +725,9 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
               ],
               if (_tipo == CaseTipo.resultado)
                 NovoCaseResultadoSection(
-                  fotoPrincipalUrl: _fotoPrincipalUrl,
-                  onFotoChanged: (url) =>
-                      setState(() => _fotoPrincipalUrl = url),
+                  fotosResultado: _fotosResultado,
+                  onFotosChanged: (urls) =>
+                      setState(() => _fotosResultado = urls),
                   prodSemProdutoCtrl: _prodSemProdutoCtrl,
                   prodComProdutoCtrl: _prodComProdutoCtrl,
                   custoProdutoPorHaCtrl: _custoProdutoPorHaCtrl,
