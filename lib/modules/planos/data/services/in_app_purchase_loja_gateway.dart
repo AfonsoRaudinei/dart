@@ -5,10 +5,14 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:soloforte_app/core/utils/app_logger.dart';
+
 import '../../domain/store_plan_catalog.dart';
 import 'loja_compra_gateway.dart';
 
 class InAppPurchaseLojaGateway implements LojaCompraGateway {
+  static const _tag = 'LojaCompra';
+
   InAppPurchaseLojaGateway(this._client, {InAppPurchase? loja})
     : _loja = loja ?? InAppPurchase.instance {
     _assinatura = _loja.purchaseStream.listen(_aoAtualizarCompras);
@@ -25,27 +29,69 @@ class InAppPurchaseLojaGateway implements LojaCompraGateway {
 
   @override
   Future<LojaVitrine> carregar() async {
-    if (!await _loja.isAvailable()) return LojaVitrine.indisponivel;
-    final resposta = await _loja.queryProductDetails(
-      storePlanOffers.map((offer) => offer.productId).toSet(),
-    );
-    _produtos
-      ..clear()
-      ..addEntries(resposta.productDetails.map((item) => MapEntry(item.id, item)));
-    final produtos = <LojaProduto>[];
-    for (final offer in storePlanOffers) {
-      final detalhes = _produtos[offer.productId];
-      if (detalhes == null) continue;
-      produtos.add(
-        LojaProduto(
-          productId: offer.productId,
-          titulo: offer.label,
-          preco: detalhes.price,
-          prazo: offer.prazo,
-        ),
+    _produtos.clear();
+    try {
+      if (!await _loja.isAvailable()) {
+        AppLogger.warning(
+          'Loja indisponível neste aparelho (isAvailable=false).',
+          tag: _tag,
+        );
+        return LojaVitrine.indisponivel;
+      }
+      final ids = storePlanOffers.map((offer) => offer.productId).toSet();
+      final resposta = await _loja.queryProductDetails(ids);
+      final erro = resposta.error;
+      if (erro != null) {
+        AppLogger.warning(
+          'Consulta de produtos falhou: source=${erro.source} '
+          'code=${erro.code} message=${erro.message}',
+          tag: _tag,
+        );
+      }
+      if (resposta.notFoundIDs.isNotEmpty) {
+        AppLogger.warning(
+          'Produtos não encontrados na loja (notFoundIDs): '
+          '${resposta.notFoundIDs.join(', ')}',
+          tag: _tag,
+        );
+      }
+      for (final item in resposta.productDetails) {
+        _produtos[item.id] = item;
+      }
+      final produtos = <LojaProduto>[];
+      for (final offer in storePlanOffers) {
+        final detalhes = _produtos[offer.productId];
+        if (detalhes == null) continue;
+        produtos.add(
+          LojaProduto(
+            productId: offer.productId,
+            titulo: offer.label,
+            preco: detalhes.price,
+            prazo: offer.prazo,
+          ),
+        );
+      }
+      return LojaVitrine(
+        disponivel: true,
+        produtos: produtos,
+        motivoIndisponivel: produtos.isNotEmpty
+            ? null
+            : erro != null
+            ? LojaMotivoIndisponivel.erroConsulta
+            : LojaMotivoIndisponivel.produtosNaoEncontrados,
+      );
+    } catch (e) {
+      AppLogger.warning(
+        'Falha ao consultar a loja: ${e.runtimeType}',
+        tag: _tag,
+      );
+      _produtos.clear();
+      return const LojaVitrine(
+        disponivel: true,
+        produtos: [],
+        motivoIndisponivel: LojaMotivoIndisponivel.erroConsulta,
       );
     }
-    return LojaVitrine(disponivel: true, produtos: produtos);
   }
 
   @override
@@ -142,7 +188,10 @@ class InAppPurchaseLojaGateway implements LojaCompraGateway {
     }
   }
 
-  Future<void> _concluir(PurchaseDetails compra, {bool consumir = false}) async {
+  Future<void> _concluir(
+    PurchaseDetails compra, {
+    bool consumir = false,
+  }) async {
     if (consumir &&
         defaultTargetPlatform == TargetPlatform.android &&
         compra is GooglePlayPurchaseDetails) {
