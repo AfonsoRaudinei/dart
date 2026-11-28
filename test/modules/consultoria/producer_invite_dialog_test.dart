@@ -21,7 +21,7 @@ class _FakeInviteWriter implements IProducerInviteWriter {
     lastShare = share;
     return ProducerInviteData(
       token: 'SF-ABCD-1234-EF56',
-      expiresAt: DateTime.utc(2026, 8, 1),
+      expiresAt: DateTime.now().add(const Duration(days: 7)),
     );
   }
 }
