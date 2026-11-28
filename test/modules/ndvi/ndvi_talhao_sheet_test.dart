@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
+import 'package:soloforte_app/modules/ndvi/domain/ndvi_image_utils.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_display_mode_provider.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_providers.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/widgets/ndvi_talhao_sheet.dart';
@@ -236,11 +237,29 @@ void main() {
   });
 
   testWidgets('Chips de data permitem trocar a imagem atual', (tester) async {
+    final today = DateTime.now();
+    final newerScene = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).subtract(const Duration(days: 2));
+    final olderScene = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).subtract(const Duration(days: 4));
+    final chipNewer = ndviDateChipLabel(newerScene);
+    final chipOlder = ndviDateChipLabel(olderScene);
+    final datePillOlder =
+        '${olderScene.day.toString().padLeft(2, '0')}/'
+        '${olderScene.month.toString().padLeft(2, '0')}/'
+        '${olderScene.year}';
+
     final images = [
       NdviImage(
         id: '3',
         fieldId: fieldId,
-        imageDate: DateTime(2026, 11, 22),
+        imageDate: newerScene,
         ndviMin: 0.1,
         ndviMax: 0.8,
         ndviMean: 0.7,
@@ -251,7 +270,7 @@ void main() {
       NdviImage(
         id: '2',
         fieldId: fieldId,
-        imageDate: DateTime(2026, 11, 20),
+        imageDate: olderScene,
         ndviMin: 0.1,
         ndviMax: 0.8,
         ndviMean: 0.6,
@@ -275,15 +294,15 @@ void main() {
 
     await tester.pump();
 
-    expect(find.text('22/11'), findsOneWidget);
-    expect(find.text('20/11'), findsOneWidget);
-      expect(find.text('Sentinel NDVI'), findsOneWidget);
+    expect(find.text(chipNewer), findsOneWidget);
+    expect(find.text(chipOlder), findsOneWidget);
+    expect(find.text('Sentinel NDVI'), findsOneWidget);
 
-    await tester.tap(find.text('20/11'));
+    await tester.tap(find.text(chipOlder));
     await tester.pump();
 
     expect(find.text('Preview RGB (Planet)'), findsOneWidget);
     expect(find.text('Online'), findsOneWidget);
-    expect(find.text('20/11/2026'), findsOneWidget);
+    expect(find.text(datePillOlder), findsOneWidget);
   });
 }
