@@ -34,7 +34,10 @@ relatório HTML só tinha um hero.
    com confirmação, tile “Adicionar foto” enquanto houver menos de 5, contador
    N/5. Upload de uma foto por vez via `MarketingPhotoService`
    (pasta `resultado`). `FotoPickerWidget` segue só para Antes/Depois e
-   Avaliação.
+   Avaliação. A 1ª miniatura exibe o selo **Capa** (é a que alimenta pin,
+   story e `foto_principal_url`). Com 2 ou mais fotos, toque na área da miniatura
+   (fora do X de remover) move essa URL para a 1ª posição e dispara
+   `onChanged` — sem schema novo, só reordenação da lista.
 7. **Leitura** — no sheet do case, 2 ou mais fotos viram carrossel
    (`PageView` + pontinhos); com 1 foto o visual anterior permanece.
 8. **Relatório HTML** — o hero é a 1ª foto; as fotos 2..N entram como figuras
