@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import '../services/geocoding/reverse_geocoder.dart';
 import '../utils/municipio_uf.dart';
+import 'marketing_resultado_fotos_html.dart';
 import 'relatorio_html_renderer.dart';
 
 class MarketingHtmlRenderer {
@@ -55,11 +56,7 @@ class MarketingHtmlRenderer {
       'marketing_resultado.html',
     );
     final branding = await _branding(data);
-    final fotoPrincipalUrl = data['foto_principal_url'] as String?;
-    final foto = await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
-      fotoPrincipalUrl,
-      fetchRemoteBytes: fetchRemoteBytes,
-    );
+    final fotos = await ResultadoFotosHtml.resolve(data, fetchRemoteBytes);
     final dataCase = _parseDate(data['data_case'] as String?);
 
     final roi = _MarketingRoiData.from(data);
@@ -70,7 +67,7 @@ class MarketingHtmlRenderer {
       'roi_talhao': roi?.hasTalhao == true,
       'roi_total': roi?.hasAreaTotal == true,
       'quantidade_produzida': data['quantidade_produzida'] != null,
-      'foto_principal_url': foto.isNotEmpty,
+      'foto_principal_url': fotos.isNotEmpty,
     });
     final contexto = _contexto(data);
     tpl = _resolveCommonBlocks(tpl, data, contexto: contexto);
@@ -78,8 +75,9 @@ class MarketingHtmlRenderer {
     final html = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
       ...branding,
       ..._commonValues(data, contexto: contexto),
-      'foto_principal_url': foto,
-      'foto_legenda': dataCase.isEmpty ? 'Foto 1' : 'Foto 1 · $dataCase',
+      'foto_principal_url': fotos.firstOrNull ?? '',
+      'foto_legenda': ResultadoFotosHtml.legenda(1, dataCase),
+      'fotos_extras_html': ResultadoFotosHtml.extras(fotos, dataCase),
       'produtividade_valor': data['produtividade_valor']?.toString() ?? '',
       'produtividade_unidade': _esc(data, 'produtividade_unidade'),
       'quantidade_produzida': data['quantidade_produzida']?.toString() ?? '',
