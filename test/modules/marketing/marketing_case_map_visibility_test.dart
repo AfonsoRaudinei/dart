@@ -36,6 +36,8 @@ MarketingCase _case({
   );
 }
 
+final _visibilityReference = DateTime.utc(2026, 6, 2);
+
 void main() {
   final liberado = DateTime.utc(2026, 6, 1);
   final janelaAtivaAte = liberado.add(const Duration(days: 200));
@@ -53,6 +55,7 @@ void main() {
         MarketingCaseVisibility.isVisibleOnMapForConsultant(
           marketingCase: expirado,
           currentUserId: 'author-1',
+          reference: _visibilityReference,
         ),
         isTrue,
       );
@@ -61,6 +64,7 @@ void main() {
           marketingCase: _case(liberadoEm: null),
           currentUserId: 'author-1',
           authorizedClientIds: const {},
+          reference: _visibilityReference,
         ),
         isTrue,
       );
@@ -81,6 +85,7 @@ void main() {
           marketingCase: ouro,
           currentUserId: 'prod-1',
           authorizedClientIds: const {},
+          reference: _visibilityReference,
         ),
         isTrue,
       );
@@ -88,11 +93,15 @@ void main() {
         MarketingCaseVisibility.isVisibleOnMapForConsultant(
           marketingCase: ouro,
           currentUserId: 'cons-1',
+          reference: _visibilityReference,
         ),
         isTrue,
       );
       expect(
-        MarketingCaseVisibility.isVisibleOnMapForAnonymous(marketingCase: ouro),
+        MarketingCaseVisibility.isVisibleOnMapForAnonymous(
+          marketingCase: ouro,
+          reference: _visibilityReference,
+        ),
         isTrue,
       );
     });
@@ -110,11 +119,15 @@ void main() {
           marketingCase: ouro,
           currentUserId: 'prod-1',
           authorizedClientIds: const {},
+          reference: _visibilityReference,
         ),
         isFalse,
       );
       expect(
-        MarketingCaseVisibility.isVisibleOnMapForAnonymous(marketingCase: ouro),
+        MarketingCaseVisibility.isVisibleOnMapForAnonymous(
+          marketingCase: ouro,
+          reference: _visibilityReference,
+        ),
         isFalse,
       );
     });
@@ -133,6 +146,7 @@ void main() {
           marketingCase: prata,
           currentUserId: 'prod-1',
           authorizedClientIds: const {},
+          reference: _visibilityReference,
         ),
         isTrue,
       );
@@ -140,11 +154,15 @@ void main() {
         MarketingCaseVisibility.isVisibleOnMapForConsultant(
           marketingCase: prata,
           currentUserId: 'cons-2',
+          reference: _visibilityReference,
         ),
         isTrue,
       );
       expect(
-        MarketingCaseVisibility.isVisibleOnMapForAnonymous(marketingCase: prata),
+        MarketingCaseVisibility.isVisibleOnMapForAnonymous(
+          marketingCase: prata,
+          reference: _visibilityReference,
+        ),
         isFalse,
       );
     });
@@ -159,6 +177,7 @@ void main() {
         MarketingCaseVisibility.isVisibleOnMapForConsultant(
           marketingCase: prata,
           currentUserId: 'cons-2',
+          reference: _visibilityReference,
         ),
         isFalse,
       );
@@ -179,6 +198,7 @@ void main() {
           marketingCase: bronze,
           currentUserId: 'prod-1',
           authorizedClientIds: const {'client-a'},
+          reference: _visibilityReference,
         ),
         isTrue,
       );
@@ -187,6 +207,7 @@ void main() {
           marketingCase: bronze,
           currentUserId: 'prod-9',
           authorizedClientIds: const {},
+          reference: _visibilityReference,
         ),
         isFalse,
       );
@@ -203,6 +224,7 @@ void main() {
         MarketingCaseVisibility.isVisibleOnMapForConsultant(
           marketingCase: bronze,
           currentUserId: 'cons-outro',
+          reference: _visibilityReference,
         ),
         isFalse,
       );
