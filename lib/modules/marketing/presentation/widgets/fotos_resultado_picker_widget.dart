@@ -77,6 +77,15 @@ class _FotosResultadoPickerWidgetState
     }
   }
 
+  void _definirComoCapa(int index) {
+    if (index <= 0 || index >= widget.urls.length) return;
+    HapticFeedback.selectionClick();
+    final reordenada = [...widget.urls];
+    final url = reordenada.removeAt(index);
+    reordenada.insert(0, url);
+    widget.onChanged(reordenada);
+  }
+
   void _remove(int index) {
     HapticFeedback.selectionClick();
     showDialog<bool>(
@@ -132,12 +141,43 @@ class _FotosResultadoPickerWidgetState
             style: TextStyle(fontSize: 12, color: v.subtitleColor),
           ),
         ),
+        if (urls.length >= 2) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Toque em uma foto para usar como capa no mapa',
+            key: const ValueKey('fotos-resultado-hint-capa'),
+            style: TextStyle(fontSize: 11, color: v.subtitleColor),
+          ),
+        ],
       ],
     );
   }
 
   Widget _miniatura(String url, int index, SoloForteSheetVisuals v) {
     final size = widget.height;
+    final imagem = CachedNetworkImage(
+      imageUrl: url,
+      fit: BoxFit.cover,
+      errorWidget: (_, __, ___) => ColoredBox(
+        color: v.cardBackground,
+        child: Icon(
+          Icons.broken_image_outlined,
+          size: 32,
+          color: v.subtitleColor,
+        ),
+      ),
+    );
+
+    Widget corpoFoto = SizedBox.expand(child: imagem);
+    if (index > 0) {
+      corpoFoto = GestureDetector(
+        key: ValueKey('fotos-resultado-capa-tap-$index'),
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _definirComoCapa(index),
+        child: corpoFoto,
+      );
+    }
+
     return SizedBox(
       key: ValueKey('fotos-resultado-miniatura-$index'),
       width: size,
@@ -147,19 +187,29 @@ class _FotosResultadoPickerWidgetState
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(v.cardRadius),
-            child: CachedNetworkImage(
-              imageUrl: url,
-              fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => ColoredBox(
-                color: v.cardBackground,
-                child: Icon(
-                  Icons.broken_image_outlined,
-                  size: 32,
-                  color: v.subtitleColor,
+            child: corpoFoto,
+          ),
+          if (index == 0)
+            Positioned(
+              left: 6,
+              bottom: 6,
+              child: Container(
+                key: const ValueKey('fotos-resultado-selo-capa'),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: v.titleColor.withValues(alpha: 0.72),
+                  borderRadius: BorderRadius.circular(v.chipRadius),
+                ),
+                child: Text(
+                  'Capa',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: v.sheetBackground,
+                  ),
                 ),
               ),
             ),
-          ),
           Positioned(
             top: 6,
             right: 6,
