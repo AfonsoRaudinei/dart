@@ -317,8 +317,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Grátis: tagline sem bullet + 4 benefícios com bullet.
-    expect(find.byKey(const Key('meuPlanoVantagemBullet')), findsNWidgets(4));
+    // Grátis: tagline sem bullet + 5 benefícios com bullet (incl. talhões na nuvem).
+    expect(find.byKey(const Key('meuPlanoVantagemBullet')), findsNWidgets(5));
     final card = tester.widget<Container>(
       find.byKey(const Key('meuPlanoVantagensCard')),
     );
@@ -328,8 +328,8 @@ void main() {
 
     await tester.tap(find.text('Ouro'));
     await tester.pumpAndSettle();
-    // Ouro: preço + tagline sem bullet + 5 benefícios com bullet.
-    expect(find.byKey(const Key('meuPlanoVantagemBullet')), findsNWidgets(5));
+    // Ouro: preço + tagline sem bullet + 6 benefícios com bullet (incl. talhões na nuvem).
+    expect(find.byKey(const Key('meuPlanoVantagemBullet')), findsNWidgets(6));
   });
 
   testWidgets('conta prata começa em Prata e esconde os outros preços', (
