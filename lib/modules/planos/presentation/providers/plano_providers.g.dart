@@ -94,7 +94,7 @@ final planoLocalCacheProvider = Provider<PlanoLocalCache>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef PlanoLocalCacheRef = ProviderRef<PlanoLocalCache>;
-String _$planoAtivoHash() => r'3ff61a56fa8651c01e14fb96e6fcc9334cc9f041';
+String _$planoAtivoHash() => r'3e11d9c374fde2dafb531784befb2d53bb3b6fbb';
 
 /// Plano ativo do usuário autenticado.
 ///
@@ -125,6 +125,23 @@ final planoAtivoProvider = FutureProvider<UserPlan>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef PlanoAtivoRef = FutureProviderRef<UserPlan>;
+String _$userPlanWithAdminHash() => r'a8e6113208d0d6fff0a11fc9483fd70b5330338a';
+
+/// See also [userPlanWithAdmin].
+@ProviderFor(userPlanWithAdmin)
+final userPlanWithAdminProvider = FutureProvider<UserPlan>.internal(
+  userPlanWithAdmin,
+  name: r'userPlanWithAdminProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$userPlanWithAdminHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef UserPlanWithAdminRef = FutureProviderRef<UserPlan>;
 String _$referralsHash() => r'8ee9bcef79b3a1c5bad665d693772ca429c3bcc0';
 
 /// See also [referrals].
