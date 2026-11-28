@@ -41,6 +41,21 @@ enum PlanoTipo {
   int get limiteCases =>
       cotaCasesBronze + cotaCasesPrata + cotaCasesOuro;
 
+  /// Teto de talhões do Desenho sincronizados na nuvem (conta paga).
+  ///
+  /// `null` = ilimitado (Ouro). Grátis (`UserPlan` com `id == 'free'`) usa 0
+  /// via [UserPlan.limiteTalhoesSincronizados], não este getter.
+  int? get limiteTalhoesSincronizados {
+    switch (this) {
+      case PlanoTipo.bronze:
+        return 150;
+      case PlanoTipo.prata:
+        return 500;
+      case PlanoTipo.ouro:
+        return null;
+    }
+  }
+
   /// Rótulo legível para exibição na UI.
   String get label {
     switch (this) {
