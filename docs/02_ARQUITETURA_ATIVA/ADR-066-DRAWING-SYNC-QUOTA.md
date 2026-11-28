@@ -20,111 +20,119 @@ dependem de linhas em `public.drawings`. Cortar sync às cegas quebraria marketi
 
 ## Decisão
 
-### 1. Contrato neutro
+### 1. Contratos neutros (fase 2)
 
-- Criar **`IDrawingSyncQuota`** em `lib/core/contracts/` (+ provider em `core/contracts/`).
-- Implementação em `planos/infra/` lendo `UserPlan.limiteTalhoesSincronizados` e regras de isenção
-  abaixo, sem `drawing/` importar `planos/`.
-- Consumidores típicos: `DrawingSyncService` (push), eventualmente feedback de sync na UI.
+**Limite (planos → drawing, sem import inverso):**
 
-Contrato mínimo (semântica; nomes finais na fase 2):
+- `IDrawingSyncQuota` em `lib/core/contracts/` com `int? get cloudTalhaoLimit` (`null` = ilimitado).
+- Adapter em `planos/infra/` lê `UserPlan.limiteTalhoesSincronizados` **depois** de carimbar
+  `isAdmin` com a **mesma regra** já usada em `PlanoRepositoryImpl.getPlanoAtivo` /
+  `producer_link_repository` (`perfis.role = admin` ou claim JWT). `user_plans` remoto não traz
+  `is_admin`; ignorar o carimbo quebra paridade com o servidor (admin viraria 0 no push).
+- `planos/` **não** importa `marketing/` nem `produtor/` (`planos/AGENTS.md`).
 
-| Método / getter | Semântica |
-|---|---|
-| `int? get cloudTalhaoLimit` | `null` = ilimitado |
-| `Future<bool> isExemptFromQuota(String drawingId)` | Isenção (a) |
-| `Future<int> countTowardQuota({required String userId})` | Talhões já na nuvem que consomem cota |
+**Isenção e ocupação (drawing, sem importar planos):**
+
+- Predicados de isenção e contagem ficam em `drawing/data/` (ou RPC Supabase espelhando o mesmo
+  SQL). O sync consulta SQLite local + remoto; **não** embute marketing dentro de `planos/infra/`.
+- Opcional: funções SQL `drawing_is_exempt`, `drawing_quota_occupancy` para paridade estrita
+  cliente/servidor.
+
+Consumidores: `DrawingSyncService` (push), feedback de sync / UX (fase 5).
 
 ### 2. O que conta como “talhão” na cota
 
-Uma linha em `public.drawings` com:
+Uma linha em `public.drawings` (ou equivalente local prestes a push) com:
 
 - `user_id` = dono do push (consultor que sincroniza);
 - `deleted_at IS NULL`;
-- `properties->>'ativo'` verdadeiro (ou equivalente local antes do push);
-- **não** isenta pelas regras abaixo.
+- `properties->>'ativo'` verdadeiro;
+- **não** isenta;
+- **não** é espelho read-only do produtor (`vinc_*`, cópia com outro `user_id`, ids só locais
+  de `ProducerLinkedDrawingSyncService.insertMirror`).
 
-Partes de MultiPolygon com ids `__parte_N` contam como linhas distintas se forem ids distintos
-(comportamento atual de sync/espelho).
+Talhões que o consultor salvou como polígonos distintos (ids próprios após
+`addFeaturesFromGeometry`) contam **um por linha**. Sufixos `__parte_N` em espelhos do produtor
+**não** entram na cota do consultor.
 
 ### 3. Isenções (decisão de produto — opção **a**)
 
-Estas geometrias **não** entram na contagem nem são bloqueadas no push:
+Estas geometrias do **consultor dono** não entram na ocupação nem são bloqueadas no push:
 
-1. **Case de marketing** — existe `marketing_cases.drawing_id = drawings.id` para o mesmo
-   `owner_user_id`, case publicado e não deletado (remoto ou cache SQLite coerente com ADR-064).
-2. **Vínculo produtor** — desenho do consultor cujo `properties.cliente_id` está coberto por
-   `producer_client_links` ativo com `share_fields = true` entre consultor e produtor (mesma
-   regra de escopo que `ProducerLinkedDrawingSyncService` / `loadAuthorizedClientIdsForDrawings`).
+1. **Case de marketing** — existe linha em `marketing_cases` com `drawing_id = drawings.id`,
+   `user_id = drawings.user_id`, `status = 'published'`, `deletado_em IS NULL` (remoto ou cache
+   SQLite alinhado a ADR-064). Rascunho / `pending_sync` **não** isenta.
+2. **Vínculo produtor** — `properties->>'cliente_id'` do desenho coincide com um
+   `producer_client_links` onde `consultor_user_id = drawings.user_id`, `status` ativo,
+   `share_fields = true` (todos os talhões daquele cliente no escopo compartilhado, não só campo
+   de teste). Predicado espelha a policy `drawings_select_linked_producer`, **visto do consultor
+   dono** — não reutilizar `loadAuthorizedClientIdsForDrawings` (API do **produtor**).
 
-Isenções valem no **cliente** (ordem de push) e no **servidor** (contagem + trigger). Espelhos
-locais do produtor (`insertMirror`, outro `user_id`) não consomem cota do consultor.
+Isenções valem no cliente (ordem de push) e no servidor (contagem + trigger).
 
-### 4. Comportamento do sync (cliente — fase 3)
+### 4. Ocupação e sync (cliente — fase 3)
 
 Em `DrawingSyncService.synchronize()`, antes de `_remoteStore.push`:
 
-1. Resolver `cloudTalhaoLimit` via contrato.
-2. `null` ⇒ fluxo atual (push todo pendente).
-3. `0` ⇒ nenhum push, exceto isentos; pendências permanecem `pending_sync`.
+1. `cloudTalhaoLimit` via `IDrawingSyncQuota`.
+2. `null` ⇒ push de todo pendente (respeitando isenções apenas para telemetria).
+3. `0` ⇒ nenhum push não isento; `pending_sync` preservado.
 4. Limite **N > 0**:
-   - Contar linhas remotas que consomem cota + pendentes já `synced` localmente.
-   - Ordenar pendentes por `created_at` ascendente.
-   - Enviar até esgotar vagas; isentos sempre passam.
-5. **Plano indisponível** (sem cache válido, parse inválido): **fail-closed** — não enviar novos
-   pushes não isentos; **não** apagar nem rebaixar nuvem; manter último limite conhecido quando
-   o cache TTL 24h permitir (`PlanoLocalCache`, ADR planos). Alinhado a `docs/case.md`.
-6. Erro remoto classificado como cota excedida ⇒ **não** entrar em retry infinito no
-   `SyncRetryRunner` (log + permanece pendente).
+   - **Ocupação** = cardinalidade da **união por `id`**: ids remotos que consomem cota ∪ ids locais
+     `synced` ainda não presentes no conjunto remoto. **Não** somar remoto + local do mesmo id.
+   - Fila de envio = pendentes não isentos ordenados por `created_at` ascendente.
+   - **Vaga nova** só para `id` que ainda não existe em `public.drawings` com `deleted_at` nulo.
+     Upsert de id já remoto = correção geométrica, **não** consome vaga e não deve ficar preso em
+     `pending_sync` por cota (espelha `DrawingRemoteStore.push` upsert).
+5. **Plano indisponível**: fail-closed para **novos** ids; não apagar nuvem; respeitar cache TTL
+   24h quando existir (`docs/case.md`).
+6. Erro remoto de cota ⇒ sem retry infinito no `SyncRetryRunner`.
 
-**Pull** inalterado: quem já está na nuvem continua sendo puxado e atualizado.
+**Pull** inalterado.
 
 ### 5. Servidor (fase 4)
 
-- Função `drawing_sync_quota_limit(p_user_id uuid) returns int` — espelha tabela de planos,
-  admin (`perfis.role` ou JWT claim `admin`), expiração e `user_plans.ativo`.
-- Função `drawing_counts_toward_quota(p_user_id uuid) returns int` — contagem com mesmas isenções.
-- Trigger **`BEFORE INSERT`** em `public.drawings`: recusa insert se contagem ≥ limite e linha
-  não isenta.
-- **`UPDATE`** de linha existente do próprio usuário **sempre permitido** (correção geométrica).
-- Reativar tombstone (`deleted_at` → null) tratado como insert novo para fins de cota.
+- `drawing_sync_quota_limit(p_user_id) returns int` — `NULL` = ilimitado (Ouro **e** admin via
+  `perfis` / JWT); 0 = grátis/expirado; 150/500 conforme `user_plans`.
+- `drawing_is_exempt(p_drawing_id, p_user_id) returns boolean` — predicados §3.
+- `drawing_quota_occupancy(p_user_id) returns int` — contagem §2 com isenções.
+- Trigger **`BEFORE INSERT`**: se `NOT drawing_is_exempt` e ocupação ≥ limite ⇒ `RAISE`.
+  Se `id` já existe para o mesmo `user_id` (upsert vira update) ⇒ **permitir** (não bloquear
+  geometria). Reativar tombstone (`deleted_at` → null) = insert novo, consome vaga.
 
-Migration idempotente; deploy Supabase só após cliente tratar erro de cota (ordem 3 → 4).
+Deploy migration **após** cliente distinguir insert novo vs update (ordem 3 → 4).
 
 ### 6. UX quando o teto bloqueia (fase 5 — obrigatória)
 
-Quando o push for omitido ou recusado por cota:
+Quando o push de **id novo** for omitido ou recusado por cota:
 
-- Mensagem curta, sem número mágico de “ilimitado”.
-- Informar limite do plano atual e que desenhos locais permanecem no aparelho.
-- CTA **“Ver planos”** (ou equivalente) via rota existente (`/planos` / Meu Plano) —
-  `context.go` / `context.push`; sem rota nova; sem FAB local.
-- Host preferencial: feedback pós-sync do Desenho ou sheet já aberto (definir na implementação
-  sem AppBar fixa).
-- Não exibir isenções técnicas (case/produtor) ao usuário final.
+- Mensagem curta; desenhos locais permanecem no aparelho.
+- CTA **“Ver planos”** → rota existente (`/planos` / Meu Plano); `context.go` / `context.push`;
+  sem FAB local.
+- Host: feedback pós-sync do Desenho ou sheet já aberto (sem AppBar fixa).
+- Sem jargão de isenção case/produtor.
 
 ### 7. Documentação e testes
 
-- `docs/case.md` permanece fonte de produto; este ADR é fonte de engenharia.
-- Testes de paridade: mesmos números cliente/servidor para Bronze/Prata/Ouro/Grátis/admin.
-- Testes de isenção: `drawing_id` em case; `cliente_id` em vínculo com `share_fields`.
+- `docs/case.md` alinhado a §3 (publicado + isenções).
+- Paridade cliente/servidor: 0 / 150 / 500 / `null` e admin ilimitado.
+- Testes: ocupação união por id; upsert no teto; isenção case publicado; vínculo `share_fields`;
+  admin com limite `null` após carimbo.
 
 ## Não-objetivos
 
-- Hard delete de talhões na nuvem para “caber” no plano.
-- `999999` ou outro inteiro sentinela para ilimitado.
-- `drawing/` importar `planos/` ou `marketing/` importar `drawing/` fora dos contratos.
-- Consumir cota em espelhos read-only do produtor.
+- Hard delete na nuvem para “caber” no plano.
+- `999999` como ilimitado neste limite.
+- `drawing/` importar `planos/`; `planos/` importar `marketing/` ou `produtor/`.
+- Cota em espelhos `vinc_*` / `__parte_N` do produtor.
 
 ## Consequências
 
-- Fases 2–5 dependem deste ADR; merge de código de sync exige path crítico `drawing/` + ok.
-- `AGENTS.md` ganha entrada ADR-066 e linha de contrato `IDrawingSyncQuota`.
-- Até fase 3 concluir, copy em Meu Plano continua correta como promessa; enforcement só após entrega.
+- Fases 2–5 dependem deste ADR; código em `drawing/` exige ok (path crítico).
+- Até fase 3, copy em Meu Plano é promessa; sync ainda não corta (`docs/case.md`).
 
 ## Referências
 
-- `docs/case.md` — tabela de talhões sincronizados
-- ADR-012 (planos), ADR-037 (DrawingRemoteStore), ADR-064 (`marketing_cases.drawing_id`)
-- `INdviRefinedEntitlement` — padrão de contrato
-- `ProducerLinkedDrawingSyncService`, `producer_client_links`
+- `docs/case.md`, ADR-012, ADR-037, ADR-064
+- `INdviRefinedEntitlement`, `DrawingRemoteStore.push` (upsert)
+- `producer_client_links`, policy `drawings_select_linked_producer`
