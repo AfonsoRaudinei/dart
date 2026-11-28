@@ -5,16 +5,16 @@ import 'package:soloforte_app/modules/planos/domain/enums/plano_origem.dart';
 import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
 
 UserPlan _paid({bool admin = false}) => UserPlan(
-      id: 'plan-1',
-      userId: 'u1',
-      plano: PlanoTipo.bronze,
-      origem: PlanoOrigem.pagamento,
-      ativo: true,
-      isAdmin: admin,
-      iniciouEm: DateTime.utc(2026, 1, 1),
-      expiraEm: DateTime.utc(2027, 1, 1),
-      criadoEm: DateTime.utc(2026, 1, 1),
-    );
+  id: 'plan-1',
+  userId: 'u1',
+  plano: PlanoTipo.bronze,
+  origem: PlanoOrigem.pagamento,
+  ativo: true,
+  isAdmin: admin,
+  iniciouEm: DateTime.utc(2026, 1, 1),
+  expiraEm: DateTime.now().add(const Duration(days: 365)),
+  criadoEm: DateTime.utc(2026, 1, 1),
+);
 
 void main() {
   group('ProducerLinkOccurrencePolicy', () {
