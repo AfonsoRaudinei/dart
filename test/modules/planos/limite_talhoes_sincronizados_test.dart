@@ -58,6 +58,24 @@ void main() {
       expect(plan.limiteTalhoesSincronizados, 0);
     });
 
+    test('admin é ilimitado em qualquer plano', () {
+      final adminFree = UserPlan.free(userId: 'a').copyWith(isAdmin: true);
+      expect(adminFree.limiteTalhoesSincronizados, isNull);
+
+      final adminBronzeExpirado = UserPlan(
+        id: 'p-admin',
+        userId: 'a',
+        plano: PlanoTipo.bronze,
+        origem: PlanoOrigem.pagamento,
+        ativo: false,
+        iniciouEm: DateTime(2020),
+        expiraEm: DateTime(2020, 6),
+        criadoEm: DateTime(2020),
+        isAdmin: true,
+      );
+      expect(adminBronzeExpirado.limiteTalhoesSincronizados, isNull);
+    });
+
     test('valores pagos nunca são negativos', () {
       for (final tipo in PlanoTipo.values) {
         final limite = tipo.limiteTalhoesSincronizados;
