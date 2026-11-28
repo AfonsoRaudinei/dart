@@ -12,13 +12,29 @@ class LojaProduto {
   });
 }
 
+/// Por que a loja não devolveu nenhum produto de plano.
+enum LojaMotivoIndisponivel {
+  lojaFechada,
+  produtosNaoEncontrados,
+  erroConsulta,
+}
+
 class LojaVitrine {
   final bool disponivel;
   final List<LojaProduto> produtos;
+  final LojaMotivoIndisponivel? motivoIndisponivel;
 
-  const LojaVitrine({required this.disponivel, required this.produtos});
+  const LojaVitrine({
+    required this.disponivel,
+    required this.produtos,
+    this.motivoIndisponivel,
+  });
 
-  static const indisponivel = LojaVitrine(disponivel: false, produtos: []);
+  static const indisponivel = LojaVitrine(
+    disponivel: false,
+    produtos: [],
+    motivoIndisponivel: LojaMotivoIndisponivel.lojaFechada,
+  );
 }
 
 class LojaCompraAviso {
