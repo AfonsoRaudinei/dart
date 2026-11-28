@@ -322,8 +322,13 @@ class MarketingCaseSheet extends ConsumerWidget {
                     const SizedBox(height: 20),
 
                     // ── Foto principal ─────────────────────────
-                    if (marketingCase.fotoPrincipalUrl != null)
-                      _buildFoto(marketingCase.fotoPrincipalUrl!, v),
+                    if (marketingCase.fotosResultadoEfetivas.length > 1)
+                      _FotosResultadoCarrossel(
+                        urls: marketingCase.fotosResultadoEfetivas,
+                        titleColor: titleColor,
+                      )
+                    else if (marketingCase.fotosResultadoEfetivas.isNotEmpty)
+                      _buildFoto(marketingCase.fotosResultadoEfetivas.first, v),
 
                     // ── Métricas destaque ──────────────────────
                     _buildMetricasRow(context, isIos: isIos),
