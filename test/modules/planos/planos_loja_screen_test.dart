@@ -13,12 +13,16 @@ class _FakeLoja extends LojaCompraGateway {
   final LojaVitrine vitrine;
   final comprados = <String>[];
   var restauracoes = 0;
+  var carregamentos = 0;
 
   @override
   Stream<LojaCompraAviso> get avisos => const Stream.empty();
 
   @override
-  Future<LojaVitrine> carregar() async => vitrine;
+  Future<LojaVitrine> carregar() async {
+    carregamentos += 1;
+    return vitrine;
+  }
 
   @override
   Future<void> comprar(String productId) async {
@@ -37,14 +41,11 @@ class _FakeLoja extends LojaCompraGateway {
 void main() {
   test('catálogo da loja usa 3, 6 e 12 meses', () {
     expect(storePlanOffers.map((offer) => offer.months).toList(), [3, 6, 12]);
-    expect(
-      storePlanOffers.map((offer) => offer.productId).toList(),
-      [
-        'soloforte_plano_bronze',
-        'soloforte_plano_prata',
-        'soloforte_plano_ouro',
-      ],
-    );
+    expect(storePlanOffers.map((offer) => offer.productId).toList(), [
+      'soloforte_plano_bronze',
+      'soloforte_plano_prata',
+      'soloforte_plano_ouro',
+    ]);
   });
 
   testWidgets('mostra preço da loja, compra e restaurar', (tester) async {
@@ -66,7 +67,9 @@ void main() {
       ProviderScope(
         overrides: [
           lojaCompraGatewayProvider.overrideWithValue(loja),
-          planoAtivoProvider.overrideWith((ref) async => UserPlan.free(userId: 'u')),
+          planoAtivoProvider.overrideWith(
+            (ref) async => UserPlan.free(userId: 'u'),
+          ),
         ],
         child: const MaterialApp(home: PlanosScreen()),
       ),
@@ -88,13 +91,17 @@ void main() {
     expect(loja.restauracoes, 1);
   });
 
-  testWidgets('sem produto da loja não mostra preço nem compra', (tester) async {
+  testWidgets('sem produto da loja não mostra preço nem compra', (
+    tester,
+  ) async {
     final loja = _FakeLoja(LojaVitrine.indisponivel);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           lojaCompraGatewayProvider.overrideWithValue(loja),
-          planoAtivoProvider.overrideWith((ref) async => UserPlan.free(userId: 'u')),
+          planoAtivoProvider.overrideWith(
+            (ref) async => UserPlan.free(userId: 'u'),
+          ),
         ],
         child: const MaterialApp(home: PlanosScreen()),
       ),
@@ -103,11 +110,56 @@ void main() {
     await tester.pump();
 
     expect(
-      find.text('A loja não tem planos disponíveis para compra neste momento.'),
+      find.text(
+        'A loja não está disponível neste aparelho. '
+        'Verifique sua conexão e conta da loja.',
+      ),
       findsOneWidget,
     );
+    expect(find.byKey(const Key('planos_recarregar_loja')), findsOneWidget);
     expect(find.text('Comprar'), findsNothing);
     expect(find.text('Restaurar compras'), findsNothing);
     expect(find.textContaining(r'R$'), findsNothing);
+  });
+
+  testWidgets('vitrine vazia com loja aberta mostra motivo e recarrega', (
+    tester,
+  ) async {
+    final loja = _FakeLoja(
+      const LojaVitrine(
+        disponivel: true,
+        produtos: [],
+        motivoIndisponivel: LojaMotivoIndisponivel.produtosNaoEncontrados,
+      ),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          lojaCompraGatewayProvider.overrideWithValue(loja),
+          planoAtivoProvider.overrideWith(
+            (ref) async => UserPlan.free(userId: 'u'),
+          ),
+        ],
+        child: const MaterialApp(home: PlanosScreen()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      find.text(
+        'Os planos ainda não estão disponíveis na loja. '
+        'Tente atualizar em instantes.',
+      ),
+      findsOneWidget,
+    );
+    expect(loja.carregamentos, 1);
+
+    await tester.ensureVisible(find.byKey(const Key('planos_recarregar_loja')));
+    await tester.tap(find.byKey(const Key('planos_recarregar_loja')));
+    await tester.pump();
+    await tester.pump();
+    expect(loja.carregamentos, 2);
+    expect(find.text('Restaurar compras'), findsOneWidget);
   });
 }
