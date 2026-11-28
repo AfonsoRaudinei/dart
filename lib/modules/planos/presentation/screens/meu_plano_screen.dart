@@ -18,6 +18,7 @@ import '../../data/services/loja_compra_gateway.dart';
 import '../../domain/entities/user_plan.dart';
 import '../../domain/enums/plano_tipo.dart';
 import '../../domain/plano_cache_unavailable_exception.dart';
+import '../../domain/store_plan_catalog.dart';
 import '../meu_plano_vantagens.dart';
 import '../plano_tipo_metal_colors.dart';
 import '../providers/plano_providers.dart';
@@ -33,6 +34,7 @@ class _MeuPlanoScreenState extends ConsumerState<MeuPlanoScreen> {
   LojaVitrine? _vitrine;
   String? _aviso;
   bool _ocupado = false;
+  bool _recarregando = false;
   StreamSubscription<LojaCompraAviso>? _avisos;
 
   @override
@@ -55,10 +57,24 @@ class _MeuPlanoScreenState extends ConsumerState<MeuPlanoScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _vitrine = LojaVitrine.indisponivel;
+        _vitrine = const LojaVitrine(
+          disponivel: false,
+          produtos: [],
+          motivoIndisponivel: LojaMotivoIndisponivel.erroConsulta,
+        );
         _aviso = 'Não foi possível carregar os planos da loja.';
       });
     }
+  }
+
+  Future<void> _recarregarLoja() async {
+    if (_recarregando) return;
+    setState(() {
+      _recarregando = true;
+      _aviso = null;
+    });
+    await _carregarLoja();
+    if (mounted) setState(() => _recarregando = false);
   }
 
   @override
@@ -95,7 +111,12 @@ class _MeuPlanoScreenState extends ConsumerState<MeuPlanoScreen> {
                   vitrine: _vitrine,
                   aviso: _aviso,
                   ocupado: _ocupado,
+                  recarregando: _recarregando,
                   onComprar: _comprar,
+                  onRecarregar: () {
+                    HapticFeedback.lightImpact();
+                    _recarregarLoja();
+                  },
                   onRestaurar: () {
                     HapticFeedback.lightImpact();
                     ref.read(lojaCompraGatewayProvider).restaurar();
@@ -136,7 +157,9 @@ class _PlanoAtivoContent extends ConsumerStatefulWidget {
   final LojaVitrine? vitrine;
   final String? aviso;
   final bool ocupado;
+  final bool recarregando;
   final Future<void> Function(String productId) onComprar;
+  final VoidCallback onRecarregar;
   final VoidCallback onRestaurar;
 
   const _PlanoAtivoContent({
@@ -144,7 +167,9 @@ class _PlanoAtivoContent extends ConsumerStatefulWidget {
     required this.vitrine,
     required this.aviso,
     required this.ocupado,
+    required this.recarregando,
     required this.onComprar,
+    required this.onRecarregar,
     required this.onRestaurar,
   });
 
@@ -372,24 +397,18 @@ class _PlanoAtivoContentState extends ConsumerState<_PlanoAtivoContent> {
             primaria: primary,
             vitrine: vitrineLocal,
           ),
-          if (_produtoDoMenu(vitrineLocal) case final produto?) ...[
+          if (_menu.productIdLoja case final productId?) ...[
             const SizedBox(height: 12),
             _ProdutoLojaRow(
-              produto: produto,
+              offer: storePlanOfferFor(productId)!,
+              produto: _produtoDoMenu(vitrineLocal),
+              motivo: vitrineLocal.motivoIndisponivel,
               plano: plano,
               semPlanoPago: _semPlanoPago,
               ocupado: ocupado,
-              onComprar: () => onComprar(produto.productId),
-            ),
-          ],
-          if (vitrineLocal.produtos.isEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              'A loja não tem planos disponíveis para compra neste momento.',
-              style: TextStyle(
-                fontSize: 15,
-                color: context.premiumTextSecondary,
-              ),
+              recarregando: widget.recarregando,
+              onComprar: () => onComprar(productId),
+              onRecarregar: widget.onRecarregar,
             ),
           ],
           const SizedBox(height: 8),
@@ -453,42 +472,79 @@ class _PlanoAtivoContentState extends ConsumerState<_PlanoAtivoContent> {
 
 class _ProdutoLojaRow extends StatelessWidget {
   const _ProdutoLojaRow({
+    required this.offer,
     required this.produto,
+    required this.motivo,
     required this.plano,
     required this.semPlanoPago,
     required this.ocupado,
+    required this.recarregando,
     required this.onComprar,
+    required this.onRecarregar,
   });
 
-  final LojaProduto produto;
+  final StorePlanOffer offer;
+  final LojaProduto? produto;
+  final LojaMotivoIndisponivel? motivo;
   final UserPlan plano;
   final bool semPlanoPago;
   final bool ocupado;
+  final bool recarregando;
   final VoidCallback onComprar;
+  final VoidCallback onRecarregar;
 
-  PlanoTipo? get _tipoProduto {
-    final id = produto.productId;
-    if (id.endsWith('_bronze')) return PlanoTipo.bronze;
-    if (id.endsWith('_prata')) return PlanoTipo.prata;
-    if (id.endsWith('_ouro')) return PlanoTipo.ouro;
-    return null;
-  }
+  PlanoTipo get _tipoProduto =>
+      PlanoTipo.values.firstWhere((t) => offer.productId.endsWith(t.name));
+
+  bool get _mesmoPlano => _tipoProduto == plano.plano;
 
   bool get _isAtual =>
-      !semPlanoPago &&
-      !plano.expirado &&
-      plano.ativo &&
-      _tipoProduto != null &&
-      _tipoProduto == plano.plano;
+      !semPlanoPago && !plano.expirado && plano.ativo && _mesmoPlano;
 
   bool get _mostrarPrecoCompra =>
-      semPlanoPago ||
-      (plano.expirado && _tipoProduto != null && _tipoProduto == plano.plano);
+      semPlanoPago || (plano.expirado && _mesmoPlano);
+
+  String get _textoIndisponivel => switch (motivo) {
+    LojaMotivoIndisponivel.lojaFechada =>
+      'A loja não está disponível neste aparelho. '
+          'Verifique sua conexão e conta da loja.',
+    _ =>
+      'Este plano ainda não está disponível na loja. '
+          'Tente atualizar em instantes.',
+  };
 
   @override
   Widget build(BuildContext context) {
-    final tipo = _tipoProduto ?? PlanoTipo.bronze;
-    final metal = PlanoTipoMetalColors.forTipo(tipo);
+    final metal = PlanoTipoMetalColors.forTipo(_tipoProduto);
+    final item = produto;
+
+    Widget? acao;
+    Widget? compra;
+    if (_isAtual) {
+      acao = Text(
+        'Atual',
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: context.premiumTextSecondary,
+        ),
+      );
+    } else if (_mostrarPrecoCompra) {
+      compra = _LojaCompraButton(
+        key: const Key('meu_plano_comprar'),
+        label: item == null ? 'Comprar' : 'Comprar · ${item.preco}',
+        color: metal,
+        enabled: item != null && !ocupado,
+        onPressed: onComprar,
+      );
+    } else {
+      acao = _LojaAcaoButton(
+        label: 'Mudar',
+        color: metal,
+        enabled: item != null && !ocupado,
+        onPressed: onComprar,
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -510,7 +566,7 @@ class _ProdutoLojaRow extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        produto.titulo,
+                        offer.label,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -518,36 +574,104 @@ class _ProdutoLojaRow extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (_isAtual)
-                      Text(
-                        'Atual',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: context.premiumTextSecondary,
-                        ),
-                      )
-                    else
-                      _LojaAcaoButton(
-                        label: _mostrarPrecoCompra ? produto.preco : 'Mudar',
-                        color: metal,
-                        enabled: !ocupado,
-                        onPressed: onComprar,
-                      ),
+                    if (acao != null) acao,
                   ],
                 ),
                 Text(
-                  '${produto.prazo} · pagamento único',
+                  '${offer.prazo} · pagamento único',
                   style: TextStyle(
                     fontSize: 13,
                     color: context.premiumTextSecondary,
                   ),
                 ),
+                if (compra != null) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(width: double.infinity, child: compra),
+                ],
+                if (item == null && !_isAtual) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _textoIndisponivel,
+                    key: const Key('meu_plano_motivo_indisponivel'),
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.35,
+                      color: context.premiumTextSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  if (recarregando)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  else
+                    TextButton(
+                      key: const Key('meu_plano_recarregar_loja'),
+                      onPressed: onRecarregar,
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(44, 44),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      child: Text(
+                        'Atualizar planos',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                ],
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _LojaCompraButton extends StatelessWidget {
+  const _LojaCompraButton({
+    super.key,
+    required this.label,
+    required this.color,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  final String label;
+  final Color color;
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground =
+        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+        ? Colors.white
+        : Colors.black87;
+    return FilledButton(
+      onPressed: enabled
+          ? () {
+              HapticFeedback.lightImpact();
+              onPressed();
+            }
+          : null,
+      style: FilledButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: foreground,
+        minimumSize: const Size.fromHeight(48),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+      ),
+      child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
     );
   }
 }
