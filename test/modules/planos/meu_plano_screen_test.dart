@@ -13,14 +13,18 @@ import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 class _FakeLoja extends LojaCompraGateway {
   _FakeLoja(this.vitrine);
 
-  final LojaVitrine vitrine;
+  LojaVitrine vitrine;
   final comprados = <String>[];
+  var carregamentos = 0;
 
   @override
   Stream<LojaCompraAviso> get avisos => const Stream.empty();
 
   @override
-  Future<LojaVitrine> carregar() async => vitrine;
+  Future<LojaVitrine> carregar() async {
+    carregamentos += 1;
+    return vitrine;
+  }
 
   @override
   Future<void> comprar(String productId) async {
@@ -98,6 +102,10 @@ class _ThrowingLoja extends LojaCompraGateway {
   void dispose() {}
 }
 
+const _textoProdutoIndisponivel =
+    'Este plano ainda não está disponível na loja. '
+    'Tente atualizar em instantes.';
+
 const _vitrineTresPlanos = LojaVitrine(
   disponivel: true,
   produtos: [
@@ -168,10 +176,12 @@ void main() {
     await tester.pump();
 
     expect(find.text(r'R$ 49,90 · 3 meses · pagamento único'), findsOneWidget);
-    expect(find.text(r'R$ 49,90'), findsOneWidget);
+    expect(find.text(r'Comprar · R$ 49,90'), findsOneWidget);
     expect(find.text('Mudar'), findsNothing);
-    await tester.ensureVisible(find.text(r'R$ 49,90'));
-    await tester.tap(find.text(r'R$ 49,90'));
+    final alvo = tester.getSize(find.byKey(const Key('meu_plano_comprar')));
+    expect(alvo.height, greaterThanOrEqualTo(44));
+    await tester.ensureVisible(find.text(r'Comprar · R$ 49,90'));
+    await tester.tap(find.text(r'Comprar · R$ 49,90'));
     await tester.pump();
     expect(loja.comprados, ['soloforte_plano_bronze']);
   });
@@ -205,13 +215,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Atual'), findsNothing);
-    expect(find.text(r'R$ 49,90'), findsOneWidget);
+    expect(find.text(r'Comprar · R$ 49,90'), findsOneWidget);
     expect(find.text('Mudar'), findsNothing);
 
     await tester.tap(find.text('Prata'));
     await tester.pump();
     expect(find.text('Mudar'), findsOneWidget);
-    expect(find.text(r'R$ 49,90'), findsNothing);
+    expect(find.text(r'Comprar · R$ 49,90'), findsNothing);
 
     await tester.tap(find.text('Ouro'));
     await tester.pump();
@@ -231,8 +241,15 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(
       find.text('A loja não tem planos disponíveis para compra neste momento.'),
-      findsOneWidget,
+      findsNothing,
     );
+
+    await tester.tap(find.text('Bronze'));
+    await tester.pump();
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.text(_textoProdutoIndisponivel), findsOneWidget);
+    expect(find.byKey(const Key('meu_plano_recarregar_loja')), findsOneWidget);
+    expect(find.text('Restaurar compras'), findsNothing);
   });
 
   testWidgets('loja sem produtos não mostra preço', (tester) async {
@@ -243,14 +260,127 @@ void main() {
       plano: UserPlan.free(userId: 'u'),
     );
 
-    expect(
-      find.text('A loja não tem planos disponíveis para compra neste momento.'),
-      findsOneWidget,
-    );
     expect(find.textContaining(r'R$'), findsNothing);
     expect(find.text('Restaurar compras'), findsNothing);
     expect(find.text('Grátis'), findsNWidgets(2));
     expect(find.textContaining('só para você'), findsOneWidget);
+  });
+
+  testWidgets('produto da loja disponível não mostra aviso de indisponível', (
+    tester,
+  ) async {
+    await _pumpMeuPlano(
+      tester,
+      loja: _FakeLoja(_vitrineTresPlanos),
+      plano: UserPlan.free(userId: 'u'),
+    );
+    await tester.tap(find.text('Bronze'));
+    await tester.pump();
+
+    expect(
+      find.byKey(const Key('meu_plano_motivo_indisponivel')),
+      findsNothing,
+    );
+    expect(find.byKey(const Key('meu_plano_recarregar_loja')), findsNothing);
+    expect(find.text('Restaurar compras'), findsOneWidget);
+  });
+
+  testWidgets(
+    'vitrine sem produtos mostra linha do plano, compra desabilitada e '
+    'Atualizar planos recarrega',
+    (tester) async {
+      final loja = _FakeLoja(
+        const LojaVitrine(
+          disponivel: true,
+          produtos: [],
+          motivoIndisponivel: LojaMotivoIndisponivel.produtosNaoEncontrados,
+        ),
+      );
+      await _pumpMeuPlano(
+        tester,
+        loja: loja,
+        plano: UserPlan.free(userId: 'u'),
+      );
+      await tester.tap(find.text('Prata'));
+      await tester.pump();
+
+      expect(find.text('Prata'), findsNWidgets(3));
+      expect(find.text('6 meses · pagamento único'), findsOneWidget);
+      expect(find.text(_textoProdutoIndisponivel), findsOneWidget);
+      expect(find.textContaining(r'R$'), findsNothing);
+      expect(find.text('Restaurar compras'), findsOneWidget);
+      final botao = tester.widget<FilledButton>(
+        find.descendant(
+          of: find.byKey(const Key('meu_plano_comprar')),
+          matching: find.byType(FilledButton),
+        ),
+      );
+      expect(botao.onPressed, isNull);
+      expect(loja.carregamentos, 1);
+
+      loja.vitrine = _vitrineTresPlanos;
+      await tester.ensureVisible(
+        find.byKey(const Key('meu_plano_recarregar_loja')),
+      );
+      await tester.tap(find.byKey(const Key('meu_plano_recarregar_loja')));
+      await tester.pumpAndSettle();
+
+      expect(loja.carregamentos, 2);
+      expect(find.byKey(const Key('meu_plano_recarregar_loja')), findsNothing);
+      expect(find.text(r'Comprar · R$ 79,90'), findsOneWidget);
+    },
+  );
+
+  testWidgets('loja fechada mostra motivo e não oferece restaurar', (
+    tester,
+  ) async {
+    await _pumpMeuPlano(
+      tester,
+      loja: _FakeLoja(LojaVitrine.indisponivel),
+      plano: UserPlan.free(userId: 'u'),
+    );
+    await tester.tap(find.text('Ouro'));
+    await tester.pump();
+
+    expect(
+      find.text(
+        'A loja não está disponível neste aparelho. '
+        'Verifique sua conexão e conta da loja.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text(_textoProdutoIndisponivel), findsNothing);
+    expect(find.text('Restaurar compras'), findsNothing);
+    expect(find.byKey(const Key('meu_plano_recarregar_loja')), findsOneWidget);
+    expect(find.textContaining(r'R$'), findsNothing);
+  });
+
+  testWidgets('plano pago ativo sem produto da loja não oferece Mudar', (
+    tester,
+  ) async {
+    await _pumpMeuPlano(
+      tester,
+      loja: _FakeLoja(
+        const LojaVitrine(
+          disponivel: true,
+          produtos: [],
+          motivoIndisponivel: LojaMotivoIndisponivel.erroConsulta,
+        ),
+      ),
+      plano: _paidBronze(),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Atual'), findsOneWidget);
+    expect(find.byKey(const Key('meu_plano_recarregar_loja')), findsNothing);
+
+    await tester.tap(find.text('Prata'));
+    await tester.pump();
+    expect(find.text(_textoProdutoIndisponivel), findsOneWidget);
+    expect(find.textContaining(r'R$'), findsNothing);
+    final mudar = tester.widget<TextButton>(
+      find.widgetWithText(TextButton, 'Mudar'),
+    );
+    expect(mudar.onPressed, isNull);
   });
 
   testWidgets('menu descreve o plano tocado', (tester) async {
