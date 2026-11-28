@@ -6,6 +6,8 @@ import 'package:soloforte_app/modules/marketing/domain/enums/marketing_case_stat
 import 'package:soloforte_app/modules/marketing/domain/enums/plano_marketing.dart';
 import 'package:soloforte_app/modules/marketing/domain/marketing_case_visibility.dart';
 
+final _visibilityReference = DateTime.utc(2026, 6, 2);
+
 void main() {
   group('ProducerContentVisibility', () {
     test('ownsOrLinkedClient aceita autoria própria', () {
@@ -96,10 +98,7 @@ void main() {
 
     test('lista relatórios: próprio e vinculado; exclui terceiro', () {
       final own = buildCase(ownerUserId: 'prod-1');
-      final linked = buildCase(
-        ownerUserId: 'consultor',
-        clientId: 'client-a',
-      );
+      final linked = buildCase(ownerUserId: 'consultor', clientId: 'client-a');
       final other = buildCase(
         ownerUserId: 'outro',
         clientId: 'client-z',
@@ -152,6 +151,7 @@ void main() {
           marketingCase: publicOuro,
           currentUserId: 'prod-1',
           authorizedClientIds: const {'client-a'},
+          reference: _visibilityReference,
         ),
         isTrue,
       );
@@ -160,6 +160,7 @@ void main() {
           marketingCase: prataOther,
           currentUserId: 'prod-1',
           authorizedClientIds: const {'client-a'},
+          reference: _visibilityReference,
         ),
         isFalse,
       );
