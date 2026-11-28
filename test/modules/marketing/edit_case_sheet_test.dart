@@ -15,6 +15,7 @@ import 'package:soloforte_app/modules/marketing/domain/enums/plano_marketing.dar
 import 'package:soloforte_app/modules/marketing/domain/enums/produtividade_unidade.dart';
 import 'package:soloforte_app/modules/marketing/presentation/widgets/edit_case_sheet.dart';
 import 'package:soloforte_app/modules/marketing/presentation/widgets/foto_picker_widget.dart';
+import 'package:soloforte_app/modules/marketing/presentation/widgets/fotos_resultado_picker_widget.dart';
 
 void main() {
   group('EditCaseSheet', () {
@@ -53,12 +54,13 @@ void main() {
       expect(savedCase!.produtividadeValor, 72.5);
       expect(savedCase!.produtividadeUnidade, ProdutividadeUnidade.scHa);
       expect(savedCase!.fotoPrincipalUrl, isNull);
+      expect(savedCase!.fotosResultado, isEmpty);
       expect(savedCase!.fotoAntesUrl, isNull);
       expect(savedCase!.fotoDepoisUrl, isNull);
       expect(savedCase!.parametros, isEmpty);
     });
 
-    testWidgets('exibe seção de foto principal para case tipo resultado', (
+    testWidgets('exibe seção de fotos para case tipo resultado', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -73,18 +75,55 @@ void main() {
       await tester.pump();
 
       await tester.scrollUntilVisible(
-        find.text('FOTO PRINCIPAL'),
+        find.text('FOTOS DO RESULTADO'),
         500,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pump();
 
-      expect(find.text('FOTO PRINCIPAL'), findsOneWidget);
-      expect(find.byType(FotoPickerWidget), findsOneWidget);
-      expect(find.text('Trocar'), findsOneWidget);
+      expect(find.text('FOTOS DO RESULTADO'), findsOneWidget);
+      expect(find.byType(FotosResultadoPickerWidget), findsOneWidget);
+      expect(find.byType(FotoPickerWidget), findsNothing);
+      final picker = tester.widget<FotosResultadoPickerWidget>(
+        find.byType(FotosResultadoPickerWidget),
+      );
+      expect(picker.urls, ['https://example.com/resultado.jpg']);
     });
 
-    testWidgets('propaga nova URL de foto ao salvar case resultado', (
+    testWidgets('hidrata a lista de fotos do case resultado', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          EditCaseSheet(
+            caso: _caseResultadoCompleto().copyWith(
+              fotoPrincipalUrl: 'https://example.com/a.jpg',
+              fotosResultado: const [
+                'https://example.com/a.jpg',
+                'https://example.com/b.jpg',
+              ],
+            ),
+            onClose: () {},
+            onSalvar: (_) async {},
+          ),
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.byType(FotosResultadoPickerWidget),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+
+      final picker = tester.widget<FotosResultadoPickerWidget>(
+        find.byType(FotosResultadoPickerWidget),
+      );
+      expect(picker.urls, [
+        'https://example.com/a.jpg',
+        'https://example.com/b.jpg',
+      ]);
+      expect(find.text('2/5'), findsOneWidget);
+    });
+
+    testWidgets('salva capa = 1ª foto e a lista ao editar case resultado', (
       tester,
     ) async {
       MarketingCase? savedCase;
@@ -102,16 +141,19 @@ void main() {
       );
 
       await tester.scrollUntilVisible(
-        find.byType(FotoPickerWidget),
+        find.byType(FotosResultadoPickerWidget),
         500,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pump();
 
-      final picker = tester.widget<FotoPickerWidget>(
-        find.byType(FotoPickerWidget),
+      final picker = tester.widget<FotosResultadoPickerWidget>(
+        find.byType(FotosResultadoPickerWidget),
       );
-      picker.onChanged('https://example.com/nova-foto.jpg');
+      picker.onChanged([
+        'https://example.com/nova-foto.jpg',
+        'https://example.com/resultado.jpg',
+      ]);
       await tester.pump();
 
       await tester.scrollUntilVisible(
@@ -125,6 +167,10 @@ void main() {
 
       expect(savedCase, isNotNull);
       expect(savedCase!.fotoPrincipalUrl, 'https://example.com/nova-foto.jpg');
+      expect(savedCase!.fotosResultado, [
+        'https://example.com/nova-foto.jpg',
+        'https://example.com/resultado.jpg',
+      ]);
     });
 
     testWidgets('exibe dois pickers de foto para case antes/depois', (
@@ -184,6 +230,7 @@ void main() {
       expect(savedCase!.tipo, CaseTipo.resultado);
       expect(savedCase!.produtorFazenda, 'Produtor A');
       expect(savedCase!.fotoPrincipalUrl, 'https://example.com/resultado.jpg');
+      expect(savedCase!.fotosResultado, ['https://example.com/resultado.jpg']);
       expect(savedCase!.prodSemProduto, 60);
       expect(savedCase!.prodComProduto, 68);
     });
@@ -204,16 +251,16 @@ void main() {
       );
 
       await tester.scrollUntilVisible(
-        find.byType(FotoPickerWidget),
+        find.byType(FotosResultadoPickerWidget),
         500,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pump();
 
-      final picker = tester.widget<FotoPickerWidget>(
-        find.byType(FotoPickerWidget),
+      final picker = tester.widget<FotosResultadoPickerWidget>(
+        find.byType(FotosResultadoPickerWidget),
       );
-      picker.onChanged(null);
+      picker.onChanged(const <String>[]);
       await tester.pump();
 
       await tester.scrollUntilVisible(
