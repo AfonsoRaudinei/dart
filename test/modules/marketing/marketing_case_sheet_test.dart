@@ -374,6 +374,76 @@ void main() {
       expect(roiValue.style?.color, SoloForteSheetSkinIos.iconStroke);
       expect(roiValue.style?.color, isNot(PremiumTokens.brandGreen));
     });
+
+    group('fotos do Resultado (ADR-065)', () {
+      const urls = [
+        'https://cdn.test/resultado-1.jpg',
+        'https://cdn.test/resultado-2.jpg',
+        'https://cdn.test/resultado-3.jpg',
+      ];
+
+      Finder pontinhos() => find.byWidgetPredicate(
+        (w) =>
+            w.key is ValueKey &&
+            '${(w.key as ValueKey).value}'.startsWith('foto-pontinho-'),
+      );
+
+      Future<void> abrir(WidgetTester tester, MarketingCase c) async {
+        await tester.pumpWidget(_wrapSheet(marketingCase: c, themeId: null));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('>= 2 fotos: PageView com pontinhos', (tester) async {
+        await abrir(
+          tester,
+          _resultadoCase().copyWith(
+            fotoPrincipalUrl: urls.first,
+            fotosResultado: urls,
+          ),
+        );
+
+        expect(find.byType(PageView), findsOneWidget);
+        expect(pontinhos(), findsNWidgets(3));
+        final pageView = tester.widget<PageView>(find.byType(PageView));
+        expect(pageView.childrenDelegate.estimatedChildCount, 3);
+      });
+
+      testWidgets('1 foto na lista: sem PageView e sem pontinhos', (
+        tester,
+      ) async {
+        await abrir(
+          tester,
+          _resultadoCase().copyWith(
+            fotoPrincipalUrl: urls.first,
+            fotosResultado: [urls.first],
+          ),
+        );
+
+        expect(find.byType(PageView), findsNothing);
+        expect(pontinhos(), findsNothing);
+        expect(find.byType(CachedNetworkImage), findsOneWidget);
+      });
+
+      testWidgets('legado só com fotoPrincipalUrl exibe 1 foto', (
+        tester,
+      ) async {
+        await abrir(
+          tester,
+          _resultadoCase().copyWith(fotoPrincipalUrl: urls.first),
+        );
+
+        expect(find.byType(PageView), findsNothing);
+        expect(pontinhos(), findsNothing);
+        expect(find.byType(CachedNetworkImage), findsOneWidget);
+      });
+
+      testWidgets('sem foto: nada de imagem do Resultado', (tester) async {
+        await abrir(tester, _resultadoCase());
+
+        expect(find.byType(PageView), findsNothing);
+        expect(find.byType(CachedNetworkImage), findsNothing);
+      });
+    });
   });
 }
 
