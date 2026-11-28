@@ -32,9 +32,8 @@ void main() {
                 return _StubMarketingCasesNotifier(repo, sync, const []);
               }),
               planoAtivoProvider.overrideWith(
-                (ref) async => throw const PlanoCacheUnavailableException(
-                  expired: false,
-                ),
+                (ref) async =>
+                    throw const PlanoCacheUnavailableException(expired: false),
               ),
               connectivityStateProvider.overrideWith(
                 (ref) => Stream.value(false),
@@ -78,9 +77,8 @@ void main() {
                 return _ThrowingDraftNotifier(repo, const []);
               }),
               planoAtivoProvider.overrideWith(
-                (ref) async => throw const PlanoCacheUnavailableException(
-                  expired: false,
-                ),
+                (ref) async =>
+                    throw const PlanoCacheUnavailableException(expired: false),
               ),
               connectivityStateProvider.overrideWith(
                 (ref) => Stream.value(false),
@@ -97,7 +95,9 @@ void main() {
 
         expect(find.textContaining(cacheMessage), findsOneWidget);
         expect(
-          find.textContaining('Não foi possível salvar o rascunho. Tente novamente.'),
+          find.textContaining(
+            'Não foi possível salvar o rascunho. Tente novamente.',
+          ),
           findsOneWidget,
         );
         expect(
@@ -109,31 +109,38 @@ void main() {
       },
     );
 
-    test('plano expirado não rebaixa pending_sync nem synced publicados', () async {
-      final pending = _publishedCase('pend-1', syncStatus: 'pending_sync');
-      final synced = _publishedCase('sync-1', syncStatus: 'synced');
-      final repo = _DraftAwareRepo([pending, synced]);
-      final notifier = _StubMarketingCasesNotifier(
-        repo,
-        MarketingSyncService(repo),
-        [pending, synced],
-      );
+    test(
+      'plano expirado não rebaixa pending_sync nem synced publicados',
+      () async {
+        final pending = _publishedCase('pend-1', syncStatus: 'pending_sync');
+        final synced = _publishedCase('sync-1', syncStatus: 'synced');
+        final repo = _DraftAwareRepo([pending, synced]);
+        final notifier = _StubMarketingCasesNotifier(
+          repo,
+          MarketingSyncService(repo),
+          [pending, synced],
+        );
 
-      await notifier.reconcileOfflinePublishes(
-        _plan(ativo: true, expiraEm: DateTime.utc(2020, 1, 1)),
-      );
+        await notifier.reconcileOfflinePublishes(
+          _plan(ativo: true, expiraEm: DateTime.utc(2020, 1, 1)),
+        );
 
-      expect(
-        notifier.state.valueOrNull!.firstWhere((c) => c.id == 'pend-1').status
-            .toValue(),
-        'published',
-      );
-      expect(
-        notifier.state.valueOrNull!.firstWhere((c) => c.id == 'sync-1').status
-            .toValue(),
-        'published',
-      );
-    });
+        expect(
+          notifier.state.valueOrNull!
+              .firstWhere((c) => c.id == 'pend-1')
+              .status
+              .toValue(),
+          'published',
+        );
+        expect(
+          notifier.state.valueOrNull!
+              .firstWhere((c) => c.id == 'sync-1')
+              .status
+              .toValue(),
+          'published',
+        );
+      },
+    );
 
     test('plano free não rebaixa published pending_sync para draft', () async {
       final pending = _publishedCase('pend-free', syncStatus: 'pending_sync');
@@ -144,12 +151,12 @@ void main() {
         [pending],
       );
 
-      await notifier.reconcileOfflinePublishes(
-        UserPlan.free(userId: 'user-1'),
-      );
+      await notifier.reconcileOfflinePublishes(UserPlan.free(userId: 'user-1'));
 
       expect(
-        notifier.state.valueOrNull!.firstWhere((c) => c.id == 'pend-free').status
+        notifier.state.valueOrNull!
+            .firstWhere((c) => c.id == 'pend-free')
+            .status
             .toValue(),
         'published',
       );
@@ -165,60 +172,55 @@ void main() {
         [pending],
       );
 
-      await notifier.reconcileOfflinePublishes(
-        _plan(ativo: false),
-      );
+      await notifier.reconcileOfflinePublishes(_plan(ativo: false));
 
       expect(
-        notifier.state.valueOrNull!.firstWhere((c) => c.id == 'pend-1').status
+        notifier.state.valueOrNull!
+            .firstWhere((c) => c.id == 'pend-1')
+            .status
             .toValue(),
         'published',
       );
     });
 
-    test(
-      'plano bronze rebaixa ouro pending quando cota ouro é zero',
-      () async {
-        final cases = [
-          ...List.generate(
-            6,
-            (i) => _publishedCase(
-              'pend-$i',
-              syncStatus: 'pending_sync',
-              atualizadoEm: '2026-09-0${i + 1}T10:00:00.000Z',
-              liberadoEm: '2026-06-01T12:00:00.000Z',
-            ),
-          ),
-          _publishedCase(
-            'pend-privado',
+    test('plano bronze rebaixa ouro pending quando cota ouro é zero', () async {
+      final cases = [
+        ...List.generate(
+          6,
+          (i) => _publishedCase(
+            'pend-$i',
             syncStatus: 'pending_sync',
-            atualizadoEm: '2026-09-09T10:00:00.000Z',
+            atualizadoEm: '2026-09-0${i + 1}T10:00:00.000Z',
+            liberadoEm: '2026-06-01T12:00:00.000Z',
           ),
-        ];
-        final repo = _DraftAwareRepo(cases);
-        final notifier = _StubMarketingCasesNotifier(
-          repo,
-          MarketingSyncService(repo),
-          cases,
-        );
+        ),
+        _publishedCase(
+          'pend-privado',
+          syncStatus: 'pending_sync',
+          atualizadoEm: '2026-09-09T10:00:00.000Z',
+        ),
+      ];
+      final repo = _DraftAwareRepo(cases);
+      final notifier = _StubMarketingCasesNotifier(
+        repo,
+        MarketingSyncService(repo),
+        cases,
+      );
 
-        await notifier.reconcileOfflinePublishes(
-          _plan(plano: PlanoTipo.bronze),
-        );
+      await notifier.reconcileOfflinePublishes(_plan(plano: PlanoTipo.bronze));
 
-        final state = notifier.state.valueOrNull!;
-        for (var i = 0; i < 6; i++) {
-          expect(
-            state.firstWhere((c) => c.id == 'pend-$i').status.toValue(),
-            'draft',
-          );
-        }
+      final state = notifier.state.valueOrNull!;
+      for (var i = 0; i < 6; i++) {
         expect(
-          state.firstWhere((c) => c.id == 'pend-privado').status.toValue(),
-          'published',
+          state.firstWhere((c) => c.id == 'pend-$i').status.toValue(),
+          'draft',
         );
-      },
-    );
+      }
+      expect(
+        state.firstWhere((c) => c.id == 'pend-privado').status.toValue(),
+        'published',
+      );
+    });
   });
 }
 
@@ -234,7 +236,7 @@ UserPlan _plan({
     origem: PlanoOrigem.pagamento,
     ativo: ativo,
     iniciouEm: DateTime.utc(2026, 1, 1),
-    expiraEm: expiraEm ?? DateTime.utc(2027, 1, 1),
+    expiraEm: expiraEm ?? DateTime.now().add(const Duration(days: 365)),
     criadoEm: DateTime.utc(2026, 1, 1),
   );
 }
