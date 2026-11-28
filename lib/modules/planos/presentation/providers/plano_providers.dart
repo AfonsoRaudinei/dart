@@ -27,6 +27,7 @@ import '../../domain/entities/user_plan.dart';
 import '../../domain/entities/referral.dart';
 import '../../domain/entities/referral_code.dart';
 import '../../domain/plano_cache_unavailable_exception.dart';
+import '../../infra/user_plan_admin_resolver.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 
 part 'plano_providers.g.dart';
@@ -191,6 +192,16 @@ final _planoLogoutInvalidationRegistration = () {
   );
   return true;
 }();
+
+// ─────────────────────────────────────────────────────────────
+// Plano com admin (JWT + perfis) — cotas ADR-066
+// ─────────────────────────────────────────────────────────────
+
+@Riverpod(keepAlive: true)
+Future<UserPlan> userPlanWithAdmin(UserPlanWithAdminRef ref) async {
+  final plan = await ref.watch(planoAtivoProvider.future);
+  return UserPlanAdminResolver.stamp(Supabase.instance.client, plan);
+}
 
 // ─────────────────────────────────────────────────────────────
 // REFERRALS — autoDispose (usado só nas telas de planos/)
