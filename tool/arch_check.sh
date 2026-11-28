@@ -19,9 +19,12 @@
 #   REGRA-UI-MAP-CTA — anti-regressão CTA fantasma + sombra de atribuição
 #   REGRA-RESTORE-1 — push agronômico PT-only (BUG-011 restore pós-reinstall)
 #   REGRA-SHEET-CONTRAST-1 / REGRA-SHEET-VISUALS-1 — cores de sheet via Visuals (ratchet)
+#   REGRA-TEST-CLOCK — bombas-relógio em test/ (WARNING-ONLY — tool/test_clock_bomb_check.sh)
 # =============================================================================
 
 set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ── Cores ─────────────────────────────────────────────────────────────────────
 RED='\033[0;31m'
@@ -1090,6 +1093,20 @@ else
   else
     pass "fieldLocalToRemote PT-only (fazenda_id/nome/area_produtiva)"
   fi
+fi
+
+echo ""
+
+# =============================================================================
+# REGRA-TEST-CLOCK — testes que dependem do dia corrente (WARNING-ONLY)
+# =============================================================================
+echo -e "── ${CYAN}REGRA-TEST-CLOCK${NC}: bombas-relógio em test/ (warning-only) ──"
+echo ""
+
+if [ -x "$SCRIPT_DIR/test_clock_bomb_check.sh" ]; then
+  "$SCRIPT_DIR/test_clock_bomb_check.sh"
+else
+  warn "REGRA-TEST-CLOCK: tool/test_clock_bomb_check.sh ausente ou não executável"
 fi
 
 echo ""
