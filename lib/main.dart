@@ -47,6 +47,7 @@ import 'core/contracts/i_ndvi_field_presenter_provider.dart';
 import 'core/contracts/i_ndvi_field_refresh_provider.dart';
 import 'core/contracts/i_ndvi_latest_lookup_provider.dart';
 import 'core/contracts/i_ndvi_refined_entitlement_provider.dart';
+import 'core/contracts/i_drawing_sync_quota_provider.dart';
 import 'app/adapters/agenda_ai_recommendation_context_adapter.dart';
 import 'modules/consultoria/clients/data/clients_repository.dart';
 import 'modules/consultoria/clients/infra/client_lookup_adapter.dart';
@@ -90,6 +91,7 @@ import 'modules/drawing/infra/teste_execucao_lookup_adapter.dart';
 import 'modules/drawing/presentation/providers/drawing_provider.dart';
 import 'modules/ndvi/infra/chained_field_lookup.dart';
 import 'modules/planos/infra/ndvi_refined_entitlement_adapter.dart';
+import 'modules/planos/infra/drawing_sync_quota_adapter.dart';
 import 'modules/planos/presentation/providers/plano_providers.dart';
 import 'modules/produtor/data/producer_link_repository.dart';
 import 'modules/produtor/infra/producer_invite_writer_adapter.dart';
@@ -204,6 +206,14 @@ Future<void> main() async {
                 return NdviRefinedEntitlementAdapter(
                   ndviRefinedEnabledForUserPlan(plano),
                 );
+              }),
+              drawingSyncQuotaProvider.overrideWith((ref) {
+                final plan =
+                    ref.watch(userPlanWithAdminProvider).valueOrNull;
+                if (plan == null) {
+                  return DrawingSyncQuotaAdapter.pending();
+                }
+                return DrawingSyncQuotaAdapter(plan);
               }),
               ndviLatestLookupProvider.overrideWith((ref) {
                 return NdviLatestLookupAdapter(
