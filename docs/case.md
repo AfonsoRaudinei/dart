@@ -55,7 +55,7 @@ Limite de talhões do módulo Desenho que a conta pode manter sincronizados na n
 - Sem limite é `null` no código. Nenhum número fixo representa ilimitado, ao contrário do `999999` que `limiteCases` devolve para admin.
 - Admin é ilimitado (`null`), independente do plano, como no ADR-012. Isso vale também para admin sem plano pago ou com plano expirado.
 - Plano indisponível ou inválido não vira 0: o consumidor do limite deve manter o último limite conhecido e nunca apagar da nuvem talhões já sincronizados.
-- **Isenções da cota** (não contam no teto nem são bloqueadas no envio): desenho referenciado por case de marketing (`marketing_cases.drawing_id`, ADR-064) e desenho do consultor compartilhado ao produtor com vínculo ativo e compartilhamento de talhões (`share_fields`). Detalhe de engenharia: ADR-066.
+- **Isenções da cota** (não contam no teto nem são bloqueadas no envio): (1) desenho referenciado por case **publicado** (`marketing_cases.drawing_id`, `status = published`, `deletado_em` nulo, ADR-064); (2) desenho do consultor cujo `cliente_id` está em vínculo ativo com **compartilhamento de talhões** (`share_fields`). Rascunho de case não isenta. Detalhe: ADR-066.
 - Fonte no código: `PlanoTipo.limiteTalhoesSincronizados` (tabela por plano) e `UserPlan.limiteTalhoesSincronizados` (conta efetiva).
 - **Enforcement:** especificado em ADR-066; implementação em fases (contrato → cliente → servidor → mensagem ao usuário ao atingir o teto).
 

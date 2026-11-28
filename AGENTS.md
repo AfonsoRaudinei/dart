@@ -163,7 +163,7 @@ Comunicação cross-module **APENAS** via `lib/core/contracts/`:
 | `IProducerPropertyGateway` | 040 | consultoria | produtor |
 | `IOccurrenceAccessReader` | 041 | produtor | map |
 | `IProducerCropCalendar` | 062 | produtor (lê `drawings`, escreve via `IDrawingFieldWriter`) | produtor |
-| `IDrawingSyncQuota` | 066 | planos | drawing (sync push) |
+| `IDrawingSyncQuota` | 066 | planos (`cloudTalhaoLimit` + carimbo admin) | drawing (sync push) |
 
 **Dependências proibidas (diretas):**
 
