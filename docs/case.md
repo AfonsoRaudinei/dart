@@ -55,7 +55,9 @@ Limite de talhões do módulo Desenho que a conta pode manter sincronizados na n
 - Sem limite é `null` no código. Nenhum número fixo representa ilimitado, ao contrário do `999999` que `limiteCases` devolve para admin.
 - Admin é ilimitado (`null`), independente do plano, como no ADR-012. Isso vale também para admin sem plano pago ou com plano expirado.
 - Plano indisponível ou inválido não vira 0: o consumidor do limite deve manter o último limite conhecido e nunca apagar da nuvem talhões já sincronizados.
+- **Isenções da cota** (não contam no teto nem são bloqueadas no envio): (1) desenho referenciado por case **publicado** (`marketing_cases.drawing_id`, `status = published`, `deletado_em` nulo, ADR-064); (2) desenho do consultor cujo `cliente_id` está em vínculo ativo com **compartilhamento de talhões** (`share_fields`). Rascunho de case não isenta. Detalhe: ADR-066.
 - Fonte no código: `PlanoTipo.limiteTalhoesSincronizados` (tabela por plano) e `UserPlan.limiteTalhoesSincronizados` (conta efetiva).
+- **Enforcement:** especificado em ADR-066; implementação em fases (contrato → cliente → servidor → mensagem ao usuário ao atingir o teto).
 
 ---
 
@@ -154,7 +156,7 @@ Parcial em relação à regra acima (atualizado 28/11/2026).
 - Produtor lê ocorrências compartilhadas quando consultor **e** produtor passam `consultor_pode_compartilhar_ocorrencias` (Bronze+/admin ativo) — app checa plano do produtor antes do RPC; Supabase repete no RPC e na policy `occurrences_select_authorized`.
 - `ProducerLinkOccurrencePolicy.usuarioPodeAcessarOcorrenciasNoVinculo` / `assertProdutorPodeVerOcorrenciasCompartilhadas` no app; consultor usa o mesmo gate ao compartilhar.
 - NDVI refinado já segue Ouro pago.
-- **Talhões sincronizados na nuvem:** o limite existe como dado (`PlanoTipo.limiteTalhoesSincronizados`, `UserPlan.limiteTalhoesSincronizados`) e aparece como último bullet de cada card em **Meu Plano** (`meu_plano_vantagens.dart`), com o número lido do dado. **Ainda não é aplicado no sync do Desenho:** `drawing/` não importa `planos/` e `DrawingSyncService` não consulta nenhum limite. Aplicar exige contrato em `core/contracts/` e ADR novo.
+- **Talhões sincronizados na nuvem:** o limite existe como dado e copy em **Meu Plano**; aplicar no sync segue **ADR-066** (`IDrawingSyncQuota`, ordem de push, isenções, trigger Supabase e aviso ao usuário no teto). Até a fase 3 do ADR, o sync ainda não corta envios.
 - **Plano desconhecido:** `PlanoTipo.fromString` lança `ArgumentError` para um valor fora de bronze/prata/ouro, e `UserPlan.fromJson` herda isso. É intencional: não vira “sem plano pago”. O `planoAtivoProvider` serve o plano em cache (TTL 24h) e, sem cache válido, lança `PlanoCacheUnavailableException` com log de “falha de parse”.
 - **Meu Plano** (`/planos/meu-plano`) e **Planos** (`/planos`) mostram preço só quando a loja devolve o produto (`LojaProduto.preco`). Sem produto na vitrine, o menu de vantagens usa só o prazo do catálogo (`store_plan_catalog.dart`) e o texto «preço na loja ao comprar» — sem BRL fictício no app. Valores de referência para cadastro na App Store / Play Console: **R$ 90 / R$ 300 / R$ 960** (`docs/store/PRODUTOS_IAP_LOJAS.md`, alinhado à tabela Preço acima).
 
