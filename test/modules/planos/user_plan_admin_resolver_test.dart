@@ -3,7 +3,7 @@ import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
 import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
 import 'package:soloforte_app/modules/planos/domain/enums/plano_origem.dart';
 import 'package:soloforte_app/modules/planos/infra/user_plan_admin_resolver.dart';
-import 'package:supabase/supabase.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   UserPlan bronze() => UserPlan(
