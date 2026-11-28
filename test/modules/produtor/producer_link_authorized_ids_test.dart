@@ -11,14 +11,11 @@ void main() {
         clientId: 'client-a',
         producerUserId: 'p1',
         status: 'active',
-        expiresAt: DateTime.utc(2026, 12, 1),
+        expiresAt: DateTime.now().add(const Duration(days: 30)),
         usedAt: DateTime.utc(2026, 6, 1),
         createdAt: DateTime.utc(2026, 6, 1),
         updatedAt: DateTime.utc(2026, 6, 1),
-        share: const ProducerShareSelection(
-          fields: true,
-          occurrences: false,
-        ),
+        share: const ProducerShareSelection(fields: true, occurrences: false),
       ),
       ProducerClientLink(
         id: 'l2',
@@ -26,14 +23,11 @@ void main() {
         clientId: 'client-b',
         producerUserId: 'p1',
         status: 'active',
-        expiresAt: DateTime.utc(2026, 12, 1),
+        expiresAt: DateTime.now().add(const Duration(days: 30)),
         usedAt: DateTime.utc(2026, 6, 1),
         createdAt: DateTime.utc(2026, 6, 1),
         updatedAt: DateTime.utc(2026, 6, 1),
-        share: const ProducerShareSelection(
-          fields: false,
-          occurrences: true,
-        ),
+        share: const ProducerShareSelection(fields: false, occurrences: true),
       ),
     ];
 
