@@ -80,10 +80,32 @@ enum MeuPlanoMenu {
       'Compartilhe ocorrências com seu vínculo.',
     ],
   };
+
+  PlanoTipo? get _planoTipoLimiteTalhoes => switch (this) {
+    MeuPlanoMenu.gratis => null,
+    MeuPlanoMenu.bronze => PlanoTipo.bronze,
+    MeuPlanoMenu.prata => PlanoTipo.prata,
+    MeuPlanoMenu.ouro => PlanoTipo.ouro,
+  };
+
+  /// Benefício de sincronização de talhões do Desenho — valores de
+  /// [PlanoTipo.limiteTalhoesSincronizados], sem número fixo na UI.
+  String get vantagemTalhoesSincronizados {
+    if (this == MeuPlanoMenu.gratis) {
+      return 'Seus desenhos (talhões) ficam salvos só no aparelho — '
+          'sincronização na nuvem é exclusiva dos planos pagos.';
+    }
+    final tipo = _planoTipoLimiteTalhoes!;
+    final limite = tipo.limiteTalhoesSincronizados;
+    if (limite == null) {
+      return 'Sincronização de talhões desenhados na nuvem sem limite.';
+    }
+    return 'Sincronize e salve na nuvem até $limite talhões desenhados.';
+  }
 }
 
 List<String> vantagensMenuPlano(MeuPlanoMenu menu, LojaVitrine vitrine) {
-  final base = menu.vantagensBase;
+  final base = [...menu.vantagensBase, menu.vantagemTalhoesSincronizados];
   if (menu == MeuPlanoMenu.gratis) return base;
 
   final productId = menu.productIdLoja;
