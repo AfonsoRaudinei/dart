@@ -82,9 +82,11 @@ class UserPlan {
 
   /// Limite de talhões do Desenho na nuvem para o tier efetivo da conta.
   ///
-  /// Grátis: 0 (só local). Pagos: delega a [PlanoTipo.limiteTalhoesSincronizados]
-  /// (`null` no Ouro = ilimitado).
+  /// Admin: ilimitado (`null`), independente do plano — ADR-012. Grátis,
+  /// expirado ou inativo: 0 (só local). Pagos: delega a
+  /// [PlanoTipo.limiteTalhoesSincronizados] (`null` no Ouro = ilimitado).
   int? get limiteTalhoesSincronizados {
+    if (isAdmin) return null;
     if (id == 'free' || ocultaPinsMarketingNoMapa) return 0;
     return plano.limiteTalhoesSincronizados;
   }
