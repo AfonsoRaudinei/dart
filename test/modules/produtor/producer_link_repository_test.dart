@@ -46,7 +46,7 @@ void main() {
         origem: PlanoOrigem.pagamento,
         ativo: true,
         iniciouEm: DateTime.utc(2026, 1, 1),
-        expiraEm: DateTime.utc(2027, 1, 1),
+        expiraEm: DateTime.now().add(const Duration(days: 365)),
         criadoEm: DateTime.utc(2026, 1, 1),
       );
       expect(
@@ -84,7 +84,7 @@ void main() {
         origem: PlanoOrigem.pagamento,
         ativo: true,
         iniciouEm: DateTime.utc(2026, 1, 1),
-        expiraEm: DateTime.utc(2027, 1, 1),
+        expiraEm: DateTime.now().add(const Duration(days: 365)),
         criadoEm: DateTime.utc(2026, 1, 1),
       );
       expect(paid.produtorPodeVerOcorrenciaCompartilhadaNoVinculo, isTrue);
