@@ -116,7 +116,7 @@ ProducerPropertyDashboard _linkedDashboard() {
           clientId: 'client-jonathan',
           producerUserId: 'producer-client-1',
           status: 'active',
-          expiresAt: DateTime.utc(2026, 11, 21),
+          expiresAt: DateTime.now().add(const Duration(days: 30)),
           usedAt: DateTime.utc(2026, 11, 14),
           createdAt: DateTime.utc(2026, 11, 14),
           updatedAt: DateTime.utc(2026, 11, 14),
