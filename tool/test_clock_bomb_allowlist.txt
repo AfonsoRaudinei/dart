@@ -1,0 +1,4 @@
+# Paths relativos ao repo — pular TEST-CLOCK (documentar motivo inline).
+# Vínculo produtor: expiresAt é dado de domínio no teste, não janela de marketing.
+test/modules/produtor/producer_link_authorized_ids_test.dart
+test/modules/produtor/producer_link_repository_test.dart
