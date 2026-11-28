@@ -21,7 +21,7 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
     'localizacao_texto', 'produtor_fazenda', 'produto_utilizado',
     'data_case', 'produtividade_valor', 'produtividade_unidade',
     'nome_vendedor', 'telefone_vendedor', 'descricao',
-    'foto_principal_url', 'quantidade_produzida',
+    'foto_principal_url', 'fotos_resultado_json', 'quantidade_produzida',
     'prod_sem_produto', 'prod_com_produto', 'unidade_produtividade',
     'custo_produto_por_ha', 'valor_grao', 'client_id',
     'foto_antes_url', 'foto_depois_url', 'ganho_produtividade',
