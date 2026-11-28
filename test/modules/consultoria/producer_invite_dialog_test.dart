@@ -27,15 +27,15 @@ class _FakeInviteWriter implements IProducerInviteWriter {
 }
 
 UserPlan _bronzePaid() => UserPlan(
-      id: 'p1',
-      userId: 'u1',
-      plano: PlanoTipo.bronze,
-      origem: PlanoOrigem.pagamento,
-      ativo: true,
-      iniciouEm: DateTime.utc(2026, 1, 1),
-      expiraEm: DateTime.utc(2027, 1, 1),
-      criadoEm: DateTime.utc(2026, 1, 1),
-    );
+  id: 'p1',
+  userId: 'u1',
+  plano: PlanoTipo.bronze,
+  origem: PlanoOrigem.pagamento,
+  ativo: true,
+  iniciouEm: DateTime.utc(2026, 1, 1),
+  expiraEm: DateTime.now().add(const Duration(days: 365)),
+  criadoEm: DateTime.utc(2026, 1, 1),
+);
 
 void main() {
   testWidgets('gera token após ensureClientRemote e exibe valor', (
