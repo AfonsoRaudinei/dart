@@ -20,7 +20,7 @@ import '../../domain/marketing_visibility_policy.dart';
 import '../../../planos/domain/entities/user_plan.dart';
 import '../../../planos/presentation/providers/plano_providers.dart';
 import 'case_selectors_widget.dart';
-import 'foto_picker_widget.dart';
+import 'fotos_resultado_picker_widget.dart';
 import 'marketing_client_selector.dart';
 import 'novo_case_antes_depois_section.dart';
 import 'novo_case_form_helpers.dart';
@@ -59,7 +59,7 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
   ProdutividadeUnidade? _produtividadeUnidade;
   String? _clientId;
   String? _selectedClientNameForFallback;
-  String? _fotoPrincipalUrl;
+  List<String> _fotosResultado = const [];
   final _uuid = const Uuid();
   List<NovoCaseComparacao> _comparacoes = [];
   bool _hasConclusao = false;
@@ -83,7 +83,7 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
     _conclusaoCtrl.text = caso.conclusao ?? '';
     _conclusaoTecnicaCtrl.text = caso.conclusaoTecnica ?? '';
     _hasConclusao = _conclusaoTecnicaCtrl.text.trim().isNotEmpty;
-    _fotoPrincipalUrl = caso.fotoPrincipalUrl;
+    _fotosResultado = caso.fotosResultadoEfetivas;
     if (_tipo == CaseTipo.antesDepois) {
       _comparacoes = _comparacoesDoCase(caso);
     }
@@ -179,7 +179,7 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
       return;
     }
 
-    if (_tipo == CaseTipo.resultado && _fotoPrincipalUrl == null) {
+    if (_tipo == CaseTipo.resultado && _fotosResultado.isEmpty) {
       _showError('Foto principal obrigatória para o tipo Resultado.');
       return;
     }
@@ -229,7 +229,8 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
       nomeVendedor: _trimmedOrNull(_nomeVendedorCtrl.text),
       telefoneVendedor: _trimmedOrNull(_telefoneCtrl.text),
       descricao: casoOriginal.descricao,
-      fotoPrincipalUrl: _fotoPrincipalUrl,
+      fotoPrincipalUrl: _fotosResultado.firstOrNull,
+      fotosResultado: _fotosResultado,
       quantidadeProduzida: casoOriginal.quantidadeProduzida,
       prodSemProduto: casoOriginal.prodSemProduto,
       prodComProduto: casoOriginal.prodComProduto,
@@ -313,6 +314,7 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
         break;
       case CaseTipo.antesDepois:
         json['foto_principal_url'] = null;
+        json['fotos_resultado_json'] = null;
         json['quantidade_produzida'] = null;
         json['prod_sem_produto'] = null;
         json['prod_com_produto'] = null;
@@ -326,6 +328,7 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
         break;
       case CaseTipo.avaliacao:
         json['foto_principal_url'] = null;
+        json['fotos_resultado_json'] = null;
         json['quantidade_produzida'] = null;
         json['prod_sem_produto'] = null;
         json['prod_com_produto'] = null;
@@ -525,15 +528,11 @@ class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            novoCaseSectionLabel('Foto Principal'),
+            novoCaseSectionLabel('Fotos do Resultado'),
             const SizedBox(height: 10),
-            FotoPickerWidget(
-              label: 'Foto do Resultado',
-              url: _fotoPrincipalUrl,
-              folder: 'resultado',
-              height: 180,
-              required: _fotoPrincipalUrl == null,
-              onChanged: (url) => setState(() => _fotoPrincipalUrl = url),
+            FotosResultadoPickerWidget(
+              urls: _fotosResultado,
+              onChanged: (urls) => setState(() => _fotosResultado = urls),
             ),
           ],
         );
