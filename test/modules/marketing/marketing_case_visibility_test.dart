@@ -33,15 +33,22 @@ MarketingCase _case({
   );
 }
 
+/// Relógio fixo para janela pública — não depende do dia em que o CI roda.
+final _visibilityReference = DateTime.utc(2026, 6, 2);
+
 void main() {
   group('MarketingCaseVisibility.isVisibleOnMapForProducer', () {
     test('sem liberado_em: só o autor vê', () {
-      final privado = _case(liberadoEm: null, visibilidade: PlanoMarketing.ouro);
+      final privado = _case(
+        liberadoEm: null,
+        visibilidade: PlanoMarketing.ouro,
+      );
       expect(
         MarketingCaseVisibility.isVisibleOnMapForProducer(
           marketingCase: privado,
           currentUserId: 'author-1',
           authorizedClientIds: const {},
+          reference: _visibilityReference,
         ),
         isTrue,
       );
@@ -50,6 +57,7 @@ void main() {
           marketingCase: privado,
           currentUserId: 'prod-1',
           authorizedClientIds: const {'client-a'},
+          reference: _visibilityReference,
         ),
         isFalse,
       );
@@ -68,6 +76,7 @@ void main() {
           marketingCase: linked,
           currentUserId: 'prod-1',
           authorizedClientIds: const {'client-a'},
+          reference: _visibilityReference,
         ),
         isTrue,
       );
@@ -82,6 +91,7 @@ void main() {
           marketingCase: notLiberado,
           currentUserId: 'prod-1',
           authorizedClientIds: const {'client-a'},
+          reference: _visibilityReference,
         ),
         isFalse,
       );
@@ -97,6 +107,7 @@ void main() {
           marketingCase: prataVinculada,
           currentUserId: 'prod-1',
           authorizedClientIds: const {'client-a'},
+          reference: _visibilityReference,
         ),
         isTrue,
       );
@@ -116,6 +127,7 @@ void main() {
           marketingCase: ativo,
           currentUserId: 'prod-1',
           authorizedClientIds: const {'client-a'},
+          reference: _visibilityReference,
         ),
         isTrue,
       );
@@ -130,6 +142,7 @@ void main() {
           marketingCase: semLiberacao,
           currentUserId: 'prod-1',
           authorizedClientIds: const {'client-a'},
+          reference: _visibilityReference,
         ),
         isFalse,
       );
@@ -146,6 +159,7 @@ void main() {
           marketingCase: expirado,
           currentUserId: 'prod-1',
           authorizedClientIds: const {'client-a'},
+          reference: _visibilityReference,
         ),
         isFalse,
       );
