@@ -38,7 +38,7 @@ void main() {
         origem: PlanoOrigem.pagamento,
         ativo: true,
         iniciouEm: DateTime(2026),
-        expiraEm: DateTime(2027),
+        expiraEm: DateTime.now().add(const Duration(days: 365)),
         criadoEm: DateTime(2026),
       );
       expect(plan.limiteTalhoesSincronizados, isNull);
