@@ -19,7 +19,7 @@ void main() {
         origem: PlanoOrigem.pagamento,
         ativo: true,
         iniciouEm: DateTime(2026),
-        expiraEm: DateTime(2026, 4),
+        expiraEm: DateTime.now().add(const Duration(days: 90)),
         criadoEm: DateTime(2026),
       );
       expect(plan.limiteTalhoesSincronizados, 150);
@@ -42,6 +42,20 @@ void main() {
         criadoEm: DateTime(2026),
       );
       expect(plan.limiteTalhoesSincronizados, isNull);
+    });
+
+    test('plano pago expirado retorna 0', () {
+      final plan = UserPlan(
+        id: 'p-exp',
+        userId: 'u1',
+        plano: PlanoTipo.bronze,
+        origem: PlanoOrigem.pagamento,
+        ativo: true,
+        iniciouEm: DateTime(2020),
+        expiraEm: DateTime(2020, 6),
+        criadoEm: DateTime(2020),
+      );
+      expect(plan.limiteTalhoesSincronizados, 0);
     });
 
     test('valores pagos nunca são negativos', () {

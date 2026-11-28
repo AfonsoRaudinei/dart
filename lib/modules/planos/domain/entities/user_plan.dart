@@ -85,7 +85,7 @@ class UserPlan {
   /// Grátis: 0 (só local). Pagos: delega a [PlanoTipo.limiteTalhoesSincronizados]
   /// (`null` no Ouro = ilimitado).
   int? get limiteTalhoesSincronizados {
-    if (id == 'free') return 0;
+    if (id == 'free' || ocultaPinsMarketingNoMapa) return 0;
     return plano.limiteTalhoesSincronizados;
   }
 
