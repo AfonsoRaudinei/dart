@@ -46,6 +46,14 @@ class _PlanosScreenState extends ConsumerState<PlanosScreen> {
     setState(() => _vitrine = vitrine);
   }
 
+  Future<void> _recarregar() async {
+    setState(() {
+      _vitrine = null;
+      _aviso = null;
+    });
+    await _carregar();
+  }
+
   @override
   void dispose() {
     _avisos?.cancel();
@@ -90,10 +98,34 @@ class _PlanosScreenState extends ConsumerState<PlanosScreen> {
           if (vitrine == null)
             const Center(child: CircularProgressIndicator())
           else if (vitrine.produtos.isEmpty)
-            Text(
-              'A loja não tem planos disponíveis para compra neste momento.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15, color: context.premiumTextSecondary),
+            Column(
+              children: [
+                Text(
+                  vitrine.motivoIndisponivel ==
+                          LojaMotivoIndisponivel.lojaFechada
+                      ? 'A loja não está disponível neste aparelho. '
+                            'Verifique sua conexão e conta da loja.'
+                      : 'Os planos ainda não estão disponíveis na loja. '
+                            'Tente atualizar em instantes.',
+                  key: const Key('planos_motivo_indisponivel'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: context.premiumTextSecondary,
+                  ),
+                ),
+                TextButton(
+                  key: const Key('planos_recarregar_loja'),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    _recarregar();
+                  },
+                  child: Text(
+                    'Atualizar planos',
+                    style: TextStyle(color: primary),
+                  ),
+                ),
+              ],
             )
           else
             for (final produto in vitrine.produtos) ...[
@@ -109,7 +141,10 @@ class _PlanosScreenState extends ConsumerState<PlanosScreen> {
             Text(
               _aviso!,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: context.premiumTextSecondary),
+              style: TextStyle(
+                fontSize: 14,
+                color: context.premiumTextSecondary,
+              ),
             ),
           ],
           if (vitrine != null && vitrine.disponivel) ...[
@@ -121,7 +156,10 @@ class _PlanosScreenState extends ConsumerState<PlanosScreen> {
                       HapticFeedback.lightImpact();
                       ref.read(lojaCompraGatewayProvider).restaurar();
                     },
-              child: Text('Restaurar compras', style: TextStyle(color: primary)),
+              child: Text(
+                'Restaurar compras',
+                style: TextStyle(color: primary),
+              ),
             ),
           ],
           TextButton(
@@ -129,7 +167,10 @@ class _PlanosScreenState extends ConsumerState<PlanosScreen> {
               HapticFeedback.lightImpact();
               context.go(AppRoutes.map);
             },
-            child: Text('Voltar ao mapa', style: TextStyle(fontSize: 15, color: primary)),
+            child: Text(
+              'Voltar ao mapa',
+              style: TextStyle(fontSize: 15, color: primary),
+            ),
           ),
         ],
       ),
@@ -159,7 +200,8 @@ class _PlanoAtual extends ConsumerWidget {
     if (plano == null || !plano.ativo || plano.isIndefinite) {
       return const SizedBox.shrink();
     }
-    final nome = plano.plano.name[0].toUpperCase() + plano.plano.name.substring(1);
+    final nome =
+        plano.plano.name[0].toUpperCase() + plano.plano.name.substring(1);
     return Text(
       'Plano atual: $nome · ${plano.diasRestantesLabel} · '
       '${plano.limiteCases >= 999999 ? 'cases ilimitados no mapa' : 'até ${plano.limiteCases} cases no mapa'}',
@@ -210,7 +252,10 @@ class _ProdutoLoja extends StatelessWidget {
                   ),
                   Text(
                     '${produto.prazo} · ${produto.preco}',
-                    style: TextStyle(fontSize: 14, color: context.premiumTextSecondary),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: context.premiumTextSecondary,
+                    ),
                   ),
                 ],
               ),
