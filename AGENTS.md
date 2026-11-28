@@ -163,6 +163,7 @@ Comunicação cross-module **APENAS** via `lib/core/contracts/`:
 | `IProducerPropertyGateway` | 040 | consultoria | produtor |
 | `IOccurrenceAccessReader` | 041 | produtor | map |
 | `IProducerCropCalendar` | 062 | produtor (lê `drawings`, escreve via `IDrawingFieldWriter`) | produtor |
+| `IDrawingSyncQuota` | 066 | planos | drawing (sync push) |
 
 **Dependências proibidas (diretas):**
 
@@ -340,6 +341,7 @@ lib/
 | 063 | Plantio em duas fases (execução + validação / só emergência) |
 | 064 | Campo de teste é a área do case Resultado/Avaliação (`marketing_cases.drawing_id`) |
 | 065 | Resultado: múltiplas fotos (1–5) com capa legada + carrossel |
+| 066 | Cota de talhões sincronizados (Desenho) + isenções case/produtor + enforcement servidor |
 
 Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 
