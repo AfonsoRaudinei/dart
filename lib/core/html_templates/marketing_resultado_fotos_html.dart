@@ -23,15 +23,17 @@ class ResultadoFotosHtml {
     Map<String, dynamic> data,
     Future<Uint8List?> Function(String url)? fetchRemoteBytes,
   ) async {
-    final srcs = <String>[];
-    for (final url in urls(data)) {
-      final src = await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
-        url,
-        fetchRemoteBytes: fetchRemoteBytes,
-      );
-      if (src.isNotEmpty) srcs.add(src);
-    }
-    return srcs;
+    final resolvidas = await Future.wait([
+      for (final url in urls(data))
+        RelatorioHtmlRenderer.resolvePhotoSrcForExport(
+          url,
+          fetchRemoteBytes: fetchRemoteBytes,
+        ),
+    ]);
+    return [
+      for (final src in resolvidas)
+        if (src.isNotEmpty) src,
+    ];
   }
 
   static String legenda(int numero, String dataCase) =>
