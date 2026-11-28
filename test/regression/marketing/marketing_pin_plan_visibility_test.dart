@@ -13,28 +13,28 @@ import 'package:soloforte_app/modules/planos/presentation/providers/plano_provid
 
 void main() {
   group('publishedCasesProvider — gate de plano (leitura)', () {
-    test('plano expirado oculta pins; status published inalterado na fonte', () async {
-      final published = _publishedCase('c1');
-      final container = _container(
-        cases: [published],
-        plano: (ref) async => _userPlan(expiraEm: DateTime.utc(2020, 1, 1)),
-      );
-      addTearDown(container.dispose);
+    test(
+      'plano expirado oculta pins; status published inalterado na fonte',
+      () async {
+        final published = _publishedCase('c1');
+        final container = _container(
+          cases: [published],
+          plano: (ref) async => _userPlan(expiraEm: DateTime.utc(2020, 1, 1)),
+        );
+        addTearDown(container.dispose);
 
-      await container.read(planoAtivoProvider.future);
+        await container.read(planoAtivoProvider.future);
 
-      expect(container.read(publishedCasesProvider), isEmpty);
-      expect(
-        container.read(marketingCasesProvider).value!.single.status.toValue(),
-        'published',
-      );
-    });
+        expect(container.read(publishedCasesProvider), isEmpty);
+        expect(
+          container.read(marketingCasesProvider).value!.single.status.toValue(),
+          'published',
+        );
+      },
+    );
 
     test('plano reativado exibe todos os pins de volta', () async {
-      final cases = [
-        _publishedCase('c1'),
-        _publishedCase('c2'),
-      ];
+      final cases = [_publishedCase('c1'), _publishedCase('c2')];
 
       final expiredContainer = _container(
         cases: cases,
@@ -46,7 +46,8 @@ void main() {
 
       final activeContainer = _container(
         cases: cases,
-        plano: (ref) async => _userPlan(expiraEm: DateTime.utc(2027, 1, 1)),
+        plano: (ref) async =>
+            _userPlan(expiraEm: DateTime.now().add(const Duration(days: 365))),
       );
       addTearDown(activeContainer.dispose);
       await activeContainer.read(planoAtivoProvider.future);
@@ -91,10 +92,8 @@ void main() {
       final published = _publishedCase('c1');
       final container = _container(
         cases: [published],
-        plano: (ref) async => _userPlan(
-          expiraEm: DateTime.utc(2020, 1, 1),
-          isAdmin: true,
-        ),
+        plano: (ref) async =>
+            _userPlan(expiraEm: DateTime.utc(2020, 1, 1), isAdmin: true),
       );
       addTearDown(container.dispose);
 
