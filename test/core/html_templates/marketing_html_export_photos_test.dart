@@ -383,6 +383,112 @@ void main() {
     });
   });
 
+  group('MarketingHtmlRenderer resultado com múltiplas fotos (ADR-065)', () {
+    const urls = [
+      'https://cdn.test/marketing/r1.jpg',
+      'https://cdn.test/marketing/r2.jpg',
+      'https://cdn.test/marketing/r3.jpg',
+    ];
+
+    Future<Uint8List?> fetchPorUrl(String url) async {
+      final i = urls.indexOf(url);
+      return i < 0 ? null : Uint8List.fromList([0xFF, 0xD8, 0x10 + i, 0xD9]);
+    }
+
+    String b64(int i) => base64Encode([0xFF, 0xD8, 0x10 + i, 0xD9]);
+
+    Map<String, dynamic> base() => {
+      'tipo': 'resultado',
+      'produtor_fazenda': 'Cliente',
+      'produto_utilizado': 'Produto',
+      'localizacao_texto': 'Palmas',
+      'visibilidade': 'ouro',
+      'descricao': 'Teste',
+      'nome_vendedor': 'Vendedor',
+      'criado_em': '2026-06-03T12:00:00.000Z',
+      'status': 'published',
+    };
+
+    final imgRe = RegExp(r'<img data-sf-photo="\d+"');
+
+    test('3 fotos: 3 imgs data-sf-photo em ordem e legendas Foto 1..3', () async {
+      final html = await MarketingHtmlRenderer.render({
+        ...base(),
+        'foto_principal_url': urls.first,
+        'fotos_resultado_json': jsonEncode(urls),
+      }, fetchRemoteBytes: fetchPorUrl);
+
+      expect(imgRe.allMatches(html).length, 3);
+      final pos = [for (var i = 0; i < 3; i++) html.indexOf(b64(i))];
+      expect(pos.every((p) => p >= 0), isTrue);
+      expect(pos[0], lessThan(pos[1]));
+      expect(pos[1], lessThan(pos[2]));
+      expect(html, contains('<figcaption>Foto 1</figcaption>'));
+      expect(html, contains('<figcaption>Foto 2</figcaption>'));
+      expect(html, contains('<figcaption>Foto 3</figcaption>'));
+      expect(html, isNot(contains('<figcaption>Foto 4')));
+      expect(html, isNot(contains('https://cdn.test')));
+    });
+
+    test('lista como List também é aceita e legenda leva a data', () async {
+      final html = await MarketingHtmlRenderer.render({
+        ...base(),
+        'data_case': '2026-06-03T12:00:00.000Z',
+        'fotos_resultado_json': urls.take(2).toList(),
+      }, fetchRemoteBytes: fetchPorUrl);
+
+      expect(imgRe.allMatches(html).length, 2);
+      expect(html, contains('<figcaption>Foto 1 · '));
+      expect(html, contains('<figcaption>Foto 2 · '));
+    });
+
+    test('só foto_principal_url: 1 foto como antes', () async {
+      final html = await MarketingHtmlRenderer.render({
+        ...base(),
+        'foto_principal_url': urls.first,
+      }, fetchRemoteBytes: fetchPorUrl);
+
+      expect(imgRe.allMatches(html).length, 1);
+      expect(html, contains(b64(0)));
+      expect(html, contains('<figcaption>Foto 1</figcaption>'));
+      expect(html, isNot(contains('<figcaption>Foto 2')));
+    });
+
+    test('JSON malformado cai na foto principal', () async {
+      final html = await MarketingHtmlRenderer.render({
+        ...base(),
+        'foto_principal_url': urls.first,
+        'fotos_resultado_json': '{nao-e-lista',
+      }, fetchRemoteBytes: fetchPorUrl);
+
+      expect(imgRe.allMatches(html).length, 1);
+      expect(html, contains(b64(0)));
+    });
+
+    test('URL maliciosa na lista é descartada', () async {
+      final html = await MarketingHtmlRenderer.render({
+        ...base(),
+        'fotos_resultado_json': jsonEncode([
+          urls.first,
+          '"><img src=x onerror=alert(1)>',
+        ]),
+      }, fetchRemoteBytes: fetchPorUrl);
+
+      expect(html, isNot(contains('onerror=')));
+      expect(imgRe.allMatches(html).length, 1);
+    });
+
+    test('sem foto: sem seção Registro fotográfico', () async {
+      final html = await MarketingHtmlRenderer.render(
+        base(),
+        fetchRemoteBytes: fetchPorUrl,
+      );
+
+      expect(imgRe.allMatches(html).length, 0);
+      expect(html, isNot(contains('Registro fotográfico')));
+    });
+  });
+
   group('HtmlReportViewer', () {
     test(
       'withFabSafeAreaForInApp reserva a área do FAB só na cópia do app',
